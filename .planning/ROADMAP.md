@@ -21,7 +21,7 @@ look at is not a slice.
 
 ## Phases
 
-- [ ] **Phase 0: Database Isolation Bootstrap** — Make the database, not the code, enforce the schema boundary (GATED on maintainer decision)
+- [x] **Phase 0: Database Isolation Bootstrap** — Make the database, not the code, enforce the schema boundary (COMPLETE — isolation verified 7/7)
 - [ ] **Phase 1: Walking Skeleton** — Submit a GitHub repo, see its skills on a detail page, safely
 - [ ] **Phase 2: Durable Ingestion** — Make ingestion asynchronous, resumable, and idempotent
 - [ ] **Phase 3: Detector Pluralism** — Plugins, MCP servers, commands, hooks, and catalogs
@@ -36,33 +36,42 @@ look at is not a slice.
 ### Phase 0: Database Isolation Bootstrap
 **Goal**: The database itself refuses AgentDock write access to any schema but `agentdock`.
 **Depends on**: Nothing
-**Requirements**: FND-01, FND-02, FND-03, FND-04, FND-05, FND-07
+**Requirements**: FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, FND-08, FND-09
 **Success Criteria** (what must be TRUE):
   1. AgentDock connects as a role that is not a superuser and holds no table privileges in `public` or `didim_mcp`
   2. An attempt to create or drop an object outside `agentdock` fails with a permission error rather than succeeding
   3. The `agentdock` schema exists and is owned by that role
   4. The migration-history table resides in `agentdock`, not in `public` and not in a third schema
   5. `.env.example` exists with placeholders only and documents that `GITHUB_TOKEN` needs no scopes
-**Plans**: 2 plans
+**Plans**: 4 plans
 
-> **BLOCKING MAINTAINER DECISION.** This phase modifies a database shared with a running
-> application, so it is not performed without explicit approval. Two branches:
+> **Maintainer decision: RESOLVED — Branch A approved** (see `CONTEXT.md` in the phase
+> directory). AgentDock uses a dedicated non-superuser role `agentdock_app` owning schema
+> `agentdock`. The database enforces the boundary, so Drizzle is safe in
+> `generate` → review → `migrate` mode.
 >
-> - **Branch A (recommended)** — create a dedicated non-superuser role `agentdock_app`.
->   The database enforces the boundary; Drizzle is safe to use in `generate` → review →
->   `migrate` mode.
-> - **Branch B (fallback)** — continue connecting as the existing superuser. The database
->   cannot enforce anything, so the *tooling* must be incapable of generating a dangerous
->   statement: switch to hand-written SQL migrations (Kysely) and drop Drizzle's schema
->   diffing entirely.
+> Two corrections to the earlier research, both verified by direct query against the live
+> instance and recorded in `CONTEXT.md`:
 >
-> Note that `USAGE` on `public` is held by `PUBLIC` and must **not** be revoked — that
-> would affect the other application. The real boundary is the absence of table-level
-> privileges, which is sufficient.
+> - **No `REVOKE` is needed or wanted.** `PUBLIC` already holds no `USAGE` on the
+>   co-tenant schema and no `CREATE` on `public`, and `pg_default_acl` is empty — so a new
+>   role is already fenced out the moment it exists. Revoking from `PUBLIC` would strip
+>   privileges from the other application.
+> - **`agentdock_app` cannot create schemas.** `mcpdb` has a NULL `datacl`, so `PUBLIC`
+>   holds `CONNECT` and `TEMPORARY` but not `CREATE`. The test schema `agentdock_test` is
+>   therefore created in the same one-time superuser session, and the dev-reset empties
+>   the schema rather than dropping and recreating it.
+>
+> FND-06, FND-08, and FND-09 are pulled forward from Phase 1: the skeleton this phase
+> builds is where the environment contract, the secret-handling rules, and the documented
+> run command actually live. `REQUIREMENTS.md` already maps `FND-01 … FND-09` to both
+> phases, so Phase 1 still exercises them.
 
 Plans:
-- [ ] 00-01: Role and schema bootstrap SQL, applied manually by the maintainer, with a verification query proving the boundary holds
-- [ ] 00-02: Environment variable contract, `.env.example`, and a connection that pins `search_path`
+- [x] 00-01: Role and schema bootstrap SQL applied by the maintainer, with rollback alongside and a seven-assertion verifier that probes the boundary live
+- [x] 00-02: Repository skeleton, blocking dependency-legitimacy gate, and the zod environment contract whose errors cannot echo a credential
+- [x] 00-03: Migration boundary scanner, schema-confined dev reset, and CI running the same command a developer runs
+- [x] 00-04: Tracer — one table from TypeScript through reviewed SQL to a rendered page, plus the boot-time isolation assertion
 
 ---
 

@@ -38,3 +38,6 @@ tmp/
 
 # GSD research agent scratch cache — not a planning artifact
 .planning/research/.cache/
+
+# Migrations generated on the fly for the test schema — never reviewed, never applied to dev
+.drizzle-test/

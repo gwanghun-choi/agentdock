@@ -1,0 +1,40 @@
+{
+  "name": "agentdock",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "ci": "bun run check:boundaries && bun run lint && bun run typecheck && bun run test",
+    "db:generate": "bun --bun drizzle-kit generate",
+    "db:migrate": "bun scripts/migrate.mjs",
+    "db:reset": "bun scripts/dev-reset.mjs",
+    "db:test:generate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun --bun drizzle-kit generate",
+    "db:test:migrate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun scripts/migrate.mjs",
+    "db:test:setup": "bun run db:test:generate && bun run db:test:migrate"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "next": "16.3.0",
+    "postgres": "3.4.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.4",
+    "drizzle-kit": "0.31.10",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

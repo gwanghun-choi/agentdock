@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 0
-  total_plans: 27
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 29
+  completed_plans: 4
+  percent: 14
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 0 — Database Isolation Bootstrap (blocked on maintainer decision)
+**Current focus:** Phase 1 — Walking Skeleton (not yet planned)
 
 ## Current Position
 
-Phase: 0 of 9 (Database Isolation Bootstrap)
-Plan: 0 of 2 in current phase
-Status: Ready to plan — blocked on one maintainer decision
-Last activity: 2026-08-10 — Project research, requirements, and roadmap completed
+Phase: 0 of 9 complete (Database Isolation Bootstrap)
+Plan: 4 of 4 in Phase 0
+Status: Phase 0 complete and verified — ready to plan Phase 1
+Last activity: 2026-08-10 — Phase 0 executed: `agentdock_app` role + `agentdock`/`agentdock_test` schemas created, isolation verified 7/7, app skeleton building and green
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 
@@ -64,7 +64,16 @@ Progress: [░░░░░░░░░░] 0%
 
 | Blocker | Impact | Needs |
 |---------|--------|-------|
-| Database role decision | Blocks Phase 0, and determines the ORM choice for every later phase | Maintainer approval to create a dedicated non-superuser `agentdock_app` role in the shared database (Branch A), or a decision to accept application-layer discipline only and switch to hand-written SQL migrations (Branch B) |
+| ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
+
+### Carried into Phase 1
+
+| Item | Note |
+|------|------|
+| Status page discloses role name and `search_path` | Acceptable on localhost; must move or be gated before any network exposure |
+| `bun test` (Bun's own runner) hangs on vitest files | Use `bun run test`. Documented in README, not fixed — fixing means config for no behavior change |
+| `pg_hba.conf` grants `trust` on the container's loopback | Anyone with `docker exec` is already superuser-equivalent. Pre-existing environment property, not introduced here; not changed because the co-tenant depends on it. The app's real path (host → published port) correctly enforces `scram-sha-256`, verified both ways. |
+| `drizzle-kit migrate` unusable; replaced by `scripts/migrate.mjs` | Drizzle's migrator emits `CREATE SCHEMA IF NOT EXISTS`, and PostgreSQL checks database-level `CREATE` before the existence check — so it fails `42501` for a correctly-confined role. The replacement reuses drizzle's own `__drizzle_migrations` format, so switching back later needs no data change. |
 
 ### Constraints
 
@@ -85,7 +94,7 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Next Action
 
-Resolve the Phase 0 database role decision, then run `/gsd-plan-phase 0`.
+Run `/gsd-plan-phase 1` to plan the Walking Skeleton.
 
 ---
-*Last updated: 2026-08-10 after project research and roadmap creation*
+*Last updated: 2026-08-10 after Phase 0 execution and verification*
