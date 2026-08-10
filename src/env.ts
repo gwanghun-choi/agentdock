@@ -7,11 +7,34 @@ const postgresUrl = z
     message: 'must be a postgres:// or postgresql:// connection string',
   });
 
+// Optional on purpose. AgentDock runs unauthenticated at 60 core requests an
+// hour — two per repository, so about thirty repositories an hour — and must
+// degrade to that rather than depend on a token existing. An empty or
+// whitespace-only string is normalized to undefined so a placeholder left in
+// .env behaves as "absent" rather than as a credential that fails on every call.
+const githubToken = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined));
+
+/**
+ * Reads the optional GitHub credential without validating the rest of the
+ * environment.
+ *
+ * The full parse requires DATABASE_URL, and the HTTP client must work in a suite
+ * that has no database at all — the SSRF and redirect regressions run under CI
+ * with neither a database nor a network. Same schema, narrower blast radius.
+ */
+export function normalizeGithubToken(raw: string | undefined): string | undefined {
+  return githubToken.parse(raw);
+}
+
 const envSchema = z.object({
   DATABASE_URL: postgresUrl,
   // The only two schemas AgentDock owns. Anything else is a boundary escape, so
   // it is rejected here rather than discovered when a statement lands elsewhere.
   DATABASE_SCHEMA: z.enum(['agentdock', 'agentdock_test']).default('agentdock'),
+  GITHUB_TOKEN: githubToken,
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

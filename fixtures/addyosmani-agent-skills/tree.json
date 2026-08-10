@@ -1,0 +1,2018 @@
+{
+  "sha": "7676817c12a1317454ae3898a0c5c1eacf5dd3d5",
+  "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/7676817c12a1317454ae3898a0c5c1eacf5dd3d5",
+  "tree": [
+    {
+      "path": ".agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e1610632eb49bcc7aedb974496f58471a5222ed6",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/e1610632eb49bcc7aedb974496f58471a5222ed6"
+    },
+    {
+      "path": ".agents/plugins",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3c937766f8023714cd4c5e4c5562859129dfd9f0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/3c937766f8023714cd4c5e4c5562859129dfd9f0"
+    },
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4789ba649e04af54babf738fd25c125a4164dd4c",
+      "size": 535,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4789ba649e04af54babf738fd25c125a4164dd4c"
+    },
+    {
+      "path": ".claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dac156fd2c2b544578184b4d91fd3b5fc8a69ea0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/dac156fd2c2b544578184b4d91fd3b5fc8a69ea0"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "76a5ae42df87564a5e44ec8e2af6637db1281932",
+      "size": 856,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/76a5ae42df87564a5e44ec8e2af6637db1281932"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f6bc3a6e0dc8cb6b5eb3693a0aee67e843c380f",
+      "size": 463,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7f6bc3a6e0dc8cb6b5eb3693a0aee67e843c380f"
+    },
+    {
+      "path": ".claude",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "05d9b08f5ee6c6c53da838bca43b2ae6fd0deb10",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/05d9b08f5ee6c6c53da838bca43b2ae6fd0deb10"
+    },
+    {
+      "path": ".claude/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4ed22b3b9d6d66f497446005832e51410621d803",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/4ed22b3b9d6d66f497446005832e51410621d803"
+    },
+    {
+      "path": ".claude/commands/build.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2233d909b396296eb3da7b0a50aab4a9954f92fe",
+      "size": 3959,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/2233d909b396296eb3da7b0a50aab4a9954f92fe"
+    },
+    {
+      "path": ".claude/commands/code-simplify.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f914bc81be9b6c8474e88cb7774aef1054957c0b",
+      "size": 1068,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/f914bc81be9b6c8474e88cb7774aef1054957c0b"
+    },
+    {
+      "path": ".claude/commands/plan.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "99b2ea1eebca206ee60ab88a409831fba1cc3733",
+      "size": 637,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/99b2ea1eebca206ee60ab88a409831fba1cc3733"
+    },
+    {
+      "path": ".claude/commands/review.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c1d750c8e55d63cb31fa6470a16483a8328f5979",
+      "size": 846,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/c1d750c8e55d63cb31fa6470a16483a8328f5979"
+    },
+    {
+      "path": ".claude/commands/ship.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dfaf016cf1212400bf11e66c87980d5fb460aca",
+      "size": 4601,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1dfaf016cf1212400bf11e66c87980d5fb460aca"
+    },
+    {
+      "path": ".claude/commands/spec.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2207935300da968769708d25612baba7a8d8fa63",
+      "size": 677,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/2207935300da968769708d25612baba7a8d8fa63"
+    },
+    {
+      "path": ".claude/commands/test.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a2b9cfd8444e221880b23a290e8db15256089c61",
+      "size": 665,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a2b9cfd8444e221880b23a290e8db15256089c61"
+    },
+    {
+      "path": ".claude/commands/webperf.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ed27d22a4498f938c8b9b0e7575a1677c0f26f19",
+      "size": 1974,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/ed27d22a4498f938c8b9b0e7575a1677c0f26f19"
+    },
+    {
+      "path": ".claude/rules",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e5d9f73bbb528d460a59f6d03bc15950b58ffbbd",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/e5d9f73bbb528d460a59f6d03bc15950b58ffbbd"
+    },
+    {
+      "path": ".claude/rules/skills-contributing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8553dc3b0d4aba42f014605b488097b6e06e9060",
+      "size": 988,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/8553dc3b0d4aba42f014605b488097b6e06e9060"
+    },
+    {
+      "path": ".codex-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "95555c1761a9e06862162d99ac3c933324709bb3",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/95555c1761a9e06862162d99ac3c933324709bb3"
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0c2f468644edd5f76c29b72f73dff8b8f2d5b8d2",
+      "size": 1119,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0c2f468644edd5f76c29b72f73dff8b8f2d5b8d2"
+    },
+    {
+      "path": ".gemini",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e201af2a605cde4fb3c3f267aba83f386d5433ba",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/e201af2a605cde4fb3c3f267aba83f386d5433ba"
+    },
+    {
+      "path": ".gemini/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "676568e00c5704f7dae00e5cb4b6908e0687ad1f",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/676568e00c5704f7dae00e5cb4b6908e0687ad1f"
+    },
+    {
+      "path": ".gemini/commands/build.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7a4f7f1f6ab193c3abb75690bb9df7a88024371",
+      "size": 3840,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b7a4f7f1f6ab193c3abb75690bb9df7a88024371"
+    },
+    {
+      "path": ".gemini/commands/code-simplify.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "518dd3ba989fd4e1a76929356a75c4ed8db73128",
+      "size": 1066,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/518dd3ba989fd4e1a76929356a75c4ed8db73128"
+    },
+    {
+      "path": ".gemini/commands/planning.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b8daa23aacfb92aadb1fefe2cabfb65361f947f",
+      "size": 635,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3b8daa23aacfb92aadb1fefe2cabfb65361f947f"
+    },
+    {
+      "path": ".gemini/commands/review.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23f5b78c63192a8a25ec069cb7f710639b669b45",
+      "size": 844,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/23f5b78c63192a8a25ec069cb7f710639b669b45"
+    },
+    {
+      "path": ".gemini/commands/ship.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af4a2a9b40c6a91b70c073446ae653b0cee0c119",
+      "size": 4780,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/af4a2a9b40c6a91b70c073446ae653b0cee0c119"
+    },
+    {
+      "path": ".gemini/commands/spec.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02b8896ca5c4efcc0e32b3fc766e9e78b6f2ce91",
+      "size": 675,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/02b8896ca5c4efcc0e32b3fc766e9e78b6f2ce91"
+    },
+    {
+      "path": ".gemini/commands/test.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "73e36f53ed289bc01d24a69c89907e32605fb519",
+      "size": 650,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/73e36f53ed289bc01d24a69c89907e32605fb519"
+    },
+    {
+      "path": ".gemini/commands/webperf.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "af0ab105b1282bc2c5d00e91f7cb4261686e0b3e",
+      "size": 1884,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/af0ab105b1282bc2c5d00e91f7cb4261686e0b3e"
+    },
+    {
+      "path": ".gitattributes",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6313b56c57848efce05faa7aa7e901ccfc2886ea",
+      "size": 19,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/6313b56c57848efce05faa7aa7e901ccfc2886ea"
+    },
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b5e6647fc3a1f224f040c15cb37b2f525f00cbad",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/b5e6647fc3a1f224f040c15cb37b2f525f00cbad"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b99d03ac975f59b32aaf6e23784dc9677586dffe",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/b99d03ac975f59b32aaf6e23784dc9677586dffe"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/skill-gap.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dac6216a5ace3cd1f34bb2b9a753c6f133592892",
+      "size": 2669,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/dac6216a5ace3cd1f34bb2b9a753c6f133592892"
+    },
+    {
+      "path": ".github/workflows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d71e40ef44a02ef1a3d27cfb6423aa60471943b2",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/d71e40ef44a02ef1a3d27cfb6423aa60471943b2"
+    },
+    {
+      "path": ".github/workflows/test-plugin-install.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "782b330ed48d7693548d3509682420037281b47c",
+      "size": 2703,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/782b330ed48d7693548d3509682420037281b47c"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96934e54a37c450a40937a83bb03e925af7912e1",
+      "size": 121,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/96934e54a37c450a40937a83bb03e925af7912e1"
+    },
+    {
+      "path": ".opencode",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b9bbc590acaf7b95077503f63902057e22530ff4",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/b9bbc590acaf7b95077503f63902057e22530ff4"
+    },
+    {
+      "path": ".opencode/skills",
+      "mode": "120000",
+      "type": "blob",
+      "sha": "7fc7d9f7be858ee62e454c529b3f8deddd83e1d2",
+      "size": 10,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7fc7d9f7be858ee62e454c529b3f8deddd83e1d2"
+    },
+    {
+      "path": "AGENTS.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e97670ed868e90b73753fafbe305cdabc7f55ad3",
+      "size": 5386,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/e97670ed868e90b73753fafbe305cdabc7f55ad3"
+    },
+    {
+      "path": "CLAUDE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "97674d0b173c7c25764e11dc816a298a63119594",
+      "size": 4094,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/97674d0b173c7c25764e11dc816a298a63119594"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b03315510a6db02f6107851761a23be09542746",
+      "size": 7179,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/9b03315510a6db02f6107851761a23be09542746"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d67778ada6b9cda6227e9130da182c13e73c8b2e",
+      "size": 1068,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/d67778ada6b9cda6227e9130da182c13e73c8b2e"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f31b37f7fc881e76cf9ba9cedd74efad27d4d255",
+      "size": 24577,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/f31b37f7fc881e76cf9ba9cedd74efad27d4d255"
+    },
+    {
+      "path": "agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "47d8ae311ea83ba40d1c276b865d96e9e27f081f",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/47d8ae311ea83ba40d1c276b865d96e9e27f081f"
+    },
+    {
+      "path": "agents/code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96cac1d79edca4a9231cbe6af50415b5e4d6cf42",
+      "size": 3801,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/96cac1d79edca4a9231cbe6af50415b5e4d6cf42"
+    },
+    {
+      "path": "agents/security-auditor.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "efb1e4e51d12229e5d6792780f997467d4ea3697",
+      "size": 4992,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/efb1e4e51d12229e5d6792780f997467d4ea3697"
+    },
+    {
+      "path": "agents/test-engineer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19a41bad30cc25681754352d11d97f95ce25b2b0",
+      "size": 3275,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/19a41bad30cc25681754352d11d97f95ce25b2b0"
+    },
+    {
+      "path": "agents/web-performance-auditor.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44bc45d807fa6aa59c001741dec499ddb27122c6",
+      "size": 12278,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/44bc45d807fa6aa59c001741dec499ddb27122c6"
+    },
+    {
+      "path": "commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a7d179dd92c5464689cc9f93253ad92beaabc4f0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/a7d179dd92c5464689cc9f93253ad92beaabc4f0"
+    },
+    {
+      "path": "commands/build.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7a4f7f1f6ab193c3abb75690bb9df7a88024371",
+      "size": 3840,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b7a4f7f1f6ab193c3abb75690bb9df7a88024371"
+    },
+    {
+      "path": "commands/code-simplify.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "926442b958f1f89b2b5ecdc04b4b79896b4dbf2b",
+      "size": 1066,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/926442b958f1f89b2b5ecdc04b4b79896b4dbf2b"
+    },
+    {
+      "path": "commands/planning.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b8daa23aacfb92aadb1fefe2cabfb65361f947f",
+      "size": 635,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3b8daa23aacfb92aadb1fefe2cabfb65361f947f"
+    },
+    {
+      "path": "commands/review.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23f5b78c63192a8a25ec069cb7f710639b669b45",
+      "size": 844,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/23f5b78c63192a8a25ec069cb7f710639b669b45"
+    },
+    {
+      "path": "commands/ship.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bf0a77647e3c67eea7a5a65f496e857f403b336f",
+      "size": 4712,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/bf0a77647e3c67eea7a5a65f496e857f403b336f"
+    },
+    {
+      "path": "commands/spec.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02b8896ca5c4efcc0e32b3fc766e9e78b6f2ce91",
+      "size": 675,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/02b8896ca5c4efcc0e32b3fc766e9e78b6f2ce91"
+    },
+    {
+      "path": "commands/test.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "73e36f53ed289bc01d24a69c89907e32605fb519",
+      "size": 650,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/73e36f53ed289bc01d24a69c89907e32605fb519"
+    },
+    {
+      "path": "commands/webperf.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3532ec69d198a5d0b7e24920f50cb3e21dd41cc0",
+      "size": 2031,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3532ec69d198a5d0b7e24920f50cb3e21dd41cc0"
+    },
+    {
+      "path": "docs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c248a2ea6ca2299115b8d59cb965f49d9b0c0d93",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/c248a2ea6ca2299115b8d59cb965f49d9b0c0d93"
+    },
+    {
+      "path": "docs/adoption-guide.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "77deeae5525c82449ea5b491d828c1403ab55b56",
+      "size": 11197,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/77deeae5525c82449ea5b491d828c1403ab55b56"
+    },
+    {
+      "path": "docs/agents.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "414177ba07273eb3db25e24d6cdba2fb03b71c0e",
+      "size": 6996,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/414177ba07273eb3db25e24d6cdba2fb03b71c0e"
+    },
+    {
+      "path": "docs/antigravity-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a0762a279a18c8a9d9485d33f606a59c060c187d",
+      "size": 4778,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a0762a279a18c8a9d9485d33f606a59c060c187d"
+    },
+    {
+      "path": "docs/codex-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54b59a62b61093df6b2514741164aaf620a5595e",
+      "size": 1805,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/54b59a62b61093df6b2514741164aaf620a5595e"
+    },
+    {
+      "path": "docs/commandcode-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6aa360e3b39c5d04d6be7579f66b537edd35bb2",
+      "size": 2437,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/e6aa360e3b39c5d04d6be7579f66b537edd35bb2"
+    },
+    {
+      "path": "docs/comparison.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "904d270532fb5cbc9bd041905b4b6a45a1fa4579",
+      "size": 15362,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/904d270532fb5cbc9bd041905b4b6a45a1fa4579"
+    },
+    {
+      "path": "docs/copilot-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfe137ee2a2de9cfbc9269b5a13373709fc1fdb3",
+      "size": 3496,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/cfe137ee2a2de9cfbc9269b5a13373709fc1fdb3"
+    },
+    {
+      "path": "docs/cursor-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5fdde5180f01cfb001bde95302e328bc08fc4441",
+      "size": 8370,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5fdde5180f01cfb001bde95302e328bc08fc4441"
+    },
+    {
+      "path": "docs/developer-onboarding.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "daaf22815e3a1d3cf0eb57716ddd527f077d4205",
+      "size": 7850,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/daaf22815e3a1d3cf0eb57716ddd527f077d4205"
+    },
+    {
+      "path": "docs/gemini-cli-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ad9d56276adca08779714e5c1d25c81d5c71373",
+      "size": 5640,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7ad9d56276adca08779714e5c1d25c81d5c71373"
+    },
+    {
+      "path": "docs/getting-started.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8fe56d39832f541cfd695efdb44e670b6161f921",
+      "size": 7104,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/8fe56d39832f541cfd695efdb44e670b6161f921"
+    },
+    {
+      "path": "docs/opencode-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84a96d5bd049e1f2a7b1b98f198936fc5dfe5c87",
+      "size": 4162,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/84a96d5bd049e1f2a7b1b98f198936fc5dfe5c87"
+    },
+    {
+      "path": "docs/skill-anatomy.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5dcd5b37142e4e7870289fb824ce2ebf1067270d",
+      "size": 8849,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5dcd5b37142e4e7870289fb824ce2ebf1067270d"
+    },
+    {
+      "path": "docs/windsurf-setup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c640e48ed73082614b0b01785e7c8d425ce3e1d4",
+      "size": 1471,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/c640e48ed73082614b0b01785e7c8d425ce3e1d4"
+    },
+    {
+      "path": "evals",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "606c98e1796f4c70f9491d16f985af7bba02182e",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/606c98e1796f4c70f9491d16f985af7bba02182e"
+    },
+    {
+      "path": "evals/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2bc083edb5f5ed44632682c71bce94782cbf89e9",
+      "size": 7402,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/2bc083edb5f5ed44632682c71bce94782cbf89e9"
+    },
+    {
+      "path": "evals/cases",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4885dae3625cb77735b79a188f6e4cc4ec9b9d7a",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/4885dae3625cb77735b79a188f6e4cc4ec9b9d7a"
+    },
+    {
+      "path": "evals/cases/api-and-interface-design.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c730e83efcfe726b553b61410b87a9b27d3cf068",
+      "size": 1494,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/c730e83efcfe726b553b61410b87a9b27d3cf068"
+    },
+    {
+      "path": "evals/cases/browser-testing-with-devtools.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e35e55944b45bb6816cbb011f14bc0bfaf1b5fb",
+      "size": 1455,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3e35e55944b45bb6816cbb011f14bc0bfaf1b5fb"
+    },
+    {
+      "path": "evals/cases/ci-cd-and-automation.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d4a300a39fc5e38ed43af056de46150bd9c3214",
+      "size": 1349,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1d4a300a39fc5e38ed43af056de46150bd9c3214"
+    },
+    {
+      "path": "evals/cases/code-review-and-quality.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "427b95da0c10efc89d3adbe99904e11064a37da8",
+      "size": 1374,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/427b95da0c10efc89d3adbe99904e11064a37da8"
+    },
+    {
+      "path": "evals/cases/code-simplification.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a43fa65792b4c95c2def83aa9263c962457b989",
+      "size": 1330,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4a43fa65792b4c95c2def83aa9263c962457b989"
+    },
+    {
+      "path": "evals/cases/context-engineering.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "efb5e28c1a4dce2fde5dfc63c9dfdfe7b814d5c7",
+      "size": 1390,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/efb5e28c1a4dce2fde5dfc63c9dfdfe7b814d5c7"
+    },
+    {
+      "path": "evals/cases/debugging-and-error-recovery.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f6a12cddf6c41378d9f11ba4d55e47e2cddde3a7",
+      "size": 2078,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/f6a12cddf6c41378d9f11ba4d55e47e2cddde3a7"
+    },
+    {
+      "path": "evals/cases/deprecation-and-migration.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "17585478a29dd7ded70c6937e3c4d7e11c5b9017",
+      "size": 1257,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/17585478a29dd7ded70c6937e3c4d7e11c5b9017"
+    },
+    {
+      "path": "evals/cases/documentation-and-adrs.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d705168e09553aa4f8fb842f580239211ddc11e3",
+      "size": 1328,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/d705168e09553aa4f8fb842f580239211ddc11e3"
+    },
+    {
+      "path": "evals/cases/doubt-driven-development.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c50e0ae207911881c42252de5dc17c7d7b8c6335",
+      "size": 1274,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/c50e0ae207911881c42252de5dc17c7d7b8c6335"
+    },
+    {
+      "path": "evals/cases/frontend-ui-engineering.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b67d9a99f240fb4a24357b9943b80ff4b349a5c",
+      "size": 1430,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4b67d9a99f240fb4a24357b9943b80ff4b349a5c"
+    },
+    {
+      "path": "evals/cases/git-workflow-and-versioning.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9236defed685647d83d1ca8287e32191637fd3a7",
+      "size": 1174,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/9236defed685647d83d1ca8287e32191637fd3a7"
+    },
+    {
+      "path": "evals/cases/idea-refine.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fb384b09832e930f6de27dafcb91f5963d24b53b",
+      "size": 1269,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/fb384b09832e930f6de27dafcb91f5963d24b53b"
+    },
+    {
+      "path": "evals/cases/incremental-implementation.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5829a0d8e0317234e9520f391c959ffdaeb95301",
+      "size": 1942,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5829a0d8e0317234e9520f391c959ffdaeb95301"
+    },
+    {
+      "path": "evals/cases/interview-me.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "568fa8954b5a127f95a01a4f27a359113e3d6487",
+      "size": 1197,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/568fa8954b5a127f95a01a4f27a359113e3d6487"
+    },
+    {
+      "path": "evals/cases/observability-and-instrumentation.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "296cf60405425230e5928a73a36cbf47a4639937",
+      "size": 1278,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/296cf60405425230e5928a73a36cbf47a4639937"
+    },
+    {
+      "path": "evals/cases/performance-optimization.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2fe195e39c05e89670a14701c2fcedd04c119746",
+      "size": 1515,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/2fe195e39c05e89670a14701c2fcedd04c119746"
+    },
+    {
+      "path": "evals/cases/planning-and-task-breakdown.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "36950f567f57bec93872da20623ad6084b8cda06",
+      "size": 1233,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/36950f567f57bec93872da20623ad6084b8cda06"
+    },
+    {
+      "path": "evals/cases/security-and-hardening.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "10a1f33698b067e3f54fe50ddff4ccc30cc09725",
+      "size": 1311,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/10a1f33698b067e3f54fe50ddff4ccc30cc09725"
+    },
+    {
+      "path": "evals/cases/shipping-and-launch.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f205fa844a18e144b0fd6dc2950710dd713e9f3",
+      "size": 1816,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/8f205fa844a18e144b0fd6dc2950710dd713e9f3"
+    },
+    {
+      "path": "evals/cases/source-driven-development.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b58864578587a7a229f31842f778b7f47c05523a",
+      "size": 1287,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b58864578587a7a229f31842f778b7f47c05523a"
+    },
+    {
+      "path": "evals/cases/spec-driven-development.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "886c51f69dda735a2a46af7e55dc283621273704",
+      "size": 1316,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/886c51f69dda735a2a46af7e55dc283621273704"
+    },
+    {
+      "path": "evals/cases/test-driven-development.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66573f99f0a87e3927ee30be1707ceda70911aeb",
+      "size": 2793,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/66573f99f0a87e3927ee30be1707ceda70911aeb"
+    },
+    {
+      "path": "evals/cases/using-agent-skills.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "06a5c168db40993dc520cc89476843e89624c727",
+      "size": 1218,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/06a5c168db40993dc520cc89476843e89624c727"
+    },
+    {
+      "path": "evals/fixtures",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1edfa208ec9fceda4c7ff1d1dfcd82120a217610",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/1edfa208ec9fceda4c7ff1d1dfcd82120a217610"
+    },
+    {
+      "path": "evals/fixtures/api-and-interface-design",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c39df65fa5fd7993e46c5a9b335934d1fafc95d4",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/c39df65fa5fd7993e46c5a9b335934d1fafc95d4"
+    },
+    {
+      "path": "evals/fixtures/api-and-interface-design/service-brief.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d1c8f290798087525d125ba4e4441502ff56e53",
+      "size": 693,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4d1c8f290798087525d125ba4e4441502ff56e53"
+    },
+    {
+      "path": "evals/fixtures/browser-testing-with-devtools",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "16a2b85ff9381bdedf193f743806a2a3617f1892",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/16a2b85ff9381bdedf193f743806a2a3617f1892"
+    },
+    {
+      "path": "evals/fixtures/browser-testing-with-devtools/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4cf61e4d4f801feefdede6657c22683decd23579",
+      "size": 186,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4cf61e4d4f801feefdede6657c22683decd23579"
+    },
+    {
+      "path": "evals/fixtures/browser-testing-with-devtools/index.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "29c88cfb280529c771c4c150b0b6edcb2488b891",
+      "size": 869,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/29c88cfb280529c771c4c150b0b6edcb2488b891"
+    },
+    {
+      "path": "evals/fixtures/browser-testing-with-devtools/server.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53c271786155b7f29ad4e51e3b063c1471e8ad52",
+      "size": 511,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/53c271786155b7f29ad4e51e3b063c1471e8ad52"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c6a302902dac9592f8cac373416e4b59d29eac6d",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/c6a302902dac9592f8cac373416e4b59d29eac6d"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "27051892330aa764718667704b029cbdd95d8bf7",
+      "size": 132,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/27051892330aa764718667704b029cbdd95d8bf7"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation/src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e4cbbaf77871be9efaa9b15e5a286b5f1fb00156",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/e4cbbaf77871be9efaa9b15e5a286b5f1fb00156"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation/src/slug.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c87193f2d06086517239c41249133af497465a2",
+      "size": 93,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/9c87193f2d06086517239c41249133af497465a2"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation/test",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "0091216e03c870578e7ecf38e2499a184bec0137",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/0091216e03c870578e7ecf38e2499a184bec0137"
+    },
+    {
+      "path": "evals/fixtures/ci-cd-and-automation/test/slug.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66898b14575c6e123d3da6a00a57418238b55593",
+      "size": 234,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/66898b14575c6e123d3da6a00a57418238b55593"
+    },
+    {
+      "path": "evals/fixtures/code-review-and-quality",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "29837310e846d43acfd01bfd6780763178eafd31",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/29837310e846d43acfd01bfd6780763178eafd31"
+    },
+    {
+      "path": "evals/fixtures/code-review-and-quality/user-search.diff",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d83e015fed84dfd39d2dfe3ffad4abae9a9707e4",
+      "size": 513,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/d83e015fed84dfd39d2dfe3ffad4abae9a9707e4"
+    },
+    {
+      "path": "evals/fixtures/code-simplification",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9b666e16d5b28bbaa9e81ed8e2744da177b8a338",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/9b666e16d5b28bbaa9e81ed8e2744da177b8a338"
+    },
+    {
+      "path": "evals/fixtures/code-simplification/config-parser.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e7c7389fc4f97998c9e98a03d96917910ee73e6",
+      "size": 1592,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4e7c7389fc4f97998c9e98a03d96917910ee73e6"
+    },
+    {
+      "path": "evals/fixtures/code-simplification/config-parser.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "784a043f53fb97920239a1d02b1e6e2f984648c3",
+      "size": 452,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/784a043f53fb97920239a1d02b1e6e2f984648c3"
+    },
+    {
+      "path": "evals/fixtures/context-engineering",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f462c71d6254b417a183c0dbfd374d6de3522286",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/f462c71d6254b417a183c0dbfd374d6de3522286"
+    },
+    {
+      "path": "evals/fixtures/context-engineering/context-audit.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e704f5759e6e9a46567bb33bf7140eaa7939329",
+      "size": 653,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0e704f5759e6e9a46567bb33bf7140eaa7939329"
+    },
+    {
+      "path": "evals/fixtures/debugging-and-error-recovery",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "94aa3c67f3dae74bf664a2de05072941dc499fb9",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/94aa3c67f3dae74bf664a2de05072941dc499fb9"
+    },
+    {
+      "path": "evals/fixtures/debugging-and-error-recovery/pagination.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8a2ed81c354cc812062eb412df4923d4714ef0f",
+      "size": 172,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a8a2ed81c354cc812062eb412df4923d4714ef0f"
+    },
+    {
+      "path": "evals/fixtures/debugging-and-error-recovery/pagination.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e6e5d269a4ea35bcb9d4ec1be73493242fb0f7c",
+      "size": 290,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5e6e5d269a4ea35bcb9d4ec1be73493242fb0f7c"
+    },
+    {
+      "path": "evals/fixtures/debugging-and-error-recovery/time-pressure.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "04afc7ccc9efcd0702b4b77c7d1694a07c2fa91d",
+      "size": 276,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/04afc7ccc9efcd0702b4b77c7d1694a07c2fa91d"
+    },
+    {
+      "path": "evals/fixtures/deprecation-and-migration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "262e56a59bca48a51d52c09121c2f8aac33a0dea",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/262e56a59bca48a51d52c09121c2f8aac33a0dea"
+    },
+    {
+      "path": "evals/fixtures/deprecation-and-migration/api-inventory.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41c92d7f5ea05c84a5a608ea544f8a57e8340818",
+      "size": 504,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/41c92d7f5ea05c84a5a608ea544f8a57e8340818"
+    },
+    {
+      "path": "evals/fixtures/documentation-and-adrs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2eb65b116f25b229be5e8918952fd16196f00755",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/2eb65b116f25b229be5e8918952fd16196f00755"
+    },
+    {
+      "path": "evals/fixtures/documentation-and-adrs/decision-context.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3c072e66ea56ccf8a3e952847a34a272f94810a",
+      "size": 757,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a3c072e66ea56ccf8a3e952847a34a272f94810a"
+    },
+    {
+      "path": "evals/fixtures/doubt-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c0093783e1039c653ae72a26d6e630752b2ac658",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/c0093783e1039c653ae72a26d6e630752b2ac658"
+    },
+    {
+      "path": "evals/fixtures/doubt-driven-development/migration-plan.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "966b8a45cafb74746fd103d79af5af8b3574945c",
+      "size": 672,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/966b8a45cafb74746fd103d79af5af8b3574945c"
+    },
+    {
+      "path": "evals/fixtures/frontend-ui-engineering",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "559cb8976cd92196af38609b34db1ecbf8377364",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/559cb8976cd92196af38609b34db1ecbf8377364"
+    },
+    {
+      "path": "evals/fixtures/frontend-ui-engineering/Button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f3b65357cddb2b8c9d3b36117f58fbe30ff35d9",
+      "size": 306,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/9f3b65357cddb2b8c9d3b36117f58fbe30ff35d9"
+    },
+    {
+      "path": "evals/fixtures/frontend-ui-engineering/design-system.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "858eaeb730e655855b8ecf43587363f2475c6b94",
+      "size": 530,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/858eaeb730e655855b8ecf43587363f2475c6b94"
+    },
+    {
+      "path": "evals/fixtures/git-workflow-and-versioning",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "0cb3920d3efde7f082bd509887f8698eba3c9f9b",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/0cb3920d3efde7f082bd509887f8698eba3c9f9b"
+    },
+    {
+      "path": "evals/fixtures/git-workflow-and-versioning/.eval",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "24fc355a7e5b8f4dc6fc23c541c61851f842acd9",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/24fc355a7e5b8f4dc6fc23c541c61851f842acd9"
+    },
+    {
+      "path": "evals/fixtures/git-workflow-and-versioning/.eval/working-tree.patch",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a824478b3612ceddd61f1b5d007ca7c688cb052",
+      "size": 571,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/8a824478b3612ceddd61f1b5d007ca7c688cb052"
+    },
+    {
+      "path": "evals/fixtures/git-workflow-and-versioning/app.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54ac07ede08a87f064b2e9d415a76ca7d76bf449",
+      "size": 129,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/54ac07ede08a87f064b2e9d415a76ca7d76bf449"
+    },
+    {
+      "path": "evals/fixtures/git-workflow-and-versioning/app.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df7152575b903f55cfeb208684b783c50bb268e1",
+      "size": 228,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/df7152575b903f55cfeb208684b783c50bb268e1"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation-pressure",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "78da49202fa9275ddfb75c40a0a1187661a1da06",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/78da49202fa9275ddfb75c40a0a1187661a1da06"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation-pressure/draft-export.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b91bd66c625d111d8dc13623c620449d7f401bdd",
+      "size": 552,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b91bd66c625d111d8dc13623c620449d7f401bdd"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation-pressure/scenario.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1df89a9d4020db44f0d9b495acac17872849e97f",
+      "size": 419,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1df89a9d4020db44f0d9b495acac17872849e97f"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "445285ce619d115041b6c35193d20edec5b6d80d",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/445285ce619d115041b6c35193d20edec5b6d80d"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation/reports.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e7cabbe7e47b41429fd050f840a89c485768adfc",
+      "size": 145,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/e7cabbe7e47b41429fd050f840a89c485768adfc"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation/reports.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d18d4a767466b0fc61ba65b4430ccf539d33be2",
+      "size": 325,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4d18d4a767466b0fc61ba65b4430ccf539d33be2"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation/tasks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bcd26547bf06b28dabcd0e8cfd4429c9c3ccf7fa",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/bcd26547bf06b28dabcd0e8cfd4429c9c3ccf7fa"
+    },
+    {
+      "path": "evals/fixtures/incremental-implementation/tasks/plan.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "17895afa4996e817784eca63dd87b355049e72f6",
+      "size": 311,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/17895afa4996e817784eca63dd87b355049e72f6"
+    },
+    {
+      "path": "evals/fixtures/observability-and-instrumentation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e8dc3ea8dff124b6333f206e39154d9c460d45e0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/e8dc3ea8dff124b6333f206e39154d9c460d45e0"
+    },
+    {
+      "path": "evals/fixtures/observability-and-instrumentation/operations.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "50b804049bdf610fdfeb34ded6754c5d4eb95016",
+      "size": 422,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/50b804049bdf610fdfeb34ded6754c5d4eb95016"
+    },
+    {
+      "path": "evals/fixtures/observability-and-instrumentation/payment-retry.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ff2b6e504e669b12aad154ed3f4a7fd96664f70",
+      "size": 339,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5ff2b6e504e669b12aad154ed3f4a7fd96664f70"
+    },
+    {
+      "path": "evals/fixtures/performance-optimization",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "73a27606938636fea66202e3a35fc3783114cf0d",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/73a27606938636fea66202e3a35fc3783114cf0d"
+    },
+    {
+      "path": "evals/fixtures/performance-optimization/benchmark.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c4422a21524ed3f7cbdc42609d722d3b08941c9",
+      "size": 464,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7c4422a21524ed3f7cbdc42609d722d3b08941c9"
+    },
+    {
+      "path": "evals/fixtures/performance-optimization/products.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13cc4f23f5912f9e90cbfb50d85d867b798393d9",
+      "size": 393,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/13cc4f23f5912f9e90cbfb50d85d867b798393d9"
+    },
+    {
+      "path": "evals/fixtures/planning-and-task-breakdown",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c81790c97d2441c1902a405002d19e78183bb49c",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/c81790c97d2441c1902a405002d19e78183bb49c"
+    },
+    {
+      "path": "evals/fixtures/planning-and-task-breakdown/notifications-spec.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3b58d91433db689f16da445b31e97dca8276ad3",
+      "size": 854,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a3b58d91433db689f16da445b31e97dca8276ad3"
+    },
+    {
+      "path": "evals/fixtures/security-and-hardening",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "df2553ce429691d3564a19b86fc9a70ce944340e",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/df2553ce429691d3564a19b86fc9a70ce944340e"
+    },
+    {
+      "path": "evals/fixtures/security-and-hardening/webhook.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0bfd524b7319b51e9573e0fe20682270af55ae14",
+      "size": 271,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0bfd524b7319b51e9573e0fe20682270af55ae14"
+    },
+    {
+      "path": "evals/fixtures/security-and-hardening/webhook.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6ca6d7005a8805f5e6f09fcc0ce0dad28bd44161",
+      "size": 414,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/6ca6d7005a8805f5e6f09fcc0ce0dad28bd44161"
+    },
+    {
+      "path": "evals/fixtures/shipping-and-launch",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9b1999dda728560b865944eb99a7a8ed119b2b97",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/9b1999dda728560b865944eb99a7a8ed119b2b97"
+    },
+    {
+      "path": "evals/fixtures/shipping-and-launch/authority-pressure.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0592de83f8d8cd1eee0347b1bd973a0ac04eba0",
+      "size": 288,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b0592de83f8d8cd1eee0347b1bd973a0ac04eba0"
+    },
+    {
+      "path": "evals/fixtures/shipping-and-launch/launch-status.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01c619c3f9e2f85bbe7333529ea560bb2fd71818",
+      "size": 554,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/01c619c3f9e2f85bbe7333529ea560bb2fd71818"
+    },
+    {
+      "path": "evals/fixtures/source-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5c2b92857a7bfc21e26a56c35580cf7f90d7733e",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/5c2b92857a7bfc21e26a56c35580cf7f90d7733e"
+    },
+    {
+      "path": "evals/fixtures/source-driven-development/framework-task.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0dce86431bcb5d2d4006241c5fec3b7a7d4208ea",
+      "size": 535,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0dce86431bcb5d2d4006241c5fec3b7a7d4208ea"
+    },
+    {
+      "path": "evals/fixtures/spec-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "415483f7702510bec4a929bf30e1fd3c10f9d99e",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/415483f7702510bec4a929bf30e1fd3c10f9d99e"
+    },
+    {
+      "path": "evals/fixtures/spec-driven-development/billing-brief.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cb5f40be20377cc6b32415e692c1a377a970a433",
+      "size": 689,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/cb5f40be20377cc6b32415e692c1a377a970a433"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development-ecosystem",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6993fbe954235491073c097ed73dd419d92e4554",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/6993fbe954235491073c097ed73dd419d92e4554"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development-ecosystem/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ce71454c38ef5ef471586ff4fc41948b080330dc",
+      "size": 131,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/ce71454c38ef5ef471586ff4fc41948b080330dc"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development-ecosystem/ledger.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b8c09b0cbf3edd14a0accd66305e52539670d7d",
+      "size": 457,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0b8c09b0cbf3edd14a0accd66305e52539670d7d"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development-ecosystem/test_ledger.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "617b0a0182049fa297821a84ba329772550f66ff",
+      "size": 533,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/617b0a0182049fa297821a84ba329772550f66ff"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "58f14e671ac0b71a8d007646b659b5c853973a5b",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/58f14e671ac0b71a8d007646b659b5c853973a5b"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development/authority-pressure.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1e130c5fac69bc87786f6a2c13793c7dba737a91",
+      "size": 376,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1e130c5fac69bc87786f6a2c13793c7dba737a91"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development/invoice.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb55ed1b44eb73f8a7ec2b99ef78fb1347e48d50",
+      "size": 167,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/eb55ed1b44eb73f8a7ec2b99ef78fb1347e48d50"
+    },
+    {
+      "path": "evals/fixtures/test-driven-development/invoice.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d05869046e5fcfbf98926114029d5eb7a5fd52c",
+      "size": 309,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0d05869046e5fcfbf98926114029d5eb7a5fd52c"
+    },
+    {
+      "path": "evals/fixtures/using-agent-skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "33e3d1289c0d5986464a65cc07b58c7af0b80319",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/33e3d1289c0d5986464a65cc07b58c7af0b80319"
+    },
+    {
+      "path": "evals/fixtures/using-agent-skills/incident.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3e1b1b63a9db94fd10b9f64dc749ac65520e9c1c",
+      "size": 321,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3e1b1b63a9db94fd10b9f64dc749ac65520e9c1c"
+    },
+    {
+      "path": "hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8d64ffc4d4995edd73dcf84c55fe925ec9c961ca",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/8d64ffc4d4995edd73dcf84c55fe925ec9c961ca"
+    },
+    {
+      "path": "hooks/SDD-CACHE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffca611396639741c0b86fa5e93a966ec7780bc7",
+      "size": 8398,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/ffca611396639741c0b86fa5e93a966ec7780bc7"
+    },
+    {
+      "path": "hooks/SIMPLIFY-IGNORE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1db1e712048780ac47528493c40d6171532bb49a",
+      "size": 3863,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1db1e712048780ac47528493c40d6171532bb49a"
+    },
+    {
+      "path": "hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e57bf8d17442513724100dea736a006266506c8",
+      "size": 364,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/5e57bf8d17442513724100dea736a006266506c8"
+    },
+    {
+      "path": "hooks/sdd-cache-post.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "7a9c5b544ef93a6c33c7c32770b71138f868dcd7",
+      "size": 4567,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7a9c5b544ef93a6c33c7c32770b71138f868dcd7"
+    },
+    {
+      "path": "hooks/sdd-cache-pre.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "1c16aa073e5cd7ed136514be0121b42835ea27fb",
+      "size": 4261,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1c16aa073e5cd7ed136514be0121b42835ea27fb"
+    },
+    {
+      "path": "hooks/session-start-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "3344a3772b13a182ea073f8546ef75e9f0136ebd",
+      "size": 1224,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/3344a3772b13a182ea073f8546ef75e9f0136ebd"
+    },
+    {
+      "path": "hooks/session-start.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "cd8c2a2c5b70e7566029a34a650a949913a89a0e",
+      "size": 1021,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/cd8c2a2c5b70e7566029a34a650a949913a89a0e"
+    },
+    {
+      "path": "hooks/simplify-ignore-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0d468e392af26a0fed48bc3db67a443f55482af4",
+      "size": 8709,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0d468e392af26a0fed48bc3db67a443f55482af4"
+    },
+    {
+      "path": "hooks/simplify-ignore.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a93c467c3de377b93b304a3c3b92fd03a0dfae0c",
+      "size": 12173,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a93c467c3de377b93b304a3c3b92fd03a0dfae0c"
+    },
+    {
+      "path": "plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f31668230af1909e19688d7c495ff77691230cf0",
+      "size": 129,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/f31668230af1909e19688d7c495ff77691230cf0"
+    },
+    {
+      "path": "references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "758ffc0f075aef1f9d87bb63f95991275f992baa",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/758ffc0f075aef1f9d87bb63f95991275f992baa"
+    },
+    {
+      "path": "references/accessibility-checklist.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c8c61e5f3d5a010a0d0ecb918bfaffe6c76fca78",
+      "size": 5206,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/c8c61e5f3d5a010a0d0ecb918bfaffe6c76fca78"
+    },
+    {
+      "path": "references/definition-of-done.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "35e39f9e15f6dd0ff4725a6e5cbce7f2aa69064a",
+      "size": 3798,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/35e39f9e15f6dd0ff4725a6e5cbce7f2aa69064a"
+    },
+    {
+      "path": "references/observability-checklist.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fff9f5843c38ef8024c94e8afb540209e5530b34",
+      "size": 4931,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/fff9f5843c38ef8024c94e8afb540209e5530b34"
+    },
+    {
+      "path": "references/orchestration-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "09cddd31d52a95be1d9bca814547d184b9945e44",
+      "size": 18201,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/09cddd31d52a95be1d9bca814547d184b9945e44"
+    },
+    {
+      "path": "references/performance-checklist.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "86a41496bf9c4c58b60be30fdf137b8bc813fad8",
+      "size": 7408,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/86a41496bf9c4c58b60be30fdf137b8bc813fad8"
+    },
+    {
+      "path": "references/security-checklist.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f656479b05812383abfd8d11ab72a6d7dd47e14",
+      "size": 11881,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0f656479b05812383abfd8d11ab72a6d7dd47e14"
+    },
+    {
+      "path": "references/testing-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bc96e271ad241ca567f06d21c6ecc001455b80f1",
+      "size": 7460,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/bc96e271ad241ca567f06d21c6ecc001455b80f1"
+    },
+    {
+      "path": "scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "13965f1a9fa6cde9ab5646594c41a7c3c873026b",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/13965f1a9fa6cde9ab5646594c41a7c3c873026b"
+    },
+    {
+      "path": "scripts/lib",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "91948b90210ab13f24158bdbe15032493072c540",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/91948b90210ab13f24158bdbe15032493072c540"
+    },
+    {
+      "path": "scripts/lib/skill-lint.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2513bf7c05eac94b008a2e9ad9aebad88a0fe0c1",
+      "size": 10671,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/2513bf7c05eac94b008a2e9ad9aebad88a0fe0c1"
+    },
+    {
+      "path": "scripts/run-evals-test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e30bc1153557e320069accccb840a3cfa97ee4f",
+      "size": 8747,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/4e30bc1153557e320069accccb840a3cfa97ee4f"
+    },
+    {
+      "path": "scripts/run-evals.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "21baa0055ed85f4e01459873a8bcc72de0ecff92",
+      "size": 23456,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/21baa0055ed85f4e01459873a8bcc72de0ecff92"
+    },
+    {
+      "path": "scripts/validate-artifact-paths-test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "448e69f363891ca43f5bbc790bb7717fdef21e09",
+      "size": 4572,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/448e69f363891ca43f5bbc790bb7717fdef21e09"
+    },
+    {
+      "path": "scripts/validate-artifact-paths.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dbc270a4e05d4e904bfbb8040404782cdf8c5f7b",
+      "size": 4102,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/dbc270a4e05d4e904bfbb8040404782cdf8c5f7b"
+    },
+    {
+      "path": "scripts/validate-commands-test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1bcf77c4b1ff6d4d4f2a245922d4fdcb9a110bc5",
+      "size": 5471,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/1bcf77c4b1ff6d4d4f2a245922d4fdcb9a110bc5"
+    },
+    {
+      "path": "scripts/validate-commands.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a9ff439924f579f3edb20e72d7ee2bf6eacafed5",
+      "size": 7108,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a9ff439924f579f3edb20e72d7ee2bf6eacafed5"
+    },
+    {
+      "path": "scripts/validate-reference-links-test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c8b147ac232068c70ef3b0a6e3f01cc3c215b8c",
+      "size": 5666,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/8c8b147ac232068c70ef3b0a6e3f01cc3c215b8c"
+    },
+    {
+      "path": "scripts/validate-reference-links.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f460bf98a3afd803438155317da2c2a9f594db1f",
+      "size": 3832,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/f460bf98a3afd803438155317da2c2a9f594db1f"
+    },
+    {
+      "path": "scripts/validate-skills.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b73a431d001a4dd9adf7fab672e3bd99fb9de890",
+      "size": 2401,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b73a431d001a4dd9adf7fab672e3bd99fb9de890"
+    },
+    {
+      "path": "scripts/validate-versions-test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e39f1049fd230e8e06d2f53abde43f35e59b57fc",
+      "size": 957,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/e39f1049fd230e8e06d2f53abde43f35e59b57fc"
+    },
+    {
+      "path": "scripts/validate-versions.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f47248d72e00b6515900a8b5a89567b741ede6f",
+      "size": 949,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/6f47248d72e00b6515900a8b5a89567b741ede6f"
+    },
+    {
+      "path": "skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3c30f0556e394898717a7c2d4dda37902a69f536",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/3c30f0556e394898717a7c2d4dda37902a69f536"
+    },
+    {
+      "path": "skills/api-and-interface-design",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "79410f2b6928b5ecb760e34e4c58c68de71f7fd8",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/79410f2b6928b5ecb760e34e4c58c68de71f7fd8"
+    },
+    {
+      "path": "skills/api-and-interface-design/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "012c8b68ccc5eca5924c2686202700387b38b72f",
+      "size": 10307,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/012c8b68ccc5eca5924c2686202700387b38b72f"
+    },
+    {
+      "path": "skills/browser-testing-with-devtools",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "42be59520831f02c46bce7bed1aac6ab0592947c",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/42be59520831f02c46bce7bed1aac6ab0592947c"
+    },
+    {
+      "path": "skills/browser-testing-with-devtools/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9864d2724e273e1164d62ab10b73590ae00fd6a8",
+      "size": 14539,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/9864d2724e273e1164d62ab10b73590ae00fd6a8"
+    },
+    {
+      "path": "skills/ci-cd-and-automation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "34db321777a17e268ac425f0f7f2501dda55c955",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/34db321777a17e268ac425f0f7f2501dda55c955"
+    },
+    {
+      "path": "skills/ci-cd-and-automation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "118456fcb10225c030769a4fee7815b9c536b0ce",
+      "size": 11332,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/118456fcb10225c030769a4fee7815b9c536b0ce"
+    },
+    {
+      "path": "skills/code-review-and-quality",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8c26aef07c0ac94770d48ed68e72c0fd585420a6",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/8c26aef07c0ac94770d48ed68e72c0fd585420a6"
+    },
+    {
+      "path": "skills/code-review-and-quality/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7dfa56362fa65fff450ee5aa02393b85b9c26d85",
+      "size": 20555,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7dfa56362fa65fff450ee5aa02393b85b9c26d85"
+    },
+    {
+      "path": "skills/code-simplification",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "15b6e21924188ee46402a8c91963162fd9056c7d",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/15b6e21924188ee46402a8c91963162fd9056c7d"
+    },
+    {
+      "path": "skills/code-simplification/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "239b2848489511de30d9e63b0bd183adc4b01347",
+      "size": 13545,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/239b2848489511de30d9e63b0bd183adc4b01347"
+    },
+    {
+      "path": "skills/context-engineering",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "453c3e8d973ddb10402b7c4e6b0d7fce295a43a8",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/453c3e8d973ddb10402b7c4e6b0d7fce295a43a8"
+    },
+    {
+      "path": "skills/context-engineering/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be991103fe2b13f7e5f6f5da9d3c6029ad30ac64",
+      "size": 11070,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/be991103fe2b13f7e5f6f5da9d3c6029ad30ac64"
+    },
+    {
+      "path": "skills/debugging-and-error-recovery",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "97a66b4d4750b1b5108da8633104bb1e020275ab",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/97a66b4d4750b1b5108da8633104bb1e020275ab"
+    },
+    {
+      "path": "skills/debugging-and-error-recovery/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "03775802b244cddf2f58f6c54039f6e6ee8702f2",
+      "size": 10837,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/03775802b244cddf2f58f6c54039f6e6ee8702f2"
+    },
+    {
+      "path": "skills/deprecation-and-migration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f710bd017dedb2615d78b4ce6ab42ce9f5a542f2",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/f710bd017dedb2615d78b4ce6ab42ce9f5a542f2"
+    },
+    {
+      "path": "skills/deprecation-and-migration/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "765bdde6329dbd5fd22d5d3fc2c185737fc9f908",
+      "size": 12516,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/765bdde6329dbd5fd22d5d3fc2c185737fc9f908"
+    },
+    {
+      "path": "skills/documentation-and-adrs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "85f57bdd7dcddaa589c6f36e8ac87423005c3de0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/85f57bdd7dcddaa589c6f36e8ac87423005c3de0"
+    },
+    {
+      "path": "skills/documentation-and-adrs/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7faf52c9558fa60faf7362cf473cf24784f9209b",
+      "size": 9782,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7faf52c9558fa60faf7362cf473cf24784f9209b"
+    },
+    {
+      "path": "skills/doubt-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "385c1dbda7db05fac824808e18239ee9d29cfce7",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/385c1dbda7db05fac824808e18239ee9d29cfce7"
+    },
+    {
+      "path": "skills/doubt-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ea46342c5dcfe445004a6fa5bc43e71f3f25e78d",
+      "size": 16499,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/ea46342c5dcfe445004a6fa5bc43e71f3f25e78d"
+    },
+    {
+      "path": "skills/frontend-ui-engineering",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "893e7558baef6a0773aec4c152ca8bccd544fa03",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/893e7558baef6a0773aec4c152ca8bccd544fa03"
+    },
+    {
+      "path": "skills/frontend-ui-engineering/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "837df875900d4d431c6d51a3251bac0d4bd5dfed",
+      "size": 10711,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/837df875900d4d431c6d51a3251bac0d4bd5dfed"
+    },
+    {
+      "path": "skills/git-workflow-and-versioning",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6c54b67dd522883fc69013535c7cf35b8cdb8930",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/6c54b67dd522883fc69013535c7cf35b8cdb8930"
+    },
+    {
+      "path": "skills/git-workflow-and-versioning/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b33aefe602eee4d43ae77e12329827eba5b70cc",
+      "size": 14000,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/6b33aefe602eee4d43ae77e12329827eba5b70cc"
+    },
+    {
+      "path": "skills/idea-refine",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "14f474d8f51370ddd9127ff3d171810a1acf891a",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/14f474d8f51370ddd9127ff3d171810a1acf891a"
+    },
+    {
+      "path": "skills/idea-refine/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "38955e8943f2ea68c041f10ef1902d94bdfb1cb9",
+      "size": 8111,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/38955e8943f2ea68c041f10ef1902d94bdfb1cb9"
+    },
+    {
+      "path": "skills/idea-refine/examples.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a797d22c69cb248d718713633f42d4ee7a4d01d7",
+      "size": 20284,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a797d22c69cb248d718713633f42d4ee7a4d01d7"
+    },
+    {
+      "path": "skills/idea-refine/frameworks.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0e7fc8fe203bd6aabfba0f79cb6fa98c76d92e28",
+      "size": 5404,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0e7fc8fe203bd6aabfba0f79cb6fa98c76d92e28"
+    },
+    {
+      "path": "skills/idea-refine/refinement-criteria.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53e79c725b7aa0a4a39389056bd71b1689aa8740",
+      "size": 5738,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/53e79c725b7aa0a4a39389056bd71b1689aa8740"
+    },
+    {
+      "path": "skills/idea-refine/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ce8a3afb761e91d7fa1a195bc0d48400dff8f6a3",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/ce8a3afb761e91d7fa1a195bc0d48400dff8f6a3"
+    },
+    {
+      "path": "skills/idea-refine/scripts/idea-refine.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a53cb5a9dc00252003a04d485132d58a5260e9b6",
+      "size": 342,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a53cb5a9dc00252003a04d485132d58a5260e9b6"
+    },
+    {
+      "path": "skills/incremental-implementation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "cc6920585c0808b8fbf368f6705a1a806193ebf2",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/cc6920585c0808b8fbf368f6705a1a806193ebf2"
+    },
+    {
+      "path": "skills/incremental-implementation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6df12f9a878c80305c42bcdbe8a43a10d2e0c933",
+      "size": 9507,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/6df12f9a878c80305c42bcdbe8a43a10d2e0c933"
+    },
+    {
+      "path": "skills/interview-me",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "0797d64561cca6ad975d9e5d1f1497cba83a517b",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/0797d64561cca6ad975d9e5d1f1497cba83a517b"
+    },
+    {
+      "path": "skills/interview-me/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de5e3aff0c497e2d474e329cde447678632e082b",
+      "size": 14359,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/de5e3aff0c497e2d474e329cde447678632e082b"
+    },
+    {
+      "path": "skills/observability-and-instrumentation",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "04c46139d6ee4c845e9d8d4e064fb615ac9af18e",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/04c46139d6ee4c845e9d8d4e064fb615ac9af18e"
+    },
+    {
+      "path": "skills/observability-and-instrumentation/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d56593ec599cce0bae12aa46862884d0208cc59",
+      "size": 11053,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/7d56593ec599cce0bae12aa46862884d0208cc59"
+    },
+    {
+      "path": "skills/performance-optimization",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "168fae5a0d697b0177a4cb5b97f7a8bff672cc9b",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/168fae5a0d697b0177a4cb5b97f7a8bff672cc9b"
+    },
+    {
+      "path": "skills/performance-optimization/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a4e968e57ec1f57acdaef83d1d00f7201cadff19",
+      "size": 15145,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/a4e968e57ec1f57acdaef83d1d00f7201cadff19"
+    },
+    {
+      "path": "skills/planning-and-task-breakdown",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "fac1aca80eecbdf6796daffa6f3157d9f48788fe",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/fac1aca80eecbdf6796daffa6f3157d9f48788fe"
+    },
+    {
+      "path": "skills/planning-and-task-breakdown/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4fb82f624fe082441db4c2f3734d46882907b65",
+      "size": 7659,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/d4fb82f624fe082441db4c2f3734d46882907b65"
+    },
+    {
+      "path": "skills/security-and-hardening",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "793f5ad3ba296b18e731807d1c6d2846056d795f",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/793f5ad3ba296b18e731807d1c6d2846056d795f"
+    },
+    {
+      "path": "skills/security-and-hardening/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98b96c7bc5bf1bef80304762117f6cba48fcac16",
+      "size": 20529,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/98b96c7bc5bf1bef80304762117f6cba48fcac16"
+    },
+    {
+      "path": "skills/shipping-and-launch",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "01cc4700a30c507b4406d98c428d02b3df7671ec",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/01cc4700a30c507b4406d98c428d02b3df7671ec"
+    },
+    {
+      "path": "skills/shipping-and-launch/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "acef513b77a33b366220d58224e472cb83ffd21d",
+      "size": 10137,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/acef513b77a33b366220d58224e472cb83ffd21d"
+    },
+    {
+      "path": "skills/source-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d88d094056a158b53859e29181b15a56a6acd910",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/d88d094056a158b53859e29181b15a56a6acd910"
+    },
+    {
+      "path": "skills/source-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1f599a9fe8eb77d4af7dc2f45404c2f6363e441",
+      "size": 9949,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/d1f599a9fe8eb77d4af7dc2f45404c2f6363e441"
+    },
+    {
+      "path": "skills/spec-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8a6049f381636e580e2db44e6cc65cb5682b8bcc",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/8a6049f381636e580e2db44e6cc65cb5682b8bcc"
+    },
+    {
+      "path": "skills/spec-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "569d22321469770385b1ff89bf69f498f2202bc6",
+      "size": 8527,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/569d22321469770385b1ff89bf69f498f2202bc6"
+    },
+    {
+      "path": "skills/test-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b5f106f5bf4a9b07bbef660602b01764029d2fbf",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/b5f106f5bf4a9b07bbef660602b01764029d2fbf"
+    },
+    {
+      "path": "skills/test-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cfd2f33d78961a23365b34bd92e08026dd140bc",
+      "size": 16483,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/0cfd2f33d78961a23365b34bd92e08026dd140bc"
+    },
+    {
+      "path": "skills/using-agent-skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a4dc26040e0f880d2bed91b4cb2e848b9b31e8e0",
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/trees/a4dc26040e0f880d2bed91b4cb2e848b9b31e8e0"
+    },
+    {
+      "path": "skills/using-agent-skills/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b250b297c41369ac380eb322f6561c78dd177586",
+      "size": 10343,
+      "url": "https://api.github.com/repos/addyosmani/agent-skills/git/blobs/b250b297c41369ac380eb322f6561c78dd177586"
+    }
+  ],
+  "truncated": false
+}

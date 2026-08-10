@@ -10,9 +10,11 @@
 //   3. A destructive verb needs an explicit review marker in the same file.
 //   4. No package.json script reaches a live-diffing migration command, and
 //      every Drizzle table hangs off pgSchema().
+//   5. Application source cannot execute a scanned repository, write its
+//      content to disk, render raw HTML, or name a host outside src/github/.
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** @type {string} */
@@ -50,6 +52,21 @@ const QUALIFIED_TARGETS = [
  */
 export function stripSqlComments(sql) {
   return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+}
+
+/**
+ * Drops JS block and line comments, so a rule matches code and not the prose
+ * that explains the rule.
+ *
+ * The `//` match deliberately refuses to fire after a `:`. A naive line-comment
+ * strip eats the `//` in `https://api.github.com/...` and everything after it,
+ * which would silently reduce the host rule below to matching nothing at all —
+ * exactly the case it exists to catch.
+ * @param {string} text
+ * @returns {string}
+ */
+export function stripJsComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 }
 
 /**
@@ -150,13 +167,90 @@ export function checkPackageScripts(packageJsonText) {
 export function checkSchemaModule(text) {
   /** @type {string[]} */
   const problems = [];
-  const stripped = text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  const stripped = stripJsComments(text);
   if (!/pgSchema\s*\(/.test(stripped)) {
     problems.push('does not call pgSchema(); tables would land in the default schema');
   }
   if (/(^|[^.\w])pgTable\s*\(/.test(stripped)) {
     problems.push('calls a bare table builder; every table must hang off the pgSchema() object');
   }
+  return problems;
+}
+
+// Rule 5: four properties of application source that no later commit may undo.
+// Each is a requirement that is structurally enforceable, so it is enforced here
+// rather than remembered.
+const SOURCE_RULES = [
+  {
+    id: 'no-raw-html',
+    // REN-01. Without a raw-HTML plugin, markup in a body is never parsed into
+    // element nodes at all — HTML is text, not markup. Reintroducing one, or
+    // reaching for React's raw-HTML escape hatch, defeats the control.
+    pattern: /rehype-raw|dangerouslySetInnerHTML|allowDangerousHtml/,
+    message: 'reintroduces raw HTML into the render path',
+  },
+  {
+    id: 'no-execution',
+    // ING-10. Nothing from a scanned repository is ever executed.
+    pattern: /node:child_process|require\(['"]child_process|\bexecSync\b|\bspawnSync\b|node:vm\b/,
+    message: 'can execute a subprocess or evaluate code',
+  },
+  {
+    id: 'no-disk-write',
+    // ING-05. Not writing repository content to disk removes the archive
+    // extraction and path traversal classes by construction.
+    pattern: /writeFileSync|writeFile\s*\(|createWriteStream|appendFileSync|mkdirSync/,
+    message: 'writes to disk',
+  },
+];
+
+// ING-02, in auditable form: the hostnames AgentDock may contact appear in one
+// directory, so `git grep` answers "what can this reach" completely.
+const HOST_PATTERN = /api\.github\.com|raw\.githubusercontent\.com/;
+const HOST_DIR = 'src/github/';
+
+/**
+ * The files rule 5 inspects. Exported so the test-file exemption is checkable:
+ * it is the one part of this rule whose failure would be silent.
+ * @param {string} dir @returns {string[]}
+ */
+export function sourceFiles(dir) {
+  /** @type {string[]} */
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) {
+      out.push(...sourceFiles(full));
+      continue;
+    }
+    if (!/\.(ts|tsx|js|mjs)$/.test(name)) continue;
+    // Test files read fixtures from disk and name hostile strings on purpose.
+    if (/\.test\.(ts|tsx)$/.test(name)) continue;
+    out.push(full);
+  }
+  return out;
+}
+
+/**
+ * Rule 5, against one source file's text.
+ * @param {string} path
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function checkSourceBoundaries(path, text) {
+  /** @type {string[]} */
+  const problems = [];
+  const stripped = stripJsComments(text);
+
+  for (const rule of SOURCE_RULES) {
+    if (rule.pattern.test(stripped)) problems.push(`${rule.message} (${rule.id})`);
+  }
+
+  const normalized = path.split(sep).join('/');
+  if (HOST_PATTERN.test(stripped) && !normalized.startsWith(HOST_DIR)) {
+    problems.push(`names a GitHub host outside ${HOST_DIR} (no-host-sprawl)`);
+  }
+
   return problems;
 }
 
@@ -189,11 +283,21 @@ function main() {
     }
   }
 
+  let sourcesChecked = 0;
+  if (existsSync('src')) {
+    for (const file of sourceFiles('src').sort()) {
+      sourcesChecked += 1;
+      for (const problem of checkSourceBoundaries(file, readFileSync(file, 'utf8'))) {
+        problems.push(`${file}: ${problem}`);
+      }
+    }
+  }
+
   // Say what was inspected, so "0 problems" over 0 files is visible rather than
   // mistaken for a pass.
   console.log(
     `check-boundaries: ${migrationsChecked} migration file(s), package.json, ` +
-      `${schemaChecked ? '1' : '0'} schema module`,
+      `${schemaChecked ? '1' : '0'} schema module, ${sourcesChecked} source file(s)`,
   );
 
   if (problems.length > 0) {

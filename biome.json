@@ -8,6 +8,7 @@
       "!drizzle",
       "!.drizzle-test",
       "!.planning",
+      "!.gstack",
       "!next-env.d.ts"
     ]
   },

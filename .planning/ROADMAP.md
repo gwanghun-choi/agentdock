@@ -22,7 +22,7 @@ look at is not a slice.
 ## Phases
 
 - [x] **Phase 0: Database Isolation Bootstrap** — Make the database, not the code, enforce the schema boundary (COMPLETE — isolation verified 7/7)
-- [ ] **Phase 1: Walking Skeleton** — Submit a GitHub repo, see its skills on a detail page, safely
+- [x] **Phase 1: Walking Skeleton** — Submit a GitHub repo, see its skills on a detail page, safely (COMPLETE — live ingest verified)
 - [ ] **Phase 2: Durable Ingestion** — Make ingestion asynchronous, resumable, and idempotent
 - [ ] **Phase 3: Detector Pluralism** — Plugins, MCP servers, commands, hooks, and catalogs
 - [ ] **Phase 4: Capability Disclosure** — The reason the product exists
@@ -89,7 +89,7 @@ Plans:
   7. A skill whose body contains script tags, raw HTML, or hostile metadata renders inert
   8. `bun install` plus one documented command brings the app up against the existing database
   9. Pages are server-rendered, work in light and dark mode, and remain usable at mobile width
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 > This phase touches every architectural boundary deliberately — schema isolation, the
 > GitHub client, safe YAML, the identity key, sanitized rendering — so that a wrong
@@ -97,12 +97,13 @@ Plans:
 > security items here are not polish; they are the items that cannot be added later
 > without re-running every analysis.
 
-Plans:
-- [ ] 01-01: Schema, identity keys, and all day-one columns (`commit_sha`, `scanned_at`, `etag`, `content_hash`, `license_spdx`, denylist)
-- [ ] 01-02: GitHub client — host allowlist, `owner/repo` only, manual redirects, Trees enumeration, free raw file reads, resource caps
-- [ ] 01-03: Skill detector with safe YAML parsing, plus frozen fixture tests
-- [ ] 01-04: Sanitized rendering pipeline, CSP, metadata escaping, and the XSS regression suite
-- [ ] 01-05: Submit flow, listing page, detail page, and the CI gate (type-check, lint, tests, migration safety)
+Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they share no file.
+- [x] AGD-01-01-PLAN.md — wave 1 — Tracer: schema, identity keys and all day-one columns (`commit_sha`, `scanned_at`, `etag`, `content_hash`, `license_spdx`, denylist, `artifact_type`), one real skill persisted from a pinned fixture and rendered with a permalink proven to resolve, plus the four source boundary rules the build enforces
+- [x] AGD-01-02-PLAN.md — wave 2 — GitHub client: host allowlist, `owner/repo` only, manual redirects, two-call Trees enumeration, free raw file reads, streaming byte cap, resource caps, rate-limit accounting
+- [x] AGD-01-03-PLAN.md — wave 2 — Skill detector and tolerant frontmatter parsing with both YAML size caps, against four frozen corpora and nineteen adversarial fixtures
+- [x] AGD-01-04-PLAN.md — wave 2 — Sanitized rendering pipeline, nonce CSP via `src/proxy.ts`, metadata escaping, and the eleven-case XSS regression suite
+- [x] AGD-01-05-PLAN.md — wave 3 — Ingestion pipeline: denylist, per-artifact parse isolation, one transaction, nine user-facing outcomes, one structured log line
+- [x] AGD-01-06-PLAN.md — wave 4 — Submit flow, home, listing, repository and detail pages, README, and the CI gate (build, type-check, lint, tests, migration safety)
 
 ---
 

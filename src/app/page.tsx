@@ -1,30 +1,56 @@
-import { db, sql } from '@/db/client';
-import { schemaMeta } from '@/db/schema';
+import Link from 'next/link';
+import { PackageRows } from '@/components/PackageRows';
+import { SubmitForm } from '@/components/SubmitForm';
+import { countPackages, listPackages } from '@/db/queries/packages';
+import { rateLimitState } from '@/github/client';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
 // CI, where there is no database.
 export const dynamic = 'force-dynamic';
 
-export default async function StatusPage() {
-  const [identity] = await sql<{ user: string; path: string }[]>`
-    SELECT current_user AS "user", current_setting('search_path') AS "path"
-  `;
-  const meta = await db.select().from(schemaMeta).orderBy(schemaMeta.key);
+export default async function HomePage() {
+  const [recent, total] = await Promise.all([listPackages({ limit: 10 }), countPackages()]);
+
+  // The remaining allowance as of AgentDock's last GitHub request. Read from the
+  // headers the client already saw rather than fetched: a page render that
+  // depends on an upstream call is a page that a slow upstream can take down,
+  // and the number here would be the same number.
+  const rate = rateLimitState();
 
   return (
-    <main>
+    <>
       <h1>AgentDock</h1>
-      <p>
-        connected as <strong>{identity.user}</strong> — search_path <code>{identity.path}</code>
+      <p className="lede">
+        An open index of Agent Skills. Paste a public GitHub repository and AgentDock reads its{' '}
+        <code>SKILL.md</code> files, records what they declare, and links back to the exact file at
+        the exact commit it read.
       </p>
-      <h2>schema_meta</h2>
-      <ul>
-        {meta.map((row) => (
-          <li key={row.key}>
-            <code>{row.key}</code>: {row.value}
-          </li>
-        ))}
-      </ul>
-    </main>
+      <p className="lede muted">
+        It indexes Agent Skills only for now. Plugins, MCP servers, commands and hooks come later.
+      </p>
+
+      <SubmitForm />
+
+      <h2>Request budget</h2>
+      <p className="muted">
+        AgentDock runs unauthenticated. GitHub allows it 60 requests an hour and each repository
+        costs two, so roughly thirty repositories an hour.{' '}
+        {rate
+          ? `${rate.remaining} of ${rate.limit} were left after its most recent request.`
+          : 'It has not called GitHub since this server started.'}
+      </p>
+
+      <h2>Recently indexed</h2>
+      {recent.length === 0 ? (
+        <p className="muted">Nothing indexed yet. Submit a repository above.</p>
+      ) : (
+        <>
+          <PackageRows items={recent} />
+          <p className="pager">
+            <Link href="/skills">Browse all {total} skills</Link>
+          </p>
+        </>
+      )}
+    </>
   );
 }

@@ -16,6 +16,12 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # Before the checks, not after. `next build` regenerates next-env.d.ts,
+      # which the linter and the type-checker then read — so a runner that lints
+      # first can fail on a file the build was about to write. The build needs no
+      # database: every page that reads one is marked request-time.
+      - run: bun run build
+
       # The migration boundary scan, lint, type-check, and tests — the same
       # single command a developer runs locally, so the two cannot drift.
       # No database and no secret are involved: every check reads files.

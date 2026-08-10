@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 1
-  total_plans: 29
-  completed_plans: 4
-  percent: 14
+  completed_phases: 2
+  total_plans: 30
+  completed_plans: 10
+  percent: 33
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 1 — Walking Skeleton (not yet planned)
+**Current focus:** Phase 2 — Durable Ingestion (not yet planned)
 
 ## Current Position
 
-Phase: 0 of 9 complete (Database Isolation Bootstrap)
-Plan: 4 of 4 in Phase 0
-Status: Phase 0 complete and verified — ready to plan Phase 1
-Last activity: 2026-08-10 — Phase 0 executed: `agentdock_app` role + `agentdock`/`agentdock_test` schemas created, isolation verified 7/7, app skeleton building and green
+Phase: 1 of 9 complete (Walking Skeleton)
+Plan: 6 of 6 in Phase 1
+Status: Phase 1 complete and verified against a live repository — ready to plan Phase 2
+Last activity: 2026-08-10 — Phase 1 executed. Live ingest of `addyosmani/agent-skills` found and stored 24 skills; list and detail pages render; the stored permalink resolves on GitHub; re-ingest produced no duplicate rows.
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -66,7 +66,17 @@ Progress: [█░░░░░░░░░] 14%
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
 
-### Carried into Phase 1
+### Carried into Phase 2
+
+| Item | Note |
+|------|------|
+| Re-ingest reports "24 stored" on an unchanged repo | Data is correct — no duplicate rows are created. The *wording* implies new writes. Phase 2 owns the commit-SHA short circuit and should make the message say nothing changed. |
+| `GITHUB_TOKEN` is empty; unauthenticated 60/hr | ~30 repo ingests an hour. The client already sends the token when present, so this is a config change, not a code change. |
+| Ingestion is synchronous in the request | Phase 2 moves it to the `ingest_job` queue. A large repo currently occupies a request for its duration. |
+| `.env.example` could not be verified | This environment denies all access to `.env*`. Confirm by hand that it contains a `GITHUB_TOKEN=` line and placeholders only. |
+| Submit endpoint has no abuse protection | Acceptable for local development, tracked for any public exposure. |
+
+### Carried from Phase 0
 
 | Item | Note |
 |------|------|
@@ -94,7 +104,7 @@ Progress: [█░░░░░░░░░] 14%
 
 ## Next Action
 
-Run `/gsd-plan-phase 1` to plan the Walking Skeleton.
+Run `/gsd-plan-phase 2` to plan Durable Ingestion.
 
 ---
-*Last updated: 2026-08-10 after Phase 0 execution and verification*
+*Last updated: 2026-08-10 after Phase 1 execution and live verification*

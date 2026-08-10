@@ -1,0 +1,380 @@
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#ffffff, #0b0d10);
+  --fg: light-dark(#16191d, #e6e8eb);
+  --muted: light-dark(#5c636b, #9aa2ab);
+  --border: light-dark(#e3e6ea, #23272d);
+  --accent: light-dark(#1a56b8, #7aa7f0);
+
+  /* One scale, four steps. */
+  --t-sm: 0.8125rem;
+  --t-base: 0.9375rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.5rem;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: var(--t-base);
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* A 1,077-character description and a 78-character path are both in the measured
+   corpus, so this is a real constraint and not a hypothetical one. min-width on
+   a flex child is the piece that is usually missing. */
+p,
+li,
+td,
+dd,
+dt {
+  overflow-wrap: anywhere;
+}
+
+code,
+.path {
+  word-break: break-all;
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+* {
+  min-width: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+  background: var(--bg);
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  z-index: 1;
+}
+
+/* ── Shell ──────────────────────────────────────────────────────────────── */
+
+/* One 64rem column, 1rem gutters. Everything sits in this. */
+.wrap {
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1rem;
+  padding-block: 0.75rem;
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-header nav {
+  margin-left: auto;
+  display: flex;
+  gap: 1rem;
+  font-size: var(--t-sm);
+}
+
+main {
+  flex: 1;
+  padding-block: 2rem 3rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.site-footer .wrap {
+  padding-block: 1rem 1.5rem;
+}
+
+/* ── Type ───────────────────────────────────────────────────────────────── */
+
+h1 {
+  font-size: var(--t-xl);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: var(--t-lg);
+  margin: 2rem 0 0.75rem;
+}
+
+h3 {
+  font-size: var(--t-base);
+  margin: 1.5rem 0 0.5rem;
+}
+
+a {
+  color: var(--accent);
+  /* Colour only, 120ms. Nothing animates on load. */
+  transition: color 120ms ease;
+}
+
+a:hover {
+  color: var(--fg);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.lede {
+  max-width: 46rem;
+  margin: 0 0 0.5rem;
+}
+
+.error {
+  /* Deliberately not red. Colour is never a verdict in this interface, and a
+     failed submission is a message, not a rating. */
+  color: var(--fg);
+  border-left: 3px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.ok {
+  color: var(--muted);
+}
+
+.error:empty,
+.ok:empty {
+  display: none;
+}
+
+/* ── Submit ─────────────────────────────────────────────────────────────── */
+
+.submit {
+  margin: 1.5rem 0 0;
+  max-width: 34rem;
+}
+
+.submit label {
+  display: block;
+  font-size: var(--t-sm);
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.submit-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.submit input {
+  flex: 1;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  padding: 0.5rem 0.6rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.submit button {
+  font: inherit;
+  font-size: var(--t-sm);
+  padding: 0.5rem 0.9rem;
+  color: var(--bg);
+  background: var(--fg);
+  border: 1px solid var(--fg);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.submit button:hover {
+  opacity: 0.85;
+}
+
+.submit button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Rows, not cards ────────────────────────────────────────────────────── */
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.rows > li {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+
+.row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  font-size: var(--t-base);
+}
+
+.row-title a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.row-title a:hover {
+  text-decoration: underline;
+}
+
+.row-desc {
+  margin: 0.15rem 0 0.25rem;
+  color: var(--fg);
+  /* Three lines here; the full text is on the detail page. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.row-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+}
+
+/* A path is never clamped. A truncated path is a useless path. */
+.row-meta .path {
+  color: var(--muted);
+}
+
+/* ── Detail ─────────────────────────────────────────────────────────────── */
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0.4rem 1.25rem;
+  margin: 1rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--t-sm);
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .facts {
+    grid-template-columns: 1fr;
+    gap: 0 0;
+  }
+
+  .facts dd {
+    margin: 0 0 0.6rem;
+  }
+}
+
+.notes {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.pager {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-top: 1.25rem;
+  font-size: var(--t-sm);
+}
+
+.pager .muted {
+  margin-left: auto;
+}
+
+.install code {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: light-dark(#f6f7f9, #14171b);
+}
+
+/* The rendered artifact body. Bordered, never shadowed, and visually inside the
+   page rather than floating above it. */
+.body {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.body pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: light-dark(#f6f7f9, #14171b);
+}
+
+.body table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.body th,
+.body td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}
+
+.body blockquote {
+  margin: 1rem 0;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+}

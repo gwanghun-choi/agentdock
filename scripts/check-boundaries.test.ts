@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
+import { sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkMigrationSql, checkPackageScripts, checkSchemaModule } from './check-boundaries.mjs';
+import {
+  checkMigrationSql,
+  checkPackageScripts,
+  checkSchemaModule,
+  checkSourceBoundaries,
+  sourceFiles,
+} from './check-boundaries.mjs';
 
 const GOOD = `
 CREATE TABLE "agentdock"."schema_meta" (
@@ -84,5 +91,98 @@ describe('checkSchemaModule', () => {
       "export const agentdock = pgSchema('agentdock');\n" +
       "export const meta = agentdock.table('schema_meta', {});";
     expect(checkSchemaModule(source)).toEqual([]);
+  });
+});
+
+describe('checkSourceBoundaries', () => {
+  it('accepts an ordinary source file', () => {
+    expect(checkSourceBoundaries('src/db/queries/packages.ts', 'export const x = 1;')).toEqual([]);
+  });
+
+  it('reports a raw-HTML render path', () => {
+    const viaPlugin = checkSourceBoundaries(
+      'src/components/Body.tsx',
+      "import rehypeRaw from 'rehype-raw';",
+    );
+    expect(viaPlugin.join(' ')).toMatch(/no-raw-html/);
+
+    const viaReact = checkSourceBoundaries(
+      'src/components/Body.tsx',
+      'return <div dangerouslySetInnerHTML={{ __html: body }} />;',
+    );
+    expect(viaReact.join(' ')).toMatch(/no-raw-html/);
+  });
+
+  it('reports a subprocess or code-evaluation path', () => {
+    const child = checkSourceBoundaries(
+      'src/ingest/run.ts',
+      "import { execSync } from 'node:child_process';",
+    );
+    expect(child.join(' ')).toMatch(/no-execution/);
+
+    const vm = checkSourceBoundaries('src/ingest/run.ts', "import vm from 'node:vm';");
+    expect(vm.join(' ')).toMatch(/no-execution/);
+  });
+
+  it('reports a disk write', () => {
+    const problems = checkSourceBoundaries(
+      'src/ingest/cache.ts',
+      "writeFileSync('/tmp/body.md', body);",
+    );
+    expect(problems.join(' ')).toMatch(/no-disk-write/);
+  });
+
+  it('reports a GitHub hostname named outside the client directory', () => {
+    const problems = checkSourceBoundaries(
+      'src/ingest/fetch.ts',
+      "await fetch('https://api.github.com/repos/o/r');",
+    );
+    expect(problems.join(' ')).toMatch(/no-host-sprawl/);
+  });
+
+  it('accepts the same hostname inside the GitHub client directory', () => {
+    const problems = checkSourceBoundaries(
+      'src/github/client.ts',
+      "await fetch('https://api.github.com/repos/o/r');\n" +
+        "await fetch('https://raw.githubusercontent.com/o/r/sha/p');",
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('still sees a host when the URL sits behind other code on the line', () => {
+    // Regression: a naive line-comment strip treats the `//` in `https://` as a
+    // comment start and deletes the hostname, making this rule match nothing.
+    const problems = checkSourceBoundaries(
+      'src/ingest/fetch.ts',
+      'const base = "https://raw.githubusercontent.com"; const n = 1;',
+    );
+    expect(problems.join(' ')).toMatch(/no-host-sprawl/);
+  });
+
+  it('accepts a match that appears only inside a comment', () => {
+    const source =
+      '// raw.githubusercontent.com accepts both shas, so a raw-only check is not enough.\n' +
+      '/* Never reach for dangerouslySetInnerHTML or execSync here. */\n' +
+      'export const x = 1;';
+    expect(checkSourceBoundaries('src/db/schema.ts', source)).toEqual([]);
+  });
+
+  it('accepts the schema module as committed, whose comment names a host', () => {
+    const path = 'src/db/schema.ts';
+    expect(checkSourceBoundaries(path, readFileSync(path, 'utf8'))).toEqual([]);
+  });
+});
+
+describe('sourceFiles', () => {
+  it('does not scan test files, which name hostile strings on purpose', () => {
+    const walked = sourceFiles('src');
+    expect(walked.length).toBeGreaterThan(0);
+    expect(walked.filter((f) => f.includes('.test.'))).toEqual([]);
+  });
+
+  it('walks into subdirectories and keeps only source extensions', () => {
+    const walked = sourceFiles('src').map((f) => f.split(sep).join('/'));
+    expect(walked).toContain('src/db/queries/packages.ts');
+    expect(walked.every((f) => /\.(ts|tsx|js|mjs)$/.test(f))).toBe(true);
   });
 });
