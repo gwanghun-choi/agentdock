@@ -160,10 +160,40 @@ Plans: 5, in 4 waves. Wave 3 runs 02-03 and 02-04 in parallel — they share no 
   6. Every detector runs against frozen fixtures with no network access and no token
 **Plans**: 3 plans
 
-Plans:
-- [ ] 03-01: Two-phase detector interface and registration, with the skill detector refactored onto it
-- [ ] 03-02: Plugin, catalog-as-seeds, and MCP detectors
-- [ ] 03-03: Command and hook detectors, monorepo/nesting handling, per-candidate failure isolation
+> **Two corrections made during planning, both recorded in `CONTEXT.md`.**
+>
+> - **`RESEARCH.md` is wrong that `parse()` is already isolated.** `pipeline.ts`
+>   has exactly one `try`/`catch`, at lines 125 and 287, and it spans the whole
+>   repository body. `match()` is unguarded at *two* call sites and `parse()` is
+>   unguarded at one; a throw from any of them fails the entire repository.
+>   Isolation today is a property of the one detector that catches internally,
+>   not of the pipeline. DET-07 therefore ships **first**, alone, with a
+>   regression that fails against the current code — not last, after five new
+>   JSON-parsing detectors have already landed.
+> - **Assumption A3's "≥2 component shapes" threshold was measured, at zero
+>   GitHub cost**, against the 3,831 blob entries already frozen in `fixtures/`.
+>   A ≥1 rule false-positives on `.github/workflows` in three of the four corpora,
+>   on `.claude/` in two, and on a `packages/*/src/commands` source directory. ≥2
+>   produces no false positive and no false negative across all four. No live
+>   sampling task is spent; calibration belongs to Phase 4's CAP-13, which already
+>   mandates a hand-checked false-positive rate against a labeled corpus.
+>
+> The same measurement found that six detectors want **384 files** from the
+> largest frozen corpus against a `CAPS.maxFiles` of 200 — so the largest real
+> repository would be permanently truncated, and since Phase 2 a truncated scan
+> suppresses delisting and never converges. Plan 03-02 raises the cap to 400 and
+> states the cost: raw fetches only, zero GitHub core quota.
+>
+> `RESEARCH.md`'s eleven hand-written fixture directories are not built. The four
+> corpora already on disk carry a `marketplace.json` each, 92 plugin manifests,
+> 117 commands, 3 hook configs, an `.mcp.json`, and a real
+> `plugins/*/skills/*/SKILL.md` monorepo.
+
+Plans: 3, in 3 waves. Sequential — every plan appends to `src/detect/index.ts`,
+and each wave's tests need the detectors the previous wave registered.
+- [x] AGD-03-01-PLAN.md — wave 1 — Isolation at all three unguarded call sites with one guarded `match()` pass, the widened `ParseResult` with its seeds and no-row channels, `repo_seed` and the five artifact types, and the catalog as the tracer that exercises every new mechanism end to end
+- [x] AGD-03-02-PLAN.md — wave 2 — Plugin detection with and without a manifest behind a measured threshold and two exclusions, both MCP declaration shapes with no environment value ever stored, the containment pass that names no artifact type, and the file cap raised to what six detectors actually ask for
+- [x] AGD-03-03-PLAN.md — wave 3 — Command detection reusing the existing frontmatter parser unmodified, hook detection with a `settings.json`-without-hooks producing no row at all, and DET-09 turned from a review note into a runtime assertion by a seventh detector defined inside a test
 
 ---
 

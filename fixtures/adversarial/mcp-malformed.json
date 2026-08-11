@@ -1,0 +1,4 @@
+{
+  "description": "A buggy publisher generator forgot the name field",
+  "packages": [{ "registryType": "npm", "identifier": "@example/mcp-server", "version": "1.0.0" }]
+}

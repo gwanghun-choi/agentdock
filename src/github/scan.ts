@@ -9,7 +9,19 @@ import type { RepoMetadata, RepoTree } from './types';
  * largest sampled skill file is 72 KB.
  */
 export const CAPS = {
-  maxFiles: 200,
+  /**
+   * Six detectors share this budget, not one. Measured on the largest frozen
+   * corpus (wshobson-agents, 1,160 bounded blobs): 180 skills + 91 plugin
+   * manifests + 109 commands + 2 hook configs + 1 MCP declaration + 1 catalog =
+   * 384 wanted files, against the 180 a skills-only pipeline wanted.
+   *
+   * Raw reads cost no core quota — that is the whole reason they are on the raw
+   * host, per the note above. The cost of this number is wall clock and
+   * abuse-throttle exposure: 400 files at concurrency 2 inside wallClockMs
+   * allows 600 ms per file, comfortably above a measured raw read. No core
+   * request is added by this change.
+   */
+  maxFiles: 400,
   maxFileBytes: 512 * 1024,
   maxTreeEntries: 100_000,
   maxDepth: 10,

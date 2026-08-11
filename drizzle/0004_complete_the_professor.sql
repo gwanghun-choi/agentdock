@@ -1,0 +1,1 @@
+ALTER TABLE "agentdock"."package" ADD COLUMN "parent_path" text;

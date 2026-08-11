@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { repositoryDenylist } from '@/db/schema';
 import { DETECTORS } from '@/detect';
+import { assignParentPaths } from '@/detect/nesting';
+import { collectCandidates, type DetectorPass, orderedNeeds, safeParse } from '@/detect/run';
 import { GitHubError, normalizeRepo, rateLimitState } from '@/github/client';
 import { fetchRepoScanInputs } from '@/github/scan';
 import { log } from '@/log';
@@ -14,7 +16,7 @@ import {
   persistScan,
   touchRepository,
 } from './persist';
-import type { RepoScan, ScannedPackage } from './types';
+import type { RepoScan, ScannedPackage, ScannedSeed } from './types';
 
 /** PRV-07: an excerpt with attribution, never a mirror. */
 const MAX_BODY = 32 * 1024;
@@ -31,6 +33,8 @@ export type IngestResult =
       found: number;
       stored: number;
       failed: number;
+      /** Repositories a catalog named. 0 on the `unchanged` short circuit. */
+      seeds: number;
       truncated: boolean;
       counters: DiffCounters;
     }
@@ -88,6 +92,8 @@ export async function ingestRepository(
     failed?: number;
     counters?: DiffCounters;
     truncated?: boolean;
+    /** Present only when a detector threw, so a clean run's line is unchanged. */
+    detectorErrors?: string[];
   }) => {
     const rate = rateLimitState();
     log({
@@ -109,6 +115,10 @@ export async function ingestRepository(
       durationMs: Date.now() - started,
       rateRemaining: rate?.remaining ?? null,
       rateReset: rate?.reset ?? null,
+      detectorErrors:
+        fields.detectorErrors && fields.detectorErrors.length > 0
+          ? fields.detectorErrors
+          : undefined,
     });
   };
 
@@ -129,12 +139,21 @@ export async function ingestRepository(
     // fetched one need reconciling.
     const known = await lastIngestedSha(fullName);
 
+    // The needs callback captures the pass and the candidate loop below reuses
+    // it, instead of calling match() a second time over the same bounded tree.
+    // Two guards for one logical operation could diverge; one guarded pass
+    // cannot.
+    let passes: DetectorPass[] = [];
+
     // One place decides which paths are worth reading, and it reads paths only —
     // so a repository with no artifacts costs zero file fetches.
     const inputs = await fetchRepoScanInputs(
       owner,
       repo,
-      (tree) => DETECTORS.flatMap((d) => d.match(tree.entries)).flatMap((c) => c.needs),
+      (tree) => {
+        passes = collectCandidates(DETECTORS, tree.entries);
+        return orderedNeeds(passes);
+      },
       known,
     );
 
@@ -174,10 +193,20 @@ export async function ingestRepository(
         found: touched.liveCount,
         stored: touched.liveCount,
         failed: 0,
+        // The commit has not moved, so no file was read and no seed could have
+        // been found on this pass — the same reason `found` is a live count
+        // rather than a literal zero, this is a literal zero on purpose.
+        seeds: 0,
         truncated: touched.treeTruncated,
         counters,
       };
     }
+
+    // One generic pass over every candidate this repository's detectors
+    // matched, linking a nested candidate to the nearest container a detector
+    // marked with containerRoot (only plugin.ts, this phase). Runs once, after
+    // every match() and before any parse(), and names no artifact type.
+    assignParentPaths(passes.flatMap((p) => p.candidates));
 
     const read = async (path: string) => {
       const body = inputs.files.get(path);
@@ -186,23 +215,52 @@ export async function ingestRepository(
     };
 
     const packages: ScannedPackage[] = [];
+    const seeds: ScannedSeed[] = [];
     let failed = 0;
+    // A detector that threw during match() contributes nothing and costs the
+    // repository nothing else — recorded so a silent partial scan is at least
+    // diagnosable.
+    const detectorErrors: string[] = [];
 
-    for (const detector of DETECTORS) {
-      for (const candidate of detector.match(inputs.tree.entries)) {
-        const raw = inputs.files.get(candidate.sourcePath);
+    for (const pass of passes) {
+      if (pass.error) detectorErrors.push(pass.error);
+
+      for (const candidate of pass.candidates) {
+        // A candidate with no needs is not a file to read — a shape-only match
+        // declares needs: [] and still reaches parse(). Only a candidate that
+        // asked for a file and did not get one was cut by a cap.
+        const raw = candidate.needs.length > 0 ? inputs.files.get(candidate.needs[0]) : '';
         if (raw === undefined) continue; // a cap was reached; already counted as skipped
 
         // Per candidate, never per repository. One bad file must not lose the
-        // other seventeen.
-        const result = await detector.parse(candidate, read);
+        // other seventeen — and now a detector that throws from parse() costs
+        // only this one candidate rather than the whole run.
+        const result = await safeParse(pass.detector, candidate, read);
         const blobSha =
           inputs.tree.entries.find((e) => e.path === candidate.sourcePath)?.sha ?? null;
+
+        // Not an artifact and not a package — path-only match() could not know.
+        if (result.status === 'none') continue;
+
+        // A catalog names other repositories; route to the seed channel and
+        // write no package row for it.
+        if (result.status === 'seeds') {
+          for (const seed of result.seeds) {
+            seeds.push({
+              fullName: seed.fullName,
+              sourceKind: seed.sourceKind,
+              discoveredFrom: fullName,
+              discoveredPath: candidate.sourcePath,
+              hint: seed.hint,
+            });
+          }
+          continue;
+        }
 
         if (!result.ok) {
           failed += 1;
           packages.push({
-            type: detector.type,
+            type: pass.detector.type,
             sourcePath: candidate.sourcePath,
             name: result.artifact?.name ?? candidate.sourcePath,
             slug: result.artifact?.slug ?? candidate.sourcePath,
@@ -216,12 +274,13 @@ export async function ingestRepository(
             frontmatter: {},
             parseStatus: 'failed',
             parseErrors: result.errors,
+            parentPath: candidate.parentPath ?? null,
           });
           continue;
         }
 
         packages.push({
-          type: detector.type,
+          type: pass.detector.type,
           sourcePath: candidate.sourcePath,
           name: result.artifact.name,
           slug: result.artifact.slug,
@@ -229,18 +288,21 @@ export async function ingestRepository(
           licenseText: result.artifact.licenseText,
           meta: result.artifact.meta,
           blobSha,
-          contentHash: contentHash(raw),
+          contentHash: contentHash(result.artifact.contentBasis ?? raw),
           declaredVersion: result.artifact.declaredVersion,
           body: result.artifact.body.slice(0, MAX_BODY),
           frontmatter: result.artifact.frontmatter,
           parseStatus: result.status,
           parseErrors: result.warnings,
+          parentPath: candidate.parentPath ?? null,
         });
       }
     }
 
-    if (packages.length === 0) {
-      emit({ outcome: 'no_artifacts', commitSha: inputs.tree.commitSha });
+    // A repository whose only artifact is a catalog found something. Reporting
+    // it as empty would also discard the seeds it found.
+    if (packages.length === 0 && seeds.length === 0) {
+      emit({ outcome: 'no_artifacts', commitSha: inputs.tree.commitSha, detectorErrors });
       return { ok: false, outcome: 'no_artifacts', message: messageFor('no_artifacts') };
     }
 
@@ -252,6 +314,7 @@ export async function ingestRepository(
       // read. Both mean the same thing to a reader: this listing is incomplete.
       treeTruncated: inputs.tree.truncated || inputs.artifactsTruncated,
       packages,
+      seeds,
     };
 
     // The rate figure comes from here, so the transaction never reaches into
@@ -269,6 +332,7 @@ export async function ingestRepository(
       failed,
       counters: persisted.counters,
       truncated: scan.treeTruncated,
+      detectorErrors,
     });
 
     return {
@@ -281,6 +345,7 @@ export async function ingestRepository(
       found: packages.length,
       stored: persisted.packageIds.length,
       failed,
+      seeds: seeds.length,
       truncated: scan.treeTruncated,
       counters: persisted.counters,
     };

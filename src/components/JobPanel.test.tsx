@@ -131,7 +131,7 @@ describe('a job that succeeded', () => {
 
     // A run that found nothing is a job that succeeded — AgentDock read the
     // repository correctly and the answer is that there is nothing there.
-    expect(html).toContain('found no SKILL.md files in it');
+    expect(html).toContain('found no agent artifacts in it');
     expect(html).not.toContain('discovered');
     expect(html).not.toContain('0 new');
     // And it is not an index, so there is nothing to go and look at.

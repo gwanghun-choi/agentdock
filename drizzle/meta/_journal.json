@@ -22,6 +22,20 @@
       "when": 1786354979530,
       "tag": "0002_flowery_captain_america",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786417029001,
+      "tag": "0003_flaky_selene",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786418901856,
+      "tag": "0004_complete_the_professor",
+      "breakpoints": true
     }
   ]
 }

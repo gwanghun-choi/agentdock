@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DETECTORS } from '@/detect';
+import type { Detector } from '@/detect/types';
+import { CAPS } from '@/github/scan';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -22,6 +25,21 @@ const ONE = 'skills/canvas-design/SKILL.md';
 // A sentinel, and always inserted `running`: the queue suite shares this schema
 // and its claim takes the oldest claimable row anywhere in it.
 const JOB_TARGET = 'test-owner/pipeline-spec-job';
+
+// The frozen corpora all carry a .claude-plugin/marketplace.json in their tree
+// (Measurement 1), but scripts/capture-fixtures.mjs never captured its body —
+// it is hard-coded to SKILL.md. Every test in this file now registers the
+// catalog detector alongside skill, so without a stub the marketplace.json
+// candidate would be counted as "skipped" (no captured body on disk) and every
+// existing assertion of `truncated: false` would break. An empty, well-formed
+// marketplace answers the file read without adding a package, a seed, or a
+// failure — the catalog-specific tests below override this with real content.
+const MARKETPLACE_PATH = '.claude-plugin/marketplace.json';
+const EMPTY_MARKETPLACE = JSON.stringify({
+  name: 'empty-marketplace',
+  owner: { name: 'Test' },
+  plugins: [],
+});
 
 /** Every hostname the run was asked for. Two claims become assertions from this. */
 let contacted: string[] = [];
@@ -65,6 +83,9 @@ function stubGitHub(stub: Stub = {}) {
 
       if (url.hostname === 'raw.githubusercontent.com') {
         const path = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
+        if (path === MARKETPLACE_PATH && stub.files?.[path] === undefined) {
+          return new Response(EMPTY_MARKETPLACE, { status: 200 });
+        }
         const body =
           stub.files?.[path] ?? readFileSync(`${DIR}/files/${encodeURIComponent(path)}`, 'utf8');
         return new Response(body, { status: 200 });
@@ -100,6 +121,7 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     await sql`DELETE FROM repository WHERE github_node_id = ${NODE_ID}`;
     await sql`DELETE FROM repository_denylist WHERE full_name = ${FULL_NAME}`;
     await sql`DELETE FROM ingest_job WHERE target = ${JOB_TARGET}`;
+    await sql`DELETE FROM repo_seed WHERE discovered_from = ${FULL_NAME}`;
   }
 
   async function storedPackages(): Promise<{ source_path: string; parse_status: string }[]> {
@@ -267,7 +289,9 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
       const second = await ingestRepository(FULL_NAME);
 
       expect(second).toMatchObject({ ok: true, outcome: 'ok', commitSha: 'b'.repeat(40) });
-      expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(18);
+      // 18 skills plus the one .claude-plugin/marketplace.json the catalog
+      // detector now also reads (Measurement 1 — every frozen corpus carries one).
+      expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(19);
     });
 
     it('takes the full path for a repository AgentDock has never seen', async () => {
@@ -277,7 +301,7 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
       const first = await ingestRepository(FULL_NAME);
 
       expect(first).toMatchObject({ ok: true, outcome: 'ok' });
-      expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(18);
+      expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(19);
     });
   });
 
@@ -287,7 +311,8 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     await ingestRepository(FULL_NAME);
 
     expect(contacted.filter((h) => h === 'api.github.com')).toHaveLength(2);
-    expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(18);
+    // 18 skills plus the catalog detector's one marketplace.json read.
+    expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(19);
     expect(new Set(contacted)).toEqual(new Set(['api.github.com', 'raw.githubusercontent.com']));
   });
 
@@ -385,7 +410,7 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     expect(result).toEqual({
       ok: false,
       outcome: 'no_artifacts',
-      message: expect.stringContaining('no SKILL.md files'),
+      message: expect.stringContaining('no agent artifacts'),
     });
     // Path-only detection, so a repository with no artifacts costs zero body reads.
     expect(contacted.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(0);
@@ -535,5 +560,396 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     `;
     expect(row.status).toBe('succeeded');
     expect(row.finished_at).not.toBeNull();
+  });
+
+  describe('detector isolation (DET-07)', () => {
+    // DETECTORS is a plain exported array — mutating its contents (not
+    // reassigning the binding) is enough to plant a throwing detector for one
+    // test and remove it after, with no module mocking involved.
+    function withExtraDetector(extra: Detector, run: () => Promise<void>) {
+      DETECTORS.push(extra);
+      return run().finally(() => {
+        const i = DETECTORS.indexOf(extra);
+        if (i >= 0) DETECTORS.splice(i, 1);
+      });
+    }
+
+    it('stores every skill the reference corpus holds even when a registered detector throws from match()', async () => {
+      const boom: Detector = {
+        type: 'boom',
+        match() {
+          throw new Error('boom detector always throws');
+        },
+        async parse() {
+          throw new Error('unreachable: match already threw');
+        },
+      };
+
+      await withExtraDetector(boom, async () => {
+        stubGitHub();
+        const result = await ingestRepository(FULL_NAME);
+
+        // Before the isolation guard, a throw from match() propagates to the
+        // pipeline's single outer catch and the whole repository fails with
+        // outcome: 'storage_failed' instead of ingesting normally — that is
+        // the regression this test is written to catch.
+        expect(result).toMatchObject({ ok: true, found: 18, stored: 18, failed: 0 });
+
+        const rows = await storedPackages();
+        expect(rows).toHaveLength(18);
+      });
+    });
+
+    // A pipeline-level parse()-throw regression would need the fake detector's
+    // `type` to reference a real artifact_type row (the FK the failed-row insert
+    // depends on), which turns "a detector that throws" into "a detector that
+    // impersonates skill" — a worse test than the one above. safeParse's
+    // guarantee that a thrown parse() becomes a failed ParseResult rather than an
+    // exception, provable without a database, is `run.test.ts`'s job (see
+    // `safeParse` describe block there); per <verification> item 1 both
+    // properties — match() and parse() isolation — are "provable without a
+    // database."
+  });
+
+  describe('catalog (DET-03)', () => {
+    const wellFormedMarketplace = JSON.stringify({
+      name: 'agentdock-test-marketplace',
+      owner: { name: 'Test Owner' },
+      plugins: [
+        { name: 'a', source: { source: 'github', repo: 'seed-owner-a/seed-repo-a' } },
+        {
+          name: 'b',
+          source: { source: 'url', url: 'https://github.com/seed-owner-b/seed-repo-b' },
+        },
+        // Relative: inside this same repository, the plugin detector's own job.
+        { name: 'c', source: './plugins/c' },
+      ],
+    });
+    const malformedMarketplace = readFileSync(
+      'fixtures/adversarial/marketplace-malformed.json',
+      'utf8',
+    );
+
+    async function catalogPackages() {
+      return sql<{ source_path: string; delisted_at: Date | null; parse_status: string }[]>`
+        SELECT p.source_path, p.delisted_at, (
+          SELECT pv.parse_status FROM package_version pv
+          WHERE pv.package_id = p.id ORDER BY pv.ingested_at DESC LIMIT 1
+        ) AS parse_status
+        FROM package p
+        JOIN repository r ON r.id = p.repository_id
+        WHERE r.github_node_id = ${NODE_ID} AND p.type = 'catalog'
+      `;
+    }
+
+    it('ingests a repository whose only artifact is a marketplace.json, rather than reporting no_artifacts', async () => {
+      stubGitHub({
+        tree: treeWith([MARKETPLACE_PATH]),
+        files: { [MARKETPLACE_PATH]: wellFormedMarketplace },
+      });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result).toMatchObject({ ok: true, found: 0, stored: 0, seeds: 2 });
+    });
+
+    it('never resolves a URL read from a marketplace.json seed', async () => {
+      stubGitHub({
+        tree: treeWith([MARKETPLACE_PATH]),
+        files: { [MARKETPLACE_PATH]: wellFormedMarketplace },
+      });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result.ok).toBe(true);
+      // Asserted from the recorded list, the same way pipeline.test.ts already
+      // proves it for a URL planted in a skill body: the allowlist makes
+      // following the seed's own github.com URL structurally impossible.
+      expect(new Set(contacted)).toEqual(new Set(['api.github.com', 'raw.githubusercontent.com']));
+    });
+
+    it('records a malformed marketplace as one failed catalog package row, and zero seeds', async () => {
+      stubGitHub({ files: { [MARKETPLACE_PATH]: malformedMarketplace } });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      // 18 skills plus the one failed catalog row.
+      expect(result).toMatchObject({ ok: true, found: 19, stored: 19, failed: 1, seeds: 0 });
+
+      const rows = await catalogPackages();
+      expect(rows).toMatchObject([{ source_path: MARKETPLACE_PATH, parse_status: 'failed' }]);
+    });
+
+    it('a well-formed marketplace produces zero catalog package rows and one seed row per GitHub-reachable entry', async () => {
+      stubGitHub({ files: { [MARKETPLACE_PATH]: wellFormedMarketplace } });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result).toMatchObject({ ok: true, found: 18, stored: 18, failed: 0, seeds: 2 });
+      expect(await catalogPackages()).toEqual([]);
+
+      const seedRows = await sql<{ full_name: string }[]>`
+        SELECT full_name FROM repo_seed WHERE discovered_from = ${FULL_NAME} ORDER BY full_name
+      `;
+      expect(seedRows.map((r) => r.full_name)).toEqual([
+        'seed-owner-a/seed-repo-a',
+        'seed-owner-b/seed-repo-b',
+      ]);
+    });
+
+    it('delists the failed catalog row once the marketplace is fixed, because a parsed catalog contributes no package id', async () => {
+      stubGitHub({ files: { [MARKETPLACE_PATH]: malformedMarketplace } });
+      await ingestRepository(FULL_NAME);
+
+      const before = await catalogPackages();
+      expect(before).toHaveLength(1);
+      expect(before[0].delisted_at).toBeNull();
+
+      stubGitHub({
+        tree: treeAt('c'.repeat(40)),
+        files: { [MARKETPLACE_PATH]: wellFormedMarketplace },
+      });
+      await ingestRepository(FULL_NAME);
+
+      const after = await catalogPackages();
+      expect(after).toHaveLength(1);
+      expect(after[0].delisted_at).not.toBeNull();
+    });
+  });
+
+  describe('the file budget (DET-06 / the CAPS.maxFiles raise)', () => {
+    const WSHOBSON_DIR = 'fixtures/wshobson-agents';
+    const WSHOBSON_NODE_ID = 'R_kgDOPSVUiA'; // from fixtures/wshobson-agents/repo.json
+    const WSHOBSON_FULL_NAME = 'wshobson/agents';
+    const wshobsonRepoJson = readFileSync(`${WSHOBSON_DIR}/repo.json`, 'utf8');
+    const wshobsonTreeJson = readFileSync(`${WSHOBSON_DIR}/tree.json`, 'utf8');
+
+    /**
+     * Every requested path answered with a minimal, valid, type-appropriate
+     * body — the assertion under test is the count and the truncation flag,
+     * not the content. Real bodies were never captured for all 384 wanted
+     * files (Measurement 1); only 20 skill bodies were ever sampled to disk.
+     */
+    function bodyFor(path: string): string {
+      if (path === MARKETPLACE_PATH || path.endsWith(`/${MARKETPLACE_PATH}`)) {
+        return EMPTY_MARKETPLACE;
+      }
+      if (path.endsWith('.claude-plugin/plugin.json')) {
+        return JSON.stringify({ name: 'stub-plugin' });
+      }
+      if (path.endsWith('.mcp.json')) {
+        return JSON.stringify({ mcpServers: { stub: { command: 'stub-server' } } });
+      }
+      // SKILL.md, root or nested — the only other type this corpus's four
+      // registered detectors can want.
+      return '---\nname: stub-skill\ndescription: a stub body for the file-budget test\n---\n\nBody.\n';
+    }
+
+    function stubWshobson() {
+      contacted = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: string | URL) => {
+          const url = new URL(String(input));
+          contacted.push(url.hostname);
+
+          if (url.hostname === 'api.github.com') {
+            if (url.pathname.includes('/git/trees/')) {
+              return new Response(wshobsonTreeJson, { status: 200, headers: rateHeaders() });
+            }
+            return new Response(wshobsonRepoJson, { status: 200, headers: rateHeaders() });
+          }
+          if (url.hostname === 'raw.githubusercontent.com') {
+            const path = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
+            return new Response(bodyFor(path), { status: 200 });
+          }
+          throw new Error(`unexpected host ${url.hostname}`);
+        }),
+      );
+    }
+
+    async function packageCounts(): Promise<Record<string, number>> {
+      const rows = await sql<{ type: string; n: number }[]>`
+        SELECT p.type, count(*)::int AS n FROM package p
+        JOIN repository r ON r.id = p.repository_id
+        WHERE r.github_node_id = ${WSHOBSON_NODE_ID}
+        GROUP BY p.type
+      `;
+      return Object.fromEntries(rows.map((r) => [r.type, r.n]));
+    }
+
+    beforeEach(async () => {
+      await sql`DELETE FROM repository WHERE github_node_id = ${WSHOBSON_NODE_ID}`;
+    });
+
+    afterEach(async () => {
+      await sql`DELETE FROM repository WHERE github_node_id = ${WSHOBSON_NODE_ID}`;
+    });
+
+    it('ingests all 91 plugins and all 180 skills at the raised cap, and reports itself not truncated', async () => {
+      stubWshobson();
+
+      const result = await ingestRepository(WSHOBSON_FULL_NAME);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('unreachable');
+      expect(result.truncated).toBe(false);
+
+      const counts = await packageCounts();
+      expect(counts.plugin).toBe(91);
+      expect(counts.skill).toBe(180);
+    });
+
+    it('reports itself truncated at the old cap of 200 — the cap raise is what changed it', async () => {
+      const original = CAPS.maxFiles;
+      (CAPS as { maxFiles: number }).maxFiles = 200;
+      try {
+        stubWshobson();
+        const result = await ingestRepository(WSHOBSON_FULL_NAME);
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) throw new Error('unreachable');
+        expect(result.truncated).toBe(true);
+      } finally {
+        (CAPS as { maxFiles: number }).maxFiles = original;
+      }
+    });
+  });
+
+  describe('the phase gate: all six detectors over all four corpora (DET-05 / DET-09 / DET-10)', () => {
+    const CORPORA: { slug: string; fullName: string; nodeId: string; dir: string }[] = [
+      { slug: 'anthropics-skills', fullName: FULL_NAME, nodeId: NODE_ID, dir: DIR },
+      {
+        slug: 'addyosmani-agent-skills',
+        fullName: 'addyosmani/agent-skills',
+        nodeId: 'R_kgDORRCyRw',
+        dir: 'fixtures/addyosmani-agent-skills',
+      },
+      {
+        slug: 'baoyu-skills',
+        fullName: 'JimLiu/baoyu-skills',
+        nodeId: 'R_kgDOQ4teag',
+        dir: 'fixtures/baoyu-skills',
+      },
+      {
+        slug: 'wshobson-agents',
+        fullName: 'wshobson/agents',
+        nodeId: 'R_kgDOPSVUiA',
+        dir: 'fixtures/wshobson-agents',
+      },
+    ];
+
+    // The per-type counts the four trees hold, matching CONTEXT.md's own
+    // Measurement 1 table exactly. catalog never produces a package row (it
+    // routes to repo_seed instead), so it is absent from every entry here.
+    const EXPECTED: Record<string, Record<string, number>> = {
+      'anthropics-skills': { skill: 18 },
+      'addyosmani-agent-skills': { skill: 24, plugin: 1, command: 8, hook: 1 },
+      'baoyu-skills': { skill: 22 },
+      'wshobson-agents': { skill: 180, plugin: 91, mcp_server: 1, command: 109, hook: 2 },
+    };
+
+    /**
+     * Every requested path answered with a minimal, valid, type-appropriate
+     * body — the assertion under test is the per-type count, not the content.
+     * Real bodies were never captured for anything but SKILL.md
+     * (capture-fixtures.mjs is hard-coded to it); same reasoning as the file-
+     * budget block above, generalized to all six detectors.
+     */
+    function bodyForAnyType(path: string): string {
+      if (path === MARKETPLACE_PATH || path.endsWith(`/${MARKETPLACE_PATH}`))
+        return EMPTY_MARKETPLACE;
+      if (path.endsWith('.claude-plugin/plugin.json'))
+        return JSON.stringify({ name: 'stub-plugin' });
+      if (path.endsWith('.mcp.json')) {
+        return JSON.stringify({ mcpServers: { stub: { command: 'stub-server' } } });
+      }
+      if (path.endsWith('server.json')) {
+        return JSON.stringify({ name: 'stub-server', description: 'a stub MCP server' });
+      }
+      const segments = path.split('/');
+      if (
+        path.endsWith('.md') &&
+        segments[segments.length - 1].toUpperCase() !== 'README.MD' &&
+        segments.slice(0, -1).includes('commands')
+      ) {
+        return '---\nname: stub-command\ndescription: a stub command body\n---\n\nBody.\n';
+      }
+      if (
+        segments[segments.length - 1] === 'hooks.json' &&
+        segments[segments.length - 2] === 'hooks'
+      ) {
+        return JSON.stringify({
+          hooks: { PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: 'stub' }] }] },
+        });
+      }
+      if (path === '.claude/settings.json' || path.endsWith('/.claude/settings.json')) {
+        return JSON.stringify({ enabledPlugins: {} });
+      }
+      // SKILL.md, root or nested — the only shape left.
+      return '---\nname: stub-skill\ndescription: a stub skill body\n---\n\nBody.\n';
+    }
+
+    function stubGeneric(repoBody: string, treeBody: string) {
+      contacted = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: string | URL) => {
+          const url = new URL(String(input));
+          contacted.push(url.hostname);
+
+          if (url.hostname === 'api.github.com') {
+            if (url.pathname.includes('/git/trees/')) {
+              return new Response(treeBody, { status: 200, headers: rateHeaders() });
+            }
+            return new Response(repoBody, { status: 200, headers: rateHeaders() });
+          }
+          if (url.hostname === 'raw.githubusercontent.com') {
+            const path = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
+            return new Response(bodyForAnyType(path), { status: 200 });
+          }
+          throw new Error(`unexpected host ${url.hostname}`);
+        }),
+      );
+    }
+
+    async function packageTypeCounts(nodeId: string): Promise<Record<string, number>> {
+      const rows = await sql<{ type: string; n: number }[]>`
+        SELECT p.type, count(*)::int AS n FROM package p
+        JOIN repository r ON r.id = p.repository_id
+        WHERE r.github_node_id = ${nodeId}
+        GROUP BY p.type
+      `;
+      return Object.fromEntries(rows.map((r) => [r.type, r.n]));
+    }
+
+    for (const corpusCase of CORPORA) {
+      const { slug, fullName, nodeId, dir } = corpusCase;
+
+      it(`ingests ${slug} end to end with the per-type counts its tree holds, contacting only the allowlisted hosts`, async () => {
+        await sql`DELETE FROM repository WHERE github_node_id = ${nodeId}`;
+        try {
+          const repoBody = readFileSync(`${dir}/repo.json`, 'utf8');
+          const treeBody = readFileSync(`${dir}/tree.json`, 'utf8');
+          stubGeneric(repoBody, treeBody);
+
+          const result = await ingestRepository(fullName);
+
+          expect(result.ok).toBe(true);
+          if (!result.ok) throw new Error('unreachable');
+          expect(result.truncated).toBe(false);
+          // The allowlist made structurally impossible, not merely asserted:
+          // stubGeneric throws on any hostname that is neither of these two.
+          for (const host of contacted) {
+            expect(['api.github.com', 'raw.githubusercontent.com']).toContain(host);
+          }
+
+          const counts = await packageTypeCounts(nodeId);
+          expect(counts).toEqual(EXPECTED[slug]);
+        } finally {
+          await sql`DELETE FROM repository WHERE github_node_id = ${nodeId}`;
+        }
+      });
+    }
   });
 });

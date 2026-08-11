@@ -49,8 +49,8 @@ export const OUTCOME_MESSAGES: Record<Exclude<IngestOutcome, 'ok'>, string> = {
     'What was read has been stored, and the listing says it is incomplete.',
 
   no_artifacts:
-    'AgentDock found no SKILL.md files in that repository. ' +
-    'It currently indexes Agent Skills only.',
+    'AgentDock found no agent artifacts in that repository. ' +
+    'It looks for skills, plugins, marketplaces, MCP servers, commands and hooks.',
 
   unavailable: 'AgentDock could not reach GitHub. Try again shortly.',
 

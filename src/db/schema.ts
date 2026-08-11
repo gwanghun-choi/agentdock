@@ -118,6 +118,13 @@ export const packageTable = agentdock.table(
     // column onto the first. $type is a TypeScript-only narrowing — it changes
     // the inferred read type and emits no DDL, so it cannot drift the migration.
     meta: jsonb('meta').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    // Nullable, no default, not in the identity key: (repository_id, type,
+    // source_path) already disambiguates a plugin-owned skill from a top-level
+    // one, because source_path differs. Adding a fourth column to a populated
+    // table's unique constraint is a DROP CONSTRAINT, which this project's
+    // boundary scanner treats as destructive — for one bit of information the
+    // key already carries.
+    parentPath: text('parent_path'),
     delistedAt: timestamp('delisted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -169,6 +176,35 @@ export const repositoryDenylist = agentdock.table('repository_denylist', {
   reason: text('reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Repositories a catalog named, stored and never visited.
+ *
+ * No status column and no enqueued_at. Phase 5 (COR-03) owns fan-out and needs
+ * to decide how seed volume interacts with MAX_QUEUED before any of it exists; a
+ * nullable timestamp is a one-line additive migration when it does. This is the
+ * same reasoning ingest_job records for its absent kind and priority columns.
+ */
+export const repoSeed = agentdock.table(
+  'repo_seed',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    /** Lowercased owner/repo. Only GitHub-reachable entries are stored at all. */
+    fullName: text('full_name').notNull(),
+    // github | url | git-subdir. Text with a comment, not an enum: widening a
+    // constrained type on a populated table is a DROP, which this project's
+    // boundary scanner treats as destructive. Same reason as artifact_type.
+    sourceKind: text('source_kind').notNull(),
+    /** The catalog's own repository, as owner/repo. Provenance, not a join. */
+    discoveredFrom: text('discovered_from').notNull(),
+    discoveredPath: text('discovered_path').notNull(),
+    /** The catalog entry verbatim: name, description, version, subdir, tags. */
+    hint: jsonb('hint').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('repo_seed_full_name_key').on(t.fullName)],
+);
 
 /**
  * The queue. Deliberately narrow: every claim, every reap and every terminal

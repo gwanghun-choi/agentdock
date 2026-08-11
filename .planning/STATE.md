@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 32
-  completed_plans: 15
-  percent: 47
+  completed_plans: 18
+  percent: 56
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 3 — Detector Pluralism (not yet planned)
+**Current focus:** Phase 4 — Capability Disclosure (not yet planned)
 
 ## Current Position
 
-Phase: 2 of 9 complete (Durable Ingestion)
-Plan: 5 of 5 in Phase 2
-Status: Phase 2 complete and verified live — ready to plan Phase 3
-Last activity: 2026-08-10 — Phase 2 executed. Submit is asynchronous and returns immediately; an in-process worker claims jobs with `FOR UPDATE SKIP LOCKED`; re-index reports `24 discovered · 0 new · 0 updated · 24 unchanged` in 366 ms without re-reading files; a failing job left the 24 previously indexed packages untouched. A live delisting bug found in Phase 1's code was reproduced and fixed.
+Phase: 3 of 9 complete (Detector Pluralism)
+Plan: 3 of 3 in Phase 3
+Status: Phase 3 complete and verified — 6/6 success criteria MET, ready to plan Phase 4
+Last activity: 2026-08-11 — Phase 3 executed. `DETECTORS` is now `[skill, catalog, plugin, mcp, command, hook]`. A live re-read of `addyosmani/agent-skills` produced 24 skills, 1 plugin, 8 commands and 1 hook in 5.6 s, with its `marketplace.json` producing one `repo_seed` row and zero package rows. Planning found and Wave 1 fixed a live isolation defect: the pipeline had one try/catch spanning the whole repository, so a throw from any detector's `match()` (two call sites) or `parse()` lost every artifact in that repository.
 
-Progress: [█████░░░░░] 47%
+Progress: [██████░░░░] 56%
 
 ## Performance Metrics
 
@@ -65,6 +65,17 @@ Progress: [█████░░░░░] 47%
 | Blocker | Impact | Needs |
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
+
+### Carried into Phase 4
+
+| Item | Note |
+|------|------|
+| Shape-only plugin detection is unexercised against live data | The `≥2 component shapes` threshold plus the dot-directory and repository-root exclusions were calibrated against the four frozen corpora (3,831 blobs, zero GitHub cost) and are locked by tests, but every plugin in those corpora carries a manifest. The manifest-less path has never fired on a real repository. **CAP-13 already mandates a hand-checked false-positive rate per detector against a labeled corpus — that is where this gets measured.** |
+| `seedsSkipped` is not a structured log field | A `marketplace.json` entry with an `npm`, `archive`, or relative source is counted and dropped, and the count reaches no log line. Observability gap, not a correctness one. |
+| `repo_seed` has no consumer | Rows are written and nothing reads them until Phase 5 (COR-03) designs seed→job fan-out against `MAX_QUEUED = 500`. Deliberate: no `status` or `enqueued_at` column was added for a consumer that does not exist. |
+| `CAPS.maxFiles` is now 400 | Raised from 200 because six detectors want 384 files from the largest frozen corpus, and since Phase 2 a truncated scan suppresses delisting — so the largest real repository would have read as permanently partial and never converged. Cost is raw fetches and wall clock only; raw reads consume no GitHub core quota. At `CAPS.concurrency = 2` this is a 600 ms/file budget inside `CAPS.wallClockMs = 120_000`. |
+| One `.mcp.json` in the whole corpus | The MCP detector's two shapes (`.mcp.json`, `server.json`) are tested, but `server.json` has no real-world instance on disk and the MCP registry schema is self-described as "in preview". Re-check before Phase 5's registry sync. |
+| Per-file, not per-server, MCP identity | One package row per MCP declaration file. If Phase 6's search wants per-server rows, that is a re-key and should be decided with query-log evidence. |
 
 ### Carried into Phase 3
 
@@ -114,7 +125,7 @@ Progress: [█████░░░░░] 47%
 
 ## Next Action
 
-Run `/gsd-plan-phase 3` to plan Detector Pluralism.
+Run `/gsd-plan-phase 4` to plan Capability Disclosure.
 
 ---
 *Last updated: 2026-08-10 after Phase 2 execution and live verification*

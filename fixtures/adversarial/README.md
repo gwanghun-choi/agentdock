@@ -29,6 +29,11 @@ touches the network.
 | `nested-metadata.md` | maps and arrays under `metadata` | partial, warning names the mapping rule |
 | `name-mismatch.md` | a declared name that differs from the containing directory | partial, warning names both |
 | `tools-list.md` | `allowed-tools` as a YAML list | ok, normalized to tokens |
+| `marketplace-malformed.json` | a `marketplace.json` whose `plugins` field is an object, not an array | failed, naming the missing plugins array; zero seeds |
+| `plugin-malformed.json` | a `plugin.json` that is a top-level JSON array, not an object | failed, with a directory-derived fallback name |
+| `mcp-malformed.json` | a `server.json` with `packages` but no `name` | failed, named after its directory |
+| `hooks-malformed.json` | a hook config that is a top-level JSON array, not an object | failed, naming the missing-object error |
+| `settings-no-hooks.json` | a realistic `.claude/settings.json` with `enabledPlugins`, `pluginConfigs` and `permissions`, no `hooks` key | no row at all — not a failed row |
 
 ## Two caps, and why the second is not redundant
 

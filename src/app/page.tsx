@@ -21,12 +21,13 @@ export default async function HomePage() {
     <>
       <h1>AgentDock</h1>
       <p className="lede">
-        An open index of Agent Skills. Paste a public GitHub repository and AgentDock reads its{' '}
-        <code>SKILL.md</code> files, records what they declare, and links back to the exact file at
-        the exact commit it read.
+        An open index of agent artifacts. Paste a public GitHub repository and AgentDock reads the
+        files that declare them, records what they declare, and links back to the exact file at the
+        exact commit it read.
       </p>
       <p className="lede muted">
-        It indexes Agent Skills only for now. Plugins, MCP servers, commands and hooks come later.
+        It indexes skills, plugins, marketplaces, MCP servers, commands and hooks. What an artifact
+        can actually do to your machine is disclosed later.
       </p>
 
       <SubmitForm />

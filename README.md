@@ -1,15 +1,17 @@
 # AgentDock
 
 An open index of AI agent artifacts. You give it a public GitHub repository; it
-reads the `SKILL.md` files inside, records what they declare, and links back to
-the exact file at the exact commit it read.
+reads the skill, plugin, catalog, MCP server, command and hook files inside,
+records what they declare, and links back to the exact file at the exact
+commit it read.
 
 **AgentDock reads files and reports what it read. It does not run them, and it
 cannot say whether an artifact is safe.** There is no risk score, no grade, and
 no safety badge anywhere in the interface, by design.
 
-Phase 1 indexes Agent Skills only. Plugins, MCP servers, commands and hooks come
-later.
+AgentDock detects all six artifact types — Agent Skills, plugins, plugin
+marketplaces, MCP servers, commands and hooks. Capability disclosure — what an
+artifact can reach, not just what it declares — comes later.
 
 ## Running it locally
 
@@ -112,7 +114,7 @@ src/
     r/[owner]/[repo]/[...path]/  one artifact: every field, and the permalink
   components/   the sanitizing Markdown renderer, the submit form, listing rows
   db/           schema, connection, and the read queries the pages use
-  detect/       SKILL.md detection and tolerant frontmatter parsing
+  detect/       six detectors, tolerant frontmatter parsing, capped JSON parsing
   github/       the HTTP client, metadata, tree and raw reads
   ingest/       pipeline.ts (the whole path), persist.ts (the one transaction),
                 errors.ts (the nine things a person can be told),

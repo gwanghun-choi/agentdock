@@ -1,6 +1,14 @@
 import { and, eq, inArray, isNull, not, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { ingestAttempt, ingestJob, packageTable, packageVersion, repository } from '@/db/schema';
+import {
+  ingestAttempt,
+  ingestJob,
+  packageTable,
+  packageVersion,
+  repoSeed,
+  repository,
+  repositoryDenylist,
+} from '@/db/schema';
 import type { RepoMetadata } from '@/github/types';
 import type { RepoScan } from './types';
 
@@ -122,6 +130,7 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
           summary: found.summary,
           licenseText: found.licenseText,
           meta: found.meta,
+          parentPath: found.parentPath,
         })
         // The array must name the same three columns, in the same order, as the
         // unique('package_identity') constraint.
@@ -133,6 +142,7 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
             summary: found.summary,
             licenseText: found.licenseText,
             meta: found.meta,
+            parentPath: found.parentPath,
             delistedAt: null,
             updatedAt: sql`now()`,
           },
@@ -192,6 +202,48 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
             ),
           )
           .returning({ id: packageTable.id });
+
+    // A seed pointing at a denylisted repository is one bug away from
+    // re-adding something the denylist exists to keep out (DAT-06). Filtered
+    // here, where the transaction is already open, rather than trusted to
+    // Phase 5. One indexed read of the denylist rows the seed set could
+    // possibly match, then an in-memory filter — same transaction, same
+    // guarantee as a `NOT EXISTS` on the insert.
+    const seedNames = scan.seeds.map((s) => s.fullName);
+    const blockedSeeds =
+      seedNames.length > 0
+        ? new Set(
+            (
+              await tx
+                .select({ fullName: repositoryDenylist.fullName })
+                .from(repositoryDenylist)
+                .where(inArray(repositoryDenylist.fullName, seedNames))
+            ).map((r) => r.fullName),
+          )
+        : new Set<string>();
+
+    for (const seed of scan.seeds) {
+      if (blockedSeeds.has(seed.fullName)) continue;
+      await tx
+        .insert(repoSeed)
+        .values({
+          fullName: seed.fullName,
+          sourceKind: seed.sourceKind,
+          discoveredFrom: seed.discoveredFrom,
+          discoveredPath: seed.discoveredPath,
+          hint: seed.hint,
+        })
+        .onConflictDoUpdate({
+          target: repoSeed.fullName,
+          set: {
+            sourceKind: seed.sourceKind,
+            discoveredFrom: seed.discoveredFrom,
+            discoveredPath: seed.discoveredPath,
+            hint: seed.hint,
+            updatedAt: sql`now()`,
+          },
+        });
+    }
 
     const counters: DiffCounters = {
       discovered: scan.packages.length,

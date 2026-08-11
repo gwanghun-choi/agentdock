@@ -61,8 +61,8 @@ export function JobPanel({ job, retry }: { job: JobView; retry?: ReactNode }) {
         // Deliberately not the counter line. A row of zeros reads as a
         // malfunction; this is an answer about the repository.
         <p className="lede">
-          AgentDock read this repository and found no SKILL.md files in it. It currently indexes
-          Agent Skills only.
+          AgentDock read this repository and found no agent artifacts in it. It looks for skills,
+          plugins, marketplaces, MCP servers, commands and hooks.
         </p>
       ) : null}
 

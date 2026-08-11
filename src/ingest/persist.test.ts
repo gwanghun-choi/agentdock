@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { RepoMetadata } from '@/github/types';
-import type { RepoScan, ScannedPackage } from './types';
+import type { RepoScan, ScannedPackage, ScannedSeed } from './types';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -37,6 +37,7 @@ function pkg(overrides: Partial<ScannedPackage> = {}): ScannedPackage {
     frontmatter: { name: 'canvas-design' },
     parseStatus: 'ok',
     parseErrors: [],
+    parentPath: null,
     ...overrides,
   };
 }
@@ -46,6 +47,22 @@ function three(): ScannedPackage[] {
   return ['a', 'b', 'c'].map((n) =>
     pkg({ sourcePath: `skills/${n}/SKILL.md`, name: n, slug: n, contentHash: `hash-${n}` }),
   );
+}
+
+// Sentinel, for the same reason FULL_NAME is one: repo_seed carries a unique
+// index on full_name, and vitest runs test files in parallel against the one
+// test schema.
+const SEED_NAME = 'persist-spec-seed-owner/persist-spec-seed-repo';
+
+function seed(overrides: Partial<ScannedSeed> = {}): ScannedSeed {
+  return {
+    fullName: SEED_NAME,
+    sourceKind: 'github',
+    discoveredFrom: FULL_NAME,
+    discoveredPath: '.claude-plugin/marketplace.json',
+    hint: { name: 'seed-repo' },
+    ...overrides,
+  };
 }
 
 function scan(overrides: Partial<RepoScan> = {}): RepoScan {
@@ -67,6 +84,7 @@ function scan(overrides: Partial<RepoScan> = {}): RepoScan {
     commitSha: COMMIT,
     treeTruncated: false,
     packages: [pkg()],
+    seeds: [],
     ...overrides,
   };
 }
@@ -124,6 +142,8 @@ describe.skipIf(!DB_URL)('persistScan', () => {
   afterAll(async () => {
     await sql`DELETE FROM repository WHERE github_node_id = ${NODE_ID}`;
     await sql`DELETE FROM ingest_job WHERE target = ${JOB_TARGET}`;
+    await sql`DELETE FROM repo_seed WHERE full_name = ${SEED_NAME}`;
+    await sql`DELETE FROM repository_denylist WHERE full_name = ${SEED_NAME}`;
     await sql.end();
   });
 
@@ -132,6 +152,8 @@ describe.skipIf(!DB_URL)('persistScan', () => {
   beforeEach(async () => {
     await sql`DELETE FROM repository WHERE github_node_id = ${NODE_ID}`;
     await sql`DELETE FROM ingest_job WHERE target = ${JOB_TARGET}`;
+    await sql`DELETE FROM repo_seed WHERE full_name = ${SEED_NAME}`;
+    await sql`DELETE FROM repository_denylist WHERE full_name = ${SEED_NAME}`;
   });
 
   it('writes a repository, a package and a version', async () => {
@@ -161,6 +183,22 @@ describe.skipIf(!DB_URL)('persistScan', () => {
     const second = await persistScan(changed);
     expect(second.packageIds).toEqual(first.packageIds);
     expect(second.newVersions).toBe(1);
+  });
+
+  it('round-trips parent_path through both the insert and the conflict path', async () => {
+    const first = await persistScan(scan({ packages: [pkg({ parentPath: 'plugins/foo' })] }));
+    const [inserted] = await sql<{ parent_path: string | null }[]>`
+      SELECT parent_path FROM package WHERE id = ${first.packageIds[0]}
+    `;
+    expect(inserted.parent_path).toBe('plugins/foo');
+
+    await persistScan(
+      scan({ packages: [pkg({ parentPath: 'plugins/bar', contentHash: 'hash-b' })] }),
+    );
+    const [updated] = await sql<{ parent_path: string | null }[]>`
+      SELECT parent_path FROM package WHERE id = ${first.packageIds[0]}
+    `;
+    expect(updated.parent_path).toBe('plugins/bar');
   });
 
   it('delists a package that vanished, in the same transaction', async () => {
@@ -417,6 +455,71 @@ describe.skipIf(!DB_URL)('persistScan', () => {
 
       expect(await attemptsOf(jobId)).toHaveLength(0);
       expect(await jobRow(jobId)).toMatchObject({ status: 'running' });
+    });
+  });
+
+  describe('seeds', () => {
+    async function seedRow(fullName: string) {
+      const [row] = await sql<
+        {
+          full_name: string;
+          source_kind: string;
+          discovered_from: string;
+          discovered_path: string;
+          hint: Record<string, unknown>;
+        }[]
+      >`SELECT full_name, source_kind, discovered_from, discovered_path, hint
+          FROM repo_seed WHERE full_name = ${fullName}`;
+      return row;
+    }
+
+    it('writes one repo_seed row per seed, keyed on full_name, inside the same transaction as the artifacts', async () => {
+      await persistScan(scan({ seeds: [seed()] }));
+
+      const row = await seedRow(SEED_NAME);
+      expect(row).toMatchObject({
+        full_name: SEED_NAME,
+        source_kind: 'github',
+        discovered_from: FULL_NAME,
+        discovered_path: '.claude-plugin/marketplace.json',
+      });
+      expect(row.hint).toMatchObject({ name: 'seed-repo' });
+    });
+
+    it('updates rather than duplicates when the same seed is persisted again', async () => {
+      await persistScan(scan({ seeds: [seed()] }));
+      await persistScan(scan({ seeds: [seed({ hint: { name: 'renamed' } })] }));
+
+      const [{ n }] = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM repo_seed WHERE full_name = ${SEED_NAME}
+      `;
+      expect(n).toBe(1);
+      const row = await seedRow(SEED_NAME);
+      expect(row.hint).toMatchObject({ name: 'renamed' });
+    });
+
+    it('does not write a seed whose full_name is in repository_denylist', async () => {
+      await sql`INSERT INTO repository_denylist (full_name, reason) VALUES (${SEED_NAME}, 'test')`;
+
+      await persistScan(scan({ seeds: [seed()] }));
+
+      expect(await seedRow(SEED_NAME)).toBeUndefined();
+    });
+
+    it('leaves no seed row when the transaction fails after the seed upsert', async () => {
+      // The seed upsert runs before the job's ingest_attempt insert; a job id
+      // with no matching ingest_job row fails that insert's foreign key and
+      // aborts the whole transaction, including the seed that already ran.
+      await expect(
+        persistScan(scan({ seeds: [seed()] }), {
+          id: 2 ** 31 - 1,
+          attemptNo: 1,
+          startedAt: new Date(),
+          rateRemaining: null,
+        }),
+      ).rejects.toThrow();
+
+      expect(await seedRow(SEED_NAME)).toBeUndefined();
     });
   });
 

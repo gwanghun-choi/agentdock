@@ -3,9 +3,22 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DETECTORS } from './index';
 import { skill } from './skill';
-import type { Candidate, TreeEntry } from './types';
+import type { Candidate, ParseResult, TreeEntry } from './types';
 
 const ROOT = 'fixtures';
+
+/**
+ * skill.parse() only ever returns the artifact-bearing arms of the widened
+ * ParseResult — 03-01 adds two arms for detectors that route candidates away
+ * from the package channel (seeds, none), and skill.ts is unmodified and never
+ * produces them. This narrows the type for the assertions below without
+ * touching skill.ts.
+ */
+function isArtifact(
+  result: ParseResult,
+): result is Extract<ParseResult, { status: 'ok' | 'partial' }> {
+  return result.ok && (result.status === 'ok' || result.status === 'partial');
+}
 
 /**
  * Loads a frozen corpus: the captured tree and a map of the captured bodies.
@@ -103,7 +116,7 @@ describe('skill.parse — the reference corpus', () => {
     const result = await skill.parse(candidate as Candidate, read);
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!isArtifact(result)) return;
     expect(result.status).toBe('partial');
     expect(result.warnings.join(' ')).toContain('"template-skill"');
     expect(result.warnings.join(' ')).toContain('"template"');
@@ -120,7 +133,7 @@ describe('skill.parse — the reference corpus', () => {
     const result = await skill.parse(candidate as Candidate, read);
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!isArtifact(result)) return;
     expect(result.status).toBe('partial');
     expect(result.warnings.join(' ')).toMatch(/description is 1068 characters, over 1024/);
     expect(result.artifact.summary).toHaveLength(1068);
@@ -130,7 +143,7 @@ describe('skill.parse — the reference corpus', () => {
     const { entries, read } = corpus('anthropics-skills');
     const results = await Promise.all(skill.match(entries).map((c) => skill.parse(c, read)));
     for (const r of results) {
-      expect(r.ok && r.artifact.declaredVersion).toBeNull();
+      expect(isArtifact(r) && r.artifact.declaredVersion).toBeNull();
     }
   });
 });
@@ -141,7 +154,9 @@ describe('skill.parse — the clean baseline produces no warnings at all', () =>
     const results = await Promise.all(skill.match(entries).map((c) => skill.parse(c, read)));
 
     expect(results).toHaveLength(24);
-    const noisy = results.flatMap((r) => (r.ok && r.warnings.length > 0 ? r.warnings : []));
+    const noisy = results.flatMap((r) =>
+      isArtifact(r) && r.warnings.length > 0 ? r.warnings : [],
+    );
     // If this ever fires, the conformance checker has drifted strict — not the
     // corpus. Without it, every warning added later looks correct because
     // something always does.
@@ -155,11 +170,11 @@ describe('skill.parse — the non-specification version field', () => {
     const { entries, read } = corpus('baoyu-skills');
     const results = await Promise.all(skill.match(entries).map((c) => skill.parse(c, read)));
 
-    const versioned = results.filter((r) => r.ok && r.artifact.declaredVersion !== null);
+    const versioned = results.filter((r) => isArtifact(r) && r.artifact.declaredVersion !== null);
     expect(versioned).toHaveLength(21);
     expect(results.filter((r) => r.ok && r.status === 'partial')).toHaveLength(21);
 
-    const warnings = results.flatMap((r) => (r.ok ? r.warnings : []));
+    const warnings = results.flatMap((r) => (isArtifact(r) ? r.warnings : []));
     expect(warnings.every((w) => w.includes('keys outside the specification: version'))).toBe(true);
     // Never synthesized: the value is whatever the file said.
     expect(
@@ -182,7 +197,7 @@ describe('skill.parse — conformance is recorded, never enforced', () => {
     const result = await parseAt('skills/other/SKILL.md', adversarial('nested-metadata.md'));
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!isArtifact(result)) return;
     expect(result.status).toBe('partial');
     // Stored as it arrived, not coerced to the documented shape.
     expect(result.artifact.frontmatter.metadata).toMatchObject({ tags: ['a', 'b'] });
@@ -190,13 +205,17 @@ describe('skill.parse — conformance is recorded, never enforced', () => {
 
   it('normalizes allowed-tools from a list, a string and a comma list alike', async () => {
     const fromList = await parseAt('skills/tools-list/SKILL.md', adversarial('tools-list.md'));
-    expect(fromList.ok && fromList.artifact.meta.allowedTools).toEqual(['Read', 'Write', 'Bash']);
+    expect(isArtifact(fromList) && fromList.artifact.meta.allowedTools).toEqual([
+      'Read',
+      'Write',
+      'Bash',
+    ]);
 
     const fromString = await parseAt(
       'skills/t/SKILL.md',
       '---\nname: t\ndescription: d\nallowed-tools: Read Write, Bash\n---\n\nBody.\n',
     );
-    expect(fromString.ok && fromString.artifact.meta.allowedTools).toEqual([
+    expect(isArtifact(fromString) && fromString.artifact.meta.allowedTools).toEqual([
       'Read',
       'Write',
       'Bash',
@@ -206,7 +225,7 @@ describe('skill.parse — conformance is recorded, never enforced', () => {
       'skills/t/SKILL.md',
       '---\nname: t\ndescription: d\nallowed-tools: 7\n---\n\nBody.\n',
     );
-    expect(wrongShape.ok && wrongShape.warnings.join(' ')).toContain(
+    expect(isArtifact(wrongShape) && wrongShape.warnings.join(' ')).toContain(
       'allowed-tools is neither a string nor a list',
     );
   });
@@ -217,11 +236,13 @@ describe('skill.parse — conformance is recorded, never enforced', () => {
 
     for (const r of results) {
       expect(r.ok).toBe(true);
-      if (!r.ok) continue;
+      if (!isArtifact(r)) continue;
       expect(Array.isArray(r.artifact.meta.frontmatterKeys)).toBe(true);
       expect(typeof r.artifact.meta.specPure).toBe('boolean');
     }
-    expect(results.filter((r) => r.ok && r.artifact.meta.specPure === false)).toHaveLength(21);
+    expect(results.filter((r) => isArtifact(r) && r.artifact.meta.specPure === false)).toHaveLength(
+      21,
+    );
   });
 });
 
@@ -261,7 +282,7 @@ describe('skill.parse — storage shape', () => {
   it('stores the body as a capped excerpt', async () => {
     const big = `---\nname: big\ndescription: d\n---\n\n${'b'.repeat(200_000)}\n`;
     const result = await parseAt('skills/big/SKILL.md', big);
-    expect(result.ok && result.artifact.body.length).toBe(32 * 1024);
+    expect(isArtifact(result) && result.artifact.body.length).toBe(32 * 1024);
   });
 
   it('keeps frontmatter licence prose in its own field, never SPDX-shaped', async () => {
@@ -269,19 +290,31 @@ describe('skill.parse — storage shape', () => {
       'skills/l/SKILL.md',
       '---\nname: l\ndescription: d\nlicense: Complete terms in LICENSE.txt\n---\n\nBody.\n',
     );
-    expect(result.ok && result.artifact.licenseText).toBe('Complete terms in LICENSE.txt');
-    expect(result.ok && result.artifact).not.toHaveProperty('licenseSpdx');
+    expect(isArtifact(result) && result.artifact.licenseText).toBe('Complete terms in LICENSE.txt');
+    expect(isArtifact(result) && result.artifact).not.toHaveProperty('licenseSpdx');
   });
 
   it('keeps a right-to-left override in the stored summary', async () => {
     const result = await parseAt('skills/bidi/SKILL.md', adversarial('bidi.md'));
-    expect(result.ok && result.artifact.summary).toContain('‮');
+    expect(isArtifact(result) && result.artifact.summary).toContain('‮');
   });
 });
 
 describe('the registry', () => {
-  it('is one array with one element in this phase', () => {
-    expect(DETECTORS).toEqual([skill]);
-    expect(DETECTORS.map((d) => d.type)).toEqual(['skill']);
+  // The DET-09 canary. This is an assertion about the registry's shape rather
+  // than its length precisely so it keeps failing when someone writes a
+  // detector file and forgets to add it here. 03-01 added catalog; 03-02 added
+  // plugin and mcp_server; 03-03 adds the final two, command and hook — this is
+  // the phase's final form.
+  it('holds one element per artifact type, each a distinct type string', () => {
+    expect(DETECTORS.map((d) => d.type)).toEqual([
+      'skill',
+      'catalog',
+      'plugin',
+      'mcp_server',
+      'command',
+      'hook',
+    ]);
+    expect(new Set(DETECTORS.map((d) => d.type)).size).toBe(DETECTORS.length);
   });
 });

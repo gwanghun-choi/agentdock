@@ -25,6 +25,12 @@ type IngestLog = {
   rateRemaining: number | null;
   /** UTC epoch seconds, as GitHub reports it. */
   rateReset: number | null;
+  /**
+   * Present only when a registered detector's match() threw. Absent (not an
+   * empty array) on a clean run, so JSON.stringify drops the key entirely and
+   * every line without a detector failure keeps the same closed key set.
+   */
+  detectorErrors?: string[];
 };
 
 /** The loop's own lifecycle. No message field, so there is nothing to interpolate into. */

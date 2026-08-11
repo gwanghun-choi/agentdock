@@ -16,6 +16,27 @@ export type ScannedPackage = {
   frontmatter: Record<string, unknown>;
   parseStatus: ParseStatus;
   parseErrors: string[];
+  /**
+   * The nearest container's directory (e.g. a plugin root), filled by
+   * src/detect/nesting.ts's assignParentPaths pass over the candidate set —
+   * never computed here. null when this artifact sits at the top level or its
+   * container declared the repository root.
+   */
+  parentPath: string | null;
+};
+
+/**
+ * A repo_seed row, ready to persist. `DetectedSeed` (src/detect/types.ts) is
+ * what a detector returns; this adds the provenance a detector cannot know —
+ * which repository was being scanned, and which file named this seed — the
+ * same way `ScannedPackage` adds pipeline-known fields to `DetectedArtifact`.
+ */
+export type ScannedSeed = {
+  fullName: string;
+  sourceKind: string;
+  discoveredFrom: string;
+  discoveredPath: string;
+  hint: Record<string, unknown>;
 };
 
 /**
@@ -42,4 +63,5 @@ export type RepoScan = {
   commitSha: string;
   treeTruncated: boolean;
   packages: ScannedPackage[];
+  seeds: ScannedSeed[];
 };

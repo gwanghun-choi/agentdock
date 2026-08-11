@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "review-agent-governance@wshobson-agents": true,
+    "protect-mcp@wshobson-agents": true
+  },
+  "pluginConfigs": {},
+  "permissions": {
+    "allow": ["Bash(git status)", "Bash(git diff)"],
+    "deny": ["Bash(rm -rf *)"]
+  }
+}

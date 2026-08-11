@@ -96,20 +96,27 @@ try {
 
   // Reference data the foreign keys require, reasserted after every migrate.
   //
-  // The reviewed migration in drizzle/ seeds artifact_type for `agentdock`, and
-  // that is where the row belongs historically. But `db:test:setup` regenerates
+  // The reviewed migrations in drizzle/ seed artifact_type for `agentdock`, and
+  // that is where each row belongs historically. But `db:test:setup` regenerates
   // the test schema's DDL from scratch into a gitignored folder, so a hand-added
-  // INSERT can never reach `agentdock_test` — leaving package.type pointing at
-  // an empty dimension and every database-backed suite failing on
-  // package_type_artifact_type_id_fk. Seeding here fixes it once, for both
-  // schemas and for every suite, instead of once per test file.
+  // INSERT in a drizzle/ migration can never reach `agentdock_test` — leaving
+  // package.type pointing at an empty dimension and every database-backed suite
+  // failing on package_type_artifact_type_id_fk. Seeding here fixes it once, for
+  // both schemas and for every suite, instead of once per test file.
   //
-  // ON CONFLICT DO NOTHING, so this is a no-op on a schema the migration
-  // already seeded. Phase 3's four extra types are added by migration; this
-  // list only has to carry what the FKs need to exist at all.
+  // ON CONFLICT DO NOTHING, so this is a no-op on a schema the migrations
+  // already seeded. This list must carry every artifact_type row any migration
+  // ever hand-adds, row for row — not just enough for the FKs to resolve at
+  // all, because agentdock_test never sees the migrations' own INSERTs.
   await sql.unsafe(
     `insert into "${schema}"."artifact_type" ("id", "label")
-     values ('skill', 'Agent Skill')
+     values
+       ('skill', 'Agent Skill'),
+       ('plugin', 'Claude Code Plugin'),
+       ('catalog', 'Plugin Marketplace'),
+       ('mcp_server', 'MCP Server'),
+       ('command', 'Slash Command'),
+       ('hook', 'Hook Configuration')
      on conflict do nothing`,
   );
 

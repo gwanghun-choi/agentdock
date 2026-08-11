@@ -1,0 +1,7 @@
+{
+  "name": "broken-marketplace",
+  "owner": { "name": "Test Owner" },
+  "plugins": {
+    "not": "an array — a buggy generator serialized an object here instead"
+  }
+}

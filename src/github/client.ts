@@ -59,6 +59,24 @@ export function normalizeRepo(input: string): { owner: string; repo: string } | 
   return { owner, repo: stripped };
 }
 
+/**
+ * Extracts owner/repo from a github.com repository URL, or null if the host
+ * is not github.com or the path does not resolve to a valid owner/repo.
+ *
+ * The only predicate this project exports for recognizing a GitHub repository
+ * URL outside src/github/ — check:boundaries rule 5 requires every GitHub
+ * hostname literal to live in this directory, so a catalog detector reading a
+ * marketplace.json `url`/`git-subdir` source calls this rather than naming
+ * "github.com" itself. Reuses normalizeRepo's exact validation (length caps,
+ * character rules, .git stripping) rather than a second copy of it.
+ */
+export function githubRepoFromUrl(url: URL): { owner: string; repo: string } | null {
+  if (url.hostname !== 'github.com') return null;
+  const parts = url.pathname.split('/').filter(Boolean);
+  if (parts.length < 2) return null;
+  return normalizeRepo(`${parts[0]}/${parts[1]}`);
+}
+
 function assertAllowedHost(url: string): URL {
   let parsed: URL;
   try {
