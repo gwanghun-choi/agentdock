@@ -52,9 +52,56 @@ bun run dev               # http://localhost:3000
 `bun run dev` refuses to start unless it is connected as `agentdock_app` with a
 `search_path` confined to a schema AgentDock owns.
 
-Open the home page, paste `anthropics/skills`, and wait a few seconds. To get
-realistic rows without touching the network at all, run `bun run db:seed`
+Open the home page and paste `anthropics/skills`. Submitting no longer waits for
+GitHub: it writes one row to `ingest_job` and hands back a job page at
+`/jobs/{id}`, which re-renders itself until the job reaches a terminal status. To
+get realistic rows without touching the network at all, run `bun run db:seed`
 instead — see **Fixtures** below.
+
+### The background worker
+
+Ingestion runs in a poll loop started from `src/instrumentation.ts` when the
+server boots — there is no second command and no service beyond PostgreSQL.
+Durability lives in the job row rather than in the process: a job whose worker
+died is returned to the queue by an age sweep, and two workers claiming at once
+are arbitrated by PostgreSQL rather than by application code.
+
+```
+INGEST_WORKER=0 bun run dev     # start the server with the loop turned off
+bun run verify:worker           # prove the loop starts at boot, spending no GitHub quota
+```
+
+`INGEST_WORKER` is optional and defaults to on. It is not a secret; it is the
+escape hatch for the day an ingest measurably delays a page render. Turning it
+off costs nothing that is not recoverable: submissions still write their job
+rows, they simply wait, and whichever process next runs with the loop on picks
+them up in the order they were requested.
+
+Submitting a repository returns as soon as its row is written, and the job page
+at `/jobs/{id}` shows what happened to it. Submitting one that is already queued
+or already being read sends you to that same job rather than starting a second.
+
+### What happens when a run fails
+
+A repository is read **at most three times** before AgentDock stops trying, and
+two of the failures never get a second attempt at all: GitHub returns a
+byte-identical response for a repository that does not exist and one that is
+private, and a repository past the size cap will be past it again — so retrying
+either spends the shared budget to learn the same thing twice. Only an
+unreachable GitHub and a storage failure are retried, on a widening delay of one,
+two and four minutes.
+
+Running out of GitHub budget is **not** a failure. The job is scheduled for when
+the budget returns and keeps the attempt it would otherwise have spent, because
+waiting for a clock is not a failed attempt. That schedule is clamped to an hour,
+since the reset time arrives in a response header. When fewer than two requests
+remain the loop stops claiming altogether, so an empty budget produces one
+deferral rather than one failed job per repository waiting.
+
+A job that has exhausted its attempts shows the reason it recorded and a control
+that starts a new run. Nothing retry-specific happens behind that control: a
+finished job has left the active-job index, so the ordinary submit mints a new
+one.
 
 ## What is where
 
@@ -68,7 +115,9 @@ src/
   detect/       SKILL.md detection and tolerant frontmatter parsing
   github/       the HTTP client, metadata, tree and raw reads
   ingest/       pipeline.ts (the whole path), persist.ts (the one transaction),
-                errors.ts (the nine things a person can be told)
+                errors.ts (the nine things a person can be told),
+                retry.ts (the delay curve and the per-outcome disposition),
+                worker.ts (the poll loop, the reaper, the budget gate)
   proxy.ts      the per-request nonce and the Content-Security-Policy
   env.ts        configuration parsing; log.ts  one line per ingest
 fixtures/       frozen GitHub responses and hostile inputs
@@ -129,6 +178,7 @@ so seeded rows are exactly what a live ingest would produce.
 | `bun run db:reset --confirm` | Empty the `agentdock` schema |
 | `bun run db:test:setup` | Build the `agentdock_test` schema for database-backed tests |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
+| `bun run verify:worker` | Start a built server, make no request, and assert a pre-seeded job still ran. Needs a database and a build; deliberately not part of `ci`. |
 
 There is deliberately no `db:push` and no `db:pull`. Those are the only migration
 commands that diff live database state, and this database holds another

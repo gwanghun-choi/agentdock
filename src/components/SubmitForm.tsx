@@ -30,7 +30,8 @@ export function SubmitForm() {
           spellCheck={false}
         />
         <button type="submit" disabled={pending}>
-          {pending ? 'Reading…' : 'Index'}
+          {/* Reading is no longer what the request does — it queues one. */}
+          {pending ? 'Queuing…' : 'Index'}
         </button>
       </div>
       <p id="repo-help" className="muted">
@@ -43,7 +44,9 @@ export function SubmitForm() {
         className={state.status === 'error' ? 'error' : 'ok'}
       >
         {state.message}
-        {state.href ? <Link href={state.href}> View repository</Link> : null}
+        {/* The href is now the job page, not the repository page — the repository
+            has nothing on it until the worker finishes. */}
+        {state.href ? <Link href={state.href}> Watch the job</Link> : null}
       </p>
     </form>
   );

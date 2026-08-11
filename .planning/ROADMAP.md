@@ -23,7 +23,7 @@ look at is not a slice.
 
 - [x] **Phase 0: Database Isolation Bootstrap** — Make the database, not the code, enforce the schema boundary (COMPLETE — isolation verified 7/7)
 - [x] **Phase 1: Walking Skeleton** — Submit a GitHub repo, see its skills on a detail page, safely (COMPLETE — live ingest verified)
-- [ ] **Phase 2: Durable Ingestion** — Make ingestion asynchronous, resumable, and idempotent
+- [x] **Phase 2: Durable Ingestion** — Make ingestion asynchronous, resumable, and idempotent (COMPLETE — verified live)
 - [ ] **Phase 3: Detector Pluralism** — Plugins, MCP servers, commands, hooks, and catalogs
 - [ ] **Phase 4: Capability Disclosure** — The reason the product exists
 - [ ] **Phase 5: Corpus & Cold Start** — Fill the index without a crawler
@@ -119,12 +119,31 @@ Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they sh
   5. A failed job shows a readable reason and can be retried
   6. Approaching the GitHub rate limit causes backoff rather than a wall of errors
   7. No token or response body appears in any log line
-**Plans**: 3 plans
+**Plans**: 5 plans
 
-Plans:
-- [ ] 02-01: Job table with `FOR UPDATE SKIP LOCKED` claiming, transactional terminal states, and a lock reaper
-- [ ] 02-02: Rate-limit accounting, backoff, ETag conditional requests, and commit-SHA short circuit
-- [ ] 02-03: Job status UI and API integration tests
+> **Two corrections made during planning, both recorded in `CONTEXT.md`.**
+>
+> - **The ETag line in the old plan 02-02 is struck.** Phase 1 measured a `304`
+>   consuming quota and found the reason in GitHub's own wording: the exemption
+>   applies only to a request made *while correctly authorized*, and AgentDock is
+>   unauthenticated. The `etag` column keeps being written (DAT-04 asks for it);
+>   nothing is built on top of it until a token exists.
+> - **The commit-SHA short circuit saves no GitHub quota**, and no plan may claim
+>   it does. Both core calls are issued concurrently before the sha is known.
+>   What it saves is up to 200 raw fetches and up to 120 s of wall clock, which
+>   is exactly what criterion 4 asks for.
+>
+> Planning also found the failure criterion 2 exists to prevent already live in
+> the code: `persist.ts` delists packages it merely failed to read, so a
+> repository over `CAPS.maxFiles` loses the artifacts a cap skipped. Plan 02-02
+> fixes it first, alone, with its own regression test.
+
+Plans: 5, in 4 waves. Wave 3 runs 02-03 and 02-04 in parallel — they share no file.
+- [x] AGD-02-01-PLAN.md — wave 1 — Tracer: `ingest_job` and `ingest_attempt`, one-statement `FOR UPDATE SKIP LOCKED` claiming, the `started_at` reaper, the in-process loop started from `instrumentation.ts`, an asynchronous submit, and a runnable answer to whether `register()` fires at `next start` without a first request
+- [x] AGD-02-02-PLAN.md — wave 2 — The truncation guard that stops a partial read deleting real artifacts, the discovered/new/updated/unchanged/removed breakdown, and the attempt row plus the job's terminal state inside the artifact transaction
+- [x] AGD-02-03-PLAN.md — wave 3 — Commit-SHA short circuit with a narrow repository-only write, and a log line whose outcome field is a union rather than a string
+- [x] AGD-02-04-PLAN.md — wave 3 — Submit result, job status page with the honest counter breakdown, the found-nothing and partial-read sentences, and the repository page's freshness block
+- [x] AGD-02-05-PLAN.md — wave 4 — Retry policy as pure functions, rate-limit exhaustion scheduled and clamped with its attempt refunded, and the preemptive gate that stops claiming before the budget is gone
 
 ---
 

@@ -6,8 +6,14 @@ import { DETECTORS } from '@/detect';
 import { GitHubError, normalizeRepo, rateLimitState } from '@/github/client';
 import { fetchRepoScanInputs } from '@/github/scan';
 import { log } from '@/log';
-import { type IngestOutcome, messageFor, toIngestOutcome } from './errors';
-import { persistScan } from './persist';
+import { type AttemptOutcome, type IngestOutcome, messageFor, toIngestOutcome } from './errors';
+import {
+  type DiffCounters,
+  type JobContext,
+  lastIngestedSha,
+  persistScan,
+  touchRepository,
+} from './persist';
 import type { RepoScan, ScannedPackage } from './types';
 
 /** PRV-07: an excerpt with attribution, never a mirror. */
@@ -16,6 +22,8 @@ const MAX_BODY = 32 * 1024;
 export type IngestResult =
   | {
       ok: true;
+      /** `unchanged` means the commit had not moved, so no file was read. */
+      outcome: 'ok' | 'unchanged';
       owner: string;
       repo: string;
       fullName: string;
@@ -24,8 +32,19 @@ export type IngestResult =
       stored: number;
       failed: number;
       truncated: boolean;
+      counters: DiffCounters;
     }
-  | { ok: false; outcome: IngestOutcome; message: string };
+  | {
+      ok: false;
+      outcome: IngestOutcome;
+      message: string;
+      /**
+       * UTC epoch seconds, present only when GitHub said so. Carried out here so
+       * the worker does not derive the same fact a second way — the catch block
+       * already extracts it to build the message.
+       */
+      resetAt?: number;
+    };
 
 /**
  * Version identity, defined once.
@@ -40,7 +59,10 @@ export function contentHash(raw: string): string {
   return createHash('sha256').update(raw.replace(/\r\n/g, '\n'), 'utf8').digest('hex');
 }
 
-export async function ingestRepository(input: string): Promise<IngestResult> {
+export async function ingestRepository(
+  input: string,
+  job?: Omit<JobContext, 'rateRemaining'>,
+): Promise<IngestResult> {
   const started = Date.now();
 
   const normalized = normalizeRepo(input);
@@ -51,33 +73,111 @@ export async function ingestRepository(input: string): Promise<IngestResult> {
   const { owner, repo } = normalized;
   const fullName = `${owner}/${repo}`;
 
+  /**
+   * The one line this ingestion emits, on whichever path it ends.
+   *
+   * Every field defaults, so a failure path states zero counters rather than
+   * omitting them — a missing key and a genuine zero read the same in a log
+   * aggregator, and only one of them is true.
+   */
+  const emit = (fields: {
+    outcome: AttemptOutcome;
+    commitSha?: string | null;
+    found?: number;
+    stored?: number;
+    failed?: number;
+    counters?: DiffCounters;
+    truncated?: boolean;
+  }) => {
+    const rate = rateLimitState();
+    log({
+      event: 'ingest',
+      jobId: job?.id ?? null,
+      attempt: job?.attemptNo ?? null,
+      owner,
+      repo,
+      commitSha: fields.commitSha ?? null,
+      outcome: fields.outcome,
+      found: fields.found ?? 0,
+      stored: fields.stored ?? 0,
+      failed: fields.failed ?? 0,
+      new: fields.counters?.new ?? 0,
+      updated: fields.counters?.updated ?? 0,
+      unchanged: fields.counters?.unchanged ?? 0,
+      removed: fields.counters?.removed ?? 0,
+      truncated: fields.truncated ?? false,
+      durationMs: Date.now() - started,
+      rateRemaining: rate?.remaining ?? null,
+      rateReset: rate?.reset ?? null,
+    });
+  };
+
   const [blocked] = await db
     .select()
     .from(repositoryDenylist)
     .where(eq(repositoryDenylist.fullName, fullName.toLowerCase()))
     .limit(1);
   if (blocked) {
-    log({
-      event: 'ingest',
-      owner,
-      repo,
-      commitSha: null,
-      outcome: 'denylisted',
-      found: 0,
-      stored: 0,
-      failed: 0,
-      durationMs: Date.now() - started,
-      rateRemaining: null,
-    });
+    emit({ outcome: 'denylisted' });
     return { ok: false, outcome: 'denylisted', message: messageFor('denylisted') };
   }
 
   try {
+    // Matched on the lowercased full name, which is how every other lookup in
+    // this codebase matches. A renamed repository misses and takes the full
+    // path, which is correct: a rename is exactly when the stored row and the
+    // fetched one need reconciling.
+    const known = await lastIngestedSha(fullName);
+
     // One place decides which paths are worth reading, and it reads paths only —
     // so a repository with no artifacts costs zero file fetches.
-    const inputs = await fetchRepoScanInputs(owner, repo, (tree) =>
-      DETECTORS.flatMap((d) => d.match(tree.entries)).flatMap((c) => c.needs),
+    const inputs = await fetchRepoScanInputs(
+      owner,
+      repo,
+      (tree) => DETECTORS.flatMap((d) => d.match(tree.entries)).flatMap((c) => c.needs),
+      known,
     );
+
+    if (inputs.unchanged) {
+      const touched = await touchRepository(
+        inputs.metadata,
+        inputs.tree.commitSha,
+        new Date(),
+        job ? { ...job, rateRemaining: rateLimitState()?.remaining ?? null } : undefined,
+      );
+
+      const counters: DiffCounters = {
+        discovered: touched.liveCount,
+        new: 0,
+        updated: 0,
+        unchanged: touched.liveCount,
+        removed: 0,
+        parseFailed: 0,
+      };
+
+      emit({
+        outcome: 'unchanged',
+        commitSha: inputs.tree.commitSha,
+        found: touched.liveCount,
+        stored: touched.liveCount,
+        counters,
+        truncated: touched.treeTruncated,
+      });
+
+      return {
+        ok: true,
+        outcome: 'unchanged',
+        owner,
+        repo,
+        fullName: inputs.metadata.fullName,
+        commitSha: inputs.tree.commitSha,
+        found: touched.liveCount,
+        stored: touched.liveCount,
+        failed: 0,
+        truncated: touched.treeTruncated,
+        counters,
+      };
+    }
 
     const read = async (path: string) => {
       const body = inputs.files.get(path);
@@ -140,18 +240,7 @@ export async function ingestRepository(input: string): Promise<IngestResult> {
     }
 
     if (packages.length === 0) {
-      log({
-        event: 'ingest',
-        owner,
-        repo,
-        commitSha: inputs.tree.commitSha,
-        outcome: 'no_artifacts',
-        found: 0,
-        stored: 0,
-        failed: 0,
-        durationMs: Date.now() - started,
-        rateRemaining: rateLimitState()?.remaining ?? null,
-      });
+      emit({ outcome: 'no_artifacts', commitSha: inputs.tree.commitSha });
       return { ok: false, outcome: 'no_artifacts', message: messageFor('no_artifacts') };
     }
 
@@ -165,23 +254,26 @@ export async function ingestRepository(input: string): Promise<IngestResult> {
       packages,
     };
 
-    const persisted = await persistScan(scan);
+    // The rate figure comes from here, so the transaction never reaches into
+    // the GitHub client.
+    const persisted = await persistScan(
+      scan,
+      job ? { ...job, rateRemaining: rateLimitState()?.remaining ?? null } : undefined,
+    );
 
-    log({
-      event: 'ingest',
-      owner,
-      repo,
-      commitSha: scan.commitSha,
+    emit({
       outcome: 'ok',
+      commitSha: scan.commitSha,
       found: packages.length,
       stored: persisted.packageIds.length,
       failed,
-      durationMs: Date.now() - started,
-      rateRemaining: rateLimitState()?.remaining ?? null,
+      counters: persisted.counters,
+      truncated: scan.treeTruncated,
     });
 
     return {
       ok: true,
+      outcome: 'ok',
       owner,
       repo,
       fullName: scan.fullName,
@@ -190,23 +282,13 @@ export async function ingestRepository(input: string): Promise<IngestResult> {
       stored: persisted.packageIds.length,
       failed,
       truncated: scan.treeTruncated,
+      counters: persisted.counters,
     };
   } catch (error) {
     const outcome = toIngestOutcome(error);
     const reset = error instanceof GitHubError ? error.rateLimit?.reset : undefined;
-    log({
-      event: 'ingest',
-      owner,
-      repo,
-      commitSha: null,
-      outcome,
-      found: 0,
-      stored: 0,
-      failed: 0,
-      durationMs: Date.now() - started,
-      rateRemaining: rateLimitState()?.remaining ?? null,
-    });
+    emit({ outcome });
     // The exception itself never crosses this boundary.
-    return { ok: false, outcome, message: messageFor(outcome, reset) };
+    return { ok: false, outcome, message: messageFor(outcome, reset), resetAt: reset };
   }
 }

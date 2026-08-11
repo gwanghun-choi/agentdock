@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 2
-  total_plans: 30
-  completed_plans: 10
-  percent: 33
+  completed_phases: 3
+  total_plans: 32
+  completed_plans: 15
+  percent: 47
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 2 — Durable Ingestion (not yet planned)
+**Current focus:** Phase 3 — Detector Pluralism (not yet planned)
 
 ## Current Position
 
-Phase: 1 of 9 complete (Walking Skeleton)
-Plan: 6 of 6 in Phase 1
-Status: Phase 1 complete and verified against a live repository — ready to plan Phase 2
-Last activity: 2026-08-10 — Phase 1 executed. Live ingest of `addyosmani/agent-skills` found and stored 24 skills; list and detail pages render; the stored permalink resolves on GitHub; re-ingest produced no duplicate rows.
+Phase: 2 of 9 complete (Durable Ingestion)
+Plan: 5 of 5 in Phase 2
+Status: Phase 2 complete and verified live — ready to plan Phase 3
+Last activity: 2026-08-10 — Phase 2 executed. Submit is asynchronous and returns immediately; an in-process worker claims jobs with `FOR UPDATE SKIP LOCKED`; re-index reports `24 discovered · 0 new · 0 updated · 24 unchanged` in 366 ms without re-reading files; a failing job left the 24 previously indexed packages untouched. A live delisting bug found in Phase 1's code was reproduced and fixed.
 
-Progress: [███░░░░░░░] 33%
+Progress: [█████░░░░░] 47%
 
 ## Performance Metrics
 
@@ -66,7 +66,17 @@ Progress: [███░░░░░░░] 33%
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
 
-### Carried into Phase 2
+### Carried into Phase 3
+
+| Item | Note |
+|------|------|
+| A second, remote PostgreSQL was inspected on 2026-08-10 | `49.50.138.22 / didim_api`. **pgvector 0.8.2 is available there and `pg_trgm` is already installed** — the "pgvector is unavailable" premise in `PROJECT.md`, `SUMMARY.md`, and `REQUIREMENTS.md` is true of the *local* instance only. Availability is not a reason to build semantic search; Phase 6 still gates it on logged evidence. Details in `research/ENVIRONMENT.md`. **Whether AgentDock moves there is an open maintainer decision** — if it does, Phase 0's bootstrap must be repeated, since that instance hosts five applications and its only login role is a superuser. |
+| `test-owner/*` sentinel discipline across five parallel DB suites | Load-bearing but only documented in comments. A future suite that leaves a `queued` row with a past `next_attempt_at` will make `claimJob`'s null-return assertions flaky. A `pg_advisory_xact_lock` would remove the class permanently. |
+| `runWorker()`'s loop body is untested | The `while`+`sleep` is covered only by `bun run verify:worker`, which needs a build and a database and is therefore not in `ci`. |
+| `.env.example` needs one documented line | `INGEST_WORKER` — optional, `0` turns the in-process ingest loop off. Not a secret. This environment denies all `.env*` access, so it must be added by hand. |
+| Ingestion still has no abuse protection | Acceptable for local development; tracked for any public exposure. |
+
+### Carried from Phase 1
 
 | Item | Note |
 |------|------|
@@ -88,23 +98,23 @@ Progress: [███░░░░░░░] 33%
 ### Constraints
 
 - AgentDock owns the `agentdock` schema and nothing else; it must never read, write, or migrate `public` or `didim_mcp`
-- The connecting role is currently a superuser that owns the other application's schema, so `REVOKE`-based isolation is ineffective
-- Vector support is unavailable in the shared database image, so semantic search would require changing an image another application depends on
+- AgentDock connects as the non-superuser `agentdock_app`, which owns only `agentdock` and `agentdock_test` and holds no privilege on any pre-existing table. The database enforces this; application-layer schema qualification is defense in depth on top. *(Superseded the earlier note that isolation could not be enforced — that was true only while connecting as `mcp`.)*
+- Vector support is absent from the **local** database image. It **is** available (0.8.2) on the remote `didim_api` instance inspected 2026-08-10. Either way, semantic search is gated on measured evidence from Phase 6's query log, not on availability.
 - The GitHub token must be dedicated and scopeless; the ambient `gh` credential must never be reused
 - WSL local development only; no Kubernetes, no production deployment in this milestone
 - One part-time maintainer — anything requiring ongoing manual curation or moderation will not survive
 
 ### Open Questions
 
-- Exact grant set for the dedicated role against a live shared database
-- Whether `pg_trgm` installation needs coordination with the other application's owner
+- Whether AgentDock stays on the local instance or moves to the remote `didim_api` one — the maintainer's call; a move repeats the Phase 0 bootstrap
+- `pg_trgm` is not installed locally (needs a superuser) but **is already installed** on the remote instance, so which instance Phase 6 targets changes whether that coordination is needed at all
 - False-positive rate of injection-shaped detection on a real corpus — decides whether that detector ships as flags, as "patterns worth reading", or not at all
 - Actual distribution of artifact types in the wild, which affects detector priority
 - Several security effect sizes rest on unverified 2026 preprints; they shape the framing, not the design, and must not be quoted publicly
 
 ## Next Action
 
-Run `/gsd-plan-phase 2` to plan Durable Ingestion.
+Run `/gsd-plan-phase 3` to plan Detector Pluralism.
 
 ---
-*Last updated: 2026-08-10 after Phase 1 execution and live verification*
+*Last updated: 2026-08-10 after Phase 2 execution and live verification*

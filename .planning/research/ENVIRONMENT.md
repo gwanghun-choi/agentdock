@@ -97,6 +97,49 @@ Credentials exist in the container environment and are deliberately not recorded
 **Evidence:** `docker inspect`, `psql \dn`, `pg_available_extensions`, `pg_roles`
 **Last verified:** 2026-08-10
 
+## A second, remote PostgreSQL exists — capabilities differ from the local one
+
+On 2026-08-10 the maintainer supplied credentials for a **remote** PostgreSQL instance and
+asked for a connectivity check. It was inspected **read-only**; nothing was created,
+altered, or written, and no credential is recorded in this repository.
+
+| Property | Local (`mcpdb`, Docker) | Remote (`didim_api`) |
+|----------|-------------------------|----------------------|
+| Version | 16.14 (Alpine) | 16.14 (Debian) |
+| Schemas in use | `didim_mcp`, `public` | `bidpilot`, `didim_mcp`, `didim_rag`, `didim_vault`, `report`, `public` |
+| Tables | 10 | 46, across five applications |
+| Login roles | `mcp` only, superuser | `postgres` only, superuser |
+| `pg_trgm` | available, **not installed** | **installed** (1.6) |
+| `vector` (pgvector) | **not available at all** | **available** (0.8.2), not installed |
+| `agentdock` schema | created in Phase 0 | does not exist |
+
+### What this changes, and what it does not
+
+**Changes:** the claim repeated across `PROJECT.md`, `SUMMARY.md`, and `REQUIREMENTS.md`
+that "pgvector is unavailable, so semantic search would require swapping a shared database
+image" is true of the *local* instance only. On the remote instance pgvector is one
+`CREATE EXTENSION` away. `pg_trgm` is likewise already installed there, which removes the
+superuser coordination step Phase 6 anticipated.
+
+**Does not change:** whether semantic search is *warranted*. The gating decision was always
+evidence — a measured rate of intent-shaped zero-result queries — not availability. Phase 6
+still logs queries first. Availability removes an obstacle; it does not supply a reason.
+
+### If AgentDock ever moves to this instance
+
+The isolation problem is **worse** here, not better: five applications share it, and the
+only login role is a superuser. Every argument from Phase 0 applies with more force, so the
+same bootstrap is required — a dedicated non-superuser `agentdock_app` owning only an
+`agentdock` schema. Connecting AgentDock as `postgres` would hand an ingestion service that
+processes untrusted input full authority over five applications' data.
+
+Two further differences to check before any move: it is reachable over the network rather
+than a local socket, and its `pg_hba` rules were not inspected.
+
+**Status:** 검증됨 — observed read-only
+**Evidence:** `psql` against the remote host, 2026-08-10; catalog queries only
+**Last verified:** 2026-08-10
+
 ## GitHub API — live rate limits measured from this machine
 
 Measured against `https://api.github.com/rate_limit`.

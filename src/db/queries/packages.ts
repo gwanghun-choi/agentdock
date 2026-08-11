@@ -103,6 +103,8 @@ export type RepositorySummary = {
   licenseSpdx: string | null;
   pushedAt: Date | null;
   scannedAt: Date | null;
+  /** The commit the listing below was read at. Null until AgentDock has looked. */
+  lastIngestedSha: string | null;
   treeTruncated: boolean;
 };
 
@@ -114,6 +116,7 @@ const repositorySummary = {
   licenseSpdx: repository.licenseSpdx,
   pushedAt: repository.pushedAt,
   scannedAt: repository.scannedAt,
+  lastIngestedSha: repository.lastIngestedSha,
   treeTruncated: repository.treeTruncated,
 };
 

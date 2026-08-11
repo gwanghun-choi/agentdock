@@ -35,6 +35,9 @@ const envSchema = z.object({
   // it is rejected here rather than discovered when a statement lands elsewhere.
   DATABASE_SCHEMA: z.enum(['agentdock', 'agentdock_test']).default('agentdock'),
   GITHUB_TOKEN: githubToken,
+  // Not a secret. '0' disables the in-process loop, which is the escape hatch
+  // for the day an ingest measurably delays a page render.
+  INGEST_WORKER: z.enum(['0', '1']).default('1'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

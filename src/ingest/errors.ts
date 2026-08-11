@@ -12,6 +12,13 @@ export type IngestOutcome =
   | 'storage_failed';
 
 /**
+ * What an attempt row can record. Every ingestion outcome, plus the no-change
+ * short circuit, which is a true answer about a repository rather than a
+ * failure of one.
+ */
+export type AttemptOutcome = IngestOutcome | 'unchanged';
+
+/**
  * The complete set of things a person can be told, and the only strings that
  * reach the interface. Nothing here interpolates an exception, a hostname, a
  * query, or a token — there is no code path along which one could.

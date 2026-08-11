@@ -1,7 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GitHubError } from '@/github/client';
 import type { GitHubFailure } from '@/github/types';
-import { log } from '@/log';
 import { type IngestOutcome, messageFor, OUTCOME_MESSAGES, toIngestOutcome } from './errors';
 
 const OUTCOMES: IngestOutcome[] = [
@@ -123,42 +122,6 @@ describe('toIngestOutcome', () => {
   });
 });
 
-describe('the log line', () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  it('emits one line whose field set is closed', () => {
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-    log({
-      event: 'ingest',
-      owner: 'anthropics',
-      repo: 'skills',
-      commitSha: 'f17010c9bb483898c1d9c9f42dde2b3a98889434',
-      outcome: 'ok',
-      found: 18,
-      stored: 18,
-      failed: 0,
-      durationMs: 1234,
-      rateRemaining: 55,
-    });
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    const entry = JSON.parse(spy.mock.calls[0][0] as string);
-    // There is no payload parameter, so there is no key here that could hold a
-    // response body or a credential. That is the whole mechanism.
-    expect(Object.keys(entry).sort()).toEqual([
-      'commitSha',
-      'durationMs',
-      'event',
-      'failed',
-      'found',
-      'outcome',
-      'owner',
-      'rateRemaining',
-      'repo',
-      'stored',
-      'ts',
-    ]);
-    expect(entry.ts).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-  });
-});
+// The log line's own assertions live in src/log.test.ts, so the file that owns
+// the shape owns its proof. Extending the entry adds required fields, so a copy
+// left here would have failed to compile anyway.

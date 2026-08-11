@@ -24,6 +24,8 @@ export type ScanInputs = {
   /** Paths that matched but were not read, because a cap was reached. */
   skipped: string[];
   artifactsTruncated: boolean;
+  /** The commit has not moved since the last ingest, so nothing was read. */
+  unchanged: boolean;
 };
 
 /**
@@ -38,6 +40,7 @@ export async function fetchRepoScanInputs(
   owner: string,
   repo: string,
   selectPaths: (tree: RepoTree) => string[],
+  knownSha?: string | null,
 ): Promise<ScanInputs> {
   const deadline = Date.now() + CAPS.wallClockMs;
 
@@ -52,6 +55,25 @@ export async function fetchRepoScanInputs(
       .slice(0, CAPS.maxTreeEntries)
       .filter((e) => e.path.split('/').length <= CAPS.maxDepth),
   };
+
+  // Both core calls are already spent — the sha arrives inside the tree
+  // response, which is why this saves no GitHub quota at all. What it saves is
+  // up to CAPS.maxFiles raw fetches and up to CAPS.wallClockMs of wall clock,
+  // plus the raw-host abuse-throttle exposure this file's header warns about.
+  //
+  // Placed after the tree is bounded and before any path is selected, so the
+  // tree handed back is the same shape the full path would have produced and no
+  // caller has to know which branch ran.
+  if (knownSha && bounded.commitSha === knownSha) {
+    return {
+      metadata,
+      tree: bounded,
+      files: new Map(),
+      skipped: [],
+      artifactsTruncated: false,
+      unchanged: true,
+    };
+  }
 
   const wanted = selectPaths(bounded);
   const taken = wanted.slice(0, CAPS.maxFiles);
@@ -86,5 +108,6 @@ export async function fetchRepoScanInputs(
     files,
     skipped,
     artifactsTruncated: skipped.length > 0,
+    unchanged: false,
   };
 }

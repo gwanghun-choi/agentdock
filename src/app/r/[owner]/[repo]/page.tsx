@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { metaDescription } from '@/components/metadata';
 import { PackageRows } from '@/components/PackageRows';
+import { latestJobForTarget } from '@/db/queries/jobs';
 import { getRepositoryPackages } from '@/db/queries/packages';
 
 // Read at request time. next build runs in CI, where there is no database.
@@ -26,6 +28,10 @@ export default async function RepositoryPage({ params }: Props) {
   if (!found) notFound();
 
   const { repository, packages } = found;
+  // What AgentDock is currently doing about this repository. A succeeded job
+  // adds nothing the timestamp below does not already say, so only an unfinished
+  // or failed one is linked.
+  const job = await latestJobForTarget(repository.fullName);
 
   return (
     <>
@@ -55,6 +61,19 @@ export default async function RepositoryPage({ params }: Props) {
             ? `${repository.scannedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`
             : 'never'}
         </span>
+        {/* A short prefix rather than a second link: each artifact's permalink
+            already resolves to the exact file at this exact commit, and a second
+            link to the same commit is a duplicate a reader has to disambiguate. */}
+        {repository.lastIngestedSha ? (
+          <span>At commit {repository.lastIngestedSha.slice(0, 7)}</span>
+        ) : null}
+        {job && job.status !== 'succeeded' ? (
+          <span>
+            <Link href={`/jobs/${job.id}`}>
+              {job.status === 'failed' ? 'The last read failed' : 'AgentDock is reading it now'}
+            </Link>
+          </span>
+        ) : null}
       </p>
 
       <h2>

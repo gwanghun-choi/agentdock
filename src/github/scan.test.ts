@@ -172,6 +172,59 @@ describe('fetchRepoScanInputs', () => {
     );
   });
 
+  describe('when the commit has not moved', () => {
+    const paths = ['a/SKILL.md', 'b/SKILL.md', 'README.md'];
+
+    it('returns with nothing read once the known sha matches', async () => {
+      stubGitHub({ tree: () => Response.json(treeJson(paths)) });
+
+      const scan = await fetchRepoScanInputs('anthropics', 'skills', selectSkills, COMMIT);
+
+      expect(scan.unchanged).toBe(true);
+      expect(scan.files.size).toBe(0);
+      expect(scan.skipped).toEqual([]);
+      expect(scan.artifactsTruncated).toBe(false);
+      // Not one body. This is the whole saving: up to CAPS.maxFiles raw fetches.
+      expect(hosts.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(0);
+    });
+
+    it('still spends the same two API-host requests, so it saves no quota', async () => {
+      stubGitHub({ tree: () => Response.json(treeJson(paths)) });
+
+      await fetchRepoScanInputs('anthropics', 'skills', selectSkills, COMMIT);
+
+      // Both core calls are issued concurrently, before the sha inside the tree
+      // response is known. A future edit that starts calling this a quota saving
+      // contradicts this line.
+      expect(hosts.filter((h) => h === 'api.github.com')).toHaveLength(2);
+    });
+
+    it('still hands back the freshly fetched metadata and the bounded tree', async () => {
+      stubGitHub({ tree: () => Response.json(treeJson(paths)) });
+
+      const scan = await fetchRepoScanInputs('anthropics', 'skills', selectSkills, COMMIT);
+
+      // Both were already paid for, and both move independently of the commit.
+      expect(scan.metadata.stars).toBe(42);
+      expect(scan.tree.commitSha).toBe(COMMIT);
+      expect(scan.tree.entries.map((e) => e.path)).toEqual(paths);
+    });
+
+    it.each([
+      ['a sha that does not match', 'b'.repeat(40)],
+      ['no stored sha at all', null],
+      ['an undefined stored sha', undefined],
+    ])('takes the full path given %s', async (_label, known) => {
+      stubGitHub({ tree: () => Response.json(treeJson(paths)) });
+
+      const scan = await fetchRepoScanInputs('anthropics', 'skills', selectSkills, known);
+
+      expect(scan.unchanged).toBe(false);
+      expect([...scan.files.keys()]).toEqual(['a/SKILL.md', 'b/SKILL.md']);
+      expect(hosts.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(2);
+    });
+  });
+
   it.each([
     ['metadata', 'repo'],
     ['tree', 'tree'],

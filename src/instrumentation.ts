@@ -19,4 +19,10 @@ export async function register(): Promise<void> {
       target: schemaMeta.key,
       set: { value: now.toISOString(), updatedAt: now },
     });
+
+  if (process.env.INGEST_WORKER === '0') return;
+  const { runWorker } = await import('@/ingest/worker');
+  // Deliberately not awaited. register() must complete before the server is
+  // ready to handle requests, and a poll loop never completes.
+  void runWorker();
 }

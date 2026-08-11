@@ -7,6 +7,7 @@ import {
   integer,
   jsonb,
   pgSchema,
+  smallint,
   text,
   timestamp,
   unique,
@@ -168,3 +169,92 @@ export const repositoryDenylist = agentdock.table('repository_denylist', {
   reason: text('reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The queue. Deliberately narrow: every claim, every reap and every terminal
+ * transition UPDATEs this row, so anything wide belongs in ingest_attempt
+ * instead. A jsonb column here would turn the hottest UPDATE in the schema into
+ * a non-HOT one and grow the claim index for no read that needs it.
+ *
+ * No `kind` column and no `priority` column. Phase 5's registry-sync jobs are a
+ * different shape and a five-line migration away; guessing at their key now
+ * costs the same migration and would be wrong.
+ *
+ * `status` is text with a comment rather than an enum or a CHECK, for the reason
+ * already recorded on artifact_type above: widening a constrained type on a
+ * populated table is a DROP, which this project's boundary scanner treats as
+ * destructive. The union is enforced in TypeScript.
+ */
+export const ingestJob = agentdock.table(
+  'ingest_job',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    // Always a validated `owner/repo` — normalizeRepo() runs before this row exists.
+    target: text('target').notNull(),
+    // queued | running | succeeded | failed
+    status: text('status').notNull().default('queued'),
+    attempts: smallint('attempts').notNull().default(0),
+    // Both the retry backoff and the rate-limit reset schedule land here. This
+    // column is the scheduler; there is no cron and no timer.
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+    // Set on claim, cleared on reap and on terminal. This column IS the liveness
+    // signal, which is why there is no heartbeat table.
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    workerId: text('worker_id'),
+  },
+  (t) => [
+    // Dedupes duplicate submits AND makes the reaper's running->queued
+    // transition collision-free, because the row never leaves this index.
+    // Including 'running' in the predicate is what buys the second property.
+    uniqueIndex('ingest_job_active_key')
+      .on(t.target)
+      .where(sql`${t.status} in ('queued','running')`),
+    // The claim's only index. Partial, so it holds claimable rows and nothing else.
+    index('ingest_job_claim_idx').on(t.nextAttemptAt).where(sql`${t.status} = 'queued'`),
+    // The reaper's scan.
+    index('ingest_job_running_idx').on(t.startedAt).where(sql`${t.status} = 'running'`),
+  ],
+);
+
+/**
+ * Append-only. One row per claim, written exactly once when the attempt ends.
+ * Never updated, so it can be as wide as the status page needs — which is the
+ * whole reason it is a second table.
+ */
+export const ingestAttempt = agentdock.table(
+  'ingest_attempt',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    jobId: bigint('job_id', { mode: 'number' })
+      .notNull()
+      .references(() => ingestJob.id, { onDelete: 'cascade' }),
+    attemptNo: smallint('attempt_no').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }).notNull().defaultNow(),
+
+    // The IngestOutcome union, plus 'unchanged'. Not a free string: this value
+    // is rendered and is filtered on.
+    outcome: text('outcome').notNull(),
+    // The reason a person reads. Drawn only from the outcome message table,
+    // never from an exception's message.
+    errorDetail: text('error_detail'),
+
+    commitSha: text('commit_sha'),
+    filesRead: integer('files_read').notNull().default(0),
+    artifactsFound: integer('artifacts_found').notNull().default(0),
+    artifactsNew: integer('artifacts_new').notNull().default(0),
+    artifactsUpdated: integer('artifacts_updated').notNull().default(0),
+    artifactsUnchanged: integer('artifacts_unchanged').notNull().default(0),
+    artifactsRemoved: integer('artifacts_removed').notNull().default(0),
+    parseFailed: integer('parse_failed').notNull().default(0),
+    // True when the tree was cut short OR a file-read cap fired. Both are
+    // indistinguishable to a reader and both mean the same thing: partial.
+    truncated: boolean('truncated').notNull().default(false),
+
+    rateRemaining: integer('rate_remaining'),
+    rateReset: timestamp('rate_reset', { withTimezone: true }),
+  },
+  (t) => [index('ingest_attempt_job_idx').on(t.jobId, t.attemptNo.desc())],
+);

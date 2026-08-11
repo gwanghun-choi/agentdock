@@ -20,7 +20,8 @@
     "db:reset": "bun scripts/dev-reset.mjs",
     "db:test:generate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun --bun drizzle-kit generate",
     "db:test:migrate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun scripts/migrate.mjs",
-    "db:test:setup": "bun run db:test:generate && bun run db:test:migrate"
+    "db:test:setup": "bun run db:test:generate && bun run db:test:migrate",
+    "verify:worker": "bun scripts/verify-worker-boot.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
