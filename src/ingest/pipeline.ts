@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
+import { ANALYZERS } from '@/analyze';
+import { fileInventory } from '@/analyze/files';
+import { analyzeArtifact } from '@/analyze/run';
 import { db } from '@/db/client';
 import { repositoryDenylist } from '@/db/schema';
 import { DETECTORS } from '@/detect';
@@ -61,6 +64,34 @@ export type IngestResult =
  */
 export function contentHash(raw: string): string {
   return createHash('sha256').update(raw.replace(/\r\n/g, '\n'), 'utf8').digest('hex');
+}
+
+/**
+ * Pure work, so it runs here — in the loop that already holds the body,
+ * alongside contentHash — and never inside persistScan's transaction, where
+ * it would hold a connection open across up to 400 artifacts for nothing.
+ *
+ * `files` is empty for every AnalyzeInput in this plan: no analyzer this
+ * phase reads it yet, and the real inventory (src/analyze/files.ts) is
+ * written separately, onto `package`, not carried through here.
+ *
+ * An analyzer that throws is isolated by analyzeArtifact itself; what this
+ * wrapper adds is surfacing that failure the same way a detector's match()
+ * failure already is — one line in detectorErrors, id and message only,
+ * never the body (T-04-03).
+ */
+function runAnalysis(
+  sourcePath: string,
+  body: string,
+  frontmatter: Record<string, unknown>,
+  meta: Record<string, unknown>,
+  detectorErrors: string[],
+) {
+  const pass = analyzeArtifact(ANALYZERS, { sourcePath, body, frontmatter, meta, files: [] });
+  for (const [id, message] of Object.entries(pass.errors)) {
+    detectorErrors.push(`analyze:${id}: ${message}`);
+  }
+  return pass.findings;
 }
 
 export async function ingestRepository(
@@ -238,6 +269,10 @@ export async function ingestRepository(
         const result = await safeParse(pass.detector, candidate, read);
         const blobSha =
           inputs.tree.entries.find((e) => e.path === candidate.sourcePath)?.sha ?? null;
+        // Free: the tree is already fully in memory, and this is a filter
+        // over it, not a fetch. Written on every scan, not gated on a new
+        // version — see ScannedPackage.files's own doc for why.
+        const files = fileInventory(inputs.tree.entries, candidate.sourcePath);
 
         // Not an artifact and not a package — path-only match() could not know.
         if (result.status === 'none') continue;
@@ -259,6 +294,7 @@ export async function ingestRepository(
 
         if (!result.ok) {
           failed += 1;
+          const body = raw.slice(0, MAX_BODY);
           packages.push({
             type: pass.detector.type,
             sourcePath: candidate.sourcePath,
@@ -270,15 +306,18 @@ export async function ingestRepository(
             blobSha,
             contentHash: contentHash(raw),
             declaredVersion: null,
-            body: raw.slice(0, MAX_BODY),
+            body,
             frontmatter: {},
             parseStatus: 'failed',
             parseErrors: result.errors,
             parentPath: candidate.parentPath ?? null,
+            findings: runAnalysis(candidate.sourcePath, body, {}, {}, detectorErrors),
+            files,
           });
           continue;
         }
 
+        const body = result.artifact.body.slice(0, MAX_BODY);
         packages.push({
           type: pass.detector.type,
           sourcePath: candidate.sourcePath,
@@ -290,11 +329,19 @@ export async function ingestRepository(
           blobSha,
           contentHash: contentHash(result.artifact.contentBasis ?? raw),
           declaredVersion: result.artifact.declaredVersion,
-          body: result.artifact.body.slice(0, MAX_BODY),
+          body,
           frontmatter: result.artifact.frontmatter,
           parseStatus: result.status,
           parseErrors: result.warnings,
           parentPath: candidate.parentPath ?? null,
+          findings: runAnalysis(
+            candidate.sourcePath,
+            body,
+            result.artifact.frontmatter,
+            result.artifact.meta,
+            detectorErrors,
+          ),
+          files,
         });
       }
     }

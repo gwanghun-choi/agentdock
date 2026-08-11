@@ -180,6 +180,7 @@ so seeded rows are exactly what a live ingest would produce.
 | `bun run db:reset --confirm` | Empty the `agentdock` schema |
 | `bun run db:test:setup` | Build the `agentdock_test` schema for database-backed tests |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
+| `bun run analyze:backfill [limit]` | Re-run the capability analyzers over every stored `package_version` with `analyzed_at` still null — reads stored bytes only, issues no GitHub request. Needs a database; deliberately not part of `ci`. Default limit 500. |
 | `bun run verify:worker` | Start a built server, make no request, and assert a pre-seeded job still ran. Needs a database and a build; deliberately not part of `ci`. |
 
 There is deliberately no `db:push` and no `db:pull`. Those are the only migration
@@ -221,6 +222,7 @@ structurally, so it is enforced rather than remembered.
 | `no-execution` | `child_process`, `execSync`, `spawnSync`, `node:vm` | Nothing from a scanned repository is ever run. |
 | `no-disk-write` | `writeFileSync`, `createWriteStream`, `mkdirSync`, … | Repository content never reaches disk, which removes archive extraction and path traversal by construction. |
 | `no-host-sprawl` | a GitHub hostname named outside `src/github/` | `git grep` answers "what can this reach" completely. Every URL is built from two validated parts. |
+| `no-verdict-vocabulary` | *safe*, *clean*, *verified*, *trusted*, *approved*, *malicious*, *grade*, *risk score* in `src/app/**` or `src/components/**` UI copy | CAP-10/CAP-12: no page ever renders a safety verdict. A `SANCTIONED` list of exact substrings, each with a reason, is the product's own ledger of the few places it is allowed to say the word — see `src/app/r/[owner]/[repo]/[...path]/page.tsx`'s "What AgentDock does not check" section, which permanently states the limits of everything above it. |
 
 ## Why migrations are applied by `scripts/migrate.mjs`
 

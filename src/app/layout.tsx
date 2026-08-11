@@ -7,6 +7,14 @@ export const metadata = {
   description: 'Discover and inspect AI agent skills, plugins, and MCP servers.',
 };
 
+// Single-line and named, rather than JSX text wrapped across lines, so it is
+// one exact, unambiguous substring — check-boundaries.mjs's SANCTIONED
+// ledger (rule six, no-verdict-vocabulary) excises this precise string
+// before its scan runs. Content unchanged from the sentence this footer has
+// always shipped; only its representation moved (04-04, Measurement 7).
+const FOOTER_DISCLAIMER =
+  'AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe. Read anything before you use it.';
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     // Declaring both schemes lets the browser pick form controls, scrollbars and
@@ -37,10 +45,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <footer className="site-footer">
           <div className="wrap">
-            <p>
-              AgentDock reads files and reports what it read. It does not run them, and it cannot
-              say whether an artifact is safe. Read anything before you use it.
-            </p>
+            <p>{FOOTER_DISCLAIMER}</p>
           </div>
         </footer>
       </body>

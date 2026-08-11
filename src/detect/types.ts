@@ -1,4 +1,17 @@
-export type TreeEntry = { path: string; type: string; sha: string; size?: number };
+export type TreeEntry = {
+  path: string;
+  type: string;
+  sha: string;
+  size?: number;
+  /**
+   * See src/github/types.ts's TreeEntry for the full doc. A SEPARATE
+   * declaration on purpose (04-CONTEXT.md Binding decision — `type` here is a
+   * wide `string`, so a github.TreeEntry is structurally assignable to this
+   * one and a one-sided edit compiles cleanly and silently drops the field.
+   * Both declarations change together, always.
+   */
+  mode?: string;
+};
 
 export type Candidate = {
   type: string;

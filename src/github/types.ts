@@ -3,6 +3,14 @@ export type TreeEntry = {
   type: 'blob' | 'tree' | 'commit';
   sha: string;
   size?: number;
+  /**
+   * The raw Git mode string, present on every entry of the Trees response and
+   * discarded until now. 100644 regular, 100755 executable, 040000 tree,
+   * 120000 symlink, 160000 submodule. Measured across the four frozen corpora:
+   * 2,623 regular, 50 executable, 2 symlinks, 1,156 trees. Costs no request —
+   * it rides the response fetchRepoTree already issues.
+   */
+  mode?: string;
 };
 
 export type RepoMetadata = {

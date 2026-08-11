@@ -46,6 +46,7 @@ export async function fetchRepoTree(owner: string, repo: string): Promise<RepoTr
       type: e.type as TreeEntry['type'],
       sha: String(e.sha),
       size: typeof e.size === 'number' ? e.size : undefined,
+      mode: typeof e.mode === 'string' ? e.mode : undefined,
     }),
   );
 

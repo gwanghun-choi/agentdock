@@ -378,3 +378,18 @@ a:hover {
   border-left: 2px solid var(--border);
   color: var(--muted);
 }
+
+/* The file inventory (CAP-01/CAP-03). Same plain border-and-padding register
+   as .body table — no icons, no colour, no badge. */
+.files {
+  border-collapse: collapse;
+  margin: 0.5rem 0 0;
+  font-size: var(--t-sm);
+}
+
+.files th,
+.files td {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}

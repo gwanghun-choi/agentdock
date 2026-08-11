@@ -12,6 +12,8 @@
 //      every Drizzle table hangs off pgSchema().
 //   5. Application source cannot execute a scanned repository, write its
 //      content to disk, render raw HTML, or name a host outside src/github/.
+//   6. src/app/** and src/components/** never hardcode a safety verdict —
+//      the words CAP-10 forbids — in a JSX text run or a quoted string.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
@@ -254,6 +256,127 @@ export function checkSourceBoundaries(path, text) {
   return problems;
 }
 
+// Rule 6: CAP-10/CAP-12. A hardcoded safety verdict in UI copy is a failing
+// build, not a convention someone has to remember. CONTEXT.md Measurement 7:
+// a naive version of this rule fails on page.tsx's own shipped, correct
+// disclaimer ("...it cannot say whether it is safe.") on its first run —
+// this is why SANCTIONED exists below and ships in the same commit as the
+// rule, rather than being bolted on after the first CI failure.
+const VERDICT_WORDS = [
+  'safe',
+  'clean',
+  'verified',
+  'trusted',
+  'approved',
+  'malicious',
+  'grade',
+  'risk score',
+];
+
+/**
+ * The product's own ledger of every place it is permitted to say one of
+ * VERDICT_WORDS. Exact substrings, excised from a file's text before the
+ * scan runs, each with the reason it is allowed. Teaching the pattern to
+ * recognise negation instead (so "it cannot say whether it is safe" passes
+ * on its own) is an unbounded English-grammar problem that would let through
+ * a double negative and reject something harmless — an exact list is
+ * bounded, is exact, and a reviewer sees every addition to it as a diff.
+ * @type {{ text: string, reason: string }[]}
+ */
+export const SANCTIONED = [
+  {
+    text: 'AgentDock reads this file; it does not run it, and it cannot say whether it is safe.',
+    reason:
+      'page.tsx FILE_DISCLAIMER — the shipped CAP-09 sentence this rule must not fail on (Measurement 7).',
+  },
+  {
+    text: 'AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe.',
+    reason:
+      "page.tsx CAPABILITY_INTRO — the CAP-09 block's opening line, quoting the product claim.",
+  },
+  {
+    text: 'AgentDock cannot tell you whether an artifact is safe.',
+    reason: "page.tsx CAPABILITY_NOT_CHECKED — the CAP-09 block's closing line.",
+  },
+  {
+    text: 'AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe. Read anything before you use it.',
+    reason: 'layout.tsx FOOTER_DISCLAIMER — the same product claim, shown on every page.',
+  },
+];
+
+// Anchored with a negative lookbehind for a letter and a trailing word
+// boundary, case-insensitive — exempts `unverified`, `unsafe` and `cleanup`
+// BY CONSTRUCTION, with no explicit exception list for any of them: a rule
+// with one special case invites a second (CONTEXT.md decision 8).
+const VERDICT_PATTERN = new RegExp(
+  `(?<![a-zA-Z])(${VERDICT_WORDS.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+  'gi',
+);
+
+// Where a verdict word would actually be shown to a reader: a JS/TS string
+// or template literal, or a run of JSX text between two delimiters (a tag
+// boundary `>`/`<`, or an expression boundary `{`/`}` — a sentence broken
+// across `{expr}` interpolations, like page.tsx's own copy, still has each
+// of its plain-text runs bounded by one of these on either side). Approximated
+// with regex rather than a parser, per CONTEXT.md's accepted ceiling: a
+// dynamically built string (`'ver' + 'ified'`) walks past this, the same
+// limit the other five rules already accept for their own patterns.
+const STRING_SPAN = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g;
+const JSX_TEXT_SPAN = /[>}][^<>{}]+[<{]/g;
+
+/**
+ * Rule 6, against one UI file's text. CAP-10 ("never a verdict"), CAP-12
+ * ("verbs of observation, never judgment").
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function checkVerdictVocabulary(text) {
+  let stripped = stripJsComments(text);
+  for (const { text: phrase } of SANCTIONED) {
+    stripped = stripped.split(phrase).join('');
+  }
+
+  /** @type {string[]} */
+  const problems = [];
+  const found = new Set();
+
+  const scanSpan = (span) => {
+    VERDICT_PATTERN.lastIndex = 0;
+    let m = VERDICT_PATTERN.exec(span);
+    while (m !== null) {
+      found.add(m[1].toLowerCase());
+      m = VERDICT_PATTERN.exec(span);
+    }
+  };
+
+  for (const m of stripped.matchAll(STRING_SPAN)) scanSpan(m[0]);
+  for (const m of stripped.matchAll(JSX_TEXT_SPAN)) scanSpan(m[0]);
+
+  for (const word of found) {
+    problems.push(`hardcoded verdict word "${word}" in UI copy (no-verdict-vocabulary)`);
+  }
+  return problems;
+}
+
+/**
+ * The files rule 6 inspects: src/app/** and src/components/** only, because
+ * CAP-10 is about copy shown to a user — backend comments, detector
+ * rationale and test descriptions (already exempted by sourceFiles' own
+ * test-file filter) are out of scope. Exported so the narrowing itself is
+ * testable: a scope filter that silently matches nothing is a lint that
+ * passes by inspecting zero files, the exact failure sourceFiles' own
+ * docstring warns about.
+ * @param {string} rootDir @returns {string[]}
+ */
+export function verdictVocabularyFiles(rootDir = 'src') {
+  const out = [];
+  for (const name of ['app', 'components']) {
+    const dir = join(rootDir, name);
+    if (existsSync(dir)) out.push(...sourceFiles(dir));
+  }
+  return out;
+}
+
 function main() {
   /** @type {string[]} */
   const problems = [];
@@ -293,11 +416,20 @@ function main() {
     }
   }
 
+  let vocabularyChecked = 0;
+  for (const file of verdictVocabularyFiles('src').sort()) {
+    vocabularyChecked += 1;
+    for (const problem of checkVerdictVocabulary(readFileSync(file, 'utf8'))) {
+      problems.push(`${file}: ${problem}`);
+    }
+  }
+
   // Say what was inspected, so "0 problems" over 0 files is visible rather than
   // mistaken for a pass.
   console.log(
     `check-boundaries: ${migrationsChecked} migration file(s), package.json, ` +
-      `${schemaChecked ? '1' : '0'} schema module, ${sourcesChecked} source file(s)`,
+      `${schemaChecked ? '1' : '0'} schema module, ${sourcesChecked} source file(s), ` +
+      `${vocabularyChecked} UI file(s) scanned for verdict vocabulary`,
   );
 
   if (problems.length > 0) {

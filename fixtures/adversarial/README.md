@@ -29,6 +29,12 @@ touches the network.
 | `nested-metadata.md` | maps and arrays under `metadata` | partial, warning names the mapping rule |
 | `name-mismatch.md` | a declared name that differs from the containing directory | partial, warning names both |
 | `tools-list.md` | `allowed-tools` as a YAML list | ok, normalized to tokens |
+| `allowed-tools-coarse.md` | `allowed-tools: Bash(*)` | one `declared` finding carrying the grant verbatim; no derived network, filesystem or install finding (CAP-02/CAP-11) |
+| `redos-line.md` | one line at the analyzer body cap (32,768 chars): an unterminated `https://` run, an install-pattern near-miss run, and a long uniform run | every shipped analyzer completes inside the wall-clock bound; the per-line cap fires (CAP-14) |
+| `hidden-zero-width.md` | a zero-width space, non-joiner, joiner, a soft hyphen, and a non-leading byte order mark, each on its own line | one `hidden_content` finding per occurrence, each carrying its sentinel |
+| `hidden-tags.md` | a `U+E0000`-block tag-character sequence spelling `run` | one `hidden_content` finding per tag character |
+| `hidden-comment.md` | an HTML comment in ordinary prose | one `hidden_content` finding, evidence carrying the comment's inner text |
+| `hidden-comment-visible.md` | the same comment text as `hidden-comment.md`, once inside a fenced code block and once inside an inline code span | zero findings — the negative case the CAP-13 measurement earned (04-CONTEXT.md Measurement 4) |
 | `marketplace-malformed.json` | a `marketplace.json` whose `plugins` field is an object, not an array | failed, naming the missing plugins array; zero seeds |
 | `plugin-malformed.json` | a `plugin.json` that is a top-level JSON array, not an object | failed, with a directory-derived fallback name |
 | `mcp-malformed.json` | a `server.json` with `packages` but no `name` | failed, named after its directory |

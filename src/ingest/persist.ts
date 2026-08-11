@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, not, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
+  capabilityFinding,
   ingestAttempt,
   ingestJob,
   packageTable,
@@ -131,6 +132,7 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
           licenseText: found.licenseText,
           meta: found.meta,
           parentPath: found.parentPath,
+          files: found.files,
         })
         // The array must name the same three columns, in the same order, as the
         // unique('package_identity') constraint.
@@ -143,6 +145,11 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
             licenseText: found.licenseText,
             meta: found.meta,
             parentPath: found.parentPath,
+            // Refreshed on every scan, unlike a version's own columns: the
+            // inventory's lifetime is the scan, not the content hash. A commit
+            // where the tree moved but the manifest did not still updates
+            // this — see ScannedPackage.files's own doc.
+            files: found.files,
             delistedAt: null,
             updatedAt: sql`now()`,
           },
@@ -170,6 +177,51 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
         .returning({ id: packageVersion.id });
 
       newVersions += inserted.length;
+
+      // Analysis findings exist for exactly one reason: a new version row was
+      // created. On the conflict branch there is no id to key them on, and the
+      // findings for that content are already stored from when it was new —
+      // which is how Phase 2's (package_id, content_hash) unique constraint
+      // makes CAP-13's idempotency free rather than a code path that can race.
+      if (inserted.length > 0) {
+        await tx
+          .update(packageVersion)
+          .set({ analyzedAt: sql`now()` })
+          .where(eq(packageVersion.id, inserted[0].id));
+
+        if (found.findings.length > 0) {
+          await tx
+            .insert(capabilityFinding)
+            .values(
+              found.findings.map((f) => ({
+                packageVersionId: inserted[0].id,
+                detectorId: f.detectorId,
+                detectorVersion: f.detectorVersion,
+                category: f.category,
+                signal: f.signal,
+                summary: f.summary,
+                sourcePath: f.sourcePath,
+                startLine: f.startLine,
+                endLine: f.endLine,
+                commitSha: scan.commitSha,
+                evidenceText: f.evidenceText,
+                metadata: f.metadata,
+              })),
+            )
+            // The array must name the same six columns, in the same order,
+            // as capability_finding_identity.
+            .onConflictDoNothing({
+              target: [
+                capabilityFinding.packageVersionId,
+                capabilityFinding.detectorId,
+                capabilityFinding.category,
+                capabilityFinding.sourcePath,
+                capabilityFinding.startLine,
+                capabilityFinding.summary,
+              ],
+            });
+        }
+      }
 
       const k = key(found.type, found.sourcePath);
       const seenBefore = prior.has(k);

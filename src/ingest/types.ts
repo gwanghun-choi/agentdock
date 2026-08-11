@@ -1,3 +1,5 @@
+import type { FileEntry, Finding } from '@/analyze/types';
+
 /** Result of parsing one artifact. `failed` still produces a row. */
 export type ParseStatus = 'ok' | 'partial' | 'failed';
 
@@ -23,6 +25,23 @@ export type ScannedPackage = {
    * container declared the repository root.
    */
   parentPath: string | null;
+  /**
+   * Computed in the pipeline loop that already holds the body, alongside
+   * contentHash — pure work, so it must not run inside persistScan's
+   * transaction. Persisted only when a new package_version row is created
+   * (src/ingest/persist.ts), gated the same way findings are the only thing
+   * that is.
+   */
+  findings: Finding[];
+  /**
+   * Every blob under this artifact's directory prefix, from the tree already
+   * in memory (src/analyze/files.ts). Written by the package upsert, which
+   * already runs on every scan (src/ingest/persist.ts) — NOT gated on a new
+   * version, unlike findings: a version is minted by the manifest's own
+   * bytes, so a script appearing beside an unchanged SKILL.md mints no
+   * version, and this is exactly the fact CAP-03 needs to stay current about.
+   */
+  files: FileEntry[];
 };
 
 /**

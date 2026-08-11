@@ -28,7 +28,14 @@ function length(value: string): number {
   return [...value].length;
 }
 
-function toolTokens(value: unknown): string[] | null {
+/**
+ * Exported for src/analyze/declared.ts (04-02): the declared-capability
+ * channel reuses this exact string-or-list tolerance on
+ * frontmatter['allowed-tools'] rather than writing a second normalizer that
+ * could drift from this one. skill.test.ts:206-216 is still this function's
+ * own test; declared.ts's tests cover the reuse, not a second spec.
+ */
+export function toolTokens(value: unknown): string[] | null {
   if (typeof value === 'string') return value.split(/[\s,]+/).filter(Boolean);
   if (Array.isArray(value)) return value.map(String);
   return null;

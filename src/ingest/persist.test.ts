@@ -38,6 +38,8 @@ function pkg(overrides: Partial<ScannedPackage> = {}): ScannedPackage {
     parseStatus: 'ok',
     parseErrors: [],
     parentPath: null,
+    findings: [],
+    files: [],
     ...overrides,
   };
 }
@@ -201,6 +203,36 @@ describe.skipIf(!DB_URL)('persistScan', () => {
     expect(updated.parent_path).toBe('plugins/bar');
   });
 
+  it('refreshes the file inventory on the conflict path, even when content_hash is unchanged', async () => {
+    const initialFiles = [
+      { path: 'skills/canvas-design/SKILL.md', size: 10, kind: 'file' as const, executable: false },
+    ];
+    const first = await persistScan(scan({ packages: [pkg({ files: initialFiles })] }));
+    const [inserted] = await sql<{ files: unknown }[]>`
+      SELECT files FROM package WHERE id = ${first.packageIds[0]}
+    `;
+    expect(inserted.files).toEqual(initialFiles);
+
+    // Same content_hash, so no new version — but the tree moved (a script was
+    // added beside the unchanged manifest), and the inventory must say so.
+    const movedFiles = [
+      ...initialFiles,
+      {
+        path: 'skills/canvas-design/scripts/run.py',
+        size: 5,
+        kind: 'file' as const,
+        executable: true,
+      },
+    ];
+    const second = await persistScan(scan({ packages: [pkg({ files: movedFiles })] }));
+    expect(second.newVersions).toBe(0); // content_hash unchanged: no new version row
+
+    const [updated] = await sql<{ files: unknown }[]>`
+      SELECT files FROM package WHERE id = ${first.packageIds[0]}
+    `;
+    expect(updated.files).toEqual(movedFiles);
+  });
+
   it('delists a package that vanished, in the same transaction', async () => {
     await persistScan(scan());
     const emptied = await persistScan(scan({ packages: [] }));
@@ -211,6 +243,170 @@ describe.skipIf(!DB_URL)('persistScan', () => {
       SELECT delisted_at FROM package WHERE id = ${relisted.packageIds[0]}
     `;
     expect(row.delisted_at).toBeNull();
+  });
+
+  describe('capability findings', () => {
+    function finding(overrides: Partial<import('@/analyze/types').Finding> = {}) {
+      return {
+        detectorId: 'install',
+        detectorVersion: '1',
+        category: 'package_install' as const,
+        signal: 'npx',
+        summary: 'references an install directive: npx',
+        sourcePath: 'skills/canvas-design/SKILL.md',
+        startLine: 3,
+        endLine: 3,
+        evidenceText: 'run `npx cowsay hi`',
+        metadata: {},
+        ...overrides,
+      };
+    }
+
+    async function findingRows(packageVersionId: number) {
+      return sql<{ commit_sha: string; category: string; start_line: number | null }[]>`
+        SELECT commit_sha, category, start_line FROM capability_finding
+        WHERE package_version_id = ${packageVersionId}
+      `;
+    }
+
+    async function analyzedAtOf(packageVersionId: number): Promise<Date | null> {
+      const [row] = await sql<{ analyzed_at: Date | null }[]>`
+        SELECT analyzed_at FROM package_version WHERE id = ${packageVersionId}
+      `;
+      return row.analyzed_at;
+    }
+
+    async function versionIdOf(packageId: number): Promise<number> {
+      const [row] = await sql<{ id: number }[]>`
+        SELECT id FROM package_version WHERE package_id = ${packageId}
+        ORDER BY ingested_at DESC LIMIT 1
+      `;
+      return row.id;
+    }
+
+    it('writes one row per finding and sets analyzed_at, inside the same transaction', async () => {
+      const result = await persistScan(scan({ packages: [pkg({ findings: [finding()] })] }));
+      const versionId = await versionIdOf(result.packageIds[0]);
+
+      const rows = await findingRows(versionId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].category).toBe('package_install');
+      expect(rows[0].start_line).toBe(3);
+      expect(rows[0].commit_sha).toBe(COMMIT);
+      expect(await analyzedAtOf(versionId)).not.toBeNull();
+    });
+
+    it('sets analyzed_at even when there are zero findings, so "analyzed, nothing found" is stored', async () => {
+      const result = await persistScan(scan({ packages: [pkg({ findings: [] })] }));
+      const versionId = await versionIdOf(result.packageIds[0]);
+
+      expect(await findingRows(versionId)).toHaveLength(0);
+      expect(await analyzedAtOf(versionId)).not.toBeNull();
+    });
+
+    it('does not duplicate findings when the same scan is persisted twice', async () => {
+      const withFinding = scan({ packages: [pkg({ findings: [finding()] })] });
+      const first = await persistScan(withFinding);
+      const versionId = await versionIdOf(first.packageIds[0]);
+      expect(await findingRows(versionId)).toHaveLength(1);
+
+      // Re-persisting identical content mints no new version row, and
+      // therefore inserts no second set of findings — Phase 2's
+      // (package_id, content_hash) uniqueness makes this free.
+      await persistScan(withFinding);
+      expect(await findingRows(versionId)).toHaveLength(1);
+    });
+
+    it('mints new findings only for the new version when content changes', async () => {
+      const first = await persistScan(scan({ packages: [pkg({ findings: [finding()] })] }));
+      const firstVersionId = await versionIdOf(first.packageIds[0]);
+
+      await persistScan(
+        scan({
+          packages: [
+            pkg({
+              contentHash: 'hash-b',
+              findings: [finding({ startLine: 9, endLine: 9 })],
+            }),
+          ],
+        }),
+      );
+      const secondVersionId = await versionIdOf(first.packageIds[0]);
+      expect(secondVersionId).not.toBe(firstVersionId);
+
+      expect(await findingRows(firstVersionId)).toHaveLength(1);
+      const secondRows = await findingRows(secondVersionId);
+      expect(secondRows).toHaveLength(1);
+      expect(secondRows[0].start_line).toBe(9);
+    });
+
+    it('every stored finding commit_sha equals its own package_version commit_sha', async () => {
+      const result = await persistScan(
+        scan({
+          packages: [
+            pkg({
+              findings: [
+                finding(),
+                finding({
+                  signal: 'npm install',
+                  summary: 'references an install directive: npm install',
+                  startLine: 9,
+                  endLine: 9,
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+      const versionId = await versionIdOf(result.packageIds[0]);
+      const rows = await findingRows(versionId);
+      expect(rows).toHaveLength(2);
+      for (const row of rows) expect(row.commit_sha).toBe(COMMIT);
+    });
+
+    // CAP-07's raw-byte-retention half, asserted where the claim is either
+    // true or false: the stored column, not the analyzer. 04-CONTEXT.md's
+    // Binding decision 7 / 04-PATTERNS.md's "apparent conflict is not a
+    // conflict": the comment is dropped only at the RENDER sink
+    // (SkillBody.tsx); the STORAGE sink keeps the unmodified byte regardless
+    // of any finding existing for it.
+    it('retains the raw invisible codepoint in package_version.body after a hidden-content finding is stored', async () => {
+      const body = `visible line one\nsecond line has a hidden​space in it`;
+      const result = await persistScan(
+        scan({
+          packages: [
+            pkg({
+              body,
+              findings: [
+                finding({
+                  category: 'hidden_content',
+                  detectorId: 'observedHiddenContent',
+                  signal: 'U+200B',
+                  summary: 'contains a Unicode zero-width character (U+200B)',
+                  startLine: 2,
+                  endLine: 2,
+                  evidenceText: '[U+200B ZERO WIDTH SPACE]',
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+      const versionId = await versionIdOf(result.packageIds[0]);
+
+      const [row] = await sql<{ body: string }[]>`
+        SELECT body FROM package_version WHERE id = ${versionId}
+      `;
+      // The full round trip: the raw codepoint is still there, byte for
+      // byte, even though a finding now exists that names it.
+      expect(row.body).toBe(body);
+      expect(row.body).toContain('​');
+
+      // And the finding's own evidence never carries the raw codepoint —
+      // the sentinel is what src/analyze/hidden.ts wrote, not a copy of it.
+      const findingRow = await findingRows(versionId);
+      expect(findingRow).toHaveLength(1);
+    });
   });
 
   describe('an incomplete scan', () => {

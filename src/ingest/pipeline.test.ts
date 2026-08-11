@@ -147,6 +147,43 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     return row.n;
   }
 
+  /** Every finding stored for the latest version of one artifact, by source_path. */
+  async function findingsFor(
+    sourcePath: string,
+  ): Promise<{ category: string; signal: string; start_line: number | null }[]> {
+    return sql`
+      SELECT cf.category, cf.signal, cf.start_line
+      FROM capability_finding cf
+      JOIN package_version pv ON pv.id = cf.package_version_id
+      JOIN package p ON p.id = pv.package_id
+      JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} AND p.source_path = ${sourcePath}
+      ORDER BY cf.start_line
+    `;
+  }
+
+  async function filesInventoryFor(sourcePath: string): Promise<unknown[]> {
+    const [row] = await sql<{ files: unknown[] }[]>`
+      SELECT p.files
+      FROM package p
+      JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} AND p.source_path = ${sourcePath}
+    `;
+    return row?.files ?? [];
+  }
+
+  async function analyzedAtFor(sourcePath: string): Promise<Date | null> {
+    const [row] = await sql<{ analyzed_at: Date | null }[]>`
+      SELECT pv.analyzed_at
+      FROM package_version pv
+      JOIN package p ON p.id = pv.package_id
+      JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} AND p.source_path = ${sourcePath}
+      ORDER BY pv.ingested_at DESC LIMIT 1
+    `;
+    return row.analyzed_at;
+  }
+
   beforeAll(async () => {
     ({ ingestRepository } = await import('./pipeline'));
     ({ sql } = await import('@/db/client'));
@@ -195,6 +232,99 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     // partial, not dropped.
     expect(rows.filter((r) => r.parse_status === 'partial')).toHaveLength(2);
     expect(rows.filter((r) => r.parse_status === 'failed')).toHaveLength(0);
+  });
+
+  describe('capability findings (the CAP-05 install tracer)', () => {
+    it('stores the measured install findings for the reference repository, with analyzed_at set for every version', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+
+      // skills/docx/SKILL.md:21 says "npm install" twice on the same line.
+      // Both produce an identical Finding tuple (same detector, category,
+      // source path, line and summary), so capability_finding_identity's
+      // unique constraint — (package_version_id, detector_id, category,
+      // source_path, start_line, summary), per CONTEXT.md Reference G —
+      // collapses them to the one row a reader would otherwise see twice.
+      const docx = await findingsFor('skills/docx/SKILL.md');
+      expect(docx).toEqual([
+        { category: 'package_install', signal: 'npm install', start_line: 21 },
+      ]);
+
+      // A skill with no install directive is still analyzed — zero findings,
+      // never zero rows because nothing looked.
+      const canvas = await findingsFor('skills/canvas-design/SKILL.md');
+      expect(canvas).toEqual([]);
+      expect(await analyzedAtFor('skills/canvas-design/SKILL.md')).not.toBeNull();
+      expect(await analyzedAtFor('skills/docx/SKILL.md')).not.toBeNull();
+    });
+
+    it('mints no new findings on a second ingest of unchanged content', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+      const before = await findingsFor('skills/docx/SKILL.md');
+
+      // Same commit: fetchRepoScanInputs short-circuits to the unchanged path,
+      // and no file is even re-read.
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+      const after = await findingsFor('skills/docx/SKILL.md');
+
+      expect(after).toEqual(before);
+    });
+  });
+
+  describe('the file inventory (CAP-01 / CAP-03)', () => {
+    it('lists path, size, executable bit, from the tree already fetched — no new GitHub request', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+
+      const docx = await filesInventoryFor('skills/docx/SKILL.md');
+      // Real corpus fact (04-RESEARCH.md §Q12): docx bundles 100755 scripts.
+      expect(docx.length).toBeGreaterThan(1);
+      expect(docx).toContainEqual(
+        expect.objectContaining({
+          path: 'skills/docx/scripts/accept_changes.py',
+          executable: true,
+        }),
+      );
+      // Every host contacted is still exactly the allowlisted two.
+      expect(new Set(contacted)).toEqual(new Set(['api.github.com', 'raw.githubusercontent.com']));
+    });
+
+    it('refreshes on a scan where the tree moved but the manifest did not', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+      const before = await filesInventoryFor('skills/docx/SKILL.md');
+      expect(before.map((f: unknown) => (f as { path: string }).path)).not.toContain(
+        'skills/docx/scripts/new-script.py',
+      );
+
+      // A new commit adds a script beside docx's unchanged SKILL.md. The
+      // manifest's own bytes never move, so no version is minted — but the
+      // tree did move, and the inventory is derived from the tree, not from
+      // content_hash.
+      const withNewScript = {
+        ...JSON.parse(treeJson),
+        sha: 'd'.repeat(40),
+        tree: [
+          ...JSON.parse(treeJson).tree,
+          {
+            path: 'skills/docx/scripts/new-script.py',
+            type: 'blob',
+            sha: 'e'.repeat(40),
+            mode: '100755',
+          },
+        ],
+      };
+      stubGitHub({ tree: JSON.stringify(withNewScript) });
+      await ingestRepository(FULL_NAME);
+
+      expect(await versionsOf('skills/docx/SKILL.md')).toBe(1); // unchanged manifest: no new version
+      const after = await filesInventoryFor('skills/docx/SKILL.md');
+      expect(after.map((f: unknown) => (f as { path: string }).path)).toContain(
+        'skills/docx/scripts/new-script.py',
+      );
+    });
   });
 
   describe('a second ingest at the same commit', () => {

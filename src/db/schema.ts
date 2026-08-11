@@ -13,6 +13,7 @@ import {
   unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import type { FileEntry } from '@/analyze/types';
 
 const requested = process.env.DATABASE_SCHEMA ?? 'agentdock';
 
@@ -126,6 +127,19 @@ export const packageTable = agentdock.table(
     // key already carries.
     parentPath: text('parent_path'),
     delistedAt: timestamp('delisted_at', { withTimezone: true }),
+    /**
+     * The file inventory: every blob under this artifact's directory prefix,
+     * from the tree AgentDock already fetched (src/analyze/files.ts). On
+     * `package`, deliberately NOT on `package_version` — a version is minted
+     * by contentHash over the manifest's own bytes, so adding a script beside
+     * an unchanged SKILL.md mints no version, and a version-scoped inventory
+     * would be permanently stale about exactly what CAP-03 discloses. Written
+     * by the same upsert that already runs on every scan (persist.ts), so a
+     * commit where the tree moved but the manifest did not still refreshes
+     * this column. Capped at ANALYZE_CAPS.maxInventoryEntries; the largest
+     * real inventory measured is 83 entries.
+     */
+    files: jsonb('files').$type<FileEntry[]>().notNull().default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -161,12 +175,92 @@ export const packageVersion = agentdock.table(
     parseStatus: text('parse_status').notNull().default('ok'), // ok | partial | failed
     parseErrors: jsonb('parse_errors').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     ingestedAt: timestamp('ingested_at', { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * The "we looked" marker. Null and empty are different facts, and CAP-11
+     * is the requirement that they must not read the same: every row created
+     * in Phases 1-3 has no findings because nothing analyzed it, and
+     * rendering that as "not detected" is the assurance this product does
+     * not give. Set by the same transaction that writes this version's
+     * findings (src/ingest/persist.ts), and only when a new version row was
+     * created — never touched again after that.
+     */
+    analyzedAt: timestamp('analyzed_at', { withTimezone: true }),
   },
   (t) => [
     // Identical content re-ingested is ON CONFLICT DO NOTHING. Idempotency is a
     // constraint, not a code path that can race.
     unique('package_version_content_key').on(t.packageId, t.contentHash),
     index('package_version_recent_idx').on(t.packageId, t.ingestedAt.desc()),
+  ],
+);
+
+/**
+ * One analyzer's observation about one package_version's content. Never a
+ * verdict — see src/analyze/types.ts's Finding doc.
+ *
+ * Follows repoSeed's shape exactly: agentdock.table(...) never pgTable,
+ * bigserial({mode:'number'}) PK, text with a comment instead of an enum for
+ * detector_id/category/signal (widening a constrained type on a populated
+ * table is a DROP, the same reasoning artifact_type and repoSeed.sourceKind
+ * already record), jsonb metadata with a default, withTimezone timestamps,
+ * cascade FK to package_version.
+ *
+ * No capability_category dimension table, and no reference data of any kind
+ * in this migration — see CONTEXT.md Binding decision 5. That also keeps
+ * scripts/migrate.mjs out of this phase entirely.
+ */
+export const capabilityFinding = agentdock.table(
+  'capability_finding',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    packageVersionId: bigint('package_version_id', { mode: 'number' })
+      .notNull()
+      .references(() => packageVersion.id, { onDelete: 'cascade' }),
+    detectorId: text('detector_id').notNull(),
+    /** Bumped when the rule changes, so a precision row names a specific version. */
+    detectorVersion: text('detector_version').notNull(),
+    // declared | remote_execution | package_install | network_request |
+    // external_reference | hidden_content. Text with a comment, not an enum
+    // — see the table doc above.
+    category: text('category').notNull(),
+    /** Which rule inside the detector fired: 'npx', 'pip install', 'U+202E'. */
+    signal: text('signal').notNull(),
+    /** Observation, never judgment. Verbs: declares, references, invokes, contains. */
+    summary: text('summary').notNull(),
+    // The file the observation is in. Not always this version's own
+    // source_path — a multi-file finding names a path that is not.
+    sourcePath: text('source_path').notNull(),
+    /** 1-indexed against package_version.body. Null for a structured declaration. */
+    startLine: integer('start_line'),
+    endLine: integer('end_line'),
+    /**
+     * Denormalized from this row's own package_version, and the redundancy
+     * is deliberate: it buys no query, but it is kept because a finding row
+     * is read outside its join in a CAP-13 audit trail. The cost of a
+     * denormalized column is drift, so a persistence test asserts every
+     * finding's commit_sha equals its version's.
+     */
+    commitSha: text('commit_sha').notNull(),
+    /** Capped at ANALYZE_CAPS.maxEvidenceChars, single line, escaped at render. */
+    evidenceText: text('evidence_text'),
+    metadata: jsonb('metadata')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Any onConflict target for this table must name the same columns, in
+    // the same order, as this constraint — persist.ts:136-138's convention.
+    unique('capability_finding_identity').on(
+      t.packageVersionId,
+      t.detectorId,
+      t.category,
+      t.sourcePath,
+      t.startLine,
+      t.summary,
+    ),
+    index('capability_finding_version_idx').on(t.packageVersionId),
   ],
 );
 

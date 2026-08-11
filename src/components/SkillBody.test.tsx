@@ -49,6 +49,15 @@ describe('SkillBody — the injection corpus', () => {
     expect(html).not.toContain('<img');
   });
 
+  // This assertion and the U+202E one below (`KEEPS a right-to-left
+  // override`) now carry a second load, beyond XSS itself: together they
+  // prove that src/components/HiddenContentPanel.tsx (04-03) is the ONLY
+  // place a reader can see this content. The comment is dropped HERE, at the
+  // render sink, and shown THERE, from the same raw storage
+  // (package_version.body) a different component reads. Editing either
+  // assertion has, by definition, reopened Pitfall 3 — see 04-CONTEXT.md's
+  // Binding decision 7 and 04-PATTERNS.md's "apparent conflict is not a
+  // conflict" section. Change neither this assertion nor SkillBody.tsx.
   it('drops an HTML comment carrying instruction-shaped text', () => {
     const html = render(fixture('html-comment.md'));
     expect(html).not.toContain('<!--');
@@ -89,6 +98,11 @@ describe('SkillBody — the injection corpus', () => {
     expect(html.match(/xss-marker/g)).toHaveLength(1);
   });
 
+  // See the comment above `drops an HTML comment carrying instruction-shaped
+  // text` — this assertion is that test's other half of the same proof.
+  // "Surfaced later" is now built: src/components/HiddenContentPanel.tsx
+  // (04-03), reading the same package_version.body this component also
+  // reads. This assertion stays exactly as it was; only the panel is new.
   it('KEEPS a right-to-left override — it is surfaced later, never stripped', () => {
     const html = render(fixture('bidi-override.md'));
     expect(html).toContain('‮');

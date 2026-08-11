@@ -6,7 +6,10 @@ import {
   checkPackageScripts,
   checkSchemaModule,
   checkSourceBoundaries,
+  checkVerdictVocabulary,
+  SANCTIONED,
   sourceFiles,
+  verdictVocabularyFiles,
 } from './check-boundaries.mjs';
 
 const GOOD = `
@@ -184,5 +187,81 @@ describe('sourceFiles', () => {
     const walked = sourceFiles('src').map((f) => f.split(sep).join('/'));
     expect(walked).toContain('src/db/queries/packages.ts');
     expect(walked.every((f) => /\.(ts|tsx|js|mjs)$/.test(f))).toBe(true);
+  });
+});
+
+describe('checkVerdictVocabulary (rule 6, CAP-10/CAP-12)', () => {
+  it('reports a hardcoded verdict word in JSX text', () => {
+    const problems = checkVerdictVocabulary(
+      'export const X = () => <p>This artifact is safe.</p>;',
+    );
+    expect(problems.join(' ')).toMatch(/no-verdict-vocabulary/);
+    expect(problems.join(' ')).toContain('"safe"');
+  });
+
+  it('reports the same word in a quoted string literal', () => {
+    const problems = checkVerdictVocabulary("const msg = 'This artifact is verified';");
+    expect(problems.join(' ')).toMatch(/no-verdict-vocabulary/);
+    expect(problems.join(' ')).toContain('"verified"');
+  });
+
+  it('reports the banned phrase "risk score"', () => {
+    const problems = checkVerdictVocabulary('export const X = () => <p>a risk score of 3</p>;');
+    expect(problems.join(' ')).toContain('"risk score"');
+  });
+
+  it('reports nothing for a word appearing only inside a comment', () => {
+    const source =
+      '// This detector is not safe to trust blindly.\n' +
+      '/* verified against the fixture corpus */\n' +
+      'export const x = 1;';
+    expect(checkVerdictVocabulary(source)).toEqual([]);
+  });
+
+  it('reports nothing for a UI file that renders a runtime variable, even when its value would contain the word', () => {
+    const source = 'const status = getStatus();\nexport const X = () => <p>{status}</p>;';
+    expect(checkVerdictVocabulary(source)).toEqual([]);
+  });
+
+  it('reports nothing for the un- and -up word forms, with no explicit exception written for them', () => {
+    const source =
+      'export const X = () => <p>unverified, unsafe, and needs cleanup before merge.</p>;';
+    expect(checkVerdictVocabulary(source)).toEqual([]);
+  });
+
+  it('excises a SANCTIONED phrase before scanning, so the shipped disclaimer passes', () => {
+    const [first] = SANCTIONED;
+    // A literal copy of the sanctioned phrase alone reports nothing.
+    expect(checkVerdictVocabulary(`const s = '${first.text}';`)).toEqual([]);
+    // The same sanctioned phrase, plus an unrelated, un-sanctioned use of the
+    // word elsewhere in the same file, still reports — the ledger excises
+    // exact substrings, not the word everywhere in the file.
+    const withExtra = checkVerdictVocabulary(
+      `const s = '${first.text}';\nconst s2 = 'a totally safe file';`,
+    );
+    expect(withExtra.join(' ')).toMatch(/no-verdict-vocabulary/);
+  });
+
+  it('accepts this repository as committed, including the shipped CAP-09 disclaimers', () => {
+    for (const file of verdictVocabularyFiles('src')) {
+      const problems = checkVerdictVocabulary(readFileSync(file, 'utf8'));
+      expect(problems, `${file}: ${problems.join(', ')}`).toEqual([]);
+    }
+  });
+});
+
+describe('verdictVocabularyFiles', () => {
+  it('returns a non-empty list against the real tree, scoped to src/app and src/components', () => {
+    const walked = verdictVocabularyFiles('src').map((f) => f.split(sep).join('/'));
+    expect(walked.length).toBeGreaterThan(0);
+    expect(walked.every((f) => f.startsWith('src/app/') || f.startsWith('src/components/'))).toBe(
+      true,
+    );
+  });
+
+  it('excludes a file outside src/app and src/components, including a detector module and a test file', () => {
+    const walked = verdictVocabularyFiles('src').map((f) => f.split(sep).join('/'));
+    expect(walked).not.toContain('src/detect/skill.ts');
+    expect(walked.some((f) => f.includes('.test.'))).toBe(false);
   });
 });

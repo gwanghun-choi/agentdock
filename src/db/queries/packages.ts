@@ -1,5 +1,6 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { cache } from 'react';
+import type { FileEntry } from '@/analyze/types';
 import { db } from '@/db/client';
 import { packageTable, packageVersion, repository } from '@/db/schema';
 
@@ -72,6 +73,22 @@ export const countPackages = cache(async (): Promise<number> => {
 /** github.com/{full_name}/blob/{commit sha}/{path} — never the tree sha. */
 export function permalink(fullName: string, commitSha: string, sourcePath: string): string {
   return `https://github.com/${fullName}/blob/${commitSha}/${sourcePath}`;
+}
+
+/**
+ * permalink() plus GitHub's line fragment. Omits the fragment when the
+ * finding is a structured declaration with no line, rather than emitting
+ * #Lnull. Kept beside permalink() so the two conventions — the URL shape and
+ * its line-anchored extension — cannot drift apart.
+ */
+export function permalinkAtLine(
+  fullName: string,
+  commitSha: string,
+  sourcePath: string,
+  line: number | null,
+): string {
+  const base = permalink(fullName, commitSha, sourcePath);
+  return line === null ? base : `${base}#L${line}`;
 }
 
 /**
@@ -161,12 +178,18 @@ export type PackageDetail = {
   pushedAt: Date | null;
   scannedAt: Date | null;
   treeTruncated: boolean;
+  /** package_version.id — the row capability_finding is keyed on, never packageTable.id. */
+  packageVersionId: number;
   commitSha: string;
   declaredVersion: string | null;
   body: string | null;
   parseStatus: string;
   parseErrors: string[];
   ingestedAt: Date;
+  /** Null means never analyzed (CAP-11) — distinct from analyzed-and-empty. */
+  analyzedAt: Date | null;
+  /** The file inventory, from src/analyze/files.ts. Empty until 04-01's Task 3 wires it. */
+  files: FileEntry[];
 };
 
 export const getPackageDetail = cache(
@@ -189,12 +212,15 @@ export const getPackageDetail = cache(
         pushedAt: repository.pushedAt,
         scannedAt: repository.scannedAt,
         treeTruncated: repository.treeTruncated,
+        files: packageTable.files,
+        packageVersionId: packageVersion.id,
         commitSha: packageVersion.commitSha,
         declaredVersion: packageVersion.declaredVersion,
         body: packageVersion.body,
         parseStatus: packageVersion.parseStatus,
         parseErrors: packageVersion.parseErrors,
         ingestedAt: packageVersion.ingestedAt,
+        analyzedAt: packageVersion.analyzedAt,
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))

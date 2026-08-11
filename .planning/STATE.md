@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 32
-  completed_plans: 18
-  percent: 56
+  completed_plans: 22
+  percent: 69
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 4 — Capability Disclosure (not yet planned)
+**Current focus:** Phase 5 — Corpus & Cold Start (not yet planned)
 
 ## Current Position
 
-Phase: 3 of 9 complete (Detector Pluralism)
-Plan: 3 of 3 in Phase 3
-Status: Phase 3 complete and verified — 6/6 success criteria MET, ready to plan Phase 4
-Last activity: 2026-08-11 — Phase 3 executed. `DETECTORS` is now `[skill, catalog, plugin, mcp, command, hook]`. A live re-read of `addyosmani/agent-skills` produced 24 skills, 1 plugin, 8 commands and 1 hook in 5.6 s, with its `marketplace.json` producing one `repo_seed` row and zero package rows. Planning found and Wave 1 fixed a live isolation defect: the pipeline had one try/catch spanning the whole repository, so a throw from any detector's `match()` (two call sites) or `parse()` lost every artifact in that repository.
+Phase: 4 of 9 complete (Capability Disclosure)
+Plan: 4 of 4 in Phase 4
+Status: Phase 4 complete and verified — ready to plan Phase 5
+Last activity: 2026-08-11 — Phase 4 executed. A detail page now carries a file inventory with the executable bit, a two-section capability panel (declared by the author / observed in the file text), a hidden-content panel with visible sentinels, and a permanent "What AgentDock does not check" block. Every finding links to its exact line at the pinned commit — verified live: `anthropics/skills` `skills/xlsx/SKILL.md#L16` returns HTTP 200 and the stored evidence matches that GitHub line byte-for-byte. CAP-10 is enforced mechanically by a sixth `check-boundaries` rule that fails CI on a verdict word in UI copy; demonstrated by injecting "verified and safe", watching CI fail, and removing it. ROADMAP's CAP-13 kill switch fired three times and deleted three detectors on measured evidence — the naive HTML-comment pattern at 26/26 false positives (25 of them inside fenced code blocks), a hidden-styled-HTML class at 1/1, and a credentials pilot whose 27 hits were all defensive prose.
 
-Progress: [██████░░░░] 56%
+Progress: [███████░░░] 69%
 
 ## Performance Metrics
 
@@ -65,6 +65,17 @@ Progress: [██████░░░░] 56%
 | Blocker | Impact | Needs |
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
+
+### Carried into Phase 5
+
+| Item | Note |
+|------|------|
+| The disclosure panel is reachable only for `skill` artifacts | `sourcePathFromUrl` in `src/db/queries/packages.ts` hardcodes `SKILL.md`, so a plugin, MCP, command or hook package has no detail URL that resolves. Findings ARE computed and stored for every artifact with a body — only the page is unreachable. CAP-01..14 do not require the other five, so it was left and recorded rather than widened silently. |
+| `install` sits at 10%, not the 5% first recorded | Re-labelled during phase verification: the first hand-check missed a negated instruction (`"preinstalled — do not run npm install first"`), which the procedure explicitly defines as a negative. The negation class is systematic, not a one-off. Still under the 20% kill line, so it ships. |
+| `install`'s 13 `npx <tool>` hits are scored positive on an argued reading | `npx tsc --noEmit` runs a tool rather than installing one; they count as positives because `npx` fetches from the registry before executing. If that reading is ever rejected the rate goes to 75% and the detector dies. Recorded in `fixtures/capability-precision.md` so the decision is visible. |
+| `network_request` is the closest shipped margin at 15% | Both false positives are on one line, and both come from a same-line rule rather than a verb-adjacent-to-URL rule. A tighter rule is a different claim needing its own twenty hits. |
+| `declaredCapabilities` and `observedRemoteExecution` have zero real-world instances | `allowed-tools` appears zero times across the four frozen corpora, and no `curl \| sh` shape exists in them either. Both ship validated only against hand-written fixtures; their 0% is the absence of data, not a clean pass. Phase 5's corpus growth is the first chance to measure them for real. |
+| All precision figures are precision, not recall | Nothing measures what the detectors MISS. The CAP-09 block says so on every detail page. |
 
 ### Carried into Phase 4
 
@@ -125,7 +136,7 @@ Progress: [██████░░░░] 56%
 
 ## Next Action
 
-Run `/gsd-plan-phase 4` to plan Capability Disclosure.
+Run `/gsd-plan-phase 5` to plan Corpus & Cold Start.
 
 ---
 *Last updated: 2026-08-10 after Phase 2 execution and live verification*

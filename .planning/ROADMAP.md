@@ -218,12 +218,47 @@ and each wave's tests need the detectors the previous wave registered.
 > false-positive rate injection-shaped detection produces on real artifacts. Any detector
 > exceeding a 20% false-positive rate on twenty hand-checked hits is deleted rather than
 > tuned — a noisy detector trains users to dismiss the entire panel.
+>
+> **Three corrections made during planning, all recorded in `CONTEXT.md`.**
+>
+> - **The kill switch fired before any code existed.** `04-RESEARCH.md` §Q7 proposes
+>   a bare `<!--...-->` pattern for CAP-06's HTML-comment class. Rendering the six
+>   corpus files that contain comments through the **actual `SkillBody`** component
+>   and searching the output for each comment's own text found it present **26 times
+>   out of 26** — 25 inside fenced code blocks, one inside an inline-code span. A
+>   100% false-positive rate, five times the kill line. The pattern is deleted and
+>   never ships; what replaces it is a fence-and-code-span-aware rule making a
+>   different claim, measured separately, and it produces zero hits on real data.
+>   `04-RESEARCH.md` §Q7's hidden-styled-HTML class is deleted on the same rule: one
+>   hit in 84 files, and it is an ARIA `tabpanel` example.
+> - **The file inventory belongs on `package`, not on `package_version`.** A version
+>   is minted by `contentHash` over the manifest's own bytes, so adding a script
+>   beside an unchanged `SKILL.md` mints nothing — and a version-scoped inventory
+>   would be permanently stale about exactly what CAP-03 exists to disclose.
+>   Findings still attach to the immutable version; a new nullable
+>   `package_version.analyzed_at` is what stops a never-analyzed row rendering as
+>   "not detected", which is the assurance CAP-11 forbids.
+> - **The CAP-10 lint fails on the project's own shipped disclaimer.**
+>   `page.tsx:155-156` already reads "it cannot say whether it is safe", which is
+>   correct CAP-09 copy that a naive word ban rejects on its first run.
+>   `04-RESEARCH.md` §Q13 did not catch this. The rule ships with an explicit
+>   `SANCTIONED` exact-substring ledger, and `(?<![a-z])word\b` anchoring makes the
+>   `unverified` exception the research asked for unnecessary.
+>
+> Planning also found that **the executable bit CAP-01 needs is already fetched and
+> discarded** — 50 `100755` and 2 `120000` entries sit in the frozen `tree.json`
+> files, and `src/github/tree.ts` simply never reads `mode`. CAP-01 costs zero new
+> GitHub requests. And **re-ingesting the existing corpus produces no findings at
+> all**, because Phase 2's idempotency creates no version row for unchanged content
+> — so the re-analysis backfill the research offered to defer ships in 04-04, since
+> without it the phase's own output is unobservable.
 
-Plans:
-- [ ] 04-01: Labeled fixture corpus and the file inventory
-- [ ] 04-02: The six MVP detectors with bounded patterns and input caps
-- [ ] 04-03: Hidden-content detection with visible sentinels and raw-byte retention
-- [ ] 04-04: Disclosure panel UI, source-line permalinks, the "not checked" block, and the vocabulary lint that fails CI on judgment words
+Plans: 4, in 4 waves. Sequential — every plan writes to `src/analyze/`, to the detail
+page, or to both, and each wave's measurement needs what the previous wave registered.
+- [x] AGD-04-01-PLAN.md — wave 1 — The `mode` fix across both `TreeEntry` declarations, then a tracer carrying one measured install directive from the tree through the first line-number computation this codebase has ever made, a findings table keyed on the immutable version, and a guarded analyzer pass, to a rendered `#L` permalink — then the file inventory with its executable bit and its bundled scripts labelled not analyzed
+- [x] AGD-04-02-PLAN.md — wave 2 — The declared channel where a coarse grant stays one finding, the URL split gated on a fetch verb with the one measured false-positive class excluded by name, the remote-execution shape that has never fired on real data, CAP-14 locked by a test over a committed hostile fixture, and the CAP-13 measurement actually run and recorded with the kill line as a failing test
+- [x] AGD-04-03-PLAN.md — wave 3 — Hidden content detected on the raw stored bytes with sentinels substituted at analysis time, an HTML-comment rule that stays silent on the 26 comments the renderer already shows, and a panel that displays it all beside a `SkillBody` that is not touched
+- [x] AGD-04-04-PLAN.md — wave 4 — Declared and observed in two sections that never merge, absence told apart from ignorance, a capped list that names what it withheld, the permanent "What AgentDock does not check" block carrying this phase's own measured bounds, the vocabulary lint with its sanctioned ledger, and re-analysis from stored bytes with the backfill that makes the existing corpus visible
 
 ---
 
