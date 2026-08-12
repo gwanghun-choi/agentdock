@@ -1,0 +1,25 @@
+# Keep credentials and local state out of the build context entirely. A build
+# arg or a COPY can only leak what the daemon was given, so the cheapest defence
+# is to never send these.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+node_modules
+.next
+.drizzle-test
+dist
+coverage
+
+# Planning artifacts are large and change on every phase; none of them are read
+# at build or run time.
+.planning
+fixtures
+*.md
+!README.md
+
+Dockerfile
+.dockerignore
+docker-compose.yml

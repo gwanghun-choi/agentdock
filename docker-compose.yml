@@ -1,0 +1,56 @@
+# AgentDock — single-server Docker deployment (NCP).
+#
+# This file starts ONE service and creates ONE network. It attaches to no
+# pre-existing network, reuses no pre-existing volume, and declares no volume of
+# its own. `docker compose up -d agentdock` therefore cannot affect any other
+# compose project on the host.
+#
+# AGENTDOCK_PORT has no safe default on a server that already runs other
+# services, so it is required rather than defaulted — compose fails loudly if it
+# is unset instead of silently grabbing a port another service may want. Pick it
+# after checking `ss -lntp` and `docker ps` on the target host; see DEPLOY.md.
+
+name: agentdock
+
+services:
+  agentdock:
+    build:
+      context: .
+      target: runtime
+    image: agentdock:local
+    container_name: agentdock
+    restart: unless-stopped
+    ports:
+      - "${AGENTDOCK_PORT:?set AGENTDOCK_PORT in .env.production to a port verified free on this host}:3000"
+    env_file:
+      - .env.production
+    # PostgreSQL runs on the host, not in this compose project. host-gateway
+    # resolves to the host's address from inside the container; DEPLOY.md step 5
+    # verifies this actually works on the target before anything depends on it.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - agentdock
+
+  # Never starts with `up`. Runs only when named explicitly:
+  #   docker compose --profile tools run --rm migrate
+  # Uses the build stage because the runtime image intentionally carries neither
+  # bun nor drizzle-kit. Migrations are an operator action, not a boot step: a
+  # container that migrates on start would race itself on any future restart.
+  migrate:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: build
+    image: agentdock-migrate:local
+    env_file:
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - agentdock
+    command: ["bun", "run", "db:migrate"]
+
+networks:
+  agentdock:
+    name: agentdock

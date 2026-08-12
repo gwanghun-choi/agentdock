@@ -278,6 +278,28 @@ export default async function ArtifactsPage({
     );
   }
 
+  // The trigram fallback fired (DIS-04, 06-04): full-text found nothing —
+  // countSearchResults runs the identical predicate as the full-text branch
+  // above, so total === 0 here is authoritative for "no exact match" — but
+  // searchPackages' own zero-result branch returned trigram rows instead of
+  // an empty array. States plainly that these are close matches, never
+  // exact ones (T-06-29, D-42's "tell the reader what happened"). No "of
+  // {total}" claim and no pager: countSearchResults never runs the trigram
+  // predicate, so total does not describe this branch and would be a lie.
+  if (hasQuery && total === 0 && items.length > 0) {
+    return (
+      <>
+        <h1>Artifacts</h1>
+        {searchControls}
+        <p className="muted">
+          No exact match for &quot;{q}&quot;. Showing close matches by name and summary instead.
+        </p>
+        <PackageRows items={items} />
+        <p className="muted">{SCOPE_SENTENCE}</p>
+      </>
+    );
+  }
+
   return (
     <>
       <h1>Artifacts</h1>

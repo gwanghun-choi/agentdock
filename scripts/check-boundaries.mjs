@@ -26,6 +26,16 @@ export const OWNED_SCHEMA = 'agentdock';
 // not a boundary escape, and nothing can write to it.
 const ALLOWED_SCHEMAS = new Set([OWNED_SCHEMA, 'pg_catalog']);
 
+// A shared extension's operator class is infrastructure, not application data.
+// On the NCP instance pg_trgm is installed in public (verified 2026-08-12 against
+// didim_api: pg_extension.extnamespace = 'public', pg_opclass gin_trgm_ops in
+// 'public'), and moving it would mutate an object five other schemas may depend
+// on. Referencing it is a read: agentdock_app holds USAGE but not CREATE on
+// public, so nothing can be written there, and QUALIFIED_TARGETS below still
+// rejects any CREATE/ALTER aimed outside the owned schema. Only these exact
+// identifiers are exempt — "public"."users" stays a boundary escape.
+const SHARED_EXTENSION_REFS = /\b(?:"public"|public)\s*\.\s*"?(?:gin_trgm_ops|gist_trgm_ops)"?\b/g;
+
 const REVIEW_MARKER = 'agentdock:reviewed-destructive';
 
 // CREATE/ALTER SCHEMA is in here on purpose. agentdock_app has no CREATE on the
@@ -110,7 +120,7 @@ export function checkMigrationSql(rawSql, ownedSchema = OWNED_SCHEMA) {
   const sql = stripSqlComments(rawSql);
   const allowed = new Set([...ALLOWED_SCHEMAS, ownedSchema]);
 
-  for (const schema of schemasReferenced(sql)) {
+  for (const schema of schemasReferenced(sql.replace(SHARED_EXTENSION_REFS, ' '))) {
     if (!allowed.has(schema)) {
       problems.push(`names schema "${schema}", which AgentDock does not own`);
     }

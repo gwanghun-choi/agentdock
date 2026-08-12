@@ -843,4 +843,189 @@ describe.skipIf(!DB_URL)('the search query', () => {
       });
     });
   });
+
+  /**
+   * D-04's trigram fallback (DIS-04, 06-04 plan). `pg_trgm` is installed out
+   * of band by a superuser (D-03) — this describe block's own beforeAll
+   * probes for it and every case below skips visibly, via vitest's dynamic
+   * `ctx.skip()`, rather than failing when it is absent. Mirrors the file's
+   * top-level `describe.skipIf(!DB_URL)` in spirit; a `describe.skipIf`
+   * cannot be used here because its condition must be known at collection
+   * time and this one needs a database round trip, so it is resolved once in
+   * this block's own `beforeAll` instead (Reference C, 06-04 plan).
+   */
+  describe('D-04 trigram fallback (DIS-04)', () => {
+    let pgTrgmPresent = false;
+
+    beforeAll(async () => {
+      const [row] = await sql<{ present: boolean }[]>`
+        select exists(select 1 from pg_extension where extname = 'pg_trgm') as present`;
+      pgTrgmPresent = row.present;
+      // A suite that silently passes because it did not run is worse than
+      // one that fails — the same reason the DATABASE_URL-absent skip at
+      // the top of this file logs instead of staying quiet. CI and most
+      // local databases will not have this extension.
+      console.log(
+        pgTrgmPresent
+          ? 'pg_trgm is present on agentdock_test — trigram fallback suite runs'
+          : 'SKIP: pg_trgm extension is not installed on agentdock_test — trigram fallback suite skipped visibly (06-04-SUMMARY.md records why)',
+      );
+    });
+
+    it('a query with full-text results never returns a fuzzy-only row — the fallback is a branch, not a union', async ({
+      skip,
+    }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-union-check');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'fu1' }], { name: 'unionguardword item' });
+      const fuzzyOnlyId = await artifact(r, 'b/SKILL.md', [{ hash: 'fu2' }], {
+        name: 'wholly unrelated title',
+        summary: 'unionguadword misspelled once, here only',
+      });
+
+      const results = await search.searchPackages({ q: 'unionguardword' });
+      expect(results.length).toBeGreaterThan(0);
+      expect(results.map((x) => x.id)).not.toContain(fuzzyOnlyId);
+    });
+
+    it('finds a fixture whose NAME is a close typo of the query', async ({ skip }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-name-close');
+      const id = await artifact(r, 'a/SKILL.md', [{ hash: 'fnc1' }], {
+        name: 'quaziflorenta widget',
+      });
+
+      const results = await search.searchPackages({ q: 'quaziflorento' });
+      expect(results.map((x) => x.id)).toContain(id);
+    });
+
+    it('finds a fixture whose SUMMARY — not name — carries the target word, the playwrit shape', async ({
+      skip,
+    }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-summary-only');
+      const id = await artifact(r, 'a/SKILL.md', [{ hash: 'fso1' }], {
+        name: 'wholly unrelated title',
+        summary: 'discusses flumigator patterns at length',
+      });
+
+      // A name-only fallback would return nothing for this query — the same
+      // shape as the real corpus rows that answer the maintainer's
+      // "playwrit" example (webapp-testing, e2e-testing-patterns), whose
+      // names carry no form of "playwright" at all (06-RESEARCH.md).
+      const results = await search.searchPackages({ q: 'flumigato' });
+      expect(results.map((x) => x.id)).toContain(id);
+    });
+
+    it('excludes a fork, an unparsed artifact and the losing duplicate from a fuzzy query, same as the full-text path', async ({
+      skip,
+    }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const fork = await repo('fuzzy-cor-fork', { isFork: true });
+      await artifact(fork, 'a/SKILL.md', [{ hash: 'fcf1' }], { name: 'forkfuzzytypo item' });
+
+      const failed = await repo('fuzzy-cor-failed');
+      await artifact(failed, 'b/SKILL.md', [{ hash: 'fcb1', status: 'failed' }], {
+        name: 'failfuzzytypo item',
+      });
+
+      const dupLow = await repo('fuzzy-cor-dup-low', { stars: 1 });
+      const dupHigh = await repo('fuzzy-cor-dup-high', { stars: 900 });
+      await artifact(dupLow, 'c/SKILL.md', [{ hash: 'fdup-shared' }], {
+        name: 'dupfuzzytypo item',
+      });
+      await artifact(dupHigh, 'd/SKILL.md', [{ hash: 'fdup-shared' }], {
+        name: 'dupfuzzytypo item',
+      });
+
+      // Each query is one character off the planted name, so the full-text
+      // branch returns zero rows and the fuzzy branch is what is on test.
+      expect(
+        (await search.searchPackages({ q: 'forkfuzzytyp' })).map((x) => x.sourcePath),
+      ).not.toContain('a/SKILL.md');
+      expect(
+        (await search.searchPackages({ q: 'failfuzzytyp' })).map((x) => x.sourcePath),
+      ).not.toContain('b/SKILL.md');
+      const dupResults = await search.searchPackages({ q: 'dupfuzzytyp' });
+      expect(dupResults.map((x) => x.sourcePath)).not.toContain('c/SKILL.md');
+    });
+
+    it('returns identical ids in identical order when a fuzzy query repeats', async ({ skip }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-repeat');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'frp1' }], { name: 'quibbleflexon item' });
+
+      const first = await search.searchPackages({ q: 'quibbleflexen' });
+      const second = await search.searchPackages({ q: 'quibbleflexen' });
+      expect(second.map((x) => x.id)).toEqual(first.map((x) => x.id));
+    });
+
+    it('applies both a type filter and a capability filter on the fuzzy branch', async ({
+      skip,
+    }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-filtered');
+      const keptId = await artifact(r, 'a.md', [{ hash: 'ffk1' }], {
+        type: 'command',
+        name: 'blorptasticon item',
+      });
+      const wrongTypeId = await artifact(r, 'b/SKILL.md', [{ hash: 'ffw1' }], {
+        type: 'skill',
+        name: 'blorptasticon other',
+      });
+      const shelledId = await artifact(r, 'c.md', [{ hash: 'ffs1' }], {
+        type: 'command',
+        name: 'blorptasticon shelled',
+      });
+      const [shelledVersionId] = await versionIds(shelledId);
+      await finding(shelledVersionId, 'declared', 'Bash');
+
+      const results = await search.searchPackages({
+        q: 'blorptasticen',
+        filters: { types: ['command'], capabilities: ['no_shell'] },
+      });
+      const ids = results.map((x) => x.id);
+      expect(ids).toContain(keptId);
+      expect(ids).not.toContain(wrongTypeId);
+      expect(ids).not.toContain(shelledId);
+    });
+
+    it('leaves every stored row byte-identical after a fuzzy query', async ({ skip }) => {
+      skip(!pgTrgmPresent, 'pg_trgm is not installed on agentdock_test');
+
+      const r = await repo('fuzzy-snapshot');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'fsn1' }], { name: 'wizzlequonket item' });
+
+      const before = await snapshot();
+      await search.searchPackages({ q: 'wizzlequonken' });
+      expect(await snapshot()).toBe(before);
+    });
+
+    it('degrades to an empty array without throwing when pg_trgm is unavailable at query time — the runtime backstop, not the migrate-time guard', async ({
+      skip,
+    }) => {
+      skip(pgTrgmPresent, 'this case exercises the extension-absent runtime path specifically');
+
+      const r = await repo('fuzzy-degrade');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'fdg1' }], { name: 'unrelated-name-entirely' });
+
+      // A query guaranteed to return zero full-text rows within this
+      // suite's own PREFIX-scoped fixtures, so searchPackages reaches the
+      // fuzzy branch — which, with the extension absent, hits the 42883
+      // catch. Resolving to [] rather than throwing IS the proof: in-process
+      // code has no other way to know the extension is missing except by
+      // sending the statement and catching what comes back (06-04-SUMMARY.md
+      // records this as verified live, not RESEARCH's original "backstop,
+      // not executed" assumption).
+      await expect(search.searchPackages({ q: 'zzzznocorrespondingfixturezzzz' })).resolves.toEqual(
+        [],
+      );
+    });
+  });
 });

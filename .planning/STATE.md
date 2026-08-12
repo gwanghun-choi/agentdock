@@ -1,12 +1,19 @@
 ---
-gsd_state_version: '1.0'
-status: planning
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: 6
+current_phase_name: Search & Browse
+status: executing
+stopped_at: Completed AGD-06-04-PLAN.md (working-tree only, zero commits per maintainer override; DIS-04 BLOCKED on pg_trgm install)
+last_updated: "2026-08-12T05:20:22.178Z"
+last_activity: 2026-08-12
+last_activity_desc: "06-01 fixed the carried Phase 4/5 defect (`sourcePathFromUrl`'s unconditional `/SKILL.md` append, which 404'd 531 of 921 listed artifacts across five non-skill types) via a promoted, artifact-primary `sourcePathCandidates`/`detailHref`; added a generated, weighted `search_vector` STORED column (GIN-indexed) to `agentdock.package`, applied to both live and test schemas with zero application backfill; and shipped `searchPackages` + `/artifacts`, the phase's tracer — a query that returns server-rendered rows and a click that opens the artifact, proven live against the real corpus (25 rows for `?q=mcp`, EXPLAIN 9.4ms at 1,137 rows, GIN index chosen). `bun run ci` green: 53 files, 900 tests."
 progress:
-  total_phases: 9
-  completed_phases: 6
-  total_plans: 34
-  completed_plans: 27
-  percent: 79
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 31
+  completed_plans: 0
 ---
 
 # Project State
@@ -16,22 +23,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 6 — Search & Browse (not yet planned)
+**Current focus:** Phase 6 — Search & Browse (Plan 4 of 4 executed; DIS-04 BLOCKED pending a superuser `pg_trgm` install)
 
 ## Current Position
 
-Phase: 5 of 9 complete (Corpus & Cold Start)
-Plan: 5 of 5 in Phase 5
-Status: Phase 5 complete and verified — ready to plan Phase 6
-Last activity: 2026-08-12 — Phase 5 executed in five sequential waves, adding **zero migrations**: every storage need was already satisfied by an existing column, and seed state is derived by joining `repo_seed.full_name` to `ingest_job`/`repository` rather than stored, so it cannot drift. The index now holds **1,137 packages across 16 repositories, 921 of them listed**, with all six artifact types present — acquired from the MCP registry, an operator seed list, catalog fan-out and curated-link expansion, and no crawler. COR-07 verified end to end: a suppressed package is absent from `listPackages` yet present on its own repository detail page. The cold start reproduces from an empty `agentdock_test` in 105.9 s and 6 core requests, clearing the 500-artifact floor from nothing.
+Phase: 6 of 9 in progress (Search & Browse)
+Plan: 4 of 4 in Phase 6 complete (working-tree only — zero commits made, per explicit maintainer override; see 06-04-SUMMARY.md)
+Status: 06-04 (trigram typo-tolerance fallback) implemented, boundary-clean, and unit-tested, but never applied to any database — `pg_trgm` is genuinely absent from this environment. Migration generated and hand-guarded (`drizzle/0007_green_jasper_sitwell.sql`), fuzzy fallback query written (`fuzzySearch()` in `src/db/queries/search.ts`), UI close-matches branch added to `/artifacts` — all uncommitted working-tree changes. `bun run ci` green: 53 files, 971 tests passed, 7 skipped (the 7 gated fuzzy-fallback cases, visibly skipped without the extension).
+Last activity: 2026-08-12 — 06-01 fixed the carried Phase 4/5 defect (`sourcePathFromUrl`'s unconditional `/SKILL.md` append, which 404'd 531 of 921 listed artifacts across five non-skill types) via a promoted, artifact-primary `sourcePathCandidates`/`detailHref`; added a generated, weighted `search_vector` STORED column (GIN-indexed) to `agentdock.package`, applied to both live and test schemas with zero application backfill; and shipped `searchPackages` + `/artifacts`, the phase's tracer — a query that returns server-rendered rows and a click that opens the artifact, proven live against the real corpus (25 rows for `?q=mcp`, EXPLAIN 9.4ms at 1,137 rows, GIN index chosen). `bun run ci` green: 53 files, 900 tests.
 
-Every wave falsified a plan claim by running it rather than reading it — five in total, each fixed with a regression test: a registry watermark that would have permanently skipped part of the name space; a global seed ordering needing 11.1 days of quota to reach the operator's own seeds; a floor predicate that would have cut the listing to 469, below COR-06's own floor, by treating `partial` as failure; `bun run db:test:setup`, used by the plan as both "empty the schema" and "restore it", which empties nothing; and a fixture capture filter that would have logged a second fabricated "absence of data" for `allowed-tools`.
+Every wave falsified a plan claim by running it rather than reading it — five in total, each fixed with a regression test: a registry watermark that would have permanently skipped part of the name space; a global seed ordering needing 11.1 days of quota to reach the operator's own seeds; a floor predicate that would have cut the listing to 469, below COR-06's own floor, by treating `partial` as failure; `bun run db:test:setup`, used by the plan as both "empty the schema" and "restore it", which empties nothing; and a fixture capture filter that would have logged a second fabricated "absence of data" for `allowed-tools`. (Phase 5 findings, carried forward below.)
 
-Progress: [████████░░] 79%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 0
 - Average duration: —
 - Total execution time: —
@@ -43,8 +51,17 @@ Progress: [████████░░] 79%
 | - | - | - | - |
 
 **Recent Trend:**
+
 - Last 5 plans: —
 - Trend: —
+
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase AGD-06-search-browse P02 | 25min | 3 tasks | 8 files |
+| Phase AGD-06-search-browse P03 | 55min | 3 tasks | 6 files |
+| Phase AGD-06-search-browse P04 | 90min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -61,6 +78,18 @@ Progress: [████████░░] 79%
 | Acquisition is registry sync + seed list + catalog fan-out + sharded topic search | GitHub Code Search returns zero results for the intended patterns (verified), and a full crawl exceeds a solo token budget |
 | Compatibility is derived from files, not read from the declared field | The spec's `compatibility` field is free prose, so declared compatibility is useless as a filter |
 | No authentication in v1 | Everything in v1 is read-only over public data; auth earns its place only when watch/notify exists |
+| Artifact identity is source_path-primary; `skill` is one variant, not the default | Five of six types have no manifest filename to append (a shape-only plugin has none at all); the literal `source_path` is already the disambiguating value, so the URL should carry it directly instead of reconstructing it |
+| `search_vector` is a STORED generated column, not a trigger | Generated columns cannot reference another table (verified live), so no cross-table need remains once repository-name matching is split out at query time; a STORED column is always consistent by construction with no trigger to maintain |
+
+- [Phase ?]: 06-02: D-12 ranking is four summed terms (exact name 2.0, prefix 1.0, ts_rank, repo-name ILIKE 0.1), each above ts_rank's measured ceiling so name matches can never be outranked by description relevance
+- [Phase ?]: 06-02: searchWhere(q) branches on empty query before building any predicate — websearch_to_tsquery('') matches nothing via @@, so browse mode must never apply it
+- [Phase ?]: 06-02: /skills -> /artifacts via next.config.ts redirects() (308, permanent), verified live to preserve the query string; no fallback page needed
+- [Phase ?]: 06-03: filters are conjuncts inside searchWhere() (never a second predicate), absence-only capability filters (no_network/no_shell/no_scripts), catalog needs a regression test and no code
+- [Phase ?]: 06-03: SearchLog joins IngestLog/WorkerLog on the one log() function; query is the sole deliberate free-form field, bounded and documented rather than dropped (D-44)
+- [Phase ?]: 06-03: zero-result page always shows Clear filters + Browse all links (not gated on hasFilters), so a plain zero-result search still offers two next steps
+- [Phase ?]: 06-04: zero commits made per explicit maintainer override (no git commit/push policy); all trigram-fallback work is working-tree-only, HEAD unchanged at 7a95708
+- [Phase ?]: 06-04: migration generated/guarded/boundary-checked but never applied — pg_trgm genuinely absent from this environment; DIS-04 remains BLOCKED pending superuser CREATE EXTENSION pg_trgm SCHEMA agentdock
+- [Phase ?]: 06-04: fuzzySearch() reuses searchWhere('', filters) for suppression/type/capability filters rather than a second predicate; catches PG_UNDEFINED_FUNCTION ('42883') only around the fallback call, verified live since this environment has the extension genuinely absent
 
 ### Blockers
 
@@ -68,13 +97,15 @@ Progress: [████████░░] 79%
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
 
+- DIS-04 (typo-tolerance search) is implemented in the working tree but not shipped: pg_trgm is not installed on this environment's PostgreSQL instance. Needs: a superuser to run CREATE EXTENSION pg_trgm SCHEMA agentdock; then apply drizzle/0007_green_jasper_sitwell.sql to both agentdock and agentdock_test, then re-run 06-04's Task 4 measurement and live verification.
+
 ### Carried into Phase 6
 
 | Item | Note |
 |------|------|
 | `artifactsTruncated` conflates three unrelated causes | `skipped.length > 0` mixes the file cap, the wall-clock deadline, and a raw fetch that threw, and the count itself is destroyed at `src/ingest/pipeline.ts:377`. Measured consequence: `anthropics/skills` reads truncated with **19 of 19 candidates readable today**, and since Phase 2 a truncated scan suppresses delisting — so one transient blip marks a repository permanently partial and it never converges. `davila7/claude-code-templates` is the genuine case: 1,300 candidates against a cap of 400, 900 unread. Found during Phase 5, deliberately **not fixed** — it is a logging-and-classification change outside that phase's files. Same shape as Phase 4's `seedsSkipped`, which Phase 5 did close. |
 | `src/db/queries/jobs.test.ts` has two intermittently flaky concurrency tests | ~2 runs in 14, pre-existing, and aggravated by the DB-backed test files Phase 5 added. It failed once running in isolation, which rules out only cross-suite contention. A `pg_advisory_xact_lock` would remove the class permanently; Phase 5 deliberately did not expand into test-infrastructure work. |
-| The detail page is still reachable only for `skill` artifacts | `sourcePathFromUrl` in `src/db/queries/packages.ts` hardcodes `SKILL.md`. Carried from Phase 4 and **still true** — but the stakes rose: the corpus now holds 387 commands, 113 plugins, 16 hooks and 15 MCP declarations whose rows exist, whose findings are computed, and whose pages do not resolve. Phase 6 is search; a generic artifact route is the natural companion and should be decided there rather than drifting further. |
+| ~~The detail page is still reachable only for `skill` artifacts~~ | **RESOLVED 2026-08-12 (06-01).** `sourcePathFromUrl` replaced by `sourcePathCandidates` (literal-first, `/SKILL.md`-fallback-second); `detailHref` is type-aware. All six artifact types verified live at their own `/r/{owner}/{repo}/{path}` URL against the real corpus; every existing skill URL is byte-identical to before. |
 | Fork suppression ships with zero real positives | Sixteen repositories, none a fork. `repository.isFork` was already fetched and stored (`src/github/repo.ts:35`, `src/db/schema.ts:83`) and is now read, but the path is fixture-validated only. No fork was hunted down to make the number non-zero. Absence of data, not a clean pass. |
 | `network_request` gained **zero** hits from a doubled corpus | Still 2/13 = 15%, the narrowest shipped margin, now on seven corpora and 169 files instead of four and 84. The corpus grew and this detector learned nothing — that is a fact about the corpus, not a re-validation of the detector. |
 | `install` detects 0 of 6 real install directives found by hand | `npm ci` appears six times in `addyosmani-agent-skills skills/ci-cd-and-automation/SKILL.md` and the alternation does not contain it. Twenty other install shapes were searched for and appear zero times, so the corpus cannot speak to them. This is the phase's only recall measurement and it is a floor on a hand-picked sample, not a corpus-wide rate. |
@@ -82,7 +113,6 @@ Progress: [████████░░] 79%
 | Provenance is single-valued and last-writer-wins | Three sources can name one repository; `repo_seed.discovered_from` keeps only the most recent. Measured during Phase 5: a curated-link run re-tagged 253 registry seeds and 4 of the 15 operator seeds. No single-valued column makes "which source found this" true when three did. Left alone deliberately — the phase brief forbids an elaborate provenance graph — and recorded as a maintainer decision. |
 | COR-05 ships as measured incompleteness, by design | `topic:claude-code` holds 57,970 repositories with 36,487 at 0–1 stars; a star ladder cannot subdivide that below the 1,000-result cap, and 58,000 repos × 2 calls is eighty days of quota. The sweep therefore names every shard it could not reach with that shard's measured size. Criterion 4's intent — no *silent* truncation — is met; blanket coverage was never reachable and is not claimed. |
 | `.env.example` is still unverified | The harness denies all `.env*` access. Phase 5 added no new secret and needs no new variable, so nothing changed — but the Phase 0..4 items (`DATABASE_URL`, `GITHUB_TOKEN`, `INGEST_WORKER`) remain confirmable only by hand. Not circumvented. |
-
 
 ### Carried into Phase 4
 
@@ -143,9 +173,16 @@ Progress: [████████░░] 79%
 
 ## Next Action
 
-Run `/gsd-plan-phase 6` to plan Search & Browse. Phase 6 is the first phase with a real
-corpus to tune against — 921 listed artifacts across six types, which is what the ROADMAP's
-sequencing argument was waiting for ("relevance cannot be tuned against twenty rows").
+Execute `06-02-PLAN.md` (ranking, filters foundation, pagination, `/skills` → `/artifacts`
+redirect) — it builds directly on 06-01's `searchPackages`, `sourcePathCandidates`/`detailHref`,
+and the `search_vector` column. 06-03 and 06-04 (trigram fallback, gated on the maintainer's
+out-of-band `pg_trgm` install) follow.
 
 ---
 *Last updated: 2026-08-12 after Phase 5 execution, independent verification (16/16) and the browser checkpoint*
+
+## Session
+
+**Last session:** 2026-08-12T05:20:22.155Z
+**Stopped at:** Completed AGD-06-04-PLAN.md (working-tree only, zero commits per maintainer override; DIS-04 BLOCKED on pg_trgm install)
+**Resume file:** None

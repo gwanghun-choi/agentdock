@@ -1,6 +1,13 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
+  // Docker deployment (NCP, single server). 'standalone' emits .next/standalone
+  // with only the traced runtime dependencies, so the production image ships
+  // neither bun nor the full node_modules tree. Every route in this app is
+  // `export const dynamic = 'force-dynamic'`, so `next build` opens no database
+  // connection — which is what lets the image be built with no DATABASE_URL and
+  // therefore no credential baked into a layer.
+  output: 'standalone',
   // Headers that are the same on every request. The policy is not among them:
   // it carries a per-request nonce and therefore lives in the proxy.
   async headers() {

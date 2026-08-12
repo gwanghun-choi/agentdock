@@ -106,14 +106,14 @@ construction, not by prioritization.
 
 - [ ] **DIS-01**: A visitor can browse a paginated listing of indexed packages without an account
 - [ ] **DIS-02**: A package detail page shows name, description, type, source repository, path within repository, license, and freshness
-- [ ] **DIS-03**: Full-text search returns relevance-ranked results
-- [ ] **DIS-04**: Search tolerates typos via trigram fallback
-- [ ] **DIS-05**: Results can be filtered by artifact type
-- [ ] **DIS-06**: Results can be filtered by declared capability, including "no scripts, no network, no shell"
-- [ ] **DIS-07**: A zero-result search offers a useful next step rather than an empty page
-- [ ] **DIS-08**: Search queries and result counts are logged from the first search release
+- [x] **DIS-03**: Full-text search returns relevance-ranked results
+- [ ] **DIS-04**: Search tolerates typos via trigram fallback (06-04: `fuzzySearch()` implemented, tested, and boundary-clean in the working tree, but **BLOCKED** — `pg_trgm` is not installed on this environment's PostgreSQL instance, so the migration was never applied and the three maintainer-named typo queries were never verified live. Unblock: `CREATE EXTENSION pg_trgm SCHEMA agentdock;` as a superuser, then apply `drizzle/0007_green_jasper_sitwell.sql` and re-run 06-04's Task 4 measurement)
+- [x] **DIS-05**: Results can be filtered by artifact type
+- [x] **DIS-06**: Results can be filtered by declared capability, including "no scripts, no network, no shell"
+- [x] **DIS-07**: A zero-result search offers a useful next step rather than an empty page
+- [x] **DIS-08**: Search queries and result counts are logged from the first search release
 - [ ] **DIS-09**: Pages are server-rendered and indexable by search engines
-- [ ] **DIS-10**: Search uses only PostgreSQL — no external search service
+- [x] **DIS-10**: Search uses only PostgreSQL — no external search service (06-01: `search_vector`/GIN/`websearch_to_tsquery`, no new dependency, `package.json` unchanged)
 - [ ] **DIS-11**: Every page is usable in light and dark mode, is responsive to mobile width, and meets basic accessibility requirements
 - [ ] **DIS-12**: Long descriptions and long identifiers cannot break page layout
 
@@ -168,21 +168,25 @@ construction, not by prioritization.
 Tracked, deliberately not in the v1 roadmap.
 
 ### Freshness Automation
+
 - **V2-FRS-01**: Scheduled re-ingestion keeps the index current
 - **V2-FRS-02**: Capability changes between versions are computed and shown as a diff
 - **V2-FRS-03**: Stale entries visibly degrade rather than silently misinform
 
 ### Distribution
+
 - **V2-API-01**: A public read-only API, returning sentinel-annotated content and never raw hidden payloads
 - **V2-CLI-01**: A read-only CLI for search and inspection
 - **V2-COL-01**: Curated collections
 
 ### Identity
+
 - **V2-ACC-01**: Accounts — introduced only in service of watch/notify, the first feature that genuinely needs a delivery address
 - **V2-WAT-01**: Watch an artifact and be notified when its capabilities change
 - **V2-PUB-01**: Publisher claiming of a source repository
 
 ### Search Depth
+
 - **V2-SEM-01**: Semantic search — gated on logged evidence of intent-shaped zero-result queries, and on a database image that provides vector support
 
 ---
@@ -235,6 +239,7 @@ Tracked, deliberately not in the v1 roadmap.
 | QUA-08 | Phase 1 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 103 total
 - Mapped to phases: 103
 - Unmapped: 0

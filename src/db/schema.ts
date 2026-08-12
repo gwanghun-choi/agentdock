@@ -180,10 +180,29 @@ export const packageTable = agentdock.table(
     unique('package_identity').on(t.repositoryId, t.type, t.sourcePath),
     index('package_live_idx').on(t.type, t.updatedAt.desc()),
     index('package_search_vector_idx').using('gin', t.searchVector),
+    // Typo-tolerance fallback (DIS-04, 06-04). Matches
+    // src/db/queries/search.ts's fuzzy-branch expression character for
+    // character: a predicate that differs by a space or a coalesce cannot
+    // use this index, and the symptom is a plan, not an error. The
+    // migration this index ships in carries a DO-block guard as its FIRST
+    // statement that fails loudly, naming the exact superuser command, if
+    // public.gin_trgm_ops does not exist yet — the index itself is what
+    // makes a missing pg_trgm a migrate-time stop rather than a silent
+    // runtime degradation (decision 5, 06-04 plan).
+    index('package_fuzzy_trgm_idx').using(
+      'gin',
+      sql`(${t.name} || ' ' || coalesce(${t.summary}, '')) public.gin_trgm_ops`,
+    ),
   ],
 );
-// search_vector ships here (this phase). pg_trgm is still installed out of
-// band only, by a superuser (D-03) — never by an AgentDock migration (D-04).
+// search_vector shipped in 06-01. package_fuzzy_trgm_idx ships here (06-04),
+// using public.gin_trgm_ops — the operator class itself is still installed
+// out of band only, by a superuser (D-03), never by an AgentDock migration
+// (D-04); the migration's own DO guard fails loudly, naming the exact
+// command, when it is absent. The schema qualifier is public rather than
+// agentdock because that is where pg_trgm actually lives on the deployment
+// target (didim_api, verified 2026-08-12) — AgentDock reads the shared
+// operator class and still creates every object it owns inside agentdock.
 
 export const packageVersion = agentdock.table(
   'package_version',

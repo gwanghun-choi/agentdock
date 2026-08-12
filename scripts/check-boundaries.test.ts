@@ -38,6 +38,20 @@ describe('checkMigrationSql', () => {
     expect(problems.length).toBeGreaterThan(0);
   });
 
+  it('allows referencing a shared extension operator class in public', () => {
+    const problems = checkMigrationSql(
+      `CREATE INDEX "package_fuzzy_trgm_idx" ON "agentdock"."package" USING gin (("name") public.gin_trgm_ops);`,
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('still rejects a public table reference alongside the operator-class exemption', () => {
+    const problems = checkMigrationSql(
+      `CREATE INDEX "i" ON "agentdock"."package" USING gin (("name") public.gin_trgm_ops);\nALTER TABLE "public"."users" ADD COLUMN "x" int;`,
+    );
+    expect(problems.join(' ')).toMatch(/does not own|outside schema/);
+  });
+
   it('rejects an unqualified target', () => {
     const problems = checkMigrationSql('CREATE TABLE "packages" ("id" int);');
     expect(problems.join(' ')).toMatch(/not schema-qualified/);

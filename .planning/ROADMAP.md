@@ -34,15 +34,18 @@ look at is not a slice.
 ## Phase Details
 
 ### Phase 0: Database Isolation Bootstrap
+
 **Goal**: The database itself refuses AgentDock write access to any schema but `agentdock`.
 **Depends on**: Nothing
 **Requirements**: FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, FND-08, FND-09
 **Success Criteria** (what must be TRUE):
+
   1. AgentDock connects as a role that is not a superuser and holds no table privileges in `public` or `didim_mcp`
   2. An attempt to create or drop an object outside `agentdock` fails with a permission error rather than succeeding
   3. The `agentdock` schema exists and is owned by that role
   4. The migration-history table resides in `agentdock`, not in `public` and not in a third schema
   5. `.env.example` exists with placeholders only and documents that `GITHUB_TOKEN` needs no scopes
+
 **Plans**: 4 plans
 
 > **Maintainer decision: RESOLVED — Branch A approved** (see `CONTEXT.md` in the phase
@@ -68,6 +71,7 @@ look at is not a slice.
 > phases, so Phase 1 still exercises them.
 
 Plans:
+
 - [x] 00-01: Role and schema bootstrap SQL applied by the maintainer, with rollback alongside and a seven-assertion verifier that probes the boundary live
 - [x] 00-02: Repository skeleton, blocking dependency-legitimacy gate, and the zod environment contract whose errors cannot echo a credential
 - [x] 00-03: Migration boundary scanner, schema-confined dev reset, and CI running the same command a developer runs
@@ -76,10 +80,12 @@ Plans:
 ---
 
 ### Phase 1: Walking Skeleton
+
 **Goal**: Paste a GitHub repository, and its Agent Skills appear on a listing and a detail page — with the security properties that are impossible to retrofit already in place.
 **Depends on**: Phase 0
 **Requirements**: FND-06, FND-08, FND-09, ING-01, ING-02, ING-03, ING-04, ING-05, ING-06, ING-07, ING-10, ING-11, DAT-01, DAT-02, DAT-03, DAT-04, DAT-05, DAT-06, DET-01, DET-08, DET-10, REN-01, REN-02, REN-03, REN-04, DIS-01, DIS-02, DIS-09, DIS-11, DIS-12, PRV-01, PRV-02, PRV-03, PRV-05, PRV-06, PRV-07, INS-01, INS-02, QUA-01, QUA-02, QUA-03, QUA-05, QUA-06, QUA-07, QUA-08
 **Success Criteria** (what must be TRUE):
+
   1. Submitting a public repository that contains `SKILL.md` files results in those skills being listed
   2. A skill detail page shows its rendered body, source path, licence, freshness, and a permalink to the exact file at the exact indexed commit
   3. A repository containing many skills yields all of them
@@ -89,6 +95,7 @@ Plans:
   7. A skill whose body contains script tags, raw HTML, or hostile metadata renders inert
   8. `bun install` plus one documented command brings the app up against the existing database
   9. Pages are server-rendered, work in light and dark mode, and remain usable at mobile width
+
 **Plans**: 6 plans
 
 > This phase touches every architectural boundary deliberately — schema isolation, the
@@ -98,6 +105,7 @@ Plans:
 > without re-running every analysis.
 
 Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they share no file.
+
 - [x] AGD-01-01-PLAN.md — wave 1 — Tracer: schema, identity keys and all day-one columns (`commit_sha`, `scanned_at`, `etag`, `content_hash`, `license_spdx`, denylist, `artifact_type`), one real skill persisted from a pinned fixture and rendered with a permalink proven to resolve, plus the four source boundary rules the build enforces
 - [x] AGD-01-02-PLAN.md — wave 2 — GitHub client: host allowlist, `owner/repo` only, manual redirects, two-call Trees enumeration, free raw file reads, streaming byte cap, resource caps, rate-limit accounting
 - [x] AGD-01-03-PLAN.md — wave 2 — Skill detector and tolerant frontmatter parsing with both YAML size caps, against four frozen corpora and nineteen adversarial fixtures
@@ -108,10 +116,12 @@ Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they sh
 ---
 
 ### Phase 2: Durable Ingestion
+
 **Goal**: Ingestion survives crashes, does not block the request, and never does the same work twice.
 **Depends on**: Phase 1
 **Requirements**: ING-08, ING-09, ING-12, ING-13, JOB-01, JOB-02, JOB-03, JOB-04, JOB-05, JOB-06, QUA-04
 **Success Criteria** (what must be TRUE):
+
   1. Submitting a repository returns immediately and the user can watch the job progress
   2. Killing the process mid-ingest leaves no half-written package state
   3. A job abandoned by a dead worker is picked up again automatically
@@ -119,6 +129,7 @@ Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they sh
   5. A failed job shows a readable reason and can be retried
   6. Approaching the GitHub rate limit causes backoff rather than a wall of errors
   7. No token or response body appears in any log line
+
 **Plans**: 5 plans
 
 > **Two corrections made during planning, both recorded in `CONTEXT.md`.**
@@ -139,6 +150,7 @@ Plans: 6, in 4 waves. Wave 2 runs 01-02, 01-03 and 01-04 in parallel — they sh
 > fixes it first, alone, with its own regression test.
 
 Plans: 5, in 4 waves. Wave 3 runs 02-03 and 02-04 in parallel — they share no file.
+
 - [x] AGD-02-01-PLAN.md — wave 1 — Tracer: `ingest_job` and `ingest_attempt`, one-statement `FOR UPDATE SKIP LOCKED` claiming, the `started_at` reaper, the in-process loop started from `instrumentation.ts`, an asynchronous submit, and a runnable answer to whether `register()` fires at `next start` without a first request
 - [x] AGD-02-02-PLAN.md — wave 2 — The truncation guard that stops a partial read deleting real artifacts, the discovered/new/updated/unchanged/removed breakdown, and the attempt row plus the job's terminal state inside the artifact transaction
 - [x] AGD-02-03-PLAN.md — wave 3 — Commit-SHA short circuit with a narrow repository-only write, and a log line whose outcome field is a union rather than a string
@@ -148,16 +160,19 @@ Plans: 5, in 4 waves. Wave 3 runs 02-03 and 02-04 in parallel — they share no 
 ---
 
 ### Phase 3: Detector Pluralism
+
 **Goal**: All five artifact types are discovered, and adding a sixth is a one-file change.
 **Depends on**: Phase 2
 **Requirements**: DET-02, DET-03, DET-04, DET-05, DET-06, DET-07, DET-09, QUA-03, QUA-05
 **Success Criteria** (what must be TRUE):
+
   1. Plugins are detected even when their manifest is absent, via directory shape
   2. A catalog file produces repository seeds rather than being stored as a package
   3. MCP server declarations, commands, and hooks are each detected and parsed
   4. A malformed artifact is recorded with an explicit parse status and does not fail the rest of the repository
   5. Adding a hypothetical new type requires one detector file and one registration
   6. Every detector runs against frozen fixtures with no network access and no token
+
 **Plans**: 3 plans
 
 > **Two corrections made during planning, both recorded in `CONTEXT.md`.**
@@ -191,6 +206,7 @@ Plans: 5, in 4 waves. Wave 3 runs 02-03 and 02-04 in parallel — they share no 
 
 Plans: 3, in 3 waves. Sequential — every plan appends to `src/detect/index.ts`,
 and each wave's tests need the detectors the previous wave registered.
+
 - [x] AGD-03-01-PLAN.md — wave 1 — Isolation at all three unguarded call sites with one guarded `match()` pass, the widened `ParseResult` with its seeds and no-row channels, `repo_seed` and the five artifact types, and the catalog as the tracer that exercises every new mechanism end to end
 - [x] AGD-03-02-PLAN.md — wave 2 — Plugin detection with and without a manifest behind a measured threshold and two exclusions, both MCP declaration shapes with no environment value ever stored, the containment pass that names no artifact type, and the file cap raised to what six detectors actually ask for
 - [x] AGD-03-03-PLAN.md — wave 3 — Command detection reusing the existing frontmatter parser unmodified, hook detection with a `settings.json`-without-hooks producing no row at all, and DET-09 turned from a review note into a runtime assertion by a seventh detector defined inside a test
@@ -198,10 +214,12 @@ and each wave's tests need the detectors the previous wave registered.
 ---
 
 ### Phase 4: Capability Disclosure
+
 **Goal**: A detail page tells a developer what an artifact will do to their machine, with a source line for every claim — and never tells them it is safe.
 **Depends on**: Phase 3
 **Requirements**: CAP-01 … CAP-14, QUA-03, QUA-05
 **Success Criteria** (what must be TRUE):
+
   1. A detail page lists the artifact's files with size, type, and executable bit
   2. Declared capabilities, bundled scripts, outbound URLs, and install/remote-execution directives are each surfaced as observed facts
   3. A skill containing invisible Unicode is flagged, and that content is rendered with visible sentinels rather than stripped
@@ -211,6 +229,7 @@ and each wave's tests need the detectors the previous wave registered.
   7. An artifact with no findings reads as "not detected", not as an assurance
   8. Each shipped detector has a recorded, hand-checked false-positive rate against a labeled corpus
   9. A hostile input cannot cause analyzer runtime to blow up
+
 **Plans**: 4 plans
 
 > Needs its own research spike during planning. The hard question is classification, not
@@ -255,6 +274,7 @@ and each wave's tests need the detectors the previous wave registered.
 
 Plans: 4, in 4 waves. Sequential — every plan writes to `src/analyze/`, to the detail
 page, or to both, and each wave's measurement needs what the previous wave registered.
+
 - [x] AGD-04-01-PLAN.md — wave 1 — The `mode` fix across both `TreeEntry` declarations, then a tracer carrying one measured install directive from the tree through the first line-number computation this codebase has ever made, a findings table keyed on the immutable version, and a guarded analyzer pass, to a rendered `#L` permalink — then the file inventory with its executable bit and its bundled scripts labelled not analyzed
 - [x] AGD-04-02-PLAN.md — wave 2 — The declared channel where a coarse grant stays one finding, the URL split gated on a fetch verb with the one measured false-positive class excluded by name, the remote-execution shape that has never fired on real data, CAP-14 locked by a test over a committed hostile fixture, and the CAP-13 measurement actually run and recorded with the kill line as a failing test
 - [x] AGD-04-03-PLAN.md — wave 3 — Hidden content detected on the raw stored bytes with sentinels substituted at analysis time, an HTML-comment rule that stays silent on the 26 comments the renderer already shows, and a panel that displays it all beside a `SkillBody` that is not touched
@@ -263,10 +283,12 @@ page, or to both, and each wave's measurement needs what the previous wave regis
 ---
 
 ### Phase 5: Corpus & Cold Start
+
 **Goal**: The index holds enough real artifacts to be worth searching, acquired without a crawler.
 **Depends on**: Phase 4
 **Requirements**: COR-01 … COR-07, DAT-07
 **Success Criteria** (what must be TRUE):
+
   1. The public MCP registry is synced without consuming any GitHub quota
   2. An operator seed list bulk-populates the index unattended
   3. Catalog files fan out into further repository seeds
@@ -274,6 +296,7 @@ page, or to both, and each wave's measurement needs what the previous wave regis
   5. At least 500 parsed artifacts exist
   6. Forks and duplicates do not flood listings, and suppression happens at read time without altering stored data
   7. A submitted repository below the visibility floor is reachable by direct link but absent from listings
+
 **Plans**: 5 plans
 
 > **Two plans added during planning, reasons in `05-CONTEXT.md`.** COR-06 is not build
@@ -290,6 +313,7 @@ page, or to both, and each wave's measurement needs what the previous wave regis
 > the criterion names; incompleteness is a fact about the world.
 
 Plans:
+
 - [x] 05-01: MCP registry sync with incremental updates
 - [x] 05-02: Seed list, catalog fan-out, and curated-link expansion
 - [x] 05-03: Sharded topic search, fork filtering, content-hash dedup, and the visibility gate
@@ -299,57 +323,91 @@ Plans:
 ---
 
 ### Phase 6: Search & Browse
+
 **Goal**: A developer describing what they need finds the right artifact.
 **Depends on**: Phase 5
 **Requirements**: DIS-03, DIS-04, DIS-05, DIS-06, DIS-07, DIS-08, DIS-10
 **Success Criteria** (what must be TRUE):
+
   1. A plain-language query returns relevance-ranked results
   2. A misspelled query still finds the right artifact
   3. Results filter by artifact type and by declared capability, including "no scripts, no network, no shell"
   4. A zero-result query offers a useful next step
   5. Every query and its result count is logged
   6. Search runs entirely on PostgreSQL with no external service
-**Plans**: 3 plans
+
+**Plans**: 0/4 plans executed
+
+> **One plan added and one extracted during planning; reasons in `AGD-06-01-PLAN.md`
+> § `<roadmap_deviation>`.** The generic artifact detail route is a Phase 4/5 carried
+> item the maintainer pulled into this phase and it appears in none of the three
+> original titles — yet `sourcePathFromUrl` (`packages.ts:268`) unconditionally appends
+> `/SKILL.md`, so **531 of the 921 listed artifacts** (387 commands, 113 plugins, 16
+> hooks, 15 MCP declarations) have rows, have findings and 404. The goal is unreachable
+> without it, so it lands in the tracer plan alongside the search vector rather than
+> after it.
+>
+> The trigram fallback is extracted from the query-pipeline plan into 06-04 because it
+> is the only work here that depends on an action AgentDock cannot perform: `CREATE
+> EXTENSION pg_trgm SCHEMA agentdock;` as superuser, since
+> `has_database_privilege('agentdock_app','mcpdb','CREATE')` is false (D-03/D-04). Split
+> out, criteria 1, 3, 4, 5 and 6 ship whether or not that install has happened; criterion
+> 2 lands the moment it has.
 
 Plans:
-- [ ] 06-01: Generated search vector with weighted fields and GIN index
-- [ ] 06-02: Query pipeline with safe query parsing, ranking, and trigram fallback
-- [ ] 06-03: Facets, zero-result experience, and query logging
+
+- [ ] AGD-06-01-PLAN.md
+- [ ] AGD-06-02-PLAN.md
+- [ ] AGD-06-03-PLAN.md
+- [ ] AGD-06-04-PLAN.md
+
+- [x] 06-01: Tracer — generic artifact detail route, generated search vector with weighted fields and GIN index, one end-to-end query path (COMPLETE — all six types resolve live, search_vector populated 1137/1137, /artifacts?q=mcp verified)
+- [x] 06-02: Query pipeline with safe query parsing, D-12 ranking order, browse mode, offset pagination, and the /skills → /artifacts rename
+- [x] 06-03: Facets, zero-result experience, and query logging
+- [x] 06-04: Trigram fallback behind an out-of-band pg_trgm install and a loud migration guard
 
 ---
 
 ### Phase 7: Derived Compatibility
+
 **Goal**: Compatibility is computed from the artifact's own files, not taken from the author's word.
 **Depends on**: Phase 6
 **Requirements**: CMP-01, CMP-02, CMP-03, CMP-04, CMP-05
 **Success Criteria** (what must be TRUE):
+
   1. Spec conformance is computed from the frontmatter field set
   2. An artifact using runtime-specific fields is shown as locked to that runtime, with the field named
   3. Runtime support comes from a versioned data table that can be updated without code changes
   4. Compatibility renders as derived / declared / unknown, with unknown shown rather than hidden
   5. The author's free-text compatibility claim appears separately, labeled as an author claim, and drives no filter
   6. Compatibility is never implied across artifact types
+
 **Plans**: 2 plans
 
 Plans:
+
 - [ ] 07-01: Versioned runtime capability data table, sourced from current vendor docs
 - [ ] 07-02: Conformance computation and compatibility presentation
 
 ---
 
 ### Phase 8: Freshness
+
 **Goal**: The index reports how current it is, and stops presenting stale analysis as fact.
 **Depends on**: Phase 7
 **Requirements**: PRV-04
 **Success Criteria** (what must be TRUE):
+
   1. Repository metadata refreshes in batches without exhausting the rate limit
   2. Unchanged repositories cost nothing to re-check
   3. A page shows when AgentDock last looked, and visibly degrades that claim as it ages
   4. Repositories that disappear or are archived upstream are flagged rather than silently retained
   5. A denylisted repository is not re-added by a subsequent crawl
+
 **Plans**: 2 plans
 
 Plans:
+
 - [ ] 08-01: Batched metadata refresh with conditional requests and scheduled re-ingest
 - [ ] 08-02: Staleness surfacing, archived/removed handling, and denylist enforcement at crawl time
 

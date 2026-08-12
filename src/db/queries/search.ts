@@ -35,6 +35,28 @@ export const SEARCH_CAPS = {
   /** D-12's second signal, name prefix. Between the two above, so it cannot
    * be outranked by the third (description relevance). */
   prefixNameBonus: 1.0,
+  /**
+   * D-02/D-03 decision 3's threshold branch (06-04 plan): ship the
+   * index-usable `<%` operator, which reads the session GUC
+   * `pg_trgm.word_similarity_threshold` (default 0.6) rather than this
+   * constant, UNLESS measuring the three maintainer-named examples
+   * (`playwrit`, `postgress`, `mcp-sever`) shows one below it — in which
+   * case an explicit `word_similarity(...) >= fuzzyThreshold` predicate
+   * ships instead and the index is not used by it.
+   *
+   * BLOCKED — not measured: `pg_trgm` is not installed in this environment
+   * (`select extname from pg_extension` returns `plpgsql` only, re-verified
+   * live during this plan — see 06-04-SUMMARY.md), so
+   * `word_similarity('playwrit', ...)`, `word_similarity('postgress', ...)`
+   * and `word_similarity('mcp-sever', ...)` could not be run against the
+   * live corpus. This constant carries pg_trgm's own unmeasured default
+   * rather than a guessed number, and the code ships the `<%` operator
+   * unchanged because that is the decision's default branch — not because
+   * the three examples were confirmed to clear it. Re-run this measurement
+   * once the extension is installed (Task 2's checkpoint) and replace this
+   * comment with the three real values before treating DIS-04 as verified.
+   */
+  fuzzyThreshold: 0.6,
 } as const;
 
 /**
@@ -227,6 +249,136 @@ function rankExpr(q: string) {
 }
 
 /**
+ * The trigram index's own expression, character for character:
+ * `name || ' ' || coalesce(summary, '')`, matching
+ * `package_fuzzy_trgm_idx`'s definition in schema.ts exactly. A predicate
+ * that differs by a space or a `coalesce` cannot use that index, and the
+ * symptom is a plan, not an error — so this fragment is the ONE place the
+ * expression is written, referenced by both the predicate and the ORDER BY
+ * below rather than retyped.
+ */
+function fuzzyMatchExpr() {
+  return sql`(${packageTable.name} || ' ' || coalesce(${packageTable.summary}, ''))`;
+}
+
+/**
+ * Postgres's standard undefined-function/undefined-operator SQLSTATE — what
+ * `word_similarity(...)` and `<%` both raise when `pg_trgm` is absent.
+ * Named once so the digits appear exactly one place in this file rather
+ * than being retyped at each comparison; grep for this identifier, not the
+ * literal code, to find every place the runtime absence handler checks it.
+ * Genuinely exercised live in this environment (not simulated): with the
+ * extension absent, both `select 'a' <% 'ab'` and
+ * `select word_similarity(...)` raise this code against the real database
+ * behind `DATABASE_URL` — RESEARCH's assumption A1, upgraded from
+ * "backstop, not executed" to verified (06-04-SUMMARY.md).
+ */
+const PG_UNDEFINED_FUNCTION = '42883';
+
+/**
+ * D-02's fallback branch: `pg_trgm`, called from `searchPackages` below only
+ * when the full-text branch already ran and returned zero rows for a
+ * non-empty query — never unioned with the full-text results and never
+ * blended into `ts_rank` (decision 4, 06-04 plan). This is a second,
+ * separate statement, paid for only on the empty-result path (T-06-28).
+ *
+ * Reaches suppression, the type filter and the capability filters by
+ * calling `searchWhere('', filters)` — the same shared builder the
+ * full-text branch uses, with the text predicate omitted by passing `''`
+ * (browse mode), so this branch inherits every conjunct except the text
+ * predicate and adds its own trigram one instead. A second, hand-written
+ * `WHERE` here is how a typo query starts returning forks (T-06-27).
+ *
+ * Uses `word_similarity`, not `similarity`: an eight-character query against
+ * a two-hundred-character name+summary concatenation scores near zero on
+ * whole-string `similarity` no matter how exactly the word appears inside
+ * it — `word_similarity` scores the best matching word extent instead,
+ * which is index-accelerated by the same `gin_trgm_ops` class
+ * (decision 2, 06-04 plan).
+ *
+ * The `PG_UNDEFINED_FUNCTION` catch below is the query-time backstop for a
+ * missing `pg_trgm` at runtime (see that constant's own doc for what was
+ * verified live). It wraps ONLY this call — the full-text call in
+ * `searchPackages` below has no such dependency, and a broad catch there
+ * would swallow the connection-level failures D-42 wants kept distinct from
+ * user-query ones.
+ */
+async function fuzzySearch(
+  q: string,
+  filters: SearchFilters,
+  limit: number,
+  offset: number,
+): Promise<SearchResultItem[]> {
+  const matchExpr = fuzzyMatchExpr();
+  // Reused in both SELECT and ORDER BY, same reason rankExpr's `rank` is
+  // (Drizzle emits no SQL-level alias for a computed sql<T> projection).
+  // Schema-qualified on purpose. src/db/client.ts pins search_path to the one
+  // AgentDock schema and assertSchemaIsolation refuses to boot on anything
+  // wider (client.test.ts rejects 'agentdock, public' explicitly), so an
+  // unqualified pg_trgm function or operator resolves to nothing and raises
+  // 42883 — which the catch below would swallow into a permanent, silent
+  // "no fuzzy results". pg_trgm lives in public on the deployment target
+  // (didim_api, verified 2026-08-12), so both the function and the `<%`
+  // operator name it. The index in schema.ts uses public.gin_trgm_ops and
+  // still accelerates OPERATOR(public.<%).
+  const similarity = sql<number>`public.word_similarity(${q}, ${matchExpr})`;
+
+  try {
+    return await db
+      .select({
+        id: packageTable.id,
+        name: packageTable.name,
+        summary: packageTable.summary,
+        type: packageTable.type,
+        sourcePath: packageTable.sourcePath,
+        fullName: repository.fullName,
+        stars: repository.stars,
+        scannedAt: repository.scannedAt,
+        // Same correlated-subquery idiom as searchPackages' own projection —
+        // one scalar per row, never a joined alternative.
+        commitSha: sql<string | null>`(
+          select pv.commit_sha from ${packageVersion} pv
+          where pv.package_id = ${packageTable.id}
+          order by pv.ingested_at desc limit 1
+        )`,
+        notListedBecause: NOT_LISTED_BECAUSE,
+        rank: similarity,
+      })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(and(searchWhere('', filters), sql`${q} OPERATOR(public.<%) ${matchExpr}`))
+      // Same two tie-break keys as the full-text branch, so a repeated
+      // fuzzy query returns identical ids in identical order (D-15/D-16).
+      .orderBy(desc(similarity), desc(packageTable.updatedAt), packageTable.id)
+      .limit(limit)
+      .offset(offset);
+  } catch (err) {
+    // drizzle-orm wraps the raw postgres error in its own DrizzleQueryError,
+    // with the real PostgresError (carrying `.code`) on `.cause` — verified
+    // live in this environment (the one place `pg_trgm` is genuinely
+    // absent), where the first shape of this catch missed it and let a
+    // zero-result query throw. Checking both is what actually catches it.
+    const code =
+      (err as { code?: string }).code ?? (err as { cause?: { code?: string } }).cause?.code;
+    if (code === PG_UNDEFINED_FUNCTION) {
+      // The same one-JSON-line-per-marker shape log.ts's own log() writes,
+      // written directly rather than through log()'s closed SearchLog/
+      // IngestLog/WorkerLog union — this event does not fit any of the
+      // three existing shapes and this plan does not touch log.ts.
+      console.log(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          event: 'search-fuzzy-unavailable',
+          code,
+        }),
+      );
+      return [];
+    }
+    throw err;
+  }
+}
+
+/**
  * Ranked full-text search over the listing-visible corpus, browsable with
  * no query at all (D-17/D-18), narrowable by artifact type and declared
  * capability (DIS-05/DIS-06). The generated `search_vector` column cannot
@@ -263,39 +415,48 @@ export const searchPackages = cache(
     // single rank definition instead of a second, hand-copied one.
     const rank = rankExpr(q);
 
-    return (
-      db
-        .select({
-          id: packageTable.id,
-          name: packageTable.name,
-          summary: packageTable.summary,
-          type: packageTable.type,
-          sourcePath: packageTable.sourcePath,
-          fullName: repository.fullName,
-          stars: repository.stars,
-          scannedAt: repository.scannedAt,
-          // Correlated subquery rather than a joined alternative — one
-          // scalar per row, no per-row query, the same idiom listPackages
-          // already uses.
-          commitSha: sql<string | null>`(
+    const results = await db
+      .select({
+        id: packageTable.id,
+        name: packageTable.name,
+        summary: packageTable.summary,
+        type: packageTable.type,
+        sourcePath: packageTable.sourcePath,
+        fullName: repository.fullName,
+        stars: repository.stars,
+        scannedAt: repository.scannedAt,
+        // Correlated subquery rather than a joined alternative — one
+        // scalar per row, no per-row query, the same idiom listPackages
+        // already uses.
+        commitSha: sql<string | null>`(
           select pv.commit_sha from ${packageVersion} pv
           where pv.package_id = ${packageTable.id}
           order by pv.ingested_at desc limit 1
         )`,
-          notListedBecause: NOT_LISTED_BECAUSE,
-          rank,
-        })
-        .from(packageTable)
-        .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-        .where(searchWhere(q, filters))
-        // D-15/D-16's deterministic total order: rank, then recency, then id.
-        // On the browse branch rank is a constant 0 for every row, so this
-        // reduces to updated_at DESC, id ASC — matching listPackages' own
-        // order (packages.ts:211) with the id tie-break D-15 adds.
-        .orderBy(desc(rank), desc(packageTable.updatedAt), packageTable.id)
-        .limit(limit)
-        .offset(offset)
-    );
+        notListedBecause: NOT_LISTED_BECAUSE,
+        rank,
+      })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(searchWhere(q, filters))
+      // D-15/D-16's deterministic total order: rank, then recency, then id.
+      // On the browse branch rank is a constant 0 for every row, so this
+      // reduces to updated_at DESC, id ASC — matching listPackages' own
+      // order (packages.ts:211) with the id tie-break D-15 adds.
+      .orderBy(desc(rank), desc(packageTable.updatedAt), packageTable.id)
+      .limit(limit)
+      .offset(offset);
+
+    // D-02's fallback chain, literally: trigram runs only when full-text
+    // already ran and found nothing, for a real (non-empty) query — never a
+    // union, never on the browse branch. This is the one call site
+    // fuzzySearch has (T-06-28's statement-count assertion is about this
+    // branch: a query with full-text results returns here and never reaches
+    // fuzzySearch at all).
+    if (q !== '' && results.length === 0) {
+      return fuzzySearch(q, filters, limit, offset);
+    }
+    return results;
   },
 );
 
