@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -73,12 +74,19 @@ describe.skipIf(!DB_URL)('the search query', () => {
       name = sourcePath,
       summary = null,
       meta = '{}',
-    }: { type?: string; name?: string; summary?: string | null; meta?: string } = {},
+      files = '[]',
+    }: {
+      type?: string;
+      name?: string;
+      summary?: string | null;
+      meta?: string;
+      files?: string;
+    } = {},
   ): Promise<number> {
     const [row] = await sql<{ id: number }[]>`
-      INSERT INTO package (repository_id, type, source_path, name, slug, summary, meta)
+      INSERT INTO package (repository_id, type, source_path, name, slug, summary, meta, files)
       VALUES (${repositoryId}, ${type}, ${sourcePath}, ${name}, ${sourcePath}, ${summary},
-              ${meta}::jsonb)
+              ${meta}::jsonb, ${files}::jsonb)
       RETURNING id`;
     const id = Number(row.id);
     let tick = 0;
@@ -90,6 +98,29 @@ describe.skipIf(!DB_URL)('the search query', () => {
                 now() - make_interval(secs => ${100 - tick}))`;
     }
     return id;
+  }
+
+  /** package_version ids for one package, oldest first — the last element is
+   * the artifact's latest version, matching artifact()'s own tick ordering. */
+  async function versionIds(packageId: number): Promise<number[]> {
+    const rows = await sql<{ id: number }[]>`
+      SELECT id FROM package_version WHERE package_id = ${packageId} ORDER BY ingested_at ASC`;
+    return rows.map((r) => Number(r.id));
+  }
+
+  /** A capability_finding row on one package_version, following
+   * persist.ts's own column set (commit_sha denormalized, metadata default). */
+  async function finding(
+    packageVersionId: number,
+    category: string,
+    signal: string,
+    { sourcePath = 'x', summary = 'test finding' }: { sourcePath?: string; summary?: string } = {},
+  ): Promise<void> {
+    await sql`
+      INSERT INTO capability_finding
+        (package_version_id, detector_id, detector_version, category, signal, summary, source_path, commit_sha)
+      VALUES (${packageVersionId}, 'test-detector', '1', ${category}, ${signal}, ${summary},
+              ${sourcePath}, ${'c'.repeat(40)})`;
   }
 
   /** Every row this suite owns, in a form two snapshots can be compared byte
@@ -518,6 +549,298 @@ describe.skipIf(!DB_URL)('the search query', () => {
       // Identical name text, wildly different star counts — equal rank
       // proves stars never entered the expression.
       expect(new Set(ranks).size).toBe(1);
+    });
+  });
+
+  describe('06-03 type and capability filters (DIS-05/DIS-06)', () => {
+    it('returns only rows of the requested type, and searchPackages/countSearchResults agree', async () => {
+      const r = await repo('type-filter');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'tf1' }], {
+        type: 'skill',
+        name: 'typefilterword skill-item',
+      });
+      await artifact(r, 'b.md', [{ hash: 'tf2' }], {
+        type: 'command',
+        name: 'typefilterword command-item',
+      });
+
+      const filters = { types: ['command'], capabilities: [] };
+      const [results, count] = await Promise.all([
+        search.searchPackages({ q: 'typefilterword', filters }),
+        search.countSearchResults({ q: 'typefilterword', filters }),
+      ]);
+      expect(results.every((x) => x.type === 'command')).toBe(true);
+      expect(results.map((x) => x.sourcePath)).toContain('b.md');
+      expect(results.map((x) => x.sourcePath)).not.toContain('a/SKILL.md');
+      expect(count).toBe(results.length);
+    });
+
+    it('drops an unmatched type value and returns the unfiltered result set — never an empty page for an unmatchable id', async () => {
+      const r = await repo('type-invalid');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'ti1' }], { name: 'typeinvalidword item' });
+
+      const unfiltered = await search.searchPackages({ q: 'typeinvalidword' });
+      const withBogusType = await search.searchPackages({
+        q: 'typeinvalidword',
+        filters: { types: ['not-a-real-type'], capabilities: [] },
+      });
+      expect(withBogusType.map((x) => x.id)).toEqual(unfiltered.map((x) => x.id));
+      expect(unfiltered.length).toBeGreaterThan(0);
+    });
+
+    it('accepts a repeated type value without throwing', async () => {
+      const r = await repo('type-repeated');
+      await artifact(r, 'a.md', [{ hash: 'trp1' }], {
+        type: 'command',
+        name: 'typerepeatedword item',
+      });
+
+      await expect(
+        search.searchPackages({
+          q: 'typerepeatedword',
+          filters: { types: ['command', 'command'], capabilities: [] },
+        }),
+      ).resolves.toBeInstanceOf(Array);
+    });
+
+    describe('capability filters read the latest version, matching listPackages’ own definition', () => {
+      it('no_network excludes an artifact whose latest version has a network_request finding, and keeps one whose only network_request finding is on an older version', async () => {
+        const rOld = await repo('no-network-old-finding');
+        const oldId = await artifact(rOld, 'a/SKILL.md', [{ hash: 'nno1' }, { hash: 'nno2' }], {
+          name: 'nonetworkoldword item',
+        });
+        const [olderVersionId] = await versionIds(oldId);
+        await finding(olderVersionId, 'network_request', 'requests');
+
+        const rNew = await repo('no-network-new-finding');
+        const newId = await artifact(rNew, 'b/SKILL.md', [{ hash: 'nnn1' }, { hash: 'nnn2' }], {
+          name: 'nonetworknewword item',
+        });
+        const versions = await versionIds(newId);
+        const latestVersionId = versions[versions.length - 1];
+        await finding(latestVersionId, 'network_request', 'requests');
+
+        const filters = { types: [], capabilities: ['no_network'] };
+        const oldResults = await search.searchPackages({ q: 'nonetworkoldword', filters });
+        expect(oldResults.map((x) => x.id)).toContain(oldId);
+
+        const newResults = await search.searchPackages({ q: 'nonetworknewword', filters });
+        expect(newResults.map((x) => x.id)).not.toContain(newId);
+      });
+
+      it('no_shell excludes a Bash declared grant and a Bash(git:*) declared grant on the latest version, and keeps a Read declared grant', async () => {
+        const rBash = await repo('no-shell-bash');
+        const bashId = await artifact(rBash, 'a/SKILL.md', [{ hash: 'nsb1' }], {
+          name: 'noshellbashword item',
+        });
+        const [bashVersionId] = await versionIds(bashId);
+        await finding(bashVersionId, 'declared', 'Bash');
+
+        const rBashScoped = await repo('no-shell-bash-scoped');
+        const bashScopedId = await artifact(rBashScoped, 'b/SKILL.md', [{ hash: 'nsbs1' }], {
+          name: 'noshellbashscopedword item',
+        });
+        const [bashScopedVersionId] = await versionIds(bashScopedId);
+        await finding(bashScopedVersionId, 'declared', 'Bash(git:*)');
+
+        const rRead = await repo('no-shell-read');
+        const readId = await artifact(rRead, 'c/SKILL.md', [{ hash: 'nsr1' }], {
+          name: 'noshellreadword item',
+        });
+        const [readVersionId] = await versionIds(readId);
+        await finding(readVersionId, 'declared', 'Read');
+
+        const filters = { types: [], capabilities: ['no_shell'] };
+        expect(
+          (await search.searchPackages({ q: 'noshellbashword', filters })).map((x) => x.id),
+        ).not.toContain(bashId);
+        expect(
+          (await search.searchPackages({ q: 'noshellbashscopedword', filters })).map((x) => x.id),
+        ).not.toContain(bashScopedId);
+        expect(
+          (await search.searchPackages({ q: 'noshellreadword', filters })).map((x) => x.id),
+        ).toContain(readId);
+      });
+
+      describe.each(SCRIPT_EXTENSIONS)('no_scripts excludes a bundled %s file', (ext) => {
+        it('excludes the artifact', async () => {
+          const label = ext.slice(1);
+          const r = await repo(`no-scripts-${label}`);
+          const files = JSON.stringify([
+            { path: `scripts/run${ext}`, size: 10, kind: 'file', executable: false },
+          ]);
+          const id = await artifact(r, 'a/SKILL.md', [{ hash: `nsx-${label}` }], {
+            name: `noscripts${label}word item`,
+            files,
+          });
+
+          const results = await search.searchPackages({
+            q: `noscripts${label}word`,
+            filters: { types: [], capabilities: ['no_scripts'] },
+          });
+          expect(results.map((x) => x.id)).not.toContain(id);
+        });
+      });
+
+      it('keeps an artifact whose files contain only .md and .json paths', async () => {
+        const r = await repo('no-scripts-keep');
+        const files = JSON.stringify([
+          { path: 'SKILL.md', size: 10, kind: 'file', executable: false },
+          { path: 'meta.json', size: 5, kind: 'file', executable: false },
+        ]);
+        const id = await artifact(r, 'a/SKILL.md', [{ hash: 'nsk1' }], {
+          name: 'noscriptskeepword item',
+          files,
+        });
+
+        const results = await search.searchPackages({
+          q: 'noscriptskeepword',
+          filters: { types: [], capabilities: ['no_scripts'] },
+        });
+        expect(results.map((x) => x.id)).toContain(id);
+      });
+    });
+
+    it('applying all three capability filters returns a subset of applying any two', async () => {
+      const cleanRepo = await repo('triple-clean');
+      const cleanId = await artifact(cleanRepo, 'a/SKILL.md', [{ hash: 'trc1' }], {
+        name: 'tripleword clean',
+      });
+
+      const shellRepo = await repo('triple-shell');
+      const shelledId = await artifact(shellRepo, 'b/SKILL.md', [{ hash: 'trc2' }], {
+        name: 'tripleword shell',
+      });
+      const [shelledVersionId] = await versionIds(shelledId);
+      await finding(shelledVersionId, 'declared', 'Bash');
+
+      const networkRepo = await repo('triple-network');
+      const networkedId = await artifact(networkRepo, 'c/SKILL.md', [{ hash: 'trc3' }], {
+        name: 'tripleword network',
+      });
+      const [networkedVersionId] = await versionIds(networkedId);
+      await finding(networkedVersionId, 'network_request', 'requests');
+
+      const all = await search.searchPackages({
+        q: 'tripleword',
+        filters: { types: [], capabilities: ['no_network', 'no_shell', 'no_scripts'] },
+      });
+      const anyTwo = await search.searchPackages({
+        q: 'tripleword',
+        filters: { types: [], capabilities: ['no_network', 'no_shell'] },
+      });
+      const allIds = new Set(all.map((x) => x.id));
+      const twoIds = new Set(anyTwo.map((x) => x.id));
+      expect([...allIds].every((id) => twoIds.has(id))).toBe(true);
+      expect(allIds.size).toBeLessThanOrEqual(twoIds.size);
+      expect(allIds.has(cleanId)).toBe(true);
+      expect(allIds.has(shelledId)).toBe(false);
+      expect(twoIds.has(networkedId)).toBe(false);
+    });
+
+    it('filters compose with a text query and with the browse query, and countSearchResults agrees with searchPackages in all four combinations', async () => {
+      const r = await repo('compose-filters');
+      await artifact(r, 'a.md', [{ hash: 'cf1' }], {
+        type: 'command',
+        name: 'composefilterword item',
+      });
+      await artifact(r, 'b/SKILL.md', [{ hash: 'cf2' }], {
+        type: 'skill',
+        name: 'composefilterword other',
+      });
+
+      const cases: { q: string; filters: { types: string[]; capabilities: string[] } }[] = [
+        { q: 'composefilterword', filters: { types: [], capabilities: [] } },
+        { q: 'composefilterword', filters: { types: ['command'], capabilities: [] } },
+        { q: '', filters: { types: [], capabilities: [] } },
+        { q: '', filters: { types: ['command'], capabilities: [] } },
+      ];
+
+      for (const { q, filters } of cases) {
+        const [results, count] = await Promise.all([
+          search.searchPackages({ q, filters, limit: 1000 }),
+          search.countSearchResults({ q, filters }),
+        ]);
+        expect(count).toBe(results.length);
+      }
+    });
+
+    it('does not change the relative order of two rows that both survive a filter', async () => {
+      const r = await repo('order-preserve');
+      const higherRankId = await artifact(r, 'a/SKILL.md', [{ hash: 'op1' }], {
+        name: 'orderpreserveword',
+      });
+      const lowerRankId = await artifact(r, 'b/SKILL.md', [{ hash: 'op2' }], {
+        name: 'wholly unrelated title',
+        summary: 'orderpreserveword orderpreserveword orderpreserveword',
+      });
+
+      const unfiltered = await search.searchPackages({ q: 'orderpreserveword' });
+      const filtered = await search.searchPackages({
+        q: 'orderpreserveword',
+        filters: { types: [], capabilities: ['no_network'] },
+      });
+
+      const unfilteredIds = unfiltered
+        .map((x) => x.id)
+        .filter((id) => id === higherRankId || id === lowerRankId);
+      const filteredIds = filtered
+        .map((x) => x.id)
+        .filter((id) => id === higherRankId || id === lowerRankId);
+      expect(unfilteredIds).toEqual([higherRankId, lowerRankId]);
+      expect(filteredIds).toEqual(unfilteredIds);
+    });
+
+    it('leaves every stored row byte-identical after every filtered query (DAT-07 holds under filters too)', async () => {
+      const r = await repo('filter-snapshot');
+      const id = await artifact(r, 'a/SKILL.md', [{ hash: 'fs1' }], {
+        name: 'filtersnapshotword item',
+      });
+      const [versionId] = await versionIds(id);
+      await finding(versionId, 'network_request', 'requests');
+
+      const before = await snapshot();
+      await search.searchPackages({
+        q: 'filtersnapshotword',
+        filters: { types: [], capabilities: ['no_network'] },
+      });
+      await search.searchPackages({
+        q: 'filtersnapshotword',
+        filters: { types: ['skill'], capabilities: [] },
+      });
+      await search.searchPackages({
+        q: '',
+        filters: { types: [], capabilities: ['no_network', 'no_shell', 'no_scripts'] },
+      });
+      expect(await snapshot()).toBe(before);
+    });
+
+    describe('catalog exclusion (D-34 regression)', () => {
+      it('a type=catalog row (parse_status=failed, matching the real pipeline) never appears in search output for a text query, the browse query, or any filter combination', async () => {
+        const r = await repo('catalog-regression');
+        await artifact(r, 'marketplace.json', [{ hash: 'cat1', status: 'failed' }], {
+          type: 'catalog',
+          name: 'catalogregressionword item',
+        });
+
+        const combos: { q: string; filters: { types: string[]; capabilities: string[] } }[] = [
+          { q: 'catalogregressionword', filters: { types: [], capabilities: [] } },
+          { q: '', filters: { types: [], capabilities: [] } },
+          {
+            q: 'catalogregressionword',
+            filters: { types: [...search.ARTIFACT_TYPE_IDS], capabilities: [] },
+          },
+          {
+            q: 'catalogregressionword',
+            filters: { types: [], capabilities: [...search.CAPABILITY_FILTER_IDS] },
+          },
+        ];
+
+        for (const { q, filters } of combos) {
+          const results = await search.searchPackages({ q, filters, limit: 1000 });
+          expect(results.map((x) => x.type)).not.toContain('catalog');
+        }
+      });
     });
   });
 });

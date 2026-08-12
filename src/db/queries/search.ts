@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { cache } from 'react';
+import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 import { db } from '@/db/client';
-import { packageTable, packageVersion, repository } from '@/db/schema';
+import { capabilityFinding, packageTable, packageVersion, repository } from '@/db/schema';
 import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
 
 export type SearchResultItem = PackageListItem & { rank: number };
@@ -37,23 +38,53 @@ export const SEARCH_CAPS = {
 } as const;
 
 /**
- * Bounded, case-preserving query normalization (D-09): trim, collapse
- * internal whitespace runs to one space, and truncate at
- * `SEARCH_CAPS.maxQueryLength` UTF-16 code units. Takes the first element
- * when Next.js delivers a repeated `?q=` parameter as an array. Returns ''
- * for undefined, empty or whitespace-only input — '' is the browse signal
- * `searchPackages` branches on.
+ * The five listable artifact type ids, closed so a route can validate a
+ * `?type=` value against it (D-26) rather than passing an unmatchable string
+ * into `IN (...)`, which returns an empty page indistinguishable from a real
+ * zero-result search.
  *
- * Does not lowercase. The full-text path is already case-insensitive
- * through the tokenizer (D-09/D-11), and every `ILIKE`/`lower()` operand in
- * this module folds its own operands — lowercasing centrally here would
- * only make DIS-08's logged query differ from what the user typed, for no
- * behavioural gain.
+ * `catalog` is deliberately absent: RESEARCH traced the pipeline and found a
+ * successfully parsed catalog writes zero package rows (it routes to the seed
+ * channel instead), so a `type = 'catalog'` row exists only when the catalog
+ * failed to parse — and NOT_LISTED_BECAUSE's `parse_status = 'failed'` branch
+ * already excludes that row from every listing, with no code in this file.
+ * Offering a filter that always returns nothing would be a control that
+ * lies, so the id is not in this array (decision 6/7, 06-03 plan).
  */
-export function normalizeQuery(raw: string | string[] | undefined): string {
-  const first = Array.isArray(raw) ? raw[0] : raw;
-  const collapsed = (first ?? '').trim().replace(/\s+/g, ' ');
-  return collapsed.slice(0, SEARCH_CAPS.maxQueryLength);
+export const ARTIFACT_TYPE_IDS = ['skill', 'plugin', 'mcp_server', 'command', 'hook'] as const;
+
+/**
+ * The three "no X" capability filters DIS-06 names. Absence tests only —
+ * "has network access" is deliberately not offered as a filter, because the
+ * detectors behind it have known misses (install recall 0/6 on real `npm
+ * ci`, network_request 15% FP with zero new hits on a doubled corpus): a
+ * presence filter over that would present a measurement gap as a property of
+ * the artifact, and an absence filter only ever claims what AgentDock itself
+ * observed (decision 2, 06-03 plan).
+ */
+export const CAPABILITY_FILTER_IDS = ['no_network', 'no_shell', 'no_scripts'] as const;
+
+export type SearchFilters = {
+  types: string[];
+  capabilities: string[];
+};
+
+const NO_FILTERS: SearchFilters = { types: [], capabilities: [] };
+
+/**
+ * Drops anything outside the closed id set rather than letting it reach a SQL
+ * `IN (...)`/`NOT EXISTS`. An unmatchable value silently returning an empty
+ * page is a worse failure than being ignored, because it looks exactly like
+ * a real zero-result search and nobody reports it.
+ */
+function validTypes(types: string[]): (typeof ARTIFACT_TYPE_IDS)[number][] {
+  const allowed = new Set<string>(ARTIFACT_TYPE_IDS);
+  return types.filter((t): t is (typeof ARTIFACT_TYPE_IDS)[number] => allowed.has(t));
+}
+
+function validCapabilities(capabilities: string[]): (typeof CAPABILITY_FILTER_IDS)[number][] {
+  const allowed = new Set<string>(CAPABILITY_FILTER_IDS);
+  return capabilities.filter((c): c is (typeof CAPABILITY_FILTER_IDS)[number] => allowed.has(c));
 }
 
 /**
@@ -69,6 +100,64 @@ function escapeLikeOperand(input: string): string {
 }
 
 /**
+ * The most recent package_version id for one package row, correlated on
+ * packageTable.id from the enclosing query — the same idiom packages.ts uses
+ * twice for its own "latest version" scalar lookups (packages.ts:33-39,
+ * 188-194), not a joined-per-row alternative: RESEARCH measured 1,152 ms for
+ * a comparable per-candidate joined shape against 25.5 ms for this one.
+ *
+ * "Latest" is by ingested_at, matching listPackages' own definition, so the
+ * capability filter and the artifact's own detail page always judge the same
+ * version (decision 4, 06-03 plan).
+ */
+const LATEST_PACKAGE_VERSION_ID = sql`(
+  select z.id from ${packageVersion} z
+  where z.package_id = ${packageTable.id}
+  order by z.ingested_at desc limit 1
+)`;
+
+/**
+ * One `capability_finding` absence test on the latest version, shared by
+ * `no_network` and `no_shell` — the only difference between the two is which
+ * category (and, for `no_shell`, which signal prefix) is being asked about.
+ */
+function capabilityAbsence(category: string, signalPrefix?: string) {
+  return sql`not exists (
+    select 1 from ${capabilityFinding} cf
+    where cf.package_version_id = ${LATEST_PACKAGE_VERSION_ID}
+      and cf.category = ${category}
+      ${signalPrefix ? sql`and cf.signal ilike ${`${signalPrefix}%`}` : sql``}
+  )`;
+}
+
+/**
+ * Built from SCRIPT_EXTENSIONS (src/analyze/files.ts), never retyped —
+ * retyping the seven extensions here would let this filter and the detail
+ * page's own "not analyzed" marker drift into disagreeing about what a
+ * script is, invisibly, until someone compared two pages.
+ */
+const SCRIPT_PATH_PATTERN = `\\.(${SCRIPT_EXTENSIONS.map((ext) => ext.slice(1)).join('|')})$`;
+
+/**
+ * The three filter predicates, each built once and referenced by id — never
+ * a second, hand-copied `NOT EXISTS`. `no_scripts` reads `package.files`
+ * directly and needs no version join at all: `files` lives on `package`, not
+ * `package_version` (schema.ts:146-158's own comment), because a version is
+ * minted over the manifest's own bytes, so adding a script beside an
+ * unchanged manifest mints no version — a version-scoped inventory would be
+ * permanently stale about exactly what this filter asks (decision 3, 06-03
+ * plan).
+ */
+const CAPABILITY_PREDICATES = {
+  no_network: capabilityAbsence('network_request'),
+  no_shell: capabilityAbsence('declared', 'Bash'),
+  no_scripts: sql`not exists (
+    select 1 from jsonb_array_elements(${packageTable.files}) f
+    where (f->>'path') ~ ${SCRIPT_PATH_PATTERN}
+  )`,
+} satisfies Record<(typeof CAPABILITY_FILTER_IDS)[number], ReturnType<typeof sql>>;
+
+/**
  * The WHERE both query functions below share, built once and called from
  * both — never a second, hand-copied predicate. Two independent copies of
  * this predicate is the bug shape packages.ts:203-208 already warns about,
@@ -80,8 +169,20 @@ function escapeLikeOperand(input: string): string {
  * NOTHING via `@@` (verified live), so applying it unconditionally would
  * silently render an empty corpus to every visitor who has not typed
  * anything yet. Browsing the corpus needs no text predicate at all.
+ *
+ * The type and capability conjuncts land in this same builder, not beside
+ * it (decision 1, 06-03 plan): the rows query and the count query must
+ * filter by the identical expression, or the paginator's last page silently
+ * stops existing — Phase 5 already paid for that lesson once with
+ * countPackages' missing join. All three capability exclusions and the type
+ * predicate are conjuncts of this one statement, so PostgreSQL's READ
+ * COMMITTED statement-level snapshot makes them consistent with each other
+ * by construction (decision 5, 06-03 plan): a concurrent ingest cannot
+ * commit between the network test and the scripts test.
  */
-function searchWhere(q: string) {
+function searchWhere(q: string, filters: SearchFilters = NO_FILTERS) {
+  const types = validTypes(filters.types);
+  const capabilities = validCapabilities(filters.capabilities);
   return and(
     isNull(packageTable.delistedAt),
     q === ''
@@ -92,6 +193,8 @@ function searchWhere(q: string) {
     // packages.ts:203-208 for why referencing it twice is safe and
     // computing it in SELECT only is a measured performance trap.
     sql`${NOT_LISTED_BECAUSE} is null`,
+    types.length > 0 ? inArray(packageTable.type, types) : undefined,
+    ...capabilities.map((id) => CAPABILITY_PREDICATES[id]),
   );
 }
 
@@ -125,7 +228,8 @@ function rankExpr(q: string) {
 
 /**
  * Ranked full-text search over the listing-visible corpus, browsable with
- * no query at all (D-17/D-18). The generated `search_vector` column cannot
+ * no query at all (D-17/D-18), narrowable by artifact type and declared
+ * capability (DIS-05/DIS-06). The generated `search_vector` column cannot
  * carry `repository.full_name` (Postgres refuses a subquery in a column
  * generation expression, RESEARCH verified live), so a query naming only a
  * repository is matched separately, via an escaped `ILIKE` — sixteen
@@ -143,10 +247,12 @@ function rankExpr(q: string) {
 export const searchPackages = cache(
   async ({
     q,
+    filters = NO_FILTERS,
     limit = SEARCH_CAPS.pageSize,
     offset = 0,
   }: {
     q: string;
+    filters?: SearchFilters;
     limit?: number;
     offset?: number;
   }): Promise<SearchResultItem[]> => {
@@ -168,8 +274,9 @@ export const searchPackages = cache(
           fullName: repository.fullName,
           stars: repository.stars,
           scannedAt: repository.scannedAt,
-          // Correlated subquery rather than a lateral join — one scalar per
-          // row, no per-row query, the same idiom listPackages already uses.
+          // Correlated subquery rather than a joined alternative — one
+          // scalar per row, no per-row query, the same idiom listPackages
+          // already uses.
           commitSha: sql<string | null>`(
           select pv.commit_sha from ${packageVersion} pv
           where pv.package_id = ${packageTable.id}
@@ -180,7 +287,7 @@ export const searchPackages = cache(
         })
         .from(packageTable)
         .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-        .where(searchWhere(q))
+        .where(searchWhere(q, filters))
         // D-15/D-16's deterministic total order: rank, then recency, then id.
         // On the browse branch rank is a constant 0 for every row, so this
         // reduces to updated_at DESC, id ASC — matching listPackages' own
@@ -193,21 +300,43 @@ export const searchPackages = cache(
 );
 
 /**
- * How many rows searchPackages' WHERE matches for the same `q`, for the
- * paginator's total. Built from the identical searchWhere() helper — never
- * a second, hand-copied predicate — following countPackages' own shape
- * (packages.ts:226-238), including its innerJoin(repository).
+ * How many rows searchPackages' WHERE matches for the same `q`/`filters`,
+ * for the paginator's total. Built from the identical searchWhere() helper
+ * — never a second, hand-copied predicate — following countPackages' own
+ * shape (packages.ts:226-238), including its innerJoin(repository).
  *
  * This is a second statement, not a second round trip folded into the
  * first: the count and the rows can disagree under a concurrent ingest
  * between the two SELECTs, and that is the paginator's existing "There is
  * no page N" branch's job to absorb, not this function's.
  */
-export const countSearchResults = cache(async ({ q }: { q: string }): Promise<number> => {
-  const [row] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(packageTable)
-    .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-    .where(searchWhere(q));
-  return row?.n ?? 0;
-});
+export const countSearchResults = cache(
+  async ({ q, filters = NO_FILTERS }: { q: string; filters?: SearchFilters }): Promise<number> => {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(searchWhere(q, filters));
+    return row?.n ?? 0;
+  },
+);
+
+/**
+ * Bounded, case-preserving query normalization (D-09): trim, collapse
+ * internal whitespace runs to one space, and truncate at
+ * `SEARCH_CAPS.maxQueryLength` UTF-16 code units. Takes the first element
+ * when Next.js delivers a repeated `?q=` parameter as an array. Returns ''
+ * for undefined, empty or whitespace-only input — '' is the browse signal
+ * `searchPackages` branches on.
+ *
+ * Does not lowercase. The full-text path is already case-insensitive
+ * through the tokenizer (D-09/D-11), and every `ILIKE`/`lower()` operand in
+ * this module folds its own operands — lowercasing centrally here would
+ * only make DIS-08's logged query differ from what the user typed, for no
+ * behavioural gain.
+ */
+export function normalizeQuery(raw: string | string[] | undefined): string {
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  const collapsed = (first ?? '').trim().replace(/\s+/g, ' ');
+  return collapsed.slice(0, SEARCH_CAPS.maxQueryLength);
+}
