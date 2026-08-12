@@ -315,4 +315,209 @@ describe.skipIf(!DB_URL)('the search query', () => {
       await expect(search.searchPackages({ q })).resolves.toBeInstanceOf(Array);
     });
   });
+
+  describe('D-12 ranking order, browse branch and pagination (06-02 Task 2)', () => {
+    it('ranks an exact name match above a match that only appears in the summary', async () => {
+      const r = await repo('rank-exact');
+      const exactId = await artifact(r, 'a/SKILL.md', [{ hash: 'rx1' }], {
+        name: 'zephyrantha',
+        summary: 'an ordinary summary with no relevant word at all',
+      });
+      const summaryId = await artifact(r, 'b/SKILL.md', [{ hash: 'rx2' }], {
+        name: 'wholly unrelated title',
+        // Repeated so ts_rank's weighted score on this row is as strong as a
+        // single description hit can be, making this a fair comparison —
+        // even the strongest possible summary-only match must not outrank
+        // an exact name match.
+        summary: 'zephyrantha zephyrantha zephyrantha zephyrantha zephyrantha',
+      });
+
+      const results = await search.searchPackages({ q: 'zephyrantha' });
+      const ids = results.map((x) => x.id);
+      expect(ids.indexOf(exactId)).toBeLessThan(ids.indexOf(summaryId));
+    });
+
+    it('ranks a name-prefix match above a match that only appears in the summary', async () => {
+      const r = await repo('rank-prefix');
+      const prefixId = await artifact(r, 'a/SKILL.md', [{ hash: 'rp1' }], {
+        name: 'quixotropic widget',
+        summary: 'an ordinary summary with no relevant word at all',
+      });
+      const summaryId = await artifact(r, 'b/SKILL.md', [{ hash: 'rp2' }], {
+        name: 'wholly unrelated title',
+        summary: 'quixotropic quixotropic quixotropic quixotropic quixotropic',
+      });
+
+      const results = await search.searchPackages({ q: 'quixotropic' });
+      const ids = results.map((x) => x.id);
+      expect(ids.indexOf(prefixId)).toBeLessThan(ids.indexOf(summaryId));
+    });
+
+    it('ranks a summary-only match above a match that only appears in the repository name', async () => {
+      const summaryRepo = await repo('rank-desc-summary');
+      const repoNameRepo = await repo('flumadiddle-repo-only');
+      const summaryId = await artifact(summaryRepo, 'a/SKILL.md', [{ hash: 'rd1' }], {
+        name: 'wholly unrelated title',
+        summary: 'discusses flumadiddle at length',
+      });
+      const repoNameId = await artifact(repoNameRepo, 'b/SKILL.md', [{ hash: 'rd2' }], {
+        name: 'another unrelated title',
+        summary: 'and another summary mentioning nothing relevant',
+      });
+
+      const results = await search.searchPackages({ q: 'flumadiddle' });
+      const ids = results.map((x) => x.id);
+      expect(ids).toContain(repoNameId);
+      expect(ids.indexOf(summaryId)).toBeLessThan(ids.indexOf(repoNameId));
+    });
+
+    it('breaks a relevance tie by updated_at DESC', async () => {
+      const r = await repo('tie-break-updated-at');
+      const olderId = await artifact(r, 'a/SKILL.md', [{ hash: 'tb1' }], {
+        name: 'tiebreakword item',
+      });
+      const newerId = await artifact(r, 'b/SKILL.md', [{ hash: 'tb2' }], {
+        name: 'tiebreakword item',
+      });
+      await sql`UPDATE package SET updated_at = now() - interval '2 days' WHERE id = ${olderId}`;
+      await sql`UPDATE package SET updated_at = now() - interval '1 day' WHERE id = ${newerId}`;
+
+      const results = await search.searchPackages({ q: 'tiebreakword' });
+      const ids = results.map((x) => x.id);
+      expect(ids.indexOf(newerId)).toBeLessThan(ids.indexOf(olderId));
+    });
+
+    it('breaks a further tie (same updated_at) by id ASC', async () => {
+      const r = await repo('tie-break-id');
+      const idA = await artifact(r, 'a/SKILL.md', [{ hash: 'idtb1' }], {
+        name: 'idtiebreakword item',
+      });
+      const idB = await artifact(r, 'b/SKILL.md', [{ hash: 'idtb2' }], {
+        name: 'idtiebreakword item',
+      });
+      // now() rather than a JS Date value: both rows get the identical
+      // server-evaluated timestamp in one statement, and postgres.js binds
+      // a raw JS Date awkwardly inside an IN(...) tuple.
+      await sql`UPDATE package SET updated_at = now() WHERE id IN (${idA}, ${idB})`;
+
+      const results = await search.searchPackages({ q: 'idtiebreakword' });
+      const ids = results.map((x) => x.id).filter((id) => id === idA || id === idB);
+      expect(ids).toEqual([Math.min(idA, idB), Math.max(idA, idB)]);
+    });
+
+    it('returns an identical id sequence when the same query runs twice', async () => {
+      const r = await repo('repeat-query');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'rq1' }], { name: 'repeatqueryword alpha' });
+      await artifact(r, 'b/SKILL.md', [{ hash: 'rq2' }], { name: 'repeatqueryword beta' });
+
+      const first = await search.searchPackages({ q: 'repeatqueryword' });
+      const second = await search.searchPackages({ q: 'repeatqueryword' });
+      expect(second.map((x) => x.id)).toEqual(first.map((x) => x.id));
+    });
+
+    it('page 1 and page 2 together cover the unpaginated ordering, with no duplicate and no gap', async () => {
+      const r = await repo('paginate');
+      const names = [
+        'paginateword one',
+        'paginateword two',
+        'paginateword three',
+        'paginateword four',
+        'paginateword five',
+      ];
+      for (const [i, name] of names.entries()) {
+        await artifact(r, `${i}/SKILL.md`, [{ hash: `pg${i}` }], { name });
+      }
+
+      const pageSize = 2;
+      const unpaginated = await search.searchPackages({ q: 'paginateword', limit: 100 });
+      const page1 = await search.searchPackages({ q: 'paginateword', limit: pageSize, offset: 0 });
+      const page2 = await search.searchPackages({
+        q: 'paginateword',
+        limit: pageSize,
+        offset: pageSize,
+      });
+
+      const combinedIds = [...page1, ...page2].map((x) => x.id);
+      expect(new Set(combinedIds).size).toBe(combinedIds.length);
+      expect(combinedIds).toEqual(unpaginated.slice(0, pageSize * 2).map((x) => x.id));
+    });
+
+    it('an empty normalized query returns the same ordering and count as listPackages/countPackages (browse mode)', async () => {
+      // agentdock_test starts empty (the real 921-row corpus lives only in
+      // the live `agentdock` schema), so this suite provides its own known
+      // rows rather than assuming a pre-populated corpus.
+      const r = await repo('browse-empty');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'be1' }], { name: 'browseemptyword one' });
+      await artifact(r, 'b/SKILL.md', [{ hash: 'be2' }], { name: 'browseemptyword two' });
+      await artifact(r, 'c/SKILL.md', [{ hash: 'be3' }], { name: 'browseemptyword three' });
+
+      const [emptyResults, browseResults, total] = await Promise.all([
+        search.searchPackages({ q: '', limit: 1000 }),
+        packages.listPackages({ limit: 1000 }),
+        packages.countPackages(),
+      ]);
+      expect(total).toBeGreaterThan(0);
+      expect(emptyResults.length).toBe(total);
+      expect(emptyResults.map((x) => x.id)).toEqual(browseResults.map((x) => x.id));
+      // rank is projected as a literal 0 on the browse branch — the return
+      // type does not change shape between the two branches.
+      expect(emptyResults.every((x) => x.rank === 0)).toBe(true);
+    });
+
+    it('an empty normalized query matches countSearchResults against the same options', async () => {
+      const [emptyCount, listingCount] = await Promise.all([
+        search.countSearchResults({ q: '' }),
+        packages.countPackages(),
+      ]);
+      expect(emptyCount).toBe(listingCount);
+    });
+
+    it('countSearchResults and searchPackages agree on a non-empty query', async () => {
+      const r = await repo('count-agree');
+      await artifact(r, 'a/SKILL.md', [{ hash: 'ca1' }], { name: 'countagreeword item' });
+      await artifact(r, 'b/SKILL.md', [{ hash: 'ca2' }], { name: 'countagreeword other' });
+
+      const [results, count] = await Promise.all([
+        search.searchPackages({ q: 'countagreeword', limit: 100 }),
+        search.countSearchResults({ q: 'countagreeword' }),
+      ]);
+      expect(count).toBe(results.length);
+    });
+
+    it("a query naming only a repository full name returns that repository's artifacts", async () => {
+      const r = await repo('flangeworth-only-repo-name');
+      const id = await artifact(r, 'a/SKILL.md', [{ hash: 'rn1' }], {
+        name: 'unrelated name',
+        summary: 'unrelated summary',
+      });
+
+      const results = await search.searchPackages({ q: 'flangeworth' });
+      expect(results.map((x) => x.id)).toContain(id);
+    });
+
+    it("does not rank parse_status = 'partial' below an otherwise equal 'ok' row (no ranking penalty)", async () => {
+      const r = await repo('rank-partial');
+      await artifact(r, 'ok/SKILL.md', [{ hash: 'rankp-ok' }], { name: 'rankpartialword item' });
+      await artifact(r, 'partial/SKILL.md', [{ hash: 'rankp-partial', status: 'partial' }], {
+        name: 'rankpartialword item',
+      });
+
+      const results = await search.searchPackages({ q: 'rankpartialword' });
+      const byPath = new Map(results.map((x) => [x.sourcePath, x]));
+      expect(byPath.get('partial/SKILL.md')?.rank).toBe(byPath.get('ok/SKILL.md')?.rank);
+    });
+
+    it('no popularity, capability or parse-status term reaches the ranking (grepped in Task 2 acceptance, asserted here by behaviour)', async () => {
+      const r = await repo('no-popularity', { stars: 1 });
+      const highStars = await repo('no-popularity-high', { stars: 9999 });
+      await artifact(r, 'a/SKILL.md', [{ hash: 'np1' }], { name: 'nopopularityword item' });
+      await artifact(highStars, 'b/SKILL.md', [{ hash: 'np2' }], { name: 'nopopularityword item' });
+
+      const results = await search.searchPackages({ q: 'nopopularityword' });
+      const ranks = results.map((x) => x.rank);
+      // Identical name text, wildly different star counts — equal rank
+      // proves stars never entered the expression.
+      expect(new Set(ranks).size).toBe(1);
+    });
+  });
 });
