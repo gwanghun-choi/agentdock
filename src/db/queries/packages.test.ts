@@ -415,4 +415,166 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       expect(await snapshot()).toBe(before);
     });
   });
+
+  /**
+   * D-20/D-21: the detail route must resolve for all six artifact types, not
+   * only 'skill'. sourcePathFromUrl's unconditional /SKILL.md append breaks
+   * every other type today (packages.ts:268-274) — these cases pin the fixed
+   * behaviour: sourcePathCandidates and the type-aware detailHref.
+   *
+   * D-34: 'catalog' is excluded from this route by NOT_LISTED_BECAUSE's
+   * 'unparsed' branch, not by a special case here — see 06-RESEARCH.md.
+   */
+  describe('generic detail route (D-20/D-21)', () => {
+    function segmentsFromHref(href: string, fullName: string): string[] {
+      const prefix = `/r/${fullName}/`;
+      expect(href.startsWith(prefix)).toBe(true);
+      return href
+        .slice(prefix.length)
+        .split('/')
+        .map((s) => decodeURIComponent(s));
+    }
+
+    it('opens a command at .claude/commands/build.md', async () => {
+      const r = await repo('cmd');
+      await artifact(r, '.claude/commands/build.md', [{ hash: 'cmd1' }], { type: 'command' });
+      const fullName = `${PREFIX}-cmd`;
+      const href = packages.detailHref(fullName, '.claude/commands/build.md', 'command');
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-cmd',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('.claude/commands/build.md');
+    });
+
+    it('opens a manifest-backed plugin at .claude-plugin/plugin.json', async () => {
+      const r = await repo('plugin-manifest');
+      await artifact(r, '.claude-plugin/plugin.json', [{ hash: 'pm1' }], { type: 'plugin' });
+      const fullName = `${PREFIX}-plugin-manifest`;
+      const href = packages.detailHref(fullName, '.claude-plugin/plugin.json', 'plugin');
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-plugin-manifest',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('.claude-plugin/plugin.json');
+    });
+
+    it('opens a shape-only plugin at the bare directory cli-tool/components', async () => {
+      const r = await repo('plugin-shape');
+      await artifact(r, 'cli-tool/components', [{ hash: 'ps1' }], {
+        type: 'plugin',
+        meta: '{"detectionConfidence":"shape-only"}',
+      });
+      const fullName = `${PREFIX}-plugin-shape`;
+      const href = packages.detailHref(fullName, 'cli-tool/components', 'plugin');
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-plugin-shape',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('cli-tool/components');
+    });
+
+    it('opens a hook at .claude/settings.json', async () => {
+      const r = await repo('hook');
+      await artifact(r, '.claude/settings.json', [{ hash: 'hk1' }], { type: 'hook' });
+      const fullName = `${PREFIX}-hook`;
+      const href = packages.detailHref(fullName, '.claude/settings.json', 'hook');
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-hook',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('.claude/settings.json');
+    });
+
+    it('opens an mcp_server at .mcp.json', async () => {
+      const r = await repo('mcp');
+      await artifact(r, '.mcp.json', [{ hash: 'mc1' }], { type: 'mcp_server' });
+      const fullName = `${PREFIX}-mcp`;
+      const href = packages.detailHref(fullName, '.mcp.json', 'mcp_server');
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-mcp',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('.mcp.json');
+    });
+
+    it('opens a skill at skills/canvas-design/SKILL.md with a byte-identical href to before this change', async () => {
+      const r = await repo('skill');
+      await artifact(r, 'skills/canvas-design/SKILL.md', [{ hash: 'sk1' }]);
+      const fullName = `${PREFIX}-skill`;
+      const href = packages.detailHref(fullName, 'skills/canvas-design/SKILL.md', 'skill');
+      // The pre-change function stripped the SKILL.md suffix and produced
+      // exactly this string. This regression case is the proof no published
+      // skill link broke.
+      expect(href).toBe(`/r/${fullName}/skills/canvas-design`);
+      const detail = await packages.getPackageDetail(
+        'test-owner',
+        'listing-spec-skill',
+        segmentsFromHref(href, fullName),
+      );
+      expect(detail?.sourcePath).toBe('skills/canvas-design/SKILL.md');
+    });
+
+    it('round-trips detailHref -> segments -> sourcePathCandidates -> getPackageDetail for all six types', async () => {
+      const cases: { type: string; sourcePath: string; meta?: string }[] = [
+        { type: 'skill', sourcePath: 'skills/rt-skill/SKILL.md' },
+        { type: 'plugin', sourcePath: '.claude-plugin/plugin.json' },
+        {
+          type: 'plugin',
+          sourcePath: 'rt-shape/components',
+          meta: '{"detectionConfidence":"shape-only"}',
+        },
+        { type: 'hook', sourcePath: '.claude/settings.json' },
+        { type: 'mcp_server', sourcePath: '.mcp.json' },
+        { type: 'command', sourcePath: '.claude/commands/rt.md' },
+      ];
+      for (const [i, c] of cases.entries()) {
+        const r = await repo(`rt-${i}`);
+        const id = await artifact(r, c.sourcePath, [{ hash: `rt-${i}` }], {
+          type: c.type,
+          meta: c.meta ?? '{}',
+        });
+        const fullName = `${PREFIX}-rt-${i}`;
+        const href = packages.detailHref(fullName, c.sourcePath, c.type);
+        const detail = await packages.getPackageDetail(
+          'test-owner',
+          `listing-spec-rt-${i}`,
+          segmentsFromHref(href, fullName),
+        );
+        expect(detail?.id).toBe(id);
+      }
+    });
+
+    it('resolves the literal path deterministically when a repository holds both a command at docs/guide and a skill at docs/guide/SKILL.md', async () => {
+      const r = await repo('collision');
+      await artifact(r, 'docs/guide', [{ hash: 'coll-cmd' }], { type: 'command' });
+      await artifact(r, 'docs/guide/SKILL.md', [{ hash: 'coll-skill' }]);
+
+      for (let i = 0; i < 3; i += 1) {
+        const detail = await packages.getPackageDetail('test-owner', 'listing-spec-collision', [
+          'docs',
+          'guide',
+        ]);
+        expect(detail?.type).toBe('command');
+        expect(detail?.sourcePath).toBe('docs/guide');
+      }
+    });
+
+    it('sourcePathCandidates: an empty join and the literal SKILL.md both resolve to [SKILL.md]', () => {
+      expect(packages.sourcePathCandidates(['SKILL.md'])).toEqual(['SKILL.md']);
+      expect(packages.sourcePathCandidates([])).toEqual(['SKILL.md']);
+    });
+
+    it('sourcePathCandidates: the literal join comes first, the SKILL.md reconstruction second', () => {
+      expect(packages.sourcePathCandidates(['.claude', 'commands', 'build.md'])).toEqual([
+        '.claude/commands/build.md',
+        '.claude/commands/build.md/SKILL.md',
+      ]);
+    });
+  });
 });
