@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               AgentDock
             </Link>
             <nav>
-              <Link href="/skills">Skills</Link>
+              <Link href="/artifacts">Artifacts</Link>
             </nav>
           </div>
         </header>

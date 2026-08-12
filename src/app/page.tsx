@@ -48,7 +48,7 @@ export default async function HomePage() {
         <>
           <PackageRows items={recent} />
           <p className="pager">
-            <Link href="/skills">Browse all {total} artifacts</Link>
+            <Link href="/artifacts">Browse all {total} artifacts</Link>
           </p>
         </>
       )}

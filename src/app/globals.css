@@ -232,6 +232,21 @@ a:hover {
   cursor: default;
 }
 
+/* ── Search ─────────────────────────────────────────────────────────────── */
+
+/* One rule for the form row (06-02 decision 8: the new form "needs even
+   less" than .submit). Native <input>/<button> chrome is left alone; only
+   alignment, wrapping and spacing are set here so the row holds together at
+   narrow widths (D-51). The global :focus-visible outline already covers
+   visible focus (D-50), so no focus rule is added here. */
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+
 /* ── Rows, not cards ────────────────────────────────────────────────────── */
 
 .rows {

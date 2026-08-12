@@ -21,6 +21,15 @@ const config: NextConfig = {
       },
     ];
   },
+  // D-19: /skills has listed six artifact types since Phase 3, and the name
+  // has been a false statement ever since. Permanent, because the old name
+  // was wrong and is not coming back — a temporary redirect would spend the
+  // same link equity twice if it were ever reverted. Next.js preserves the
+  // query string on the destination automatically (no destination query of
+  // its own here), so /skills?page=2 keeps working.
+  async redirects() {
+    return [{ source: '/skills', destination: '/artifacts', permanent: true }];
+  },
 };
 
 export default config;
