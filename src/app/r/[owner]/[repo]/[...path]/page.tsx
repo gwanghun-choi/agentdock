@@ -16,7 +16,15 @@ export const dynamic = 'force-dynamic';
 // which needs types that exist only after a build or an explicit generation step.
 type Props = { params: Promise<{ owner: string; repo: string; path: string[] }> };
 
-const TYPE_LABELS: Record<string, string> = { skill: 'Agent Skill' };
+// Verbatim from the seeded artifact_type.label rows (drizzle/0001, drizzle/0003).
+const TYPE_LABELS: Record<string, string> = {
+  skill: 'Agent Skill',
+  plugin: 'Claude Code Plugin',
+  catalog: 'Plugin Marketplace',
+  mcp_server: 'MCP Server',
+  command: 'Slash Command',
+  hook: 'Hook Configuration',
+};
 
 // The File section's closing sentence. Single-line and named, rather than
 // inline JSX text broken across lines, so it is one exact, unambiguous
@@ -175,38 +183,40 @@ export default async function PackagePage({ params }: Props) {
         </p>
       ) : null}
 
-      <h2>Files</h2>
-      <p className="muted">
-        Every file AgentDock found alongside this artifact&apos;s manifest, from the tree it already
-        read — no additional GitHub request. A bundled script is named and never opened.
-      </p>
       {detail.files.length > 0 ? (
-        <table className="files">
-          <thead>
-            <tr>
-              <th>Path</th>
-              <th>Size</th>
-              <th>Type</th>
-              <th>Executable</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.files.map((f) => (
-              <tr key={f.path}>
-                <td className="path">
-                  {f.path}
-                  {isBundledScript(f.path) ? <span className="muted"> — not analyzed</span> : null}
-                </td>
-                <td>{f.size === null ? 'unknown' : f.size}</td>
-                <td>{f.kind}</td>
-                <td>{f.executable ? 'yes' : 'no'}</td>
+        <>
+          <h2>Files</h2>
+          <p className="muted">
+            Every file AgentDock found alongside this artifact&apos;s manifest, from the tree it
+            already read — no additional GitHub request. A bundled script is named and never opened.
+          </p>
+          <table className="files">
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Size</th>
+                <th>Type</th>
+                <th>Executable</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="muted">No files recorded yet.</p>
-      )}
+            </thead>
+            <tbody>
+              {detail.files.map((f) => (
+                <tr key={f.path}>
+                  <td className="path">
+                    {f.path}
+                    {isBundledScript(f.path) ? (
+                      <span className="muted"> — not analyzed</span>
+                    ) : null}
+                  </td>
+                  <td>{f.size === null ? 'unknown' : f.size}</td>
+                  <td>{f.kind}</td>
+                  <td>{f.executable ? 'yes' : 'no'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
 
       <CapabilityPanel
         findings={observedFindings}
@@ -231,21 +241,25 @@ export default async function PackagePage({ params }: Props) {
         ))}
       </ul>
 
-      <h2>Install</h2>
-      <p className="muted">
-        Copy the skill directory from the source repository to one of these paths. AgentDock does
-        not install anything for you.
-      </p>
-      <dl className="facts install">
-        {install.map((i) => (
-          <div key={i.runtime} style={{ display: 'contents' }}>
-            <dt>{i.runtime}</dt>
-            <dd>
-              <code>{i.text}</code>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {detail.type === 'skill' ? (
+        <>
+          <h2>Install</h2>
+          <p className="muted">
+            Copy the skill directory from the source repository to one of these paths. AgentDock
+            does not install anything for you.
+          </p>
+          <dl className="facts install">
+            {install.map((i) => (
+              <div key={i.runtime} style={{ display: 'contents' }}>
+                <dt>{i.runtime}</dt>
+                <dd>
+                  <code>{i.text}</code>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      ) : null}
 
       <h2>File</h2>
       <p className="muted">

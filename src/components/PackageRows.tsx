@@ -18,7 +18,7 @@ export function PackageRows({
       {items.map((p) => (
         <li key={p.id}>
           <p className="row-title">
-            <Link href={detailHref(p.fullName, p.sourcePath)}>{p.name}</Link>
+            <Link href={detailHref(p.fullName, p.sourcePath, p.type)}>{p.name}</Link>
             {showRepo ? <span className="muted">{p.fullName}</span> : null}
           </p>
           {p.summary ? <p className="row-desc">{p.summary}</p> : null}

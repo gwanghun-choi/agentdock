@@ -125,7 +125,7 @@ describe.skipIf(!DB_URL)('the search query', () => {
     expect(results.map((x) => x.sourcePath)).toContain('b/SKILL.md');
   });
 
-  it("returns a row whose source_path segment matches the query word, proving the C-weight path split works", async () => {
+  it('returns a row whose source_path segment matches the query word, proving the C-weight path split works', async () => {
     const r = await repo('path-match');
     await artifact(r, 'servers/whirligig/index.ts', [{ hash: 'pm1' }], {
       name: 'unrelated title',
@@ -169,10 +169,7 @@ describe.skipIf(!DB_URL)('the search query', () => {
 
       const forkPage = await packages.getRepositoryPackages('test-owner', 'search-spec-cor-fork');
       expect(forkPage?.packages.map((p) => p.sourcePath)).toContain('fork-item/SKILL.md');
-      const failPage = await packages.getRepositoryPackages(
-        'test-owner',
-        'search-spec-cor-failed',
-      );
+      const failPage = await packages.getRepositoryPackages('test-owner', 'search-spec-cor-failed');
       expect(failPage?.packages.map((p) => p.sourcePath)).toContain('bad/SKILL.md');
       const dupLowPage = await packages.getRepositoryPackages(
         'test-owner',

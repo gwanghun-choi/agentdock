@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import type { FileEntry } from '@/analyze/types';
 import { db } from '@/db/client';
@@ -124,7 +124,7 @@ function latestVersion(column: 'parse_status' | 'content_hash', packageId = pack
  * the gate is 100 ms and the rewrite clears it by a factor of four without
  * spending a migration. Build it when a measured listing crosses 100 ms again.
  */
-const NOT_LISTED_BECAUSE = sql<NotListedReason | null>`case
+export const NOT_LISTED_BECAUSE = sql<NotListedReason | null>`case
   when ${repository.isFork} then 'fork'
   when ${latestVersion('parse_status')} = 'failed' then 'unparsed'
   when ${packageTable.meta}->>'detectionConfidence' is distinct from 'shape-only'
@@ -259,24 +259,53 @@ export function permalinkAtLine(
 }
 
 /**
- * The URL carries the artifact's directory; the identity key carries its manifest
- * path. One type, one manifest filename, so the mapping is a suffix.
+ * The literal candidates for a URL's stored source_path, in resolution order.
  *
- * ponytail: suffix mapping while there is one artifact type; Phase 3 resolves the
- * manifest filename from the detector registry instead.
+ * source_path IS the URL for every non-skill artifact today — a shape-only
+ * plugin has no manifest file at all, so "append this type's manifest
+ * filename" has no value to append for that case. The literal join is tried
+ * first; the historical `/SKILL.md` reconstruction is tried second, purely so
+ * an existing skill permalink keeps resolving. getPackageDetail's ORDER BY
+ * states which one wins when a repository holds both.
+ *
+ * Replaces sourcePathFromUrl, which unconditionally appended `/SKILL.md` and
+ * so 404'd every command, plugin, hook and mcp_server detail link.
  */
-export function sourcePathFromUrl(segments: string[]): string {
+export function sourcePathCandidates(segments: string[]): string[] {
   const joined = segments.join('/');
-  // A manifest at the repository root has no directory, so the URL carries the
-  // filename itself and there is nothing to append.
-  if (joined === 'SKILL.md') return joined;
-  return joined.length > 0 ? `${joined}/SKILL.md` : 'SKILL.md';
+  // A manifest at the repository root has no directory, so the URL carries
+  // the filename itself and there is nothing to reconstruct.
+  if (joined === '' || joined === 'SKILL.md') return ['SKILL.md'];
+  return [joined, `${joined}/SKILL.md`];
 }
 
-/** The inverse. Kept beside its counterpart so the two cannot drift apart. */
-export function detailHref(fullName: string, sourcePath: string): string {
-  const dir = sourcePath.replace(/(^|\/)SKILL\.md$/, '');
-  return `/r/${fullName}/${dir === '' ? 'SKILL.md' : dir}`;
+/**
+ * The inverse, for rendering a link. Kept beside its counterpart so the two
+ * cannot drift apart.
+ *
+ * `skill` keeps its existing prettier directory URL — the strip-`SKILL.md`
+ * behaviour is byte-identical to what shipped before this change, so no
+ * published skill link breaks. Every other type's URL tail is its literal
+ * source_path, unmodified: there is no per-type suffix to add or strip.
+ *
+ * Each path segment is percent-encoded individually and rejoined, never the
+ * whole tail at once — encoding the whole string would encode the `/`
+ * separators too and truncate/break every link at once on a hostile
+ * character such as `#` or `?`.
+ */
+export function detailHref(fullName: string, sourcePath: string, type: string): string {
+  const tail =
+    type === 'skill'
+      ? (() => {
+          const dir = sourcePath.replace(/(^|\/)SKILL\.md$/, '');
+          return dir === '' ? 'SKILL.md' : dir;
+        })()
+      : sourcePath;
+  const encoded = tail
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  return `/r/${fullName}/${encoded}`;
 }
 
 export type RepositorySummary = {
@@ -375,6 +404,7 @@ export type PackageDetail = {
 
 export const getPackageDetail = cache(
   async (owner: string, repo: string, segments: string[]): Promise<PackageDetail | null> => {
+    const candidates = sourcePathCandidates(segments);
     const [row] = await db
       .select({
         id: packageTable.id,
@@ -410,11 +440,18 @@ export const getPackageDetail = cache(
         and(
           isNull(packageTable.delistedAt),
           sql`lower(${repository.fullName}) = ${`${owner}/${repo}`.toLowerCase()}`,
-          eq(packageTable.sourcePath, sourcePathFromUrl(segments)),
+          inArray(packageTable.sourcePath, candidates),
         ),
       )
-      // The latest version of that artifact, which is the one on the page.
-      .orderBy(desc(packageVersion.ingestedAt))
+      .orderBy(
+        // A repository can hold both a literal path X and a skill at
+        // X/SKILL.md — two distinct source_path values, both permitted by
+        // package_identity. The literal match wins, stated here rather than
+        // left to row order (decision 2, 06-01 plan).
+        sql`case when ${packageTable.sourcePath} = ${candidates[0]} then 0 else 1 end`,
+        // The latest version of that artifact, which is the one on the page.
+        desc(packageVersion.ingestedAt),
+      )
       .limit(1);
     return row ?? null;
   },
