@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { checkVerdictVocabulary } from '../../scripts/check-boundaries.mjs';
 import { META_DESCRIPTION_MAX, metaDescription } from './metadata';
 
 /**
@@ -104,5 +105,63 @@ describe('metaDescription', () => {
     expect(renderToStaticMarkup(<meta name="description" content={out} />)).toContain(
       '&lt;script&gt;',
     );
+  });
+});
+
+/**
+ * The exclusion copy added for COR-07, checked against the two rules that
+ * govern it rather than against a reviewer's memory.
+ *
+ * Rule 6 (no-verdict-vocabulary) runs over whole UI files in CI. This runs over
+ * the sentences alone, so the failure a future editor sees names the sentence
+ * and not the file.
+ */
+describe('the not-in-listings copy', () => {
+  // Verbatim from src/app/r/[owner]/[repo]/page.tsx. Duplicated on purpose: a
+  // test that imported the page would drag in the database client, and the
+  // point here is the wording, which a reviewer should be able to read without
+  // opening the page.
+  const COPY = [
+    'A fork on GitHub',
+    'is in a fork of another repository',
+    'are in a fork of another repository',
+    'is byte-identical to an artifact AgentDock already lists',
+    'are byte-identical to an artifact AgentDock already lists',
+    'has a file whose frontmatter AgentDock could not read',
+    'have a file whose frontmatter AgentDock could not read',
+    "of these is on this page and not in AgentDock's listings elsewhere",
+    "of these are on this page and not in AgentDock's listings elsewhere",
+    'Each one is still readable here.',
+  ];
+
+  it('uses no verdict vocabulary', () => {
+    for (const line of COPY) {
+      // Wrapped as a string literal, which is one of the two spans rule 6 scans.
+      expect(checkVerdictVocabulary(`const copy = ${JSON.stringify(line)};`)).toEqual([]);
+    }
+  });
+
+  it('says where an artifact is or what AgentDock did, never what it is worth', () => {
+    // The mechanical half of the intent CAP-10 states and rule 6 cannot check:
+    // no comparative, no ranking, no worth. Rule 6's own list is separate and
+    // asserted above; these are the words that would pass it and still read as
+    // a verdict.
+    const RANKING =
+      /\b(better|worse|lower quality|low.quality|poor|inferior|spam|junk|official)\b/i;
+    for (const line of COPY) expect(line).not.toMatch(RANKING);
+  });
+
+  it('escapes a hostile repository name rendered beside the count', () => {
+    // The sentence itself interpolates only integers, but the page around it
+    // renders repository-controlled text, and that is the sink this file exists
+    // to pin.
+    const html = renderToStaticMarkup(
+      <p className="muted">
+        {3} of these are on this page and not in AgentDock&apos;s listings elsewhere.{' '}
+        {TITLE_BREAKER}
+      </p>,
+    );
+    expect(html).not.toContain('<script');
+    expect(html).toContain('&lt;script&gt;');
   });
 });

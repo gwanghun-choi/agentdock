@@ -37,9 +37,9 @@ export default async function SkillsPage({
   if (total === 0) {
     return (
       <>
-        <h1>Skills</h1>
+        <h1>Artifacts</h1>
         <p className="muted">
-          No skills indexed yet. <Link href="/">Submit a repository</Link>.
+          No artifacts indexed yet. <Link href="/">Submit a repository</Link>.
         </p>
       </>
     );
@@ -50,10 +50,10 @@ export default async function SkillsPage({
   if (packages.length === 0) {
     return (
       <>
-        <h1>Skills</h1>
+        <h1>Artifacts</h1>
         <p className="muted">
           There is no page {page}. <Link href="/skills">Back to the first page</Link> of {total}{' '}
-          skills.
+          artifacts.
         </p>
       </>
     );
@@ -61,7 +61,7 @@ export default async function SkillsPage({
 
   return (
     <>
-      <h1>Skills</h1>
+      <h1>Artifacts</h1>
       <p className="muted">
         Showing {offset + 1}–{offset + packages.length} of {total}.
       </p>

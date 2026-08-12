@@ -79,8 +79,14 @@ export type ParseResult =
   /**
    * This candidate is not an artifact and is not a package. A catalog names other
    * repositories; the pipeline routes these to repo_seed and writes no row here.
+   *
+   * `skipped` counts the entries that named no repository this project can
+   * ingest. A number rather than another warning string, and that is the whole
+   * point: src/ingest/pipeline.ts's seeds branch continues WITHOUT reading
+   * warnings — the artifact branch writes them to parse_errors, this branch does
+   * not — so a count carried as prose here is destroyed one function later.
    */
-  | { ok: true; status: 'seeds'; seeds: DetectedSeed[]; warnings: string[] }
+  | { ok: true; status: 'seeds'; seeds: DetectedSeed[]; warnings: string[]; skipped: number }
   /**
    * This candidate is not an artifact at all — path-only match() could not know.
    * A .claude/settings.json with no hooks key is not a malformed hook, it is not

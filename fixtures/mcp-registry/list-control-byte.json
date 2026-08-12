@@ -1,0 +1,62 @@
+{
+  "servers": [
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ac.tandem/docs-mcp",
+        "description": "Remote MCP server for Tandem docs, install guides, SDKs, workflows, and agent setup help.",
+        "repository": {
+          "url": "https://github.com/test-owner/corpus-spec-tandem",
+          "source": "github"
+        },
+        "version": "0.3.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://tandem.ac/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-04-02T11:22:40.005172Z",
+          "publishedAt": "2026-04-02T11:22:40.005172Z",
+          "updatedAt": "2026-04-02T11:22:40.005172Z",
+          "isLatest": false
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ai.agentberg/agentberg",
+        "description": "Agent-to-agent trading intelligence exchange. Publish findings, vote on quality, earn reputation.",
+        "repository": {
+          "url": "https://github.com/Test-Owner/Corpus-Spec-Agentberg",
+          "source": "github"
+        },
+        "version": "0.2.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://agentberg.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-06-18T01:49:38.050173Z",
+          "publishedAt": "2026-06-18T01:49:38.050173Z",
+          "updatedAt": "2026-06-18T01:49:38.050173Z",
+          "isLatest": true
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "nextCursor": "ai.agentberg/agentberg:1.0.0",
+    "count": 2
+  }
+}

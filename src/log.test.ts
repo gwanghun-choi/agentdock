@@ -44,6 +44,7 @@ const KEYS = [
   'rateReset',
   'removed',
   'repo',
+  'seedsSkipped',
   'stored',
   'truncated',
   'ts',
@@ -68,6 +69,7 @@ function entryFor(outcome: AttemptOutcome) {
     updated: 4,
     unchanged: 11,
     removed: 2,
+    seedsSkipped: 3,
     truncated: true,
     durationMs: 1234,
     rateRemaining: 55,
@@ -104,6 +106,21 @@ describe('the ingest log line', () => {
     expect(line).not.toContain('ghp_');
     expect(line).not.toContain('postgres://');
     expect(line).not.toMatch(/Bearer|authorization|password/i);
+  });
+
+  it('carries seedsSkipped as a number on every outcome, zero included', () => {
+    // The Phase 4 observability item, closed. A field that appeared only when
+    // non-zero would make its absence ambiguous between "no catalog" and "an
+    // older build", which is the ambiguity analyzed_at exists to prevent
+    // elsewhere in this schema. It is a number, so no entry text, no path and no
+    // response body can be assigned into it.
+    for (const outcome of OUTCOMES) {
+      const zeroed = { ...entryFor(outcome), seedsSkipped: 0 };
+      const parsed = JSON.parse(capture(zeroed));
+      expect(parsed).toHaveProperty('seedsSkipped', 0);
+      expect(typeof parsed.seedsSkipped).toBe('number');
+      vi.restoreAllMocks();
+    }
   });
 
   it('stays short enough to read, because there is nowhere for a body to go', () => {

@@ -1,0 +1,1825 @@
+{
+  "sha": "44c9b2d6e889982ac18c27d05a19fefe335194e1",
+  "url": "https://api.github.com/repos/obra/superpowers/git/trees/44c9b2d6e889982ac18c27d05a19fefe335194e1",
+  "tree": [
+    {
+      "path": ".agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5f66635751badfd4a3f23bdd8e7ea58390e020e0",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/5f66635751badfd4a3f23bdd8e7ea58390e020e0"
+    },
+    {
+      "path": ".agents/plugins",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f2bc0580186f2db12eaaed3b1e51bb662543cb7f",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/f2bc0580186f2db12eaaed3b1e51bb662543cb7f"
+    },
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e3b4350d5585e4240bb48ac3378f828985f2c8c",
+      "size": 363,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4e3b4350d5585e4240bb48ac3378f828985f2c8c"
+    },
+    {
+      "path": ".claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "39b5bbdf3edcc9f020458d1d36ef998929ff4faa",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/39b5bbdf3edcc9f020458d1d36ef998929ff4faa"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e058f5e44c5765afd6e10e32d71b5c0ca6bacb7b",
+      "size": 514,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e058f5e44c5765afd6e10e32d71b5c0ca6bacb7b"
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ec90b5e3d0c2cf588bf01802e2d6f519e13ed4a",
+      "size": 497,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/5ec90b5e3d0c2cf588bf01802e2d6f519e13ed4a"
+    },
+    {
+      "path": ".codex-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "78ffbf38b75c16f9a80c4c44d6d5044e9f0cfdbf",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/78ffbf38b75c16f9a80c4c44d6d5044e9f0cfdbf"
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c777f316fc4baa00a02f9ac33f87939f6e33cee1",
+      "size": 1730,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c777f316fc4baa00a02f9ac33f87939f6e33cee1"
+    },
+    {
+      "path": ".cursor-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4bc364170642edfb40407decfdd547dea9c181bb",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/4bc364170642edfb40407decfdd547dea9c181bb"
+    },
+    {
+      "path": ".cursor-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0902be0e6d41b293cc8a98f5c23c8956e18d73d6",
+      "size": 578,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0902be0e6d41b293cc8a98f5c23c8956e18d73d6"
+    },
+    {
+      "path": ".gitattributes",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "def8027c9d57f718d0817f54158d4073b4a8e300",
+      "size": 373,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/def8027c9d57f718d0817f54158d4073b4a8e300"
+    },
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "37fbdb3953b7ebcd62a4555822985a3111b26980",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/37fbdb3953b7ebcd62a4555822985a3111b26980"
+    },
+    {
+      "path": ".github/FUNDING.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f646aa73b91cebf36d31405d63858e0a3777e28d",
+      "size": 62,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f646aa73b91cebf36d31405d63858e0a3777e28d"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ecc3520b56d4bcec3a4ea806530ab2e17f9cd9c2",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/ecc3520b56d4bcec3a4ea806530ab2e17f9cd9c2"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01bb80e2ebfd36200b9327d78a947efade3c28fa",
+      "size": 1593,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/01bb80e2ebfd36200b9327d78a947efade3c28fa"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "008309e5e1e19cdaa048e95523d939511027b9d6",
+      "size": 241,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/008309e5e1e19cdaa048e95523d939511027b9d6"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7a4de12065d741c12e169a3c10604d2596ff146",
+      "size": 1604,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c7a4de12065d741c12e169a3c10604d2596ff146"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/platform_support.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "277dd1ee99e5b86db953aec35d1a6cdcfbd2e691",
+      "size": 979,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/277dd1ee99e5b86db953aec35d1a6cdcfbd2e691"
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ec951316ff237ebd2829283bdbc74ff265de1e1",
+      "size": 5814,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2ec951316ff237ebd2829283bdbc74ff265de1e1"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "211864956743c7a4a444ea02bb69f292bd192eaa",
+      "size": 297,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/211864956743c7a4a444ea02bb69f292bd192eaa"
+    },
+    {
+      "path": ".kimi-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "63269c75bdc287f25103de4c3d5419183d80ebad",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/63269c75bdc287f25103de4c3d5419183d80ebad"
+    },
+    {
+      "path": ".kimi-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "55933e34ab68e17e6e520bc5a7f282aee54d3c22",
+      "size": 3090,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/55933e34ab68e17e6e520bc5a7f282aee54d3c22"
+    },
+    {
+      "path": ".opencode",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "27941ed20cd1187660c3cdc6c8eff915c33eba65",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/27941ed20cd1187660c3cdc6c8eff915c33eba65"
+    },
+    {
+      "path": ".opencode/INSTALL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "080f043f8f63e4e5bb44e29bcde84cd9593871a7",
+      "size": 3342,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/080f043f8f63e4e5bb44e29bcde84cd9593871a7"
+    },
+    {
+      "path": ".opencode/plugins",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "48a3a7b09b20fd61d87b761c5a58e6612f5b31e6",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/48a3a7b09b20fd61d87b761c5a58e6612f5b31e6"
+    },
+    {
+      "path": ".opencode/plugins/superpowers.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "423e5ed513261485c657ba166b0372a5293639c7",
+      "size": 5464,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/423e5ed513261485c657ba166b0372a5293639c7"
+    },
+    {
+      "path": ".pi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "dd6ad1939e5282d6f67a6e0406245f7037df8cea",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/dd6ad1939e5282d6f67a6e0406245f7037df8cea"
+    },
+    {
+      "path": ".pi/extensions",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e48d4cddfbcb54aeba5be79f831509da885ea231",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/e48d4cddfbcb54aeba5be79f831509da885ea231"
+    },
+    {
+      "path": ".pi/extensions/superpowers.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a978e80ee0bbffe649ace8826bf6e8b69beea421",
+      "size": 4283,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/a978e80ee0bbffe649ace8826bf6e8b69beea421"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "08fd36d126acd2d5b9ad2dc29c0f83cbb7ebe428",
+      "size": 579,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/08fd36d126acd2d5b9ad2dc29c0f83cbb7ebe428"
+    },
+    {
+      "path": ".version-bump.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7fc6cc9fed9a8eaee5b2a4f4962f209c237bce81",
+      "size": 660,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/7fc6cc9fed9a8eaee5b2a4f4962f209c237bce81"
+    },
+    {
+      "path": "AGENTS.md",
+      "mode": "120000",
+      "type": "blob",
+      "sha": "681311eb9cf453d0faddf3aacaec7357e97ba8e9",
+      "size": 9,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/681311eb9cf453d0faddf3aacaec7357e97ba8e9"
+    },
+    {
+      "path": "CLAUDE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f3d7410f82cb3d348a80cbd59c359da9f75e6d8",
+      "size": 8873,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/5f3d7410f82cb3d348a80cbd59c359da9f75e6d8"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f6422545a4b5485c81346080d8d34c53b5cf9292",
+      "size": 5224,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f6422545a4b5485c81346080d8d34c53b5cf9292"
+    },
+    {
+      "path": "GEMINI.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0dd2f585ecb2ee37c558c8233d72489bb2135856",
+      "size": 92,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0dd2f585ecb2ee37c558c8233d72489bb2135856"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "abf0390320aa14406af7a520b9b0739fdda9bf08",
+      "size": 1070,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/abf0390320aa14406af7a520b9b0739fdda9bf08"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2757b2efb76793a9420256ea45399edc355bead4",
+      "size": 10695,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2757b2efb76793a9420256ea45399edc355bead4"
+    },
+    {
+      "path": "RELEASE-NOTES.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "46c51e38d6bc33e085305c2fd6ceddbd33809ee6",
+      "size": 91560,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/46c51e38d6bc33e085305c2fd6ceddbd33809ee6"
+    },
+    {
+      "path": "assets",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f0aad53c3742aa6cd4c3b119cf12e7a96eaf599d",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/f0aad53c3742aa6cd4c3b119cf12e7a96eaf599d"
+    },
+    {
+      "path": "assets/app-icon.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "25518da4625e850d97b15a9e0a27e7115969dc0d",
+      "size": 48231,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/25518da4625e850d97b15a9e0a27e7115969dc0d"
+    },
+    {
+      "path": "assets/superpowers-small.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c514fe33a692cfaf4f6321e9e6c520df6a8d2769",
+      "size": 1733,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c514fe33a692cfaf4f6321e9e6c520df6a8d2769"
+    },
+    {
+      "path": "docs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1942258b10ebbb5637fb533d7e1bd3356090a097",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/1942258b10ebbb5637fb533d7e1bd3356090a097"
+    },
+    {
+      "path": "docs/README.kimi.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d7cd74d0b5d65c60ae44d51dcf11691ae1041f6",
+      "size": 2691,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0d7cd74d0b5d65c60ae44d51dcf11691ae1041f6"
+    },
+    {
+      "path": "docs/README.opencode.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11da85425a102a03b7bb598376c5d9e59e6f3276",
+      "size": 4580,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/11da85425a102a03b7bb598376c5d9e59e6f3276"
+    },
+    {
+      "path": "docs/plans",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "09e5eb2dea9d947bce805862a4a389c91a0171f2",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/09e5eb2dea9d947bce805862a4a389c91a0171f2"
+    },
+    {
+      "path": "docs/plans/2025-11-22-opencode-support-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "144f1cea2956f0736a9af65ae4aa6b0566146ed6",
+      "size": 8831,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/144f1cea2956f0736a9af65ae4aa6b0566146ed6"
+    },
+    {
+      "path": "docs/plans/2025-11-22-opencode-support-implementation.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bd148b4cb3a4a22ca20d0ebe9d1de875afbf534f",
+      "size": 27539,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/bd148b4cb3a4a22ca20d0ebe9d1de875afbf534f"
+    },
+    {
+      "path": "docs/plans/2025-11-28-skills-improvements-from-user-feedback.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "52a8b0ea9f938172d703136dd9665c7c14e31c64",
+      "size": 21033,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/52a8b0ea9f938172d703136dd9665c7c14e31c64"
+    },
+    {
+      "path": "docs/plans/2026-01-17-visual-brainstorming.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "40aa0ad0620d9647a377391247665c611a8a8cb4",
+      "size": 15107,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/40aa0ad0620d9647a377391247665c611a8a8cb4"
+    },
+    {
+      "path": "docs/porting-to-a-new-harness.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4ae9603defaf0d9ff052189a33fe515dd2a4ee2e",
+      "size": 50682,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4ae9603defaf0d9ff052189a33fe515dd2a4ee2e"
+    },
+    {
+      "path": "docs/superpowers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2529ff0cbaa8bc3939348c8267c076ce8430bbd2",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/2529ff0cbaa8bc3939348c8267c076ce8430bbd2"
+    },
+    {
+      "path": "docs/superpowers/plans",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "70ad83222af19951dc2b7a257fcf6ed9c23eb233",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/70ad83222af19951dc2b7a257fcf6ed9c23eb233"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-01-22-document-review-system.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6ab9fb8a4c2bd8ed79563503c7ab78e6a79099db",
+      "size": 8999,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/6ab9fb8a4c2bd8ed79563503c7ab78e6a79099db"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-02-19-visual-brainstorming-refactor.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "224d34986a48ccf908dc8429ec6a7a57c88d36a2",
+      "size": 18804,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/224d34986a48ccf908dc8429ec6a7a57c88d36a2"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-03-11-zero-dep-brainstorm-server.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9bfc666e90d57a730fb3cab9f0c118208eb2835f",
+      "size": 15576,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/9bfc666e90d57a730fb3cab9f0c118208eb2835f"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-03-23-codex-app-compatibility.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f35d3d283fc4ba03eb61c26fce5b4990e08f790",
+      "size": 19177,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0f35d3d283fc4ba03eb61c26fce5b4990e08f790"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-04-06-worktree-rototill.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "183ee744d96e27dab1715f40c51d699c0585157e",
+      "size": 29210,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/183ee744d96e27dab1715f40c51d699c0585157e"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-06-lift-drill-into-evals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b1c01ca26e624d81de9cf79b481aa70d0238fa7e",
+      "size": 48218,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b1c01ca26e624d81de9cf79b481aa70d0238fa7e"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-05-07-pi-extension-and-evals.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6272acd6491fef345ae28b623e3a8c7844ffa367",
+      "size": 5748,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/6272acd6491fef345ae28b623e3a8c7844ffa367"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-09-sdd-task-scoped-review-dispatch.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "57cc5fc076d27878adc0450f0c7c196eb64cb1bb",
+      "size": 28766,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/57cc5fc076d27878adc0450f0c7c196eb64cb1bb"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-09-visual-companion-issues.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "09d6c1d445ee22eede4115a6ed2f0184e0b4e190",
+      "size": 18930,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/09d6c1d445ee22eede4115a6ed2f0184e0b4e190"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-10-visual-companion-auth-hardening.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e290dded74e1d45a6fc58066bc70def9814de1cc",
+      "size": 23632,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e290dded74e1d45a6fc58066bc70def9814de1cc"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-06-11-visual-companion-final-hardening-fixup.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eec99e51e96d293dc71b221bf5c67a4f9906fa3d",
+      "size": 36149,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/eec99e51e96d293dc71b221bf5c67a4f9906fa3d"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-06-sdd-plan-scoped-workspace.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "74f225bf6fa299ed9c317773ffffb53a741887d9",
+      "size": 48630,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/74f225bf6fa299ed9c317773ffffb53a741887d9"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-15-sdd-fix-loop-redesign.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "93fdc82eaffe2c1141f73f9476dc12f1bbb759de",
+      "size": 77641,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/93fdc82eaffe2c1141f73f9476dc12f1bbb759de"
+    },
+    {
+      "path": "docs/superpowers/specs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "16849bda7d4977a9dcec09f2a5b45fb2a103c2a5",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/16849bda7d4977a9dcec09f2a5b45fb2a103c2a5"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-01-22-document-review-system-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f8f611ebf404a923a8b20d659d4cea56e06124d0",
+      "size": 4723,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f8f611ebf404a923a8b20d659d4cea56e06124d0"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-02-19-visual-brainstorming-refactor-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "46f88bf3dc1c7d41aa41f221ebfe5fc943ae6572",
+      "size": 9445,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/46f88bf3dc1c7d41aa41f221ebfe5fc943ae6572"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-03-11-zero-dep-brainstorm-server-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d92e89fb258091132cbf54c8d9e04c412fe3634a",
+      "size": 6021,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d92e89fb258091132cbf54c8d9e04c412fe3634a"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-03-23-codex-app-compatibility-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c3fecc04cc4af01602f8604035688b59e3a87311",
+      "size": 13369,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c3fecc04cc4af01602f8604035688b59e3a87311"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-04-06-worktree-rototill-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11c854e7eb6b3cce250784bb6596c363d027ad95",
+      "size": 20120,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/11c854e7eb6b3cce250784bb6596c363d027ad95"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-05-platform-neutral-config-refs-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3a3cf56ab061567bd77540c78ef346cbad3f94e",
+      "size": 4886,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d3a3cf56ab061567bd77540c78ef346cbad3f94e"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-05-platform-neutral-prose-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34066b1ce30fec2d272e0747b03cee6b8ea73f52",
+      "size": 6038,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/34066b1ce30fec2d272e0747b03cee6b8ea73f52"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-05-platform-neutral-readme-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6492ec83d93222e4d376d02361ea311d0a6d96f",
+      "size": 2100,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d6492ec83d93222e4d376d02361ea311d0a6d96f"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-05-06-lift-drill-into-evals-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3e63e5a66557477dfc67b8855dfc80d331dfa55",
+      "size": 21059,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b3e63e5a66557477dfc67b8855dfc80d331dfa55"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-09-sdd-task-scoped-review-dispatch-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23cdd4a7cc5d685ea64fd3c0c0cb9065f28bec0a",
+      "size": 17835,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/23cdd4a7cc5d685ea64fd3c0c0cb9065f28bec0a"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-10-positive-instruction-redesign-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ec77cf902cbe3f3261d9d27693416a651e785bb",
+      "size": 10590,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/1ec77cf902cbe3f3261d9d27693416a651e785bb"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-10-strict-cost-sdd-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dfec87cfdeac32efad18936ec9b734907e1b019b",
+      "size": 15315,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/dfec87cfdeac32efad18936ec9b734907e1b019b"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-10-visual-companion-auth-hardening-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16bf41af5173f3cb69a4cba7356aa2fe24a50d00",
+      "size": 8314,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/16bf41af5173f3cb69a4cba7356aa2fe24a50d00"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-06-11-visual-companion-final-hardening-fixup-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "30f588921355534c9709a04d2208bda1318b9004",
+      "size": 12956,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/30f588921355534c9709a04d2208bda1318b9004"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-06-sdd-plan-scoped-workspace-eval-results.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ee1872cf8587c2720215e473128552b32366c5e",
+      "size": 24547,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2ee1872cf8587c2720215e473128552b32366c5e"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-06-sdd-plan-scoped-workspace.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ada12023105cee7060c662d5f0ef12d1202df3df",
+      "size": 10210,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/ada12023105cee7060c662d5f0ef12d1202df3df"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-15-sdd-fix-loop-redesign-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89e3e24bf4cb608cfc2959195ad54403c7c992b3",
+      "size": 10963,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/89e3e24bf4cb608cfc2959195ad54403c7c992b3"
+    },
+    {
+      "path": "docs/testing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "414d69790c708df23b3da1ef21365b40f4112ec3",
+      "size": 2218,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/414d69790c708df23b3da1ef21365b40f4112ec3"
+    },
+    {
+      "path": "docs/windows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "133ec130ba0690b5d04000eab41f12c99b1f2265",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/133ec130ba0690b5d04000eab41f12c99b1f2265"
+    },
+    {
+      "path": "docs/windows/polyglot-hooks.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1bcb84ec10020aa9410655e2b55a547dc59cd89",
+      "size": 6579,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d1bcb84ec10020aa9410655e2b55a547dc59cd89"
+    },
+    {
+      "path": "gemini-extension.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "01378c98250f4cbd8bd6b3d1d5a6e1e5259ba6ca",
+      "size": 187,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/01378c98250f4cbd8bd6b3d1d5a6e1e5259ba6ca"
+    },
+    {
+      "path": "hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "94d8e8a151a73f8f4ec0ecc453c3b13bb70e97fe",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/94d8e8a151a73f8f4ec0ecc453c3b13bb70e97fe"
+    },
+    {
+      "path": "hooks/hooks-cursor.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84e6d33874ab5926035e35bc13dccf21244bb079",
+      "size": 137,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/84e6d33874ab5926035e35bc13dccf21244bb079"
+    },
+    {
+      "path": "hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "67975137aafc8a097bdd1c2b51fea3989b8ad6c0",
+      "size": 334,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/67975137aafc8a097bdd1c2b51fea3989b8ad6c0"
+    },
+    {
+      "path": "hooks/run-hook.cmd",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ceec3a732d6251abb3c65ba860b7cc5d1f21dfb8",
+      "size": 1460,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/ceec3a732d6251abb3c65ba860b7cc5d1f21dfb8"
+    },
+    {
+      "path": "hooks/session-start",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "93a6bc2c6b7269c704378cb6a61fce6aea7ff631",
+      "size": 2274,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/93a6bc2c6b7269c704378cb6a61fce6aea7ff631"
+    },
+    {
+      "path": "package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c24b3721de25e78727277467bfcc5e24427b2fbc",
+      "size": 433,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c24b3721de25e78727277467bfcc5e24427b2fbc"
+    },
+    {
+      "path": "scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3aa0530d3829e238b086bdd907701a72a4d2e427",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/3aa0530d3829e238b086bdd907701a72a4d2e427"
+    },
+    {
+      "path": "scripts/bump-version.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "01adec992edcc378d133a5ca94ae4e2baa3ae8c8",
+      "size": 6129,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/01adec992edcc378d133a5ca94ae4e2baa3ae8c8"
+    },
+    {
+      "path": "scripts/lint-shell.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "190db0140d9e250af4cd8edabb42995c0201803c",
+      "size": 4088,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/190db0140d9e250af4cd8edabb42995c0201803c"
+    },
+    {
+      "path": "scripts/package-codex-plugin.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "5308e28d9c3460b130abd7e3185374294b33d00f",
+      "size": 10338,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/5308e28d9c3460b130abd7e3185374294b33d00f"
+    },
+    {
+      "path": "scripts/sync-to-codex-plugin.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ef8e0839f0b0a46ca913dc0ed7666d9ffbc55d28",
+      "size": 14975,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/ef8e0839f0b0a46ca913dc0ed7666d9ffbc55d28"
+    },
+    {
+      "path": "skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9a5bbc376a639d0ea24e2989d2f5eba754638adf",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/9a5bbc376a639d0ea24e2989d2f5eba754638adf"
+    },
+    {
+      "path": "skills/brainstorming",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a24cbf66c526b88d26cb9c816a843df9e50d0fc7",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a24cbf66c526b88d26cb9c816a843df9e50d0fc7"
+    },
+    {
+      "path": "skills/brainstorming/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "789c3a1990b9ab3896c4d8b0b708525ac83fe5ce",
+      "size": 10047,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/789c3a1990b9ab3896c4d8b0b708525ac83fe5ce"
+    },
+    {
+      "path": "skills/brainstorming/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b6c29cd4ed66866e7e3f24c1e53bee9393792699",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/b6c29cd4ed66866e7e3f24c1e53bee9393792699"
+    },
+    {
+      "path": "skills/brainstorming/scripts/frame-template.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f540bb8a4f88107e2b37b2871a4c1a55a3b6f720",
+      "size": 8094,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f540bb8a4f88107e2b37b2871a4c1a55a3b6f720"
+    },
+    {
+      "path": "skills/brainstorming/scripts/helper.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e11d26489ce248f37af3e4dd01ddec6a4e88287f",
+      "size": 5615,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e11d26489ce248f37af3e4dd01ddec6a4e88287f"
+    },
+    {
+      "path": "skills/brainstorming/scripts/server.cjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a828b35af64d5c64ca68b9ec78473999ce698874",
+      "size": 25693,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/a828b35af64d5c64ca68b9ec78473999ce698874"
+    },
+    {
+      "path": "skills/brainstorming/scripts/start-server.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "016a8e4870142ce2adbe81a021d8b6b9073e7618",
+      "size": 6908,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/016a8e4870142ce2adbe81a021d8b6b9073e7618"
+    },
+    {
+      "path": "skills/brainstorming/scripts/stop-server.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "7cacfe9440043f7a46eac555cd835fad0769c425",
+      "size": 3263,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/7cacfe9440043f7a46eac555cd835fad0769c425"
+    },
+    {
+      "path": "skills/brainstorming/spec-document-reviewer-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60993129de3c445efeff53987b5297dc1acf3eb1",
+      "size": 1747,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/60993129de3c445efeff53987b5297dc1acf3eb1"
+    },
+    {
+      "path": "skills/brainstorming/visual-companion.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "906c9ac87b28b69225e2df2c0b1e378e807ad7c3",
+      "size": 13298,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/906c9ac87b28b69225e2df2c0b1e378e807ad7c3"
+    },
+    {
+      "path": "skills/dispatching-parallel-agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "15697cb0726c26a66bff737494e8b5266667ba0c",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/15697cb0726c26a66bff737494e8b5266667ba0c"
+    },
+    {
+      "path": "skills/dispatching-parallel-agents/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3fa091b348bbe0a18eaa0e17e9092c97f7005cbe",
+      "size": 6078,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/3fa091b348bbe0a18eaa0e17e9092c97f7005cbe"
+    },
+    {
+      "path": "skills/executing-plans",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1484ffb29998ba1db2a7b6bf0e641081eb8612e9",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/1484ffb29998ba1db2a7b6bf0e641081eb8612e9"
+    },
+    {
+      "path": "skills/executing-plans/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b51d97d2cc4c2ecc5eabecf27e499aa8c933efac",
+      "size": 2305,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b51d97d2cc4c2ecc5eabecf27e499aa8c933efac"
+    },
+    {
+      "path": "skills/finishing-a-development-branch",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d596f4d5025669f6e14f5de11c39add50b5535c5",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/d596f4d5025669f6e14f5de11c39add50b5535c5"
+    },
+    {
+      "path": "skills/finishing-a-development-branch/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "21a439ac3fd4eb696f3af2ce149312d33b002dc1",
+      "size": 7022,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/21a439ac3fd4eb696f3af2ce149312d33b002dc1"
+    },
+    {
+      "path": "skills/receiving-code-review",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b5e154fc3ec7a6a0b1e710eebacc2168620cc428",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/b5e154fc3ec7a6a0b1e710eebacc2168620cc428"
+    },
+    {
+      "path": "skills/receiving-code-review/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "950da7b74bf6dbed6b8726d12ddadd65a9f5fda7",
+      "size": 6203,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/950da7b74bf6dbed6b8726d12ddadd65a9f5fda7"
+    },
+    {
+      "path": "skills/requesting-code-review",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "adfc337f87084b705c1a5811ba2436dc99fb7216",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/adfc337f87084b705c1a5811ba2436dc99fb7216"
+    },
+    {
+      "path": "skills/requesting-code-review/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa4f2f9965591d6d8a7ef4ad47e6ba4d5ac344d0",
+      "size": 2956,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/fa4f2f9965591d6d8a7ef4ad47e6ba4d5ac344d0"
+    },
+    {
+      "path": "skills/requesting-code-review/code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "db84ae2a0f91834f93de9cf9f9cf8602bbd78a11",
+      "size": 5213,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/db84ae2a0f91834f93de9cf9f9cf8602bbd78a11"
+    },
+    {
+      "path": "skills/subagent-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b54e8179ba48b0d96f4639d387f90a0a885eb8c6",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/b54e8179ba48b0d96f4639d387f90a0a885eb8c6"
+    },
+    {
+      "path": "skills/subagent-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c0b8349d27bf91aaf4ec8ad93cad2f2f38ef5b2",
+      "size": 28077,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/6c0b8349d27bf91aaf4ec8ad93cad2f2f38ef5b2"
+    },
+    {
+      "path": "skills/subagent-driven-development/implementer-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fbe441e209d73997714366e90a919cd3caea0d09",
+      "size": 5717,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/fbe441e209d73997714366e90a919cd3caea0d09"
+    },
+    {
+      "path": "skills/subagent-driven-development/re-review-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "18b0fb8ad5d6e6b8f2039789e30d671b951c2702",
+      "size": 4300,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/18b0fb8ad5d6e6b8f2039789e30d671b951c2702"
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7b07ee25e91b9a394e20e8430adf5c57aadb254e",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/7b07ee25e91b9a394e20e8430adf5c57aadb254e"
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/review-package",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "31852e2abbeb9a41084f67a9f2ef3cfc3378bce9",
+      "size": 1469,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/31852e2abbeb9a41084f67a9f2ef3cfc3378bce9"
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/sdd-workspace",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "4e2d16802ecaa23eb9a682663e4c356c4aa5a656",
+      "size": 1586,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4e2d16802ecaa23eb9a682663e4c356c4aa5a656"
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/task-brief",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "612e14a1ee7ca9c0078d896325935759a1827c24",
+      "size": 1158,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/612e14a1ee7ca9c0078d896325935759a1827c24"
+    },
+    {
+      "path": "skills/subagent-driven-development/task-reviewer-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fefaea8a72374d4c0fe7c965030869e5cd8d2bb2",
+      "size": 7816,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/fefaea8a72374d4c0fe7c965030869e5cd8d2bb2"
+    },
+    {
+      "path": "skills/systematic-debugging",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ab83fc82f82582e047d96fc516bac9bc03095ee0",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/ab83fc82f82582e047d96fc516bac9bc03095ee0"
+    },
+    {
+      "path": "skills/systematic-debugging/CREATION-LOG.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9aa03092809feaf93c9bfa985252f6f1c9624692",
+      "size": 4257,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/9aa03092809feaf93c9bfa985252f6f1c9624692"
+    },
+    {
+      "path": "skills/systematic-debugging/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "095d194ac041502905f15b01d22d294fb94db8b2",
+      "size": 9465,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/095d194ac041502905f15b01d22d294fb94db8b2"
+    },
+    {
+      "path": "skills/systematic-debugging/condition-based-waiting-example.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "703a06b653160d060bbf46ab5c6e0cd7446bd592",
+      "size": 5054,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/703a06b653160d060bbf46ab5c6e0cd7446bd592"
+    },
+    {
+      "path": "skills/systematic-debugging/condition-based-waiting.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "70994f777c586f7d4c43033aac34c7cf0da6688b",
+      "size": 3516,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/70994f777c586f7d4c43033aac34c7cf0da6688b"
+    },
+    {
+      "path": "skills/systematic-debugging/defense-in-depth.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e2483354dc2b62478a2624e34ca18bc0efe887b2",
+      "size": 3650,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e2483354dc2b62478a2624e34ca18bc0efe887b2"
+    },
+    {
+      "path": "skills/systematic-debugging/find-polluter.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "985f5d08ccf8a3f2d40739cfcaf4413bb24bf1cb",
+      "size": 1986,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/985f5d08ccf8a3f2d40739cfcaf4413bb24bf1cb"
+    },
+    {
+      "path": "skills/systematic-debugging/root-cause-tracing.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12ef5222e24e19ab92172b82b69ef1b0c30d9bfa",
+      "size": 5316,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/12ef5222e24e19ab92172b82b69ef1b0c30d9bfa"
+    },
+    {
+      "path": "skills/systematic-debugging/test-academic.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23a6ed7a2044e0c44d74c3101406140f4851aa41",
+      "size": 653,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/23a6ed7a2044e0c44d74c3101406140f4851aa41"
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-1.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d13b467e4a98abfffd12161cbc3c418021d6023",
+      "size": 1900,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/8d13b467e4a98abfffd12161cbc3c418021d6023"
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-2.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2d2315ec8a24ca872bc80d2f4056468ba051462a",
+      "size": 2283,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2d2315ec8a24ca872bc80d2f4056468ba051462a"
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-3.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89734b86fdc756488df315d53e5c3ac2d3752cd8",
+      "size": 2692,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/89734b86fdc756488df315d53e5c3ac2d3752cd8"
+    },
+    {
+      "path": "skills/test-driven-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a82cf8b413600c6bd7c4b482272d7990e9588cf1",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a82cf8b413600c6bd7c4b482272d7990e9588cf1"
+    },
+    {
+      "path": "skills/test-driven-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4320d8879a639d0536c2239bb80c9d7257ad8947",
+      "size": 9015,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4320d8879a639d0536c2239bb80c9d7257ad8947"
+    },
+    {
+      "path": "skills/test-driven-development/writing-good-tests.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3c4482fd30b4f9084bb61545fe73939a7502c28",
+      "size": 8268,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d3c4482fd30b4f9084bb61545fe73939a7502c28"
+    },
+    {
+      "path": "skills/using-git-worktrees",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d2b8357b922667a091bfe967840abf5ae84ce99c",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/d2b8357b922667a091bfe967840abf5ae84ce99c"
+    },
+    {
+      "path": "skills/using-git-worktrees/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1381dacb3516b94382dd6ec736ede21ee8ede2b3",
+      "size": 6813,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/1381dacb3516b94382dd6ec736ede21ee8ede2b3"
+    },
+    {
+      "path": "skills/using-superpowers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a5e27b759e1c907c5076340848308f6aa37f33d4",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a5e27b759e1c907c5076340848308f6aa37f33d4"
+    },
+    {
+      "path": "skills/using-superpowers/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a08873ba07c1437f4f3cfd0d06c333eaf2e2715",
+      "size": 3063,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/8a08873ba07c1437f4f3cfd0d06c333eaf2e2715"
+    },
+    {
+      "path": "skills/using-superpowers/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a04bce462aefcb470c2e7af1a988e0a51001fd58",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a04bce462aefcb470c2e7af1a988e0a51001fd58"
+    },
+    {
+      "path": "skills/using-superpowers/references/antigravity-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e1eac90534af6e1f27df4e18410be8a7b442448",
+      "size": 1495,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2e1eac90534af6e1f27df4e18410be8a7b442448"
+    },
+    {
+      "path": "skills/using-superpowers/references/codex-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b14b58582155ec9e0335a786636adeaca25a77d5",
+      "size": 1774,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b14b58582155ec9e0335a786636adeaca25a77d5"
+    },
+    {
+      "path": "skills/using-superpowers/references/gemini-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b01b65238a50981aeed22ae52ee20f8b55d16b42",
+      "size": 4598,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b01b65238a50981aeed22ae52ee20f8b55d16b42"
+    },
+    {
+      "path": "skills/using-superpowers/references/pi-tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0c1f21713a45255ece4144fd2fee353e4ed4f90e",
+      "size": 1242,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0c1f21713a45255ece4144fd2fee353e4ed4f90e"
+    },
+    {
+      "path": "skills/verification-before-completion",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a4cb0b69aaefeab540947a7f1642bdaad810e37a",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a4cb0b69aaefeab540947a7f1642bdaad810e37a"
+    },
+    {
+      "path": "skills/verification-before-completion/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d45333cc4a49c57a80df6c1fe2fa777a207afbc",
+      "size": 3646,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/7d45333cc4a49c57a80df6c1fe2fa777a207afbc"
+    },
+    {
+      "path": "skills/writing-plans",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6239ac643c14531e67ded0f1a2885c5072d426c6",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/6239ac643c14531e67ded0f1a2885c5072d426c6"
+    },
+    {
+      "path": "skills/writing-plans/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dd2702b8bab0dbe6b6824d8d00669be44fbb8be7",
+      "size": 6907,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/dd2702b8bab0dbe6b6824d8d00669be44fbb8be7"
+    },
+    {
+      "path": "skills/writing-plans/plan-document-reviewer-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c12c1d6180395262d7150bdb12a9a90efc9cfa0",
+      "size": 1713,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/1c12c1d6180395262d7150bdb12a9a90efc9cfa0"
+    },
+    {
+      "path": "skills/writing-skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "611ae23b2390aef2d90463b79dbcef3997adc5f4",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/611ae23b2390aef2d90463b79dbcef3997adc5f4"
+    },
+    {
+      "path": "skills/writing-skills/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f33f39f523c8a3ae2ec0eaf365a524571df8ff3d",
+      "size": 26360,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f33f39f523c8a3ae2ec0eaf365a524571df8ff3d"
+    },
+    {
+      "path": "skills/writing-skills/anthropic-best-practices.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "15ea9eae223d9081b602618849791c07a7758f3d",
+      "size": 46197,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/15ea9eae223d9081b602618849791c07a7758f3d"
+    },
+    {
+      "path": "skills/writing-skills/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e8157a4fc560750a28fce72685f7ce7aee8c9667",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/e8157a4fc560750a28fce72685f7ce7aee8c9667"
+    },
+    {
+      "path": "skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47881fc85bd6c01b32b84d52ed9a0c73c8d6a089",
+      "size": 5423,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/47881fc85bd6c01b32b84d52ed9a0c73c8d6a089"
+    },
+    {
+      "path": "skills/writing-skills/graphviz-conventions.dot",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3509e2f028cacaa8118cbc8c80025efb089ec28e",
+      "size": 5970,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/3509e2f028cacaa8118cbc8c80025efb089ec28e"
+    },
+    {
+      "path": "skills/writing-skills/persuasion-principles.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9756416a59600b70ecca4044e0919ee7d4a37b21",
+      "size": 5901,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/9756416a59600b70ecca4044e0919ee7d4a37b21"
+    },
+    {
+      "path": "skills/writing-skills/render-graphs.js",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "1d670fbb356553f898b9f8273f8b314f35ef1a59",
+      "size": 4857,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/1d670fbb356553f898b9f8273f8b314f35ef1a59"
+    },
+    {
+      "path": "skills/writing-skills/testing-skills-with-subagents.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5acfeac86f34c7bc625d064e10c8a2f8180b696",
+      "size": 12558,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/a5acfeac86f34c7bc625d064e10c8a2f8180b696"
+    },
+    {
+      "path": "tests",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "890d9327346c8a1328259c7e37d35b6ccf6e2bd2",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/890d9327346c8a1328259c7e37d35b6ccf6e2bd2"
+    },
+    {
+      "path": "tests/antigravity",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c06d4e1ac1852576a532836de36e72d4091ec972",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/c06d4e1ac1852576a532836de36e72d4091ec972"
+    },
+    {
+      "path": "tests/antigravity/run-tests.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "2d0c869c9ea59d22dc71c854c792d7002c07d8a2",
+      "size": 319,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2d0c869c9ea59d22dc71c854c792d7002c07d8a2"
+    },
+    {
+      "path": "tests/antigravity/test-antigravity-tools.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e10edd42c5002a77b37772a43823fe454b6829e2",
+      "size": 2146,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e10edd42c5002a77b37772a43823fe454b6829e2"
+    },
+    {
+      "path": "tests/brainstorm-server",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3452bb7acc447da3f63a052e61b43db677e31f21",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/3452bb7acc447da3f63a052e61b43db677e31f21"
+    },
+    {
+      "path": "tests/brainstorm-server/auth.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fc5bb79ec85264517754dbf1b61e26a0a21bf88a",
+      "size": 12084,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/fc5bb79ec85264517754dbf1b61e26a0a21bf88a"
+    },
+    {
+      "path": "tests/brainstorm-server/branding.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6acda4e3901123b6c10e1c19c302e87a3041435b",
+      "size": 12213,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/6acda4e3901123b6c10e1c19c302e87a3041435b"
+    },
+    {
+      "path": "tests/brainstorm-server/browser-launcher.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4bb9825c82fe2239ac6705cb741860462a517ca2",
+      "size": 1768,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4bb9825c82fe2239ac6705cb741860462a517ca2"
+    },
+    {
+      "path": "tests/brainstorm-server/helper.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "604b611ad4315f82919b45505d776f74922d8d4d",
+      "size": 8240,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/604b611ad4315f82919b45505d776f74922d8d4d"
+    },
+    {
+      "path": "tests/brainstorm-server/lifecycle.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c43d8c0de2c249653a870257ea5e22ab14f7b4ae",
+      "size": 23092,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c43d8c0de2c249653a870257ea5e22ab14f7b4ae"
+    },
+    {
+      "path": "tests/brainstorm-server/package-lock.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c194943f0e6cd346cbf459c1367121527a0dce32",
+      "size": 861,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c194943f0e6cd346cbf459c1367121527a0dce32"
+    },
+    {
+      "path": "tests/brainstorm-server/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0cb87f9dabbfd4e9dc754835e9d30e3af74f3088",
+      "size": 374,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0cb87f9dabbfd4e9dc754835e9d30e3af74f3088"
+    },
+    {
+      "path": "tests/brainstorm-server/server.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5d62323cb13b233cbf7016cac4afbf2be24e3595",
+      "size": 23860,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/5d62323cb13b233cbf7016cac4afbf2be24e3595"
+    },
+    {
+      "path": "tests/brainstorm-server/start-server.test.sh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a4802dab696221ae3000a71b4cf3a0cd170ad558",
+      "size": 3099,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/a4802dab696221ae3000a71b4cf3a0cd170ad558"
+    },
+    {
+      "path": "tests/brainstorm-server/stop-server.test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "cbe89837154902520f9503964a242709b0066a80",
+      "size": 6346,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/cbe89837154902520f9503964a242709b0066a80"
+    },
+    {
+      "path": "tests/brainstorm-server/windows-lifecycle.test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "2a18495ae89465480dc8105599d5e522ef972379",
+      "size": 12043,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2a18495ae89465480dc8105599d5e522ef972379"
+    },
+    {
+      "path": "tests/brainstorm-server/ws-protocol.test.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e98bc32b167fafc19e23a3b5ee6217e13a359e4",
+      "size": 15002,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/8e98bc32b167fafc19e23a3b5ee6217e13a359e4"
+    },
+    {
+      "path": "tests/claude-code",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "21a7cc807b8930bc80f9fcd0056dc174e1128ea2",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/21a7cc807b8930bc80f9fcd0056dc174e1128ea2"
+    },
+    {
+      "path": "tests/claude-code/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90f1fe1aef3a4fc2ad623a51dcc48e0e2ecd24a9",
+      "size": 4724,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/90f1fe1aef3a4fc2ad623a51dcc48e0e2ecd24a9"
+    },
+    {
+      "path": "tests/claude-code/analyze-token-usage.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c408162686d6a720887f265b6257cf41664f1d96",
+      "size": 6733,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c408162686d6a720887f265b6257cf41664f1d96"
+    },
+    {
+      "path": "tests/claude-code/run-skill-tests.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "83217cdad27248ae6ee521aef603ba13322805f3",
+      "size": 5296,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/83217cdad27248ae6ee521aef603ba13322805f3"
+    },
+    {
+      "path": "tests/claude-code/test-helpers.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9e187610d6a973c6db0aed91dfb8deadfcac3e78",
+      "size": 5438,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/9e187610d6a973c6db0aed91dfb8deadfcac3e78"
+    },
+    {
+      "path": "tests/claude-code/test-sdd-workspace.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "841723016a9ceca8028f02e5e20ac811468c2ec2",
+      "size": 6781,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/841723016a9ceca8028f02e5e20ac811468c2ec2"
+    },
+    {
+      "path": "tests/claude-code/test-subagent-driven-development-integration.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a783648314a4cf6f2e61af3c7437fc4b9f24e315",
+      "size": 10779,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/a783648314a4cf6f2e61af3c7437fc4b9f24e315"
+    },
+    {
+      "path": "tests/claude-code/test-subagent-driven-development.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "151fc64d04668567c4980301dc28f323bd5424b5",
+      "size": 5511,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/151fc64d04668567c4980301dc28f323bd5424b5"
+    },
+    {
+      "path": "tests/claude-code/test-worktree-native-preference.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "077ea19c360b66a4ab16d2c91d2bbc66e043704c",
+      "size": 6680,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/077ea19c360b66a4ab16d2c91d2bbc66e043704c"
+    },
+    {
+      "path": "tests/claude-code/test-worktree-path-policy.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "58caad7a09bc395fb2f4aefede6db56dfd0223de",
+      "size": 2546,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/58caad7a09bc395fb2f4aefede6db56dfd0223de"
+    },
+    {
+      "path": "tests/codex-plugin-sync",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5a008de790b1d7abbea18a0c8c8bf2f89211b954",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/5a008de790b1d7abbea18a0c8c8bf2f89211b954"
+    },
+    {
+      "path": "tests/codex-plugin-sync/test-sync-to-codex-plugin.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "01de3948477d6fa213130562ef0da3517be9e2b5",
+      "size": 24022,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/01de3948477d6fa213130562ef0da3517be9e2b5"
+    },
+    {
+      "path": "tests/codex",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b0497027fb8e0b3ac3e0171393f9aab015d5650f",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/b0497027fb8e0b3ac3e0171393f9aab015d5650f"
+    },
+    {
+      "path": "tests/codex/test-marketplace-manifest.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "4301a06eec1cd4d8874571ac5f95b8295d459fd6",
+      "size": 2889,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4301a06eec1cd4d8874571ac5f95b8295d459fd6"
+    },
+    {
+      "path": "tests/codex/test-package-codex-plugin.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "947cb6db1f920278a9c73d021d6c79aa5ec22af8",
+      "size": 9650,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/947cb6db1f920278a9c73d021d6c79aa5ec22af8"
+    },
+    {
+      "path": "tests/explicit-skill-requests",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bda39b5b2920759a6411209bf19c40b28e0da56f",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/bda39b5b2920759a6411209bf19c40b28e0da56f"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4cccff19e634de397071019eeb20eaaa2ea0196c",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/4cccff19e634de397071019eeb20eaaa2ea0196c"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/action-oriented.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e998dc5daafa6b4dd78ef0dac3174020c95edc7a",
+      "size": 173,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/e998dc5daafa6b4dd78ef0dac3174020c95edc7a"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/after-planning-flow.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5881908bb900e2f73949860033db303ed5efdd1a",
+      "size": 551,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/5881908bb900e2f73949860033db303ed5efdd1a"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/claude-suggested-it.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "efb6c389c6b370cd602041945756d19da8df8162",
+      "size": 498,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/efb6c389c6b370cd602041945756d19da8df8162"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/i-know-what-sdd-means.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c995fc7832509a9510814659974f2792abe9c706",
+      "size": 366,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c995fc7832509a9510814659974f2792abe9c706"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/mid-conversation-execute-plan.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a136965e60c65e6db2ea9c6eeec59420fb416cb",
+      "size": 119,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/4a136965e60c65e6db2ea9c6eeec59420fb416cb"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/please-use-brainstorming.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "70fec751959d5af901b651db5a6c3ed3a3c987f5",
+      "size": 73,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/70fec751959d5af901b651db5a6c3ed3a3c987f5"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/skip-formalities.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "17f781d5c0fd273f75635d7e6d7a669e909b88a2",
+      "size": 171,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/17f781d5c0fd273f75635d7e6d7a669e909b88a2"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/subagent-driven-development-please.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2255f99603530d091b50a61e4a127578ec3a9415",
+      "size": 36,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/2255f99603530d091b50a61e4a127578ec3a9415"
+    },
+    {
+      "path": "tests/explicit-skill-requests/prompts/use-systematic-debugging.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4077a21fed29a12e062bc3a449bb6c1ee68e71f",
+      "size": 52,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d4077a21fed29a12e062bc3a449bb6c1ee68e71f"
+    },
+    {
+      "path": "tests/explicit-skill-requests/run-all.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "b4c5707296868837c5c394116d7f5d3fea0fd9f7",
+      "size": 1977,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b4c5707296868837c5c394116d7f5d3fea0fd9f7"
+    },
+    {
+      "path": "tests/explicit-skill-requests/run-extended-multiturn-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "69ccd0a4800b345afa0c421065b1435aa680c82f",
+      "size": 3407,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/69ccd0a4800b345afa0c421065b1435aa680c82f"
+    },
+    {
+      "path": "tests/explicit-skill-requests/run-haiku-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9079e9d5cfccefe9192107ec180b6946a69158f8",
+      "size": 4042,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/9079e9d5cfccefe9192107ec180b6946a69158f8"
+    },
+    {
+      "path": "tests/explicit-skill-requests/run-multiturn-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "d4c0adad2a0426b39638e2c354709e2c31d7244c",
+      "size": 4564,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d4c0adad2a0426b39638e2c354709e2c31d7244c"
+    },
+    {
+      "path": "tests/explicit-skill-requests/run-test.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "821117c39cb8871293176e746101ad54c9c36df6",
+      "size": 4327,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/821117c39cb8871293176e746101ad54c9c36df6"
+    },
+    {
+      "path": "tests/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5d66e51c1d232574a6685c2e27f09822e1700739",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/5d66e51c1d232574a6685c2e27f09822e1700739"
+    },
+    {
+      "path": "tests/hooks/test-session-start.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c1508290e9813de1a7d20b24d3ca3c8927fbc11c",
+      "size": 6243,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/c1508290e9813de1a7d20b24d3ca3c8927fbc11c"
+    },
+    {
+      "path": "tests/kimi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "887df983664edc8c1b88813eaaf4e149790343b9",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/887df983664edc8c1b88813eaaf4e149790343b9"
+    },
+    {
+      "path": "tests/kimi/run-tests.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "f7bb21fe712beb59a4df90181a5de370e3d297c2",
+      "size": 127,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/f7bb21fe712beb59a4df90181a5de370e3d297c2"
+    },
+    {
+      "path": "tests/kimi/test-plugin-manifest.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "073ab84c1cef8bb71a025e8643e282d12e3c9bc1",
+      "size": 2301,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/073ab84c1cef8bb71a025e8643e282d12e3c9bc1"
+    },
+    {
+      "path": "tests/opencode",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "60f3f9394823bc86c768e3b9974e49fa18968f9d",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/60f3f9394823bc86c768e3b9974e49fa18968f9d"
+    },
+    {
+      "path": "tests/opencode/run-tests.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "d9b100ef0d6b87c675924c0fb8ce7fbd4dde9fb9",
+      "size": 4323,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d9b100ef0d6b87c675924c0fb8ce7fbd4dde9fb9"
+    },
+    {
+      "path": "tests/opencode/setup.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "cd2a732cd2d5ad030414b953e21b9e403ab88699",
+      "size": 2864,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/cd2a732cd2d5ad030414b953e21b9e403ab88699"
+    },
+    {
+      "path": "tests/opencode/test-bootstrap-caching.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "32149aed33037d7bcda36dc875546d390b501c78",
+      "size": 5233,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/32149aed33037d7bcda36dc875546d390b501c78"
+    },
+    {
+      "path": "tests/opencode/test-bootstrap-caching.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "958e9940b116ac764323030814436e6236b2979f",
+      "size": 1060,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/958e9940b116ac764323030814436e6236b2979f"
+    },
+    {
+      "path": "tests/opencode/test-plugin-loading.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "83af3f197d668573cf276a81ee3326077a187243",
+      "size": 2589,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/83af3f197d668573cf276a81ee3326077a187243"
+    },
+    {
+      "path": "tests/opencode/test-priority.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "b9f3e08a8e5e2c5dccfde33daefde0571db81bd7",
+      "size": 6994,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/b9f3e08a8e5e2c5dccfde33daefde0571db81bd7"
+    },
+    {
+      "path": "tests/opencode/test-tools.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "da79f3d5ede6d022a22a14a3087fcca60a621355",
+      "size": 3383,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/da79f3d5ede6d022a22a14a3087fcca60a621355"
+    },
+    {
+      "path": "tests/pi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2323c70167d9344942c240243b94f5980fc4282b",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/2323c70167d9344942c240243b94f5980fc4282b"
+    },
+    {
+      "path": "tests/pi/test-pi-extension.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7af9cb2ae125341eaab1e53bea8d2a2d7448dda",
+      "size": 5828,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/d7af9cb2ae125341eaab1e53bea8d2a2d7448dda"
+    },
+    {
+      "path": "tests/shell-lint",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "40a7c4fbdfe76dd1c1eb7aab15b7c6337cd5b271",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/40a7c4fbdfe76dd1c1eb7aab15b7c6337cd5b271"
+    },
+    {
+      "path": "tests/shell-lint/test-lint-shell.sh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "141bcd9e4d912be2986a6b1ad9d1b6eaa4c69295",
+      "size": 4719,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/141bcd9e4d912be2986a6b1ad9d1b6eaa4c69295"
+    },
+    {
+      "path": "tests/systematic-debugging",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a3c96b50d5786b1d51d746eaadac058df0b11eef",
+      "url": "https://api.github.com/repos/obra/superpowers/git/trees/a3c96b50d5786b1d51d746eaadac058df0b11eef"
+    },
+    {
+      "path": "tests/systematic-debugging/test-find-polluter.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0902e7d9d606a94916a098f92312977397a7860b",
+      "size": 2609,
+      "url": "https://api.github.com/repos/obra/superpowers/git/blobs/0902e7d9d606a94916a098f92312977397a7860b"
+    }
+  ],
+  "truncated": false
+}

@@ -1,0 +1,2567 @@
+{
+  "sha": "54cc51a08a5d3900e5abd02ad75a2ce46f3f008c",
+  "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/54cc51a08a5d3900e5abd02ad75a2ce46f3f008c",
+  "tree": [
+    {
+      "path": ".claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "65666401c14c758033774a45f8d7b65f063355bb",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/65666401c14c758033774a45f8d7b65f063355bb"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "30e2a0bfb6704d4f648c41f92ea07ebd0ecfea5f",
+      "size": 5468,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/30e2a0bfb6704d4f648c41f92ea07ebd0ecfea5f"
+    },
+    {
+      "path": ".claude",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7192b67355d0a34bfe94e8102160f59158c6249f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7192b67355d0a34bfe94e8102160f59158c6249f"
+    },
+    {
+      "path": ".claude/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4b897e4d493e342a86e137cde51ba9d94c1709f9",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/4b897e4d493e342a86e137cde51ba9d94c1709f9"
+    },
+    {
+      "path": ".claude/commands/commit-push-pr.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a624d60abf93743961338886e4e7ed33834e305",
+      "size": 795,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0a624d60abf93743961338886e4e7ed33834e305"
+    },
+    {
+      "path": ".claude/commands/dedupe.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d83fa2793bb733d655ca380765ac0ed39e1b13f7",
+      "size": 1701,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d83fa2793bb733d655ca380765ac0ed39e1b13f7"
+    },
+    {
+      "path": ".claude/commands/triage-issue.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d63784bb298077d27f44ab93c2b2cb58e354d2b",
+      "size": 5550,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4d63784bb298077d27f44ab93c2b2cb58e354d2b"
+    },
+    {
+      "path": ".devcontainer",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f658207008ed06d2ca04e3bb9f95aef6e57c011c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f658207008ed06d2ca04e3bb9f95aef6e57c011c"
+    },
+    {
+      "path": ".devcontainer/Dockerfile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b48f6ad72507d6a8741c613604eeeb98d03a270",
+      "size": 2507,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8b48f6ad72507d6a8741c613604eeeb98d03a270"
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f6a172d1cbba26490b108420b7e68fa498b9918",
+      "size": 1662,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7f6a172d1cbba26490b108420b7e68fa498b9918"
+    },
+    {
+      "path": ".devcontainer/init-firewall.sh",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16d492dd2635f48e8ac004d03223ac3689d37dc0",
+      "size": 4578,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/16d492dd2635f48e8ac004d03223ac3689d37dc0"
+    },
+    {
+      "path": ".gitattributes",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "819e86aa380009bc289ceeef5bd824048f28f9a3",
+      "size": 35,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/819e86aa380009bc289ceeef5bd824048f28f9a3"
+    },
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7adcb8dfdd846786d2e86f99dc6a499e745461f0",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7adcb8dfdd846786d2e86f99dc6a499e745461f0"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "73d7977a9347f0d04a7e15b5ca9e3c00da0a243e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/73d7977a9347f0d04a7e15b5ca9e3c00da0a243e"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fce2b87e5dc2a42e0d3ff477ab86f528ec9dd290",
+      "size": 5851,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fce2b87e5dc2a42e0d3ff477ab86f528ec9dd290"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5fe5625f9a612f3a8fba4fcd1ab4a34f266164d6",
+      "size": 619,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5fe5625f9a612f3a8fba4fcd1ab4a34f266164d6"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/documentation.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ead68fe39d0063179b5303ae3954ec51f9683690",
+      "size": 3489,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ead68fe39d0063179b5303ae3954ec51f9683690"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2fa6ca2409e973a1d002620c692cc0d282e58569",
+      "size": 4208,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/2fa6ca2409e973a1d002620c692cc0d282e58569"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/model_behavior.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9c89de4b6522f68ddb4421767505506e316cb31c",
+      "size": 6952,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9c89de4b6522f68ddb4421767505506e316cb31c"
+    },
+    {
+      "path": ".github/workflows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c83f487ee953fdd3bf9fdb6c07e59ed1c5ac2570",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c83f487ee953fdd3bf9fdb6c07e59ed1c5ac2570"
+    },
+    {
+      "path": ".github/workflows/auto-close-duplicates.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7f67a057ab079cb4e501527dc2d8b8fb61d06075",
+      "size": 907,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7f67a057ab079cb4e501527dc2d8b8fb61d06075"
+    },
+    {
+      "path": ".github/workflows/backfill-duplicate-comments.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16a39b977b31b2649b7215bc159a7483bf7d977a",
+      "size": 1203,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/16a39b977b31b2649b7215bc159a7483bf7d977a"
+    },
+    {
+      "path": ".github/workflows/claude-dedupe-issues.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cfbdf2db23bf8d0d675dd2dcd8d9bcd5e3deeacc",
+      "size": 3705,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/cfbdf2db23bf8d0d675dd2dcd8d9bcd5e3deeacc"
+    },
+    {
+      "path": ".github/workflows/claude-issue-triage.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c667e2d8ab8a846285ca5ab4cb5d1f69c2f49ba",
+      "size": 1832,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6c667e2d8ab8a846285ca5ab4cb5d1f69c2f49ba"
+    },
+    {
+      "path": ".github/workflows/claude.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e2348761f19e42267022d92ee61c0ae46eaa7319",
+      "size": 1649,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e2348761f19e42267022d92ee61c0ae46eaa7319"
+    },
+    {
+      "path": ".github/workflows/issue-lifecycle-comment.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1acffef2e4a45885ac1d946a207b6fdcdb609b4f",
+      "size": 644,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1acffef2e4a45885ac1d946a207b6fdcdb609b4f"
+    },
+    {
+      "path": ".github/workflows/issue-opened-dispatch.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "39d27ea057f3efb30d1be975b701316306225dbf",
+      "size": 738,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/39d27ea057f3efb30d1be975b701316306225dbf"
+    },
+    {
+      "path": ".github/workflows/lock-closed-issues.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d8e15f5d737d40c3d1c7a92f1d8a1b29cd5407c",
+      "size": 2778,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6d8e15f5d737d40c3d1c7a92f1d8a1b29cd5407c"
+    },
+    {
+      "path": ".github/workflows/log-issue-events.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f23d4fbe9883c19174141c32e1ce85774253fd04",
+      "size": 1403,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f23d4fbe9883c19174141c32e1ce85774253fd04"
+    },
+    {
+      "path": ".github/workflows/non-write-users-check.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "584bc7ddb3a39e0cb1a83714caa91de1436c7d5f",
+      "size": 1601,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/584bc7ddb3a39e0cb1a83714caa91de1436c7d5f"
+    },
+    {
+      "path": ".github/workflows/remove-autoclose-label.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5fc681b28ad38baff444957f8ebb8afa17be5522",
+      "size": 1447,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5fc681b28ad38baff444957f8ebb8afa17be5522"
+    },
+    {
+      "path": ".github/workflows/sweep.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "345616b4094fa2ec828fb15d3f6f59e2c011368d",
+      "size": 724,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/345616b4094fa2ec828fb15d3f6f59e2c011368d"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ca0973f8fe283e3fbca710c2b5ac5233228abdb",
+      "size": 11,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5ca0973f8fe283e3fbca710c2b5ac5233228abdb"
+    },
+    {
+      "path": ".vscode",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e95247ca5fe3336778ffeeeac85ffe4979ce64e3",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/e95247ca5fe3336778ffeeeac85ffe4979ce64e3"
+    },
+    {
+      "path": ".vscode/extensions.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4842f83d2186e9688e0326f495ac303465375ec9",
+      "size": 155,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4842f83d2186e9688e0326f495ac303465375ec9"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f47adb2704ed7d029beaee4aa641ba998d0e18c",
+      "size": 496199,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0f47adb2704ed7d029beaee4aa641ba998d0e18c"
+    },
+    {
+      "path": "LICENSE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "645a5d67c6d1e16437bec850dad5bd3b6c81f77c",
+      "size": 150,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/645a5d67c6d1e16437bec850dad5bd3b6c81f77c"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "80aa75edf74a5f9e1269811b4e8b5852be91e66e",
+      "size": 2873,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/80aa75edf74a5f9e1269811b4e8b5852be91e66e"
+    },
+    {
+      "path": "SECURITY.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6724b2bbc8dac70775da8a5fb281aa42fe62fe5",
+      "size": 674,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d6724b2bbc8dac70775da8a5fb281aa42fe62fe5"
+    },
+    {
+      "path": "Script",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "37273c3a947c249b89deb8e3914d460d40c69bc6",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/37273c3a947c249b89deb8e3914d460d40c69bc6"
+    },
+    {
+      "path": "Script/run_devcontainer_claude_code.ps1",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "468750ed513d46c6e5af2120f996380f72c1f1f8",
+      "size": 5319,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/468750ed513d46c6e5af2120f996380f72c1f1f8"
+    },
+    {
+      "path": "demo.gif",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f9ba5e684d471fc75a18b00ea871f2ad3c358e3",
+      "size": 11002760,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8f9ba5e684d471fc75a18b00ea871f2ad3c358e3"
+    },
+    {
+      "path": "examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "eec27d8ac68a051515f2888e609a40fdf187350c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/eec27d8ac68a051515f2888e609a40fdf187350c"
+    },
+    {
+      "path": "examples/gateway",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5608c99a657775f0ad234389796074c0232260b0",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/5608c99a657775f0ad234389796074c0232260b0"
+    },
+    {
+      "path": "examples/gateway/aws",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "340bde674098f4ba9d2dcea7a5f30c50747c3f7c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/340bde674098f4ba9d2dcea7a5f30c50747c3f7c"
+    },
+    {
+      "path": "examples/gateway/aws/.dockerignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f613ee1f6eedb0432f1fc7cb1bb17e8a261e11a2",
+      "size": 790,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f613ee1f6eedb0432f1fc7cb1bb17e8a261e11a2"
+    },
+    {
+      "path": "examples/gateway/aws/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53199b887fa18de1764d3d6e8bf22e9cd235c97f",
+      "size": 665,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/53199b887fa18de1764d3d6e8bf22e9cd235c97f"
+    },
+    {
+      "path": "examples/gateway/aws/Dockerfile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ac9f8b907775eacb40428ba3d933b766071259e4",
+      "size": 3213,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ac9f8b907775eacb40428ba3d933b766071259e4"
+    },
+    {
+      "path": "examples/gateway/aws/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a47005336538055b44ed947ab22b0195119b52a",
+      "size": 986,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8a47005336538055b44ed947ab22b0195119b52a"
+    },
+    {
+      "path": "examples/gateway/aws/gateway.yaml.example",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d06d78ab02e67ad31823f15ebcf05aba48c9efd",
+      "size": 10700,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0d06d78ab02e67ad31823f15ebcf05aba48c9efd"
+    },
+    {
+      "path": "examples/gateway/aws/setup.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "6c8ce85b498d945b29468b3ecd7667ac1cef0e24",
+      "size": 53781,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6c8ce85b498d945b29468b3ecd7667ac1cef0e24"
+    },
+    {
+      "path": "examples/gateway/aws/terraform",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e89f11315960331b426d554a162b083347a56e6c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/e89f11315960331b426d554a162b083347a56e6c"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9525fb56bce234b7f9a9f692e26a9bc863a31327",
+      "size": 860,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9525fb56bce234b7f9a9f692e26a9bc863a31327"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0775e48602b6756629ed7fbb23bf6b2a9e39d58d",
+      "size": 9189,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0775e48602b6756629ed7fbb23bf6b2a9e39d58d"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/main.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c984577d34ed097aa9aecc6d07c76205ed9efadc",
+      "size": 21910,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c984577d34ed097aa9aecc6d07c76205ed9efadc"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/outputs.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5c91a46f9630b7380711e06300f83c66b4370675",
+      "size": 1173,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5c91a46f9630b7380711e06300f83c66b4370675"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/terraform.tfvars.example",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eac83daa6a7265d2121a2b3e61e6fc140aa13406",
+      "size": 1345,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/eac83daa6a7265d2121a2b3e61e6fc140aa13406"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/variables.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1f12081b3ebb532ce869e970956ad2acdc1a547c",
+      "size": 8249,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1f12081b3ebb532ce869e970956ad2acdc1a547c"
+    },
+    {
+      "path": "examples/gateway/aws/terraform/versions.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11a5fd327ef97dc832b95593675192e5952f94ee",
+      "size": 408,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/11a5fd327ef97dc832b95593675192e5952f94ee"
+    },
+    {
+      "path": "examples/gateway/gcp",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9a8f127050617483a5ef5431988b09e8ff2d3f7e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/9a8f127050617483a5ef5431988b09e8ff2d3f7e"
+    },
+    {
+      "path": "examples/gateway/gcp/.dockerignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f211862b32b6b3cd1afdfcff9024cea94def434b",
+      "size": 487,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f211862b32b6b3cd1afdfcff9024cea94def434b"
+    },
+    {
+      "path": "examples/gateway/gcp/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f31591249975bb6086e1512725ed5adc6d776bc",
+      "size": 356,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5f31591249975bb6086e1512725ed5adc6d776bc"
+    },
+    {
+      "path": "examples/gateway/gcp/Dockerfile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0ba0ab6850075603c42fcc6db00f2b2bd11cf484",
+      "size": 1274,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0ba0ab6850075603c42fcc6db00f2b2bd11cf484"
+    },
+    {
+      "path": "examples/gateway/gcp/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4bbc2d7f497f0884d737c58172fa58b0cc76799d",
+      "size": 842,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4bbc2d7f497f0884d737c58172fa58b0cc76799d"
+    },
+    {
+      "path": "examples/gateway/gcp/gateway.yaml.example",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "263dd2a988937e1c16a860455b6e17fb25668abb",
+      "size": 9465,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/263dd2a988937e1c16a860455b6e17fb25668abb"
+    },
+    {
+      "path": "examples/gateway/gcp/setup.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "782de6fd0d2819c09dec18907c7097da24d3543d",
+      "size": 30481,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/782de6fd0d2819c09dec18907c7097da24d3543d"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7c13a7e05dcb2475e258c08475d585081168764e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7c13a7e05dcb2475e258c08475d585081168764e"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5267cf686564f6f127a3b90015f820e14c8f4d04",
+      "size": 420,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5267cf686564f6f127a3b90015f820e14c8f4d04"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "367b24dc83712d8f455bb79eb9ec88406c794e0b",
+      "size": 7934,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/367b24dc83712d8f455bb79eb9ec88406c794e0b"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/main.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8d93dac60d7d5e7ef969830453573895c1220713",
+      "size": 16028,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8d93dac60d7d5e7ef969830453573895c1220713"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/outputs.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d556467367c4e1406c599bf65ac9c125837a23a9",
+      "size": 1225,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d556467367c4e1406c599bf65ac9c125837a23a9"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/terraform.tfvars.example",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6b62bbb421cf8913bb3f1ac10a06de1f6ea3c60e",
+      "size": 1590,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6b62bbb421cf8913bb3f1ac10a06de1f6ea3c60e"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/variables.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "268877740235cb5361ed8290e600568c109079af",
+      "size": 7802,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/268877740235cb5361ed8290e600568c109079af"
+    },
+    {
+      "path": "examples/gateway/gcp/terraform/versions.tf",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9857d90184c61b6c3a8b424ab70723c74088f57d",
+      "size": 447,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9857d90184c61b6c3a8b424ab70723c74088f57d"
+    },
+    {
+      "path": "examples/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "34a6a9e4fa5595f6ee94e170f436cff5d94acdf9",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/34a6a9e4fa5595f6ee94e170f436cff5d94acdf9"
+    },
+    {
+      "path": "examples/hooks/bash_command_validator_example.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53ab7a829eb159fe3f216faab8296f0ab306f329",
+      "size": 2078,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/53ab7a829eb159fe3f216faab8296f0ab306f329"
+    },
+    {
+      "path": "examples/mdm",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "65a0af7f8bf217bb569c677fe9cd285f305f669c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/65a0af7f8bf217bb569c677fe9cd285f305f669c"
+    },
+    {
+      "path": "examples/mdm/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d8e6dfc422f1086dff6101d213aa5c8af15c169",
+      "size": 2357,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1d8e6dfc422f1086dff6101d213aa5c8af15c169"
+    },
+    {
+      "path": "examples/mdm/macos",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "42cbe51ee0ab19fa87ee7ffe29a472bc466ee1d9",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/42cbe51ee0ab19fa87ee7ffe29a472bc466ee1d9"
+    },
+    {
+      "path": "examples/mdm/macos/com.anthropic.claudecode.mobileconfig",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "35aea626117d1371edb9fb36ff77ee13c15f390b",
+      "size": 1622,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/35aea626117d1371edb9fb36ff77ee13c15f390b"
+    },
+    {
+      "path": "examples/mdm/macos/com.anthropic.claudecode.plist",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a8f8432d70e49d37c34efc502ce42babf3d12db",
+      "size": 298,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0a8f8432d70e49d37c34efc502ce42babf3d12db"
+    },
+    {
+      "path": "examples/mdm/managed-settings.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "adf6ff2f0cd11df515902ee9bf91775e30ba5bf1",
+      "size": 73,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/adf6ff2f0cd11df515902ee9bf91775e30ba5bf1"
+    },
+    {
+      "path": "examples/mdm/windows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d9a94958aa8993a633e4b9c84b043aec23a3c398",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/d9a94958aa8993a633e4b9c84b043aec23a3c398"
+    },
+    {
+      "path": "examples/mdm/windows/ClaudeCode.admx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "703155fe4f0ee7cf54e454fa56699d78318e6d5a",
+      "size": 1242,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/703155fe4f0ee7cf54e454fa56699d78318e6d5a"
+    },
+    {
+      "path": "examples/mdm/windows/Set-ClaudeCodePolicy.ps1",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "84cb1cf6810125019eda0dcbbd515bd4143910e8",
+      "size": 885,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/84cb1cf6810125019eda0dcbbd515bd4143910e8"
+    },
+    {
+      "path": "examples/mdm/windows/en-US",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "16f8afc6f692796759669972952124eee00d33bd",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/16f8afc6f692796759669972952124eee00d33bd"
+    },
+    {
+      "path": "examples/mdm/windows/en-US/ClaudeCode.adml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0c3eef51fb93c90d235292171eadd38b1352ad82",
+      "size": 1546,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0c3eef51fb93c90d235292171eadd38b1352ad82"
+    },
+    {
+      "path": "examples/settings",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "199f5ae821b4191bb53e8a4a280b5546e50698f7",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/199f5ae821b4191bb53e8a4a280b5546e50698f7"
+    },
+    {
+      "path": "examples/settings/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34e60cae784cb48f298195ff61d9d9699e35b0a0",
+      "size": 2031,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/34e60cae784cb48f298195ff61d9d9699e35b0a0"
+    },
+    {
+      "path": "examples/settings/settings-bash-sandbox.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65d66dcf8118d3feff6bac81b80f6287a0b3df1f",
+      "size": 442,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/65d66dcf8118d3feff6bac81b80f6287a0b3df1f"
+    },
+    {
+      "path": "examples/settings/settings-lax.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b348560c5302af9c93491c4f00410a77aefdf679",
+      "size": 106,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b348560c5302af9c93491c4f00410a77aefdf679"
+    },
+    {
+      "path": "examples/settings/settings-strict.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c0fcc79c31f864f6c108c086c1d9ed3a4e6de143",
+      "size": 608,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c0fcc79c31f864f6c108c086c1d9ed3a4e6de143"
+    },
+    {
+      "path": "feed.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c42678cf6f2d5a1dffffc67ab2b9755a2cdad627",
+      "size": 84342,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c42678cf6f2d5a1dffffc67ab2b9755a2cdad627"
+    },
+    {
+      "path": "plugins",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6f3b84bd54df92bc50154d33634ccf8d60019fb5",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/6f3b84bd54df92bc50154d33634ccf8d60019fb5"
+    },
+    {
+      "path": "plugins/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf4a21ecc5b8da5394f0711aa513e566d1d7c0ea",
+      "size": 6530,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/cf4a21ecc5b8da5394f0711aa513e566d1d7c0ea"
+    },
+    {
+      "path": "plugins/agent-sdk-dev",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6f4f641475a9a7f400823fe8b374bcbd1f1e254f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/6f4f641475a9a7f400823fe8b374bcbd1f1e254f"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c30b30851ecc965f2919cdef1f648fad3acc5839",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c30b30851ecc965f2919cdef1f648fad3acc5839"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "713683ccd803f04b4ebe87e84f91ad4f36639dc3",
+      "size": 190,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/713683ccd803f04b4ebe87e84f91ad4f36639dc3"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "96ba373ef38f2465de7838947dd794c871b85c67",
+      "size": 6397,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/96ba373ef38f2465de7838947dd794c871b85c67"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ebf99246502cb162acd60f2219dc9d9dead2b66e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/ebf99246502cb162acd60f2219dc9d9dead2b66e"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/agents/agent-sdk-verifier-py.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4b70eadc30b84d4b0009091a68d02b343d7badb",
+      "size": 5206,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d4b70eadc30b84d4b0009091a68d02b343d7badb"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/agents/agent-sdk-verifier-ts.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "194b512ad67b76c9a58b80cf3f28acdfa6fb880f",
+      "size": 5419,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/194b512ad67b76c9a58b80cf3f28acdfa6fb880f"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "eea8a267d556774b749cdc75176ebe81a108680f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/eea8a267d556774b749cdc75176ebe81a108680f"
+    },
+    {
+      "path": "plugins/agent-sdk-dev/commands/new-sdk-app.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ca63dc29eef850b19f10dd6eec8347f52dcf33ba",
+      "size": 7846,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ca63dc29eef850b19f10dd6eec8347f52dcf33ba"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "486de5ef97025e1aba31b9e73e3e9c1f2b3f8fb2",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/486de5ef97025e1aba31b9e73e3e9c1f2b3f8fb2"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5374749276de00bb24d9d915c3dfc376fb576a32",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/5374749276de00bb24d9d915c3dfc376fb576a32"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1c209e6d9ccab1143011e32b943a05d927357c9e",
+      "size": 234,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1c209e6d9ccab1143011e32b943a05d927357c9e"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fab66510a84a486718a67b95c3891d99e07f6420",
+      "size": 707,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fab66510a84a486718a67b95c3891d99e07f6420"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4c3d87abde4d815a205d70f9559b01cac73de507",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/4c3d87abde4d815a205d70f9559b01cac73de507"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills/claude-opus-4-5-migration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7cbdd6c4354c930a94e7c150a840bdd60b31cf18",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7cbdd6c4354c930a94e7c150a840bdd60b31cf18"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills/claude-opus-4-5-migration/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "734cac27868f41fbce9bbe507b0cf938128fcd56",
+      "size": 4746,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/734cac27868f41fbce9bbe507b0cf938128fcd56"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills/claude-opus-4-5-migration/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "18a994204d600fb6997f3fdeee13872194760cf5",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/18a994204d600fb6997f3fdeee13872194760cf5"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills/claude-opus-4-5-migration/references/effort.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "50d9723a8f6a79f69c652f0ce601cd7031254431",
+      "size": 1728,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/50d9723a8f6a79f69c652f0ce601cd7031254431"
+    },
+    {
+      "path": "plugins/claude-opus-4-5-migration/skills/claude-opus-4-5-migration/references/prompt-snippets.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b56e19935c94b3d40081a8d5853a6289fdda98b3",
+      "size": 6139,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b56e19935c94b3d40081a8d5853a6289fdda98b3"
+    },
+    {
+      "path": "plugins/code-review",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "63e0971691b3317e956e6bcd00a16faa9576e575",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/63e0971691b3317e956e6bcd00a16faa9576e575"
+    },
+    {
+      "path": "plugins/code-review/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ecc5fc47cd13164683f985d76073900d05a4e810",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/ecc5fc47cd13164683f985d76073900d05a4e810"
+    },
+    {
+      "path": "plugins/code-review/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dd45018d7f74b5a16b38ca0fae5c6614e5aeebb8",
+      "size": 257,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/dd45018d7f74b5a16b38ca0fae5c6614e5aeebb8"
+    },
+    {
+      "path": "plugins/code-review/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "42cc8095cd2c54e043f9276224df408dca4f48cc",
+      "size": 7703,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/42cc8095cd2c54e043f9276224df408dca4f48cc"
+    },
+    {
+      "path": "plugins/code-review/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "727eaf6b4f7c4c15135ffa429eb804d779bf25ef",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/727eaf6b4f7c4c15135ffa429eb804d779bf25ef"
+    },
+    {
+      "path": "plugins/code-review/commands/code-review.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0b27765f17635137853df05bb7c122d39f1af3d7",
+      "size": 7297,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0b27765f17635137853df05bb7c122d39f1af3d7"
+    },
+    {
+      "path": "plugins/commit-commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "db699ed2b37ff87e33e69a7df95f61286e033566",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/db699ed2b37ff87e33e69a7df95f61286e033566"
+    },
+    {
+      "path": "plugins/commit-commands/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "289bc72b3dd84dfcbfb77dba43c4083aa01d8f90",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/289bc72b3dd84dfcbfb77dba43c4083aa01d8f90"
+    },
+    {
+      "path": "plugins/commit-commands/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8c7bde5db16ac6674dccd5278e332b232482750a",
+      "size": 258,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8c7bde5db16ac6674dccd5278e332b232482750a"
+    },
+    {
+      "path": "plugins/commit-commands/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a918ec3ab9e41a539c76fe1e2652b32537c6950e",
+      "size": 5908,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a918ec3ab9e41a539c76fe1e2652b32537c6950e"
+    },
+    {
+      "path": "plugins/commit-commands/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ee138284b103b97221bf3a620d95ec8748a6d394",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/ee138284b103b97221bf3a620d95ec8748a6d394"
+    },
+    {
+      "path": "plugins/commit-commands/commands/clean_gone.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "57f0b6e3eaf82f0cafcc4692d135525bbb9a9f0d",
+      "size": 1865,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/57f0b6e3eaf82f0cafcc4692d135525bbb9a9f0d"
+    },
+    {
+      "path": "plugins/commit-commands/commands/commit-push-pr.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ebdd02948511696aed8a317a7160d385e25db44",
+      "size": 796,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5ebdd02948511696aed8a317a7160d385e25db44"
+    },
+    {
+      "path": "plugins/commit-commands/commands/commit.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "31ef0790b704d5197843d54bdf3efcd112c54137",
+      "size": 624,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/31ef0790b704d5197843d54bdf3efcd112c54137"
+    },
+    {
+      "path": "plugins/explanatory-output-style",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d3672e7f8509ad7d383b13f729f811e555a121d7",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/d3672e7f8509ad7d383b13f729f811e555a121d7"
+    },
+    {
+      "path": "plugins/explanatory-output-style/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "0bf23293ba5ed0453863eb9d312833e260c2ac2d",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/0bf23293ba5ed0453863eb9d312833e260c2ac2d"
+    },
+    {
+      "path": "plugins/explanatory-output-style/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a70cbf97c109667fcacbc43fb84a05b7a2888125",
+      "size": 293,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a70cbf97c109667fcacbc43fb84a05b7a2888125"
+    },
+    {
+      "path": "plugins/explanatory-output-style/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7de63267245f6ea392a5484087082cfbafc89db",
+      "size": 2470,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f7de63267245f6ea392a5484087082cfbafc89db"
+    },
+    {
+      "path": "plugins/explanatory-output-style/hooks-handlers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4d7ba863688f883e8d8ec61e679dbeedceccf273",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/4d7ba863688f883e8d8ec61e679dbeedceccf273"
+    },
+    {
+      "path": "plugins/explanatory-output-style/hooks-handlers/session-start.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "05547bed410c358570ac6bfb8f4443f046468bad",
+      "size": 1468,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/05547bed410c358570ac6bfb8f4443f046468bad"
+    },
+    {
+      "path": "plugins/explanatory-output-style/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1ddbdc33ff845e7dcc8e4c4deb1479246f9f58ae",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/1ddbdc33ff845e7dcc8e4c4deb1479246f9f58ae"
+    },
+    {
+      "path": "plugins/explanatory-output-style/hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1fb8a5734ec666e225955fe1eb4f26dc67c581f",
+      "size": 314,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d1fb8a5734ec666e225955fe1eb4f26dc67c581f"
+    },
+    {
+      "path": "plugins/feature-dev",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f000ee0fc46285ebdb0f5c1114729de000a579d0",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f000ee0fc46285ebdb0f5c1114729de000a579d0"
+    },
+    {
+      "path": "plugins/feature-dev/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "45844dac99bcff95f98c99d468dd48e7a6b915f8",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/45844dac99bcff95f98c99d468dd48e7a6b915f8"
+    },
+    {
+      "path": "plugins/feature-dev/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c37a2074672dcb97938dbc1d46c6809818bf9c3",
+      "size": 291,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/2c37a2074672dcb97938dbc1d46c6809818bf9c3"
+    },
+    {
+      "path": "plugins/feature-dev/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eb1b6e7eeaec45f030303026dae07efd0ca0a05b",
+      "size": 11697,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/eb1b6e7eeaec45f030303026dae07efd0ca0a05b"
+    },
+    {
+      "path": "plugins/feature-dev/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "91333aea4fcf89ce30065feaf9849173eca8314b",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/91333aea4fcf89ce30065feaf9849173eca8314b"
+    },
+    {
+      "path": "plugins/feature-dev/agents/code-architect.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fcb78bfd11004048fa287ac52c55eb5c17855549",
+      "size": 2259,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fcb78bfd11004048fa287ac52c55eb5c17855549"
+    },
+    {
+      "path": "plugins/feature-dev/agents/code-explorer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e0f667ef65f7204399110214defd46ce062a1a51",
+      "size": 2115,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e0f667ef65f7204399110214defd46ce062a1a51"
+    },
+    {
+      "path": "plugins/feature-dev/agents/code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7fb589cbd7140152fae41720e391290ba202e57e",
+      "size": 2994,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7fb589cbd7140152fae41720e391290ba202e57e"
+    },
+    {
+      "path": "plugins/feature-dev/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c15193baa18fd0e1671286eb2e07151ca8d00e60",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c15193baa18fd0e1671286eb2e07151ca8d00e60"
+    },
+    {
+      "path": "plugins/feature-dev/commands/feature-dev.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8bdeda3430e43afddbee79830db0f6ea9dfbf36a",
+      "size": 5097,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8bdeda3430e43afddbee79830db0f6ea9dfbf36a"
+    },
+    {
+      "path": "plugins/frontend-design",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "81c2beb11220676e7c3ce4b3557f3739ed716272",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/81c2beb11220676e7c3ce4b3557f3739ed716272"
+    },
+    {
+      "path": "plugins/frontend-design/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bea6360cf1e3647ab8e33399136d816564609a6f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/bea6360cf1e3647ab8e33399136d816564609a6f"
+    },
+    {
+      "path": "plugins/frontend-design/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90c0f3b19a811ca1576aa3439a3069bda636e474",
+      "size": 256,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/90c0f3b19a811ca1576aa3439a3069bda636e474"
+    },
+    {
+      "path": "plugins/frontend-design/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "00cd435c88bc23614422a12494488bd5b3bd255b",
+      "size": 977,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/00cd435c88bc23614422a12494488bd5b3bd255b"
+    },
+    {
+      "path": "plugins/frontend-design/skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "02a48dd75b046afcbf59359a1398bdd80719ecdc",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/02a48dd75b046afcbf59359a1398bdd80719ecdc"
+    },
+    {
+      "path": "plugins/frontend-design/skills/frontend-design",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7487047a2347f029dc5ebd079ed9767ea2d8c53d",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7487047a2347f029dc5ebd079ed9767ea2d8c53d"
+    },
+    {
+      "path": "plugins/frontend-design/skills/frontend-design/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "decdff43d05908b4c1fc2cfd2d80fc5743440934",
+      "size": 8260,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/decdff43d05908b4c1fc2cfd2d80fc5743440934"
+    },
+    {
+      "path": "plugins/hookify",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c4650339a98105b7ae6dbd71e41aa5991785b0a8",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c4650339a98105b7ae6dbd71e41aa5991785b0a8"
+    },
+    {
+      "path": "plugins/hookify/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d582aedbe027e65ecbec98cb50ab16970a4db4aa",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/d582aedbe027e65ecbec98cb50ab16970a4db4aa"
+    },
+    {
+      "path": "plugins/hookify/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3cf8b5b8f63ab784be687bb3cce7452164eb7759",
+      "size": 234,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3cf8b5b8f63ab784be687bb3cce7452164eb7759"
+    },
+    {
+      "path": "plugins/hookify/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6d5f8af5db0888ee53137f37be6f170298daf497",
+      "size": 291,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6d5f8af5db0888ee53137f37be6f170298daf497"
+    },
+    {
+      "path": "plugins/hookify/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1aca6cdfb71bbf67da11074f22b53c00d2ef4452",
+      "size": 7710,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1aca6cdfb71bbf67da11074f22b53c00d2ef4452"
+    },
+    {
+      "path": "plugins/hookify/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9b461a195d67a7d187d0f4e00206051cd189e8d7",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/9b461a195d67a7d187d0f4e00206051cd189e8d7"
+    },
+    {
+      "path": "plugins/hookify/agents/conversation-analyzer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cb91a41ac960ca769e6059c794e37ac0aa04da70",
+      "size": 5478,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/cb91a41ac960ca769e6059c794e37ac0aa04da70"
+    },
+    {
+      "path": "plugins/hookify/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "029770f5e260f6d1ead825055b28e1bb23477045",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/029770f5e260f6d1ead825055b28e1bb23477045"
+    },
+    {
+      "path": "plugins/hookify/commands/configure.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ccc7e472b39b4a84c06d86735bf86dec4f5aa340",
+      "size": 2863,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ccc7e472b39b4a84c06d86735bf86dec4f5aa340"
+    },
+    {
+      "path": "plugins/hookify/commands/help.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae6e94b1d714b05d728405fb5e496dd57f8bd6ba",
+      "size": 4624,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ae6e94b1d714b05d728405fb5e496dd57f8bd6ba"
+    },
+    {
+      "path": "plugins/hookify/commands/hookify.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5fc645a80f97014645fd91c04772af21a238c58",
+      "size": 7667,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e5fc645a80f97014645fd91c04772af21a238c58"
+    },
+    {
+      "path": "plugins/hookify/commands/list.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d6f810fb5368ee6623afd427314e13db50bb7841",
+      "size": 2020,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d6f810fb5368ee6623afd427314e13db50bb7841"
+    },
+    {
+      "path": "plugins/hookify/core",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "30aec33476b8e73b497bafabcf366bba6c87d771",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/30aec33476b8e73b497bafabcf366bba6c87d771"
+    },
+    {
+      "path": "plugins/hookify/core/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "plugins/hookify/core/config_loader.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fa2fc3e36fee0d886902d118a55ab12b08a0a876",
+      "size": 9690,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fa2fc3e36fee0d886902d118a55ab12b08a0a876"
+    },
+    {
+      "path": "plugins/hookify/core/rule_engine.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8244c00591d3af06434cd881968b94e560cb0390",
+      "size": 10727,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8244c00591d3af06434cd881968b94e560cb0390"
+    },
+    {
+      "path": "plugins/hookify/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "621aa0862cd53611837ab7763cea01f02a741584",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/621aa0862cd53611837ab7763cea01f02a741584"
+    },
+    {
+      "path": "plugins/hookify/examples/console-log-warning.local.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c9352e7530c11635a990df827185e07fac681b57",
+      "size": 315,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c9352e7530c11635a990df827185e07fac681b57"
+    },
+    {
+      "path": "plugins/hookify/examples/dangerous-rm.local.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8226eb197a7b498aeb1ef113ef38a155e683363a",
+      "size": 278,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8226eb197a7b498aeb1ef113ef38a155e683363a"
+    },
+    {
+      "path": "plugins/hookify/examples/require-tests-stop.local.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "87039186caa4a0ebf27ddddc83881b5355001f50",
+      "size": 500,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/87039186caa4a0ebf27ddddc83881b5355001f50"
+    },
+    {
+      "path": "plugins/hookify/examples/sensitive-files-warning.local.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae92971d8edd561096814b7f98ef181b8169a997",
+      "size": 421,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ae92971d8edd561096814b7f98ef181b8169a997"
+    },
+    {
+      "path": "plugins/hookify/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "46dd51587b08e1a6eb13c264f948745b4b471c2c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/46dd51587b08e1a6eb13c264f948745b4b471c2c"
+    },
+    {
+      "path": "plugins/hookify/hooks/__init__.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "plugins/hookify/hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d65daca71bcfde02702c8f9722c7f73199777750",
+      "size": 1020,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d65daca71bcfde02702c8f9722c7f73199777750"
+    },
+    {
+      "path": "plugins/hookify/hooks/posttooluse.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a9e12cc797e4fa987abadeaea1971a2ae94b4fe8",
+      "size": 1776,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a9e12cc797e4fa987abadeaea1971a2ae94b4fe8"
+    },
+    {
+      "path": "plugins/hookify/hooks/pretooluse.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "f265c277e3b565e6efe29c564cadc8505b14f430",
+      "size": 2205,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f265c277e3b565e6efe29c564cadc8505b14f430"
+    },
+    {
+      "path": "plugins/hookify/hooks/stop.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "fc299bc6960425edce15a6cb5215e4558a456c36",
+      "size": 1557,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fc299bc6960425edce15a6cb5215e4558a456c36"
+    },
+    {
+      "path": "plugins/hookify/hooks/userpromptsubmit.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "28ee51fdf3a6d0ad4935c3505c6306e2cc034d1d",
+      "size": 1543,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/28ee51fdf3a6d0ad4935c3505c6306e2cc034d1d"
+    },
+    {
+      "path": "plugins/hookify/matchers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9d1dcfdaf1a6857c5f83dc27019c7600e1ffaff8",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/9d1dcfdaf1a6857c5f83dc27019c7600e1ffaff8"
+    },
+    {
+      "path": "plugins/hookify/matchers/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "plugins/hookify/skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "66d9cd7a9c6744daec2d88fde3ec0a320d90f31a",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/66d9cd7a9c6744daec2d88fde3ec0a320d90f31a"
+    },
+    {
+      "path": "plugins/hookify/skills/writing-rules",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7617490248ddc6fe04a7cc7513c6a33fa482e854",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7617490248ddc6fe04a7cc7513c6a33fa482e854"
+    },
+    {
+      "path": "plugins/hookify/skills/writing-rules/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "008168a4c9e17e7b958a206696a838dd5823cccd",
+      "size": 8423,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/008168a4c9e17e7b958a206696a838dd5823cccd"
+    },
+    {
+      "path": "plugins/hookify/utils",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9d1dcfdaf1a6857c5f83dc27019c7600e1ffaff8",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/9d1dcfdaf1a6857c5f83dc27019c7600e1ffaff8"
+    },
+    {
+      "path": "plugins/hookify/utils/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "plugins/learning-output-style",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c3b2d7d37dd09850c4b0aea10c63694c26173f94",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c3b2d7d37dd09850c4b0aea10c63694c26173f94"
+    },
+    {
+      "path": "plugins/learning-output-style/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5eec4d64fa19a51b284b3860e76caaec4e07ea2e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/5eec4d64fa19a51b284b3860e76caaec4e07ea2e"
+    },
+    {
+      "path": "plugins/learning-output-style/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f798c518c3bdb74e2dc7a793b21015f42f23038",
+      "size": 296,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3f798c518c3bdb74e2dc7a793b21015f42f23038"
+    },
+    {
+      "path": "plugins/learning-output-style/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a83ffdf60d3e312465a81f6fdaacf7d28b2e6f3",
+      "size": 4687,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8a83ffdf60d3e312465a81f6fdaacf7d28b2e6f3"
+    },
+    {
+      "path": "plugins/learning-output-style/hooks-handlers",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "166c4db75979b0be46287b91b6a8a0ce23802cc6",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/166c4db75979b0be46287b91b6a8a0ce23802cc6"
+    },
+    {
+      "path": "plugins/learning-output-style/hooks-handlers/session-start.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0489074abad81a48abf1ce6b3fe96ee91137f246",
+      "size": 3564,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0489074abad81a48abf1ce6b3fe96ee91137f246"
+    },
+    {
+      "path": "plugins/learning-output-style/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6f33a4c2d9ce0bd78bf3fbfb0ed47ee0712539fe",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/6f33a4c2d9ce0bd78bf3fbfb0ed47ee0712539fe"
+    },
+    {
+      "path": "plugins/learning-output-style/hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3ab7ce9b781ed39370b427b8c83ee78e5341c35",
+      "size": 311,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b3ab7ce9b781ed39370b427b8c83ee78e5341c35"
+    },
+    {
+      "path": "plugins/plugin-dev",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b2a89d6d91a632af92dc5f00b3a530dde1cfcbb6",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/b2a89d6d91a632af92dc5f00b3a530dde1cfcbb6"
+    },
+    {
+      "path": "plugins/plugin-dev/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7b7006352b471382a4894fa90a4bba625ab2569a",
+      "size": 14592,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7b7006352b471382a4894fa90a4bba625ab2569a"
+    },
+    {
+      "path": "plugins/plugin-dev/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c12a0b6b160eb79a7325acc283bf5cad259ed92d",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c12a0b6b160eb79a7325acc283bf5cad259ed92d"
+    },
+    {
+      "path": "plugins/plugin-dev/agents/agent-creator.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60953920b40b007eaa364bfcd753299d402b1ac7",
+      "size": 7437,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/60953920b40b007eaa364bfcd753299d402b1ac7"
+    },
+    {
+      "path": "plugins/plugin-dev/agents/plugin-validator.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf977e4933f1bb7d1f0fff34c9abde0f918020eb",
+      "size": 6623,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/cf977e4933f1bb7d1f0fff34c9abde0f918020eb"
+    },
+    {
+      "path": "plugins/plugin-dev/agents/skill-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b15adbef874f74734d7f0336b8d3364246aa2fad",
+      "size": 6079,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b15adbef874f74734d7f0336b8d3364246aa2fad"
+    },
+    {
+      "path": "plugins/plugin-dev/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f71fdf8fbcb0942670aeeafd321380c58a824892",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f71fdf8fbcb0942670aeeafd321380c58a824892"
+    },
+    {
+      "path": "plugins/plugin-dev/commands/create-plugin.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8839281d88304ece7211abd74c669cd5d3f69a34",
+      "size": 14950,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8839281d88304ece7211abd74c669cd5d3f69a34"
+    },
+    {
+      "path": "plugins/plugin-dev/skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b14def6c315c5f3bf9b4e7ad39dbe674a015e333",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/b14def6c315c5f3bf9b4e7ad39dbe674a015e333"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "55323e4656435c2c3d829630c472639e6b600f34",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/55323e4656435c2c3d829630c472639e6b600f34"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "36830932de4299c639d256b875e1163f3c8580ae",
+      "size": 10430,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/36830932de4299c639d256b875e1163f3c8580ae"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "70cd4757e19ff69c98aa240b374444c88e5d6f55",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/70cd4757e19ff69c98aa240b374444c88e5d6f55"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/examples/agent-creation-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "125857250d29c61e46e3d609af24f31d20a2ee95",
+      "size": 9390,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/125857250d29c61e46e3d609af24f31d20a2ee95"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/examples/complete-agent-examples.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec75fba62c543292093b83b5cfb82e6867172d9a",
+      "size": 14117,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ec75fba62c543292093b83b5cfb82e6867172d9a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "521ccd0df84650a43d1fdca9115bafe0ee5ff7b6",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/521ccd0df84650a43d1fdca9115bafe0ee5ff7b6"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/references/agent-creation-system-prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "614c8dd32e27613a240cecdc66b9e34e22466d8c",
+      "size": 8879,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/614c8dd32e27613a240cecdc66b9e34e22466d8c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/references/system-prompt-design.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6efa85468905d83f156d3d89d7ae5804dcb7eff4",
+      "size": 9998,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6efa85468905d83f156d3d89d7ae5804dcb7eff4"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/references/triggering-examples.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d97b87b112fff723b27f448477410bf5f79f2b20",
+      "size": 11613,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d97b87b112fff723b27f448477410bf5f79f2b20"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "114d89d8baaa94d744293e7270683bec7f7a3c2e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/114d89d8baaa94d744293e7270683bec7f7a3c2e"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/agent-development/scripts/validate-agent.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ca4dfd4b92d9e40bd7218803b8e0930ff5ee17d5",
+      "size": 5796,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ca4dfd4b92d9e40bd7218803b8e0930ff5ee17d5"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "07e593d490ae22688926ffae79f15d85bb961825",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/07e593d490ae22688926ffae79f15d85bb961825"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5d303f20d80d201afd4c3a7257e2cebc6e6844f",
+      "size": 7651,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a5d303f20d80d201afd4c3a7257e2cebc6e6844f"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e39435e14d4fd45d11ba511b7d89f82a950dfc60",
+      "size": 18941,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e39435e14d4fd45d11ba511b7d89f82a950dfc60"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f7d737ea6abf6be2cc23fb629b2b9127f47a3747",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f7d737ea6abf6be2cc23fb629b2b9127f47a3747"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/examples/plugin-commands.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e14ef4ddbb5f3d3d99423e002453e8539b0fadcf",
+      "size": 13989,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e14ef4ddbb5f3d3d99423e002453e8539b0fadcf"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/examples/simple-commands.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2348239c4de79ede58b2cb14618f6857c467085c",
+      "size": 8675,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/2348239c4de79ede58b2cb14618f6857c467085c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8347c3ff8c8bb84c1efa57b8dda63ba5e5e140ce",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/8347c3ff8c8bb84c1efa57b8dda63ba5e5e140ce"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/advanced-workflows.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e0d7b1dc8329d9a9c0168e4e498b3d7a424886b",
+      "size": 13618,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5e0d7b1dc8329d9a9c0168e4e498b3d7a424886b"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/documentation-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3ea03ec83a2f88293ae34fd24ae7461ca6404d8c",
+      "size": 14971,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3ea03ec83a2f88293ae34fd24ae7461ca6404d8c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/frontmatter-reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aa85294745429c8f1cdfd90e1bd61653b875d1bb",
+      "size": 9162,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/aa85294745429c8f1cdfd90e1bd61653b875d1bb"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/interactive-commands.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e55bc38f4f09d8d65801582455e8c6eb1c710c3f",
+      "size": 20980,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e55bc38f4f09d8d65801582455e8c6eb1c710c3f"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/marketplace-considerations.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "03e706c6fc833c1022674206b44c6934555e8949",
+      "size": 16437,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/03e706c6fc833c1022674206b44c6934555e8949"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/plugin-features-reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c89e9060b42906dbb1e59300a7cc8d98051ad98f",
+      "size": 14622,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c89e9060b42906dbb1e59300a7cc8d98051ad98f"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/command-development/references/testing-strategies.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7b482fbe621a999b3a985c6a846aaa358a3824f6",
+      "size": 14803,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7b482fbe621a999b3a985c6a846aaa358a3824f6"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9d89f677df7c43ead68cc64e8b9aa2b5bfb2cd0a",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/9d89f677df7c43ead68cc64e8b9aa2b5bfb2cd0a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1c0c199c70e8cef8fee8d3b792b0a27ff33046c",
+      "size": 16246,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d1c0c199c70e8cef8fee8d3b792b0a27ff33046c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f5ab1ec5189863a147ca67e5bf676e07aa868611",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f5ab1ec5189863a147ca67e5bf676e07aa868611"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/examples/load-context.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9754f321a7d6f7a1e9f23a0e4f74a84c5f81a35c",
+      "size": 1690,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9754f321a7d6f7a1e9f23a0e4f74a84c5f81a35c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/examples/validate-bash.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e36432441f6d541ac3a76a3cffdffa1edfa671d0",
+      "size": 1304,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e36432441f6d541ac3a76a3cffdffa1edfa671d0"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/examples/validate-write.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e665193329add13afda0355a6603e2b40c3034df",
+      "size": 1222,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e665193329add13afda0355a6603e2b40c3034df"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e594a2a2911773b101faf3aa66c00f750802ed14",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/e594a2a2911773b101faf3aa66c00f750802ed14"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/references/advanced.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a84a38fbbf8c63c2f72a84c255a80016595ac22c",
+      "size": 10148,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a84a38fbbf8c63c2f72a84c255a80016595ac22c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/references/migration.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "587cae37e680a190b1f9c75232c639b33d36ea21",
+      "size": 8299,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/587cae37e680a190b1f9c75232c639b33d36ea21"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/references/patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "447538654d9439061799b6e08ccdabf80a4ff3a5",
+      "size": 7144,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/447538654d9439061799b6e08ccdabf80a4ff3a5"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4e701c2a5ef80bf6906799ae4a160a52333fdf86",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/4e701c2a5ef80bf6906799ae4a160a52333fdf86"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/scripts/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02a556fdbd9483426d994419a81c936da7e28a6d",
+      "size": 3677,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/02a556fdbd9483426d994419a81c936da7e28a6d"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/scripts/hook-linter.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "64f6041effc1c9ab182241b31814878952a3456e",
+      "size": 4200,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/64f6041effc1c9ab182241b31814878952a3456e"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/scripts/test-hook.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "527b119c4465a99b1d4f81f880ab76f69e0329bc",
+      "size": 5336,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/527b119c4465a99b1d4f81f880ab76f69e0329bc"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/hook-development/scripts/validate-hook-schema.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "fed0a1f1d47b8efe9dff01796cc661b1582c1e85",
+      "size": 5081,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/fed0a1f1d47b8efe9dff01796cc661b1582c1e85"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3e57353b7b88f20216666d616b14015f3574554c",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/3e57353b7b88f20216666d616b14015f3574554c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4fcd96cf64d187e397dabe71a72d093abd50d7c",
+      "size": 12519,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d4fcd96cf64d187e397dabe71a72d093abd50d7c"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c67fc2b83511d821f6e09b69143068538d9991e4",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/c67fc2b83511d821f6e09b69143068538d9991e4"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/examples/http-server.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e96448fe9b8ba79e13ebb40be6914f62bb930d15",
+      "size": 502,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e96448fe9b8ba79e13ebb40be6914f62bb930d15"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/examples/sse-server.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6ec71c60172acd2e7ebe4b5d202af84e071171b",
+      "size": 413,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e6ec71c60172acd2e7ebe4b5d202af84e071171b"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/examples/stdio-server.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "60af1c69dd539cebe1ea7daad34181a68de063ac",
+      "size": 686,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/60af1c69dd539cebe1ea7daad34181a68de063ac"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8f5c6f301b26dff0bd3647b714533a2eb7e31d4e",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/8f5c6f301b26dff0bd3647b714533a2eb7e31d4e"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/references/authentication.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1d4ff3840f8086665838d5746f261d60c6966ace",
+      "size": 10196,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1d4ff3840f8086665838d5746f261d60c6966ace"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/references/server-types.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4528953397fd690282ff1c079f1c52a2a34ac3b0",
+      "size": 10613,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4528953397fd690282ff1c079f1c52a2a34ac3b0"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/mcp-integration/references/tool-usage.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "986c2aadbc692f3fdfe0d28264da407d4aba2c9f",
+      "size": 11674,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/986c2aadbc692f3fdfe0d28264da407d4aba2c9f"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b92c10c82b18cb18733c151d927c3e41aa8c4c1f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/b92c10c82b18cb18733c151d927c3e41aa8c4c1f"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "912a06e184c8e77553264adf7dbc57c817c02335",
+      "size": 12101,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/912a06e184c8e77553264adf7dbc57c817c02335"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f77b999fb29dba201ffa0104e16b333b3a4aa094",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/f77b999fb29dba201ffa0104e16b333b3a4aa094"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/examples/create-settings-command.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "987e9a1948565e75e23f464fa70aa79015feec53",
+      "size": 2177,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/987e9a1948565e75e23f464fa70aa79015feec53"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/examples/example-settings.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "307289ddd099c38ec513530b826ce2ec50659a83",
+      "size": 2930,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/307289ddd099c38ec513530b826ce2ec50659a83"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/examples/read-settings-hook.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "8f84ed69eabebc632872316a42671a86ff0a64ce",
+      "size": 2205,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8f84ed69eabebc632872316a42671a86ff0a64ce"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a7de2c7d3fb2775dc4d2d328c2aa8bf3e3f466fc",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/a7de2c7d3fb2775dc4d2d328c2aa8bf3e3f466fc"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/references/parsing-techniques.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e83ae867f8f6cef2e2ae11f40fe6d1ccde10eb5",
+      "size": 11513,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7e83ae867f8f6cef2e2ae11f40fe6d1ccde10eb5"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/references/real-world-examples.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b62a91035c84e76920242d363be1041288ba1b79",
+      "size": 9496,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b62a91035c84e76920242d363be1041288ba1b79"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7a2ee6b15f73a5a839e98a66fb7da223f4d15c4b",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7a2ee6b15f73a5a839e98a66fb7da223f4d15c4b"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/scripts/parse-frontmatter.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "f247571baeabe6ec0e6899dd953ea98e13d78d2d",
+      "size": 1269,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f247571baeabe6ec0e6899dd953ea98e13d78d2d"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-settings/scripts/validate-settings.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e34e4323119fbc3050dd83177a7ca5faae68f5dd",
+      "size": 2712,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e34e4323119fbc3050dd83177a7ca5faae68f5dd"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "34659f25e4e519dc5c3a6d5361cc69f6688d8eac",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/34659f25e4e519dc5c3a6d5361cc69f6688d8eac"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3076046052483b5638c1c5818d6a19d5a87f3305",
+      "size": 3210,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3076046052483b5638c1c5818d6a19d5a87f3305"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6fb8a3baa1773bb78164438532f635bb2ab63bab",
+      "size": 13796,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/6fb8a3baa1773bb78164438532f635bb2ab63bab"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/examples",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "46c27a992efe2f753188d7622fc948298337e561",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/46c27a992efe2f753188d7622fc948298337e561"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/examples/advanced-plugin.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a7c069691ee0ddcd655f88ffbd0253dbe7f4229a",
+      "size": 18746,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a7c069691ee0ddcd655f88ffbd0253dbe7f4229a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/examples/minimal-plugin.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "27591dbcaff810375de507327d26911575029d62",
+      "size": 1731,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/27591dbcaff810375de507327d26911575029d62"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/examples/standard-plugin.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9031665564afc43ad19c07175f18bf7a84b1e1a",
+      "size": 13310,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/d9031665564afc43ad19c07175f18bf7a84b1e1a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "cedee018293216b70e43c543270d2095f15754fc",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/cedee018293216b70e43c543270d2095f15754fc"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/references/component-patterns.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a58a7b4b0a3301aa1330ea4db77636ea8df41bd4",
+      "size": 12086,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a58a7b4b0a3301aa1330ea4db77636ea8df41bd4"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/plugin-structure/references/manifest-reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "40c9c2f3633d54fe1ec9a119f7a00f7eea0e171a",
+      "size": 12061,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/40c9c2f3633d54fe1ec9a119f7a00f7eea0e171a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/skill-development",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3dd57083301fd1ba1a4e04967c6fc055c6d740eb",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/3dd57083301fd1ba1a4e04967c6fc055c6d740eb"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/skill-development/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ac75eedde7ad999488211738e056aff9217f806a",
+      "size": 22827,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ac75eedde7ad999488211738e056aff9217f806a"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/skill-development/references",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "37af7c7a97684e80a9b1060fe52a60ec0b13e9a6",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/37af7c7a97684e80a9b1060fe52a60ec0b13e9a6"
+    },
+    {
+      "path": "plugins/plugin-dev/skills/skill-development/references/skill-creator-original.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "40699358f2f8098e860838cd68b0382a31c72262",
+      "size": 11547,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/40699358f2f8098e860838cd68b0382a31c72262"
+    },
+    {
+      "path": "plugins/pr-review-toolkit",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e0bb739980cb1355c34fdc93c18e78cc1f0fce70",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/e0bb739980cb1355c34fdc93c18e78cc1f0fce70"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "44ffb31c498f846d1edb00f02c25c404aaa32d57",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/44ffb31c498f846d1edb00f02c25c404aaa32d57"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e293aba91b721773a007919e935af7ce9c3048d",
+      "size": 282,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8e293aba91b721773a007919e935af7ce9c3048d"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e91cb7bed28ced8b6a48952abe430fba6deeae6d",
+      "size": 7528,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e91cb7bed28ced8b6a48952abe430fba6deeae6d"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "09e4380738c9eb8f85299f494936cd62fd686cf9",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/09e4380738c9eb8f85299f494936cd62fd686cf9"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "462f2e01b89e6339994c071c765dcb4dd380c869",
+      "size": 3985,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/462f2e01b89e6339994c071c765dcb4dd380c869"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/code-simplifier.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7d6cfd81a8d2b70f4e6ab04029e546203be0db34",
+      "size": 5230,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7d6cfd81a8d2b70f4e6ab04029e546203be0db34"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/comment-analyzer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e214620a3fa348c550bfca1f8d23ceaec39bfe57",
+      "size": 5725,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/e214620a3fa348c550bfca1f8d23ceaec39bfe57"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/pr-test-analyzer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b2de05b90e74f828e58a8874ed17f6eb9372db3",
+      "size": 4985,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9b2de05b90e74f828e58a8874ed17f6eb9372db3"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/silent-failure-hunter.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8a8dfa41e18ef6ac801ae64be38b2508aa04f44",
+      "size": 7807,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b8a8dfa41e18ef6ac801ae64be38b2508aa04f44"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/agents/type-design-analyzer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f720f0fcec856560cdddb6b030ac7e64af159438",
+      "size": 5368,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f720f0fcec856560cdddb6b030ac7e64af159438"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "5ee4ce8e0c2d5b4654a1da45b28444f2f1224699",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/5ee4ce8e0c2d5b4654a1da45b28444f2f1224699"
+    },
+    {
+      "path": "plugins/pr-review-toolkit/commands/review-pr.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "021234cf7ac8c49964552b50650428727ea891a7",
+      "size": 4997,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/021234cf7ac8c49964552b50650428727ea891a7"
+    },
+    {
+      "path": "plugins/ralph-wiggum",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8f22d1670d1f5d46e5d25b72783c59503cc4a21b",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/8f22d1670d1f5d46e5d25b72783c59503cc4a21b"
+    },
+    {
+      "path": "plugins/ralph-wiggum/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "00a3969bbe594c304c7b720ebea9b612ff3f94ee",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/00a3969bbe594c304c7b720ebea9b612ff3f94ee"
+    },
+    {
+      "path": "plugins/ralph-wiggum/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ec19b4012acbb9770c07e8e2710066a812977dda",
+      "size": 353,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ec19b4012acbb9770c07e8e2710066a812977dda"
+    },
+    {
+      "path": "plugins/ralph-wiggum/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a65f0108899074d36839fcc3f2d7965104569d85",
+      "size": 5201,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a65f0108899074d36839fcc3f2d7965104569d85"
+    },
+    {
+      "path": "plugins/ralph-wiggum/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "93012b5455d778b81a4757f68d2609b5b0c6f374",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/93012b5455d778b81a4757f68d2609b5b0c6f374"
+    },
+    {
+      "path": "plugins/ralph-wiggum/commands/cancel-ralph.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a85c428fc1757903e3bf383f80104c5f3250e192",
+      "size": 745,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a85c428fc1757903e3bf383f80104c5f3250e192"
+    },
+    {
+      "path": "plugins/ralph-wiggum/commands/help.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "78a5045c0e5eb6a05235c61f2ec82e08186753c6",
+      "size": 3229,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/78a5045c0e5eb6a05235c61f2ec82e08186753c6"
+    },
+    {
+      "path": "plugins/ralph-wiggum/commands/ralph-loop.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b4dbcb62a021bbe213ea9a7394b92ea753574f6",
+      "size": 923,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3b4dbcb62a021bbe213ea9a7394b92ea753574f6"
+    },
+    {
+      "path": "plugins/ralph-wiggum/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "276bcb141652aac55076de553b6a2b6522d75b6d",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/276bcb141652aac55076de553b6a2b6522d75b6d"
+    },
+    {
+      "path": "plugins/ralph-wiggum/hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e5f697934f45ab2932db38205f3951d778df527",
+      "size": 284,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/2e5f697934f45ab2932db38205f3951d778df527"
+    },
+    {
+      "path": "plugins/ralph-wiggum/hooks/stop-hook.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9aa611c1041b329a4be20545c3c4d12b26ae5727",
+      "size": 6564,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/9aa611c1041b329a4be20545c3c4d12b26ae5727"
+    },
+    {
+      "path": "plugins/ralph-wiggum/scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b91a304c6b1c711ce30ebe7b1b4a3fb413a22d70",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/b91a304c6b1c711ce30ebe7b1b4a3fb413a22d70"
+    },
+    {
+      "path": "plugins/ralph-wiggum/scripts/setup-ralph-loop.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ac5491f4b8b0839b6df2779e27484c93e46e3953",
+      "size": 7009,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ac5491f4b8b0839b6df2779e27484c93e46e3953"
+    },
+    {
+      "path": "plugins/security-guidance",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7e40d31e10ab0295aae6017275e4b584d1646a0f",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/7e40d31e10ab0295aae6017275e4b584d1646a0f"
+    },
+    {
+      "path": "plugins/security-guidance/.claude-plugin",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1c9376cea6ad011e2272dde50516cff030a894e4",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/1c9376cea6ad011e2272dde50516cff030a894e4"
+    },
+    {
+      "path": "plugins/security-guidance/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1e4165bb15578873e03deb4b87c49f3533f0925e",
+      "size": 487,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1e4165bb15578873e03deb4b87c49f3533f0925e"
+    },
+    {
+      "path": "plugins/security-guidance/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "485f22fbb54739fb13b517caafbfa1838b2b619e",
+      "size": 7219,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/485f22fbb54739fb13b517caafbfa1838b2b619e"
+    },
+    {
+      "path": "plugins/security-guidance/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b855f9ba90e174712fca5dec00590549286237d3",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/b855f9ba90e174712fca5dec00590549286237d3"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/_base.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e8eeed5243869e1b41912fdb84ae867e1ad5f2e",
+      "size": 6832,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7e8eeed5243869e1b41912fdb84ae867e1ad5f2e"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/diffstate.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7dbe542a2e642590f523747a9e4b7c475c3d4552",
+      "size": 18669,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/7dbe542a2e642590f523747a9e4b7c475c3d4552"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/ensure_agent_sdk.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e34f176c448c76b30de0a3c37ebbf30a321527f",
+      "size": 9856,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4e34f176c448c76b30de0a3c37ebbf30a321527f"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/extensibility.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a9c7f8fe5f3dc8d54eaa0e8043abe30b0ac9be7c",
+      "size": 12240,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/a9c7f8fe5f3dc8d54eaa0e8043abe30b0ac9be7c"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/gitutil.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1a549d76c60cbc71faaa7c7758e867402dd39ca3",
+      "size": 30039,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/1a549d76c60cbc71faaa7c7758e867402dd39ca3"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/hooks.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d29c5acd5f558bd2ae6ddf82d904b54b9f9191b",
+      "size": 2783,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/0d29c5acd5f558bd2ae6ddf82d904b54b9f9191b"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/llm.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "eff56de741b5972e821d39394b202e1fed8bb98c",
+      "size": 112010,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/eff56de741b5972e821d39394b202e1fed8bb98c"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/patterns.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7f6f10a6021b58aa675147ad840048dd0fe2217",
+      "size": 17541,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/b7f6f10a6021b58aa675147ad840048dd0fe2217"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/review_api.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "499336b96f6223a7c4a86f876cefd27492194c21",
+      "size": 24763,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/499336b96f6223a7c4a86f876cefd27492194c21"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/security_reminder_hook.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ffc9ba3c7d19cf3ad7979808ec59c8988cb85472",
+      "size": 103394,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/ffc9ba3c7d19cf3ad7979808ec59c8988cb85472"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/session_state.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4ccd15e8e9171ea1d77afa19651a48d2587e34c9",
+      "size": 5849,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4ccd15e8e9171ea1d77afa19651a48d2587e34c9"
+    },
+    {
+      "path": "plugins/security-guidance/hooks/sg-python.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "5a1e8032e4c7d9cf0cb0ef4d216e29dc25676b98",
+      "size": 1814,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/5a1e8032e4c7d9cf0cb0ef4d216e29dc25676b98"
+    },
+    {
+      "path": "scripts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "fee01b205fdf3e5ac7580793f367d4205cbeeff0",
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/trees/fee01b205fdf3e5ac7580793f367d4205cbeeff0"
+    },
+    {
+      "path": "scripts/auto-close-duplicates.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ad3bd3112abe8fe70375c602e3d93afe0525f1d",
+      "size": 7753,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/2ad3bd3112abe8fe70375c602e3d93afe0525f1d"
+    },
+    {
+      "path": "scripts/backfill-duplicate-comments.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f79ab431604adea8c230da32608c3e5c6ca39c51",
+      "size": 6830,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/f79ab431604adea8c230da32608c3e5c6ca39c51"
+    },
+    {
+      "path": "scripts/comment-on-duplicates.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c59e1aa645903acc75e40db19cd876deb09957f2",
+      "size": 2600,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/c59e1aa645903acc75e40db19cd876deb09957f2"
+    },
+    {
+      "path": "scripts/edit-issue-labels.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "8a95a87a49defb1133a95906bb06884050a5575f",
+      "size": 1988,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/8a95a87a49defb1133a95906bb06884050a5575f"
+    },
+    {
+      "path": "scripts/gh.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "06c15c847b2795e7a05fde75b7b1b846f026a39e",
+      "size": 3107,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/06c15c847b2795e7a05fde75b7b1b846f026a39e"
+    },
+    {
+      "path": "scripts/issue-lifecycle.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "304b520c0d82dcfa3f1bdf2dddac6044877b4460",
+      "size": 1393,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/304b520c0d82dcfa3f1bdf2dddac6044877b4460"
+    },
+    {
+      "path": "scripts/lifecycle-comment.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3edbae7c5ef81da2eab91d6a8ccb5c13c7c112b9",
+      "size": 1637,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/3edbae7c5ef81da2eab91d6a8ccb5c13c7c112b9"
+    },
+    {
+      "path": "scripts/sweep.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4709290be3f7076dd30d26875d2b6d0efbabcb4e",
+      "size": 5504,
+      "url": "https://api.github.com/repos/anthropics/claude-code/git/blobs/4709290be3f7076dd30d26875d2b6d0efbabcb4e"
+    }
+  ],
+  "truncated": false
+}

@@ -40,6 +40,7 @@ touches the network.
 | `mcp-malformed.json` | a `server.json` with `packages` but no `name` | failed, named after its directory |
 | `hooks-malformed.json` | a hook config that is a top-level JSON array, not an object | failed, naming the missing-object error |
 | `settings-no-hooks.json` | a realistic `.claude/settings.json` with `enabledPlugins`, `pluginConfigs` and `permissions`, no `hooks` key | no row at all — not a failed row |
+| `awesome-list.md` | a curated Markdown link list: the same repository linked three ways, deep/tree/clone URLs, github.com site routes (`topics/`, `orgs/`, `sponsors/`, `users/`), a gist, the raw host, other hosts, a lookalike host, a userinfo prefix, plain HTTP, and four malformed tokens | six `owner/repo` strings, lowercased and de-duplicated; every route, host and malformed shape yields nothing, and nothing extracted is ever fetched (COR-04) |
 
 ## Two caps, and why the second is not redundant
 

@@ -1,12 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ALLOWED_HOSTS as githubAllowedHosts } from '@/github/client';
+import { ALLOWED_HOSTS as registryAllowedHosts } from '@/registry/client';
 import {
   checkMigrationSql,
   checkPackageScripts,
   checkSchemaModule,
   checkSourceBoundaries,
   checkVerdictVocabulary,
+  HOST_RULES,
   SANCTIONED,
   sourceFiles,
   verdictVocabularyFiles,
@@ -162,6 +165,38 @@ describe('checkSourceBoundaries', () => {
     expect(problems.join(' ')).toMatch(/no-host-sprawl/);
   });
 
+  it('reports the MCP registry hostname named outside the registry client directory', () => {
+    const problems = checkSourceBoundaries(
+      'src/app/page.tsx',
+      "await fetch('https://registry.modelcontextprotocol.io/v0/servers');",
+    );
+    expect(problems.join(' ')).toMatch(/no-host-sprawl/);
+  });
+
+  it('accepts the same hostname inside the registry client directory', () => {
+    const problems = checkSourceBoundaries(
+      'src/registry/client.ts',
+      "await fetch('https://registry.modelcontextprotocol.io/v0/servers');",
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('does not let one host rule launder another host into the wrong directory', () => {
+    // src/github/ is registered for GitHub hosts only. The registry host there
+    // is still sprawl, and vice versa — the pairs are not interchangeable.
+    expect(
+      checkSourceBoundaries(
+        'src/github/client.ts',
+        "const u = 'https://registry.modelcontextprotocol.io';",
+      ).join(' '),
+    ).toMatch(/no-host-sprawl/);
+    expect(
+      checkSourceBoundaries('src/registry/client.ts', "const u = 'https://api.github.com';").join(
+        ' ',
+      ),
+    ).toMatch(/no-host-sprawl/);
+  });
+
   it('accepts a match that appears only inside a comment', () => {
     const source =
       '// raw.githubusercontent.com accepts both shas, so a raw-only check is not enough.\n' +
@@ -174,6 +209,30 @@ describe('checkSourceBoundaries', () => {
     const path = 'src/db/schema.ts';
     expect(checkSourceBoundaries(path, readFileSync(path, 'utf8'))).toEqual([]);
   });
+});
+
+describe('HOST_RULES covers every client allowlist', () => {
+  // The assertion that does the real work. Extending a pattern fixes today's
+  // host; only this fixes the next one. A host added to any client's
+  // ALLOWED_HOSTS without a registered directory fails here, on the commit that
+  // adds it — rule 5 otherwise polices registered hosts only and stays green.
+  const allowlists: [string, Set<string>][] = [
+    ['src/github/client.ts', githubAllowedHosts],
+    ['src/registry/client.ts', registryAllowedHosts],
+  ];
+
+  for (const [source, hosts] of allowlists) {
+    it(`registers a directory for every host in ${source}`, () => {
+      expect(hosts.size).toBeGreaterThan(0);
+      for (const host of hosts) {
+        const covered = HOST_RULES.some((rule) => rule.pattern.test(host));
+        expect(
+          covered,
+          `${host} is in ${source}'s allowlist but no HOST_RULES pair covers it`,
+        ).toBe(true);
+      }
+    });
+  }
 });
 
 describe('sourceFiles', () => {

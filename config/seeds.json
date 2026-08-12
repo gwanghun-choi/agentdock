@@ -1,0 +1,96 @@
+{
+  "seeds": [
+    {
+      "fullName": "davila7/claude-code-templates",
+      "note": "11,499 tree entries; 896 skill-shaped and 393 command-shaped paths. Largest single contributor and the reason this list is ordered by density. Will hit CAPS.maxFiles=400 and stay permanently truncated."
+    },
+    {
+      "fullName": "wshobson/agents",
+      "note": "All six detector types in one repository: 180 skills, 91 plugin manifests, 3 marketplaces, ~109 commands, 2 hook configs, 1 .mcp.json."
+    },
+    {
+      "fullName": "anthropics/claude-code",
+      "note": "10 skill, 12 plugin, 1 catalog, 18 command, 5 hook — the reference implementation's own content."
+    },
+    {
+      "fullName": "addyosmani/agent-skills",
+      "note": "Five of six types; the specification-conformant baseline."
+    },
+    {
+      "fullName": "anthropics/skills",
+      "note": "Canonical skill corpus, 18 SKILL.md."
+    },
+    {
+      "fullName": "JimLiu/baoyu-skills",
+      "note": "21 SKILL.md; non-ASCII names and nested metadata edge cases."
+    },
+    {
+      "fullName": "obra/superpowers",
+      "note": "14 SKILL.md, 1 plugin, 1 catalog, 1 hook. Independent author, not Anthropic-adjacent."
+    },
+    {
+      "fullName": "anthropics/claude-cookbooks",
+      "note": "4 skill, 11 command, 1 hook."
+    },
+    {
+      "fullName": "upstash/context7",
+      "note": "9 skill, 1 plugin, 1 catalog, 4 mcp, 2 command. Renamed from upstash/context7-mcp — a live instance of the rename the github_node_id identity key exists to survive."
+    },
+    {
+      "fullName": "disler/claude-code-hooks-mastery",
+      "note": "21 command, 1 hook. Hook-focused independent author."
+    },
+    {
+      "fullName": "centminmod/my-claude-code-setup",
+      "note": "7 skill, 20 command, 1 hook."
+    },
+    {
+      "fullName": "anthropics/claude-agent-sdk-python",
+      "note": "1 skill, 1 plugin, 4 command, 1 hook — small, touches four types."
+    },
+    {
+      "fullName": "cloudflare/mcp-server-cloudflare",
+      "note": "1 mcp marker, matched by path pattern only (research assumption A2), not by reading the file."
+    },
+    {
+      "fullName": "github/github-mcp-server",
+      "note": "1 mcp marker, path pattern only (A2)."
+    },
+    {
+      "fullName": "modelcontextprotocol/servers",
+      "note": "1 mcp marker, path pattern only (A2). Included for completeness, not yield: most servers there are source code, not declarations."
+    }
+  ],
+  "linkLists": [
+    {
+      "fullName": "hesreallyhim/awesome-claude-code",
+      "path": "README.md",
+      "note": "Zero artifact markers of its own; pure link list."
+    },
+    {
+      "fullName": "punkpeye/awesome-mcp-servers",
+      "path": "README.md",
+      "note": "Pure link list. wong2/awesome-mcp-servers is redundant with it and is not included."
+    }
+  ],
+  "rejected": [
+    { "fullName": "affaan-m/claude-code-plugins-hub", "reason": "404 on 2026-08-11" },
+    { "fullName": "ericbuess/claude-code-tools", "reason": "404 on 2026-08-11" },
+    {
+      "fullName": "simonw/llm",
+      "reason": "0 artifact markers; not a Claude-ecosystem repository"
+    },
+    {
+      "fullName": "steipete/agent-rules",
+      "reason": "0 artifact markers; predates the current directory conventions"
+    },
+    {
+      "fullName": "qdrant/mcp-server-qdrant",
+      "reason": "0 artifact markers; near-zero yield"
+    },
+    {
+      "fullName": "modelcontextprotocol/inspector",
+      "reason": "1,266 entries, 2 markers; density too low to spend two core requests on"
+    }
+  ]
+}

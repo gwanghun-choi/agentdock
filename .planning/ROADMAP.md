@@ -24,9 +24,9 @@ look at is not a slice.
 - [x] **Phase 0: Database Isolation Bootstrap** — Make the database, not the code, enforce the schema boundary (COMPLETE — isolation verified 7/7)
 - [x] **Phase 1: Walking Skeleton** — Submit a GitHub repo, see its skills on a detail page, safely (COMPLETE — live ingest verified)
 - [x] **Phase 2: Durable Ingestion** — Make ingestion asynchronous, resumable, and idempotent (COMPLETE — verified live)
-- [ ] **Phase 3: Detector Pluralism** — Plugins, MCP servers, commands, hooks, and catalogs
-- [ ] **Phase 4: Capability Disclosure** — The reason the product exists
-- [ ] **Phase 5: Corpus & Cold Start** — Fill the index without a crawler
+- [x] **Phase 3: Detector Pluralism** — Plugins, MCP servers, commands, hooks, and catalogs (COMPLETE — six detectors live)
+- [x] **Phase 4: Capability Disclosure** — The reason the product exists (COMPLETE — permalink verified live)
+- [x] **Phase 5: Corpus & Cold Start** — Fill the index without a crawler (COMPLETE — 921 listed, cold start verified)
 - [ ] **Phase 6: Search & Browse** — Make the corpus findable
 - [ ] **Phase 7: Derived Compatibility** — Compute what runtimes an artifact actually works with
 - [ ] **Phase 8: Freshness** — Stop the index from quietly becoming a lie
@@ -274,12 +274,27 @@ page, or to both, and each wave's measurement needs what the previous wave regis
   5. At least 500 parsed artifacts exist
   6. Forks and duplicates do not flood listings, and suppression happens at read time without altering stored data
   7. A submitted repository below the visibility floor is reachable by direct link but absent from listings
-**Plans**: 3 plans
+**Plans**: 5 plans
+
+> **Two plans added during planning, reasons in `05-CONTEXT.md`.** COR-06 is not build
+> work — it is a live run plus a reproduction from an empty schema, and it can only be
+> counted after the visibility floor exists, because "parsed artifact" and "above the
+> floor" are the same predicate. And the phase brief's CAP-13 re-measurement on an
+> expanded corpus appears in none of the three original lines, yet carries a blocking
+> maintainer decision on the `npx` labelling.
+>
+> Planning also measured, live, that a star ladder cannot cover a topic: `topic:claude-code`
+> holds 57,970 repositories and 36,487 of them sit at 0–1 stars, two indivisible buckets
+> each ~18× the 1,000-result cap. Criterion 4 is therefore delivered as *the sweep names
+> every shard it could not reach, with that shard's measured size* — silence is the failure
+> the criterion names; incompleteness is a fact about the world.
 
 Plans:
-- [ ] 05-01: MCP registry sync with incremental updates
-- [ ] 05-02: Seed list, catalog fan-out, and curated-link expansion
-- [ ] 05-03: Sharded topic search, fork filtering, content-hash dedup, and the visibility gate
+- [x] 05-01: MCP registry sync with incremental updates
+- [x] 05-02: Seed list, catalog fan-out, and curated-link expansion
+- [x] 05-03: Sharded topic search, fork filtering, content-hash dedup, and the visibility gate
+- [x] 05-04: Five hundred artifacts, and the cold start reproduced from an empty schema
+- [x] 05-05: Expanded frozen corpus, detector re-measurement, and the `npx` labelling decision
 
 ---
 

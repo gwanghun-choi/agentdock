@@ -36,9 +36,43 @@ function length(value: string): number {
  * own test; declared.ts's tests cover the reuse, not a second spec.
  */
 export function toolTokens(value: unknown): string[] | null {
-  if (typeof value === 'string') return value.split(/[\s,]+/).filter(Boolean);
   if (Array.isArray(value)) return value.map(String);
-  return null;
+  if (typeof value !== 'string') return null;
+
+  // Delimiters only at parenthesis depth zero.
+  //
+  // This was `value.split(/[\s,]+/)`, which is correct for every grant without
+  // an argument and wrong for every grant with one. `Bash(git checkout
+  // --branch:*), Bash(git add:*)` is two grants; the flat split returned five
+  // fragments — `Bash(git`, `checkout`, `--branch:*)`, `Bash(git`, `add:*)` —
+  // none of which is either grant. Measured over the seven frozen corpora
+  // (05-05): 56 of 110 declaredCapabilities findings were such fragments, a
+  // 50.9% false-positive rate against CAP-13's 20% line, invisible until Phase
+  // 5 because the four Phase 4 corpora contained no `allowed-tools` at all.
+  //
+  // Not a narrowing. It does not make the rule match less to improve a rate; it
+  // makes it emit the grants the file actually declares. Every shape that
+  // tokenised correctly before still does: a list, a comma-separated list of
+  // bare names, and a whitespace-separated list of bare names are unchanged,
+  // because a delimiter outside parentheses is still a delimiter.
+  const tokens: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of value) {
+    if (ch === '(') depth += 1;
+    // Clamped, so a stray ')' in malformed input cannot drive depth negative
+    // and disable splitting for the rest of the string.
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+
+    if (depth === 0 && (ch === ',' || /\s/.test(ch))) {
+      if (current) tokens.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current) tokens.push(current);
+  return tokens;
 }
 
 export const skill: Detector = {

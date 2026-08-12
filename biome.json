@@ -9,7 +9,9 @@
       "!.drizzle-test",
       "!.planning",
       "!.gstack",
-      "!next-env.d.ts"
+      "!next-env.d.ts",
+      "!fixtures/mcp-registry/list-control-byte.json",
+      "!fixtures/*/files"
     ]
   },
   "formatter": {

@@ -4,7 +4,10 @@ import type { GitHubFailure, RateLimit } from './types';
 // The complete list of hosts this process may contact. Hardcoded, not
 // configurable: a configurable allowlist is an allowlist an operator can widen
 // by accident, and there is no reason for this list to differ per deployment.
-const ALLOWED_HOSTS = new Set(['api.github.com', 'raw.githubusercontent.com']);
+// Exported so check-boundaries.test.ts can assert every member is covered by a
+// HOST_RULES pair: a host added here without a registered directory then fails
+// CI on the commit that adds it, rather than silently a year later.
+export const ALLOWED_HOSTS = new Set(['api.github.com', 'raw.githubusercontent.com']);
 
 // Anchored, length-bounded, and applied before any string reaches URL
 // construction. GitHub's own limits are 39 characters for an owner and 100 for a
@@ -60,20 +63,66 @@ export function normalizeRepo(input: string): { owner: string; repo: string } | 
 }
 
 /**
+ * First path segments that are site routes, not accounts.
+ *
+ * Every one of these produces a two-segment path that normalizeRepo accepts
+ * happily — `topics/claude-code` and `orgs/anthropics` are both well-formed
+ * owner/repo strings — so without this list a topic page or an organisation's
+ * repository tab becomes a seed, and then two core requests spent learning it is
+ * a 404. Curated link lists are full of exactly these URLs, which is where the
+ * gap was found; a marketplace.json naming one had the same hole.
+ *
+ * Deliberately short: only routes GitHub reserves, so no account can be shadowed
+ * by an entry here. A route missing from the list costs one wasted lookup, while
+ * a real account wrongly listed would silently drop a repository forever — so the
+ * list errs toward being incomplete.
+ */
+const RESERVED_OWNER_SEGMENTS = new Set([
+  'about',
+  'apps',
+  'codespaces',
+  'collections',
+  'contact',
+  'enterprise',
+  'events',
+  'explore',
+  'features',
+  'issues',
+  'join',
+  'login',
+  'marketplace',
+  'new',
+  'notifications',
+  'orgs',
+  'pricing',
+  'pulls',
+  'search',
+  'security',
+  'settings',
+  'sponsors',
+  'stars',
+  'topics',
+  'trending',
+  'users',
+]);
+
+/**
  * Extracts owner/repo from a github.com repository URL, or null if the host
  * is not github.com or the path does not resolve to a valid owner/repo.
  *
  * The only predicate this project exports for recognizing a GitHub repository
  * URL outside src/github/ — check:boundaries rule 5 requires every GitHub
  * hostname literal to live in this directory, so a catalog detector reading a
- * marketplace.json `url`/`git-subdir` source calls this rather than naming
- * "github.com" itself. Reuses normalizeRepo's exact validation (length caps,
- * character rules, .git stripping) rather than a second copy of it.
+ * marketplace.json `url`/`git-subdir` source, or a curated-link extractor
+ * reading a README, calls this rather than naming "github.com" itself. Reuses
+ * normalizeRepo's exact validation (length caps, character rules, .git
+ * stripping) rather than a second copy of it.
  */
 export function githubRepoFromUrl(url: URL): { owner: string; repo: string } | null {
   if (url.hostname !== 'github.com') return null;
   const parts = url.pathname.split('/').filter(Boolean);
   if (parts.length < 2) return null;
+  if (RESERVED_OWNER_SEGMENTS.has(parts[0].toLowerCase())) return null;
   return normalizeRepo(`${parts[0]}/${parts[1]}`);
 }
 

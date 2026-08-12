@@ -1,0 +1,141 @@
+{
+  "servers": [
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ac.tandem/docs-mcp",
+        "description": "Remote MCP server for Tandem docs, install guides, SDKs, workflows, and agent setup help.",
+        "repository": {
+          "url": "https://github.com/test-owner/corpus-spec-tandem",
+          "source": "github"
+        },
+        "version": "0.3.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://tandem.ac/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-04-02T11:22:40.005172Z",
+          "publishedAt": "2026-04-02T11:22:40.005172Z",
+          "updatedAt": "2026-04-02T11:22:40.005172Z",
+          "isLatest": false
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ai.agentberg/agentberg",
+        "description": "Agent-to-agent trading intelligence exchange. Publish findings, vote on quality, earn reputation.",
+        "repository": {
+          "url": "https://github.com/Test-Owner/Corpus-Spec-Agentberg",
+          "source": "github"
+        },
+        "version": "0.2.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://agentberg.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-06-18T01:49:38.050173Z",
+          "publishedAt": "2026-06-18T01:49:38.050173Z",
+          "updatedAt": "2026-06-18T01:49:38.050173Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+        "name": "ai.agentrapay/agentra",
+        "description": "Identity oracle and trust layer for autonomous AI agents. Bidirectional KYA and trust scoring.",
+        "repository": {},
+        "version": "1.0.0",
+        "remotes": [
+          {
+            "type": "sse",
+            "url": "https://api.agentrapay.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-03-22T18:16:07.628131Z",
+          "publishedAt": "2026-03-22T18:16:07.628131Z",
+          "updatedAt": "2026-03-22T18:16:07.628131Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ac.inference.sh/mcp",
+        "description": "Run 150+ AI apps — image, video, audio, LLMs, 3D and more. Browse, execute, stream results.",
+        "title": "inference.sh",
+        "version": "1.0.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://sh.inference.ac"
+          },
+          {
+            "type": "streamable-http",
+            "url": "https://api.inference.sh/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-04-13T17:32:20.852269Z",
+          "publishedAt": "2026-04-13T17:32:20.852269Z",
+          "updatedAt": "2026-04-13T17:32:20.852269Z",
+          "isLatest": false
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ex.gitlab/example",
+        "description": "Remote MCP server for Tandem docs, install guides, SDKs, workflows, and agent setup help.",
+        "repository": {
+          "url": "https://gitlab.com/example/example",
+          "source": "gitlab"
+        },
+        "version": "1.0.0",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://tandem.ac/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-04-02T11:22:40.005172Z",
+          "publishedAt": "2026-04-02T11:22:40.005172Z",
+          "updatedAt": "2026-04-02T11:22:40.005172Z",
+          "isLatest": false
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "nextCursor": "ex.gitlab/example:1.0.0",
+    "count": 5
+  }
+}

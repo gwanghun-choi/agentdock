@@ -122,6 +122,9 @@ export async function ingestRepository(
     stored?: number;
     failed?: number;
     counters?: DiffCounters;
+    /** Catalog entries that named no ingestible repository. Zero on every path
+     * that read no catalog, never absent. */
+    seedsSkipped?: number;
     truncated?: boolean;
     /** Present only when a detector threw, so a clean run's line is unchanged. */
     detectorErrors?: string[];
@@ -142,6 +145,7 @@ export async function ingestRepository(
       updated: fields.counters?.updated ?? 0,
       unchanged: fields.counters?.unchanged ?? 0,
       removed: fields.counters?.removed ?? 0,
+      seedsSkipped: fields.seedsSkipped ?? 0,
       truncated: fields.truncated ?? false,
       durationMs: Date.now() - started,
       rateRemaining: rate?.remaining ?? null,
@@ -248,6 +252,9 @@ export async function ingestRepository(
     const packages: ScannedPackage[] = [];
     const seeds: ScannedSeed[] = [];
     let failed = 0;
+    // Summed across every catalog in the repository, and carried onto the log
+    // line the same way seeds.length is carried onto the result below.
+    let seedsSkipped = 0;
     // A detector that threw during match() contributes nothing and costs the
     // repository nothing else — recorded so a silent partial scan is at least
     // diagnosable.
@@ -280,6 +287,7 @@ export async function ingestRepository(
         // A catalog names other repositories; route to the seed channel and
         // write no package row for it.
         if (result.status === 'seeds') {
+          seedsSkipped += result.skipped;
           for (const seed of result.seeds) {
             seeds.push({
               fullName: seed.fullName,
@@ -349,7 +357,14 @@ export async function ingestRepository(
     // A repository whose only artifact is a catalog found something. Reporting
     // it as empty would also discard the seeds it found.
     if (packages.length === 0 && seeds.length === 0) {
-      emit({ outcome: 'no_artifacts', commitSha: inputs.tree.commitSha, detectorErrors });
+      // Still carried: a marketplace whose every entry was unreachable produces
+      // no package and no seed, and that is exactly the run whose count matters.
+      emit({
+        outcome: 'no_artifacts',
+        commitSha: inputs.tree.commitSha,
+        seedsSkipped,
+        detectorErrors,
+      });
       return { ok: false, outcome: 'no_artifacts', message: messageFor('no_artifacts') };
     }
 
@@ -378,6 +393,7 @@ export async function ingestRepository(
       stored: persisted.packageIds.length,
       failed,
       counters: persisted.counters,
+      seedsSkipped,
       truncated: scan.treeTruncated,
       detectorErrors,
     });

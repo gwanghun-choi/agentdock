@@ -26,7 +26,9 @@ describe.skipIf(!DB_URL)('the queue', () => {
   // shares the schema and writes ingest_job rows too — it inserts them already
   // `running`, for exactly this reason. Keep it that way.
   async function clean() {
-    await sql`DELETE FROM ingest_job WHERE target LIKE 'test-owner/queue-spec%'`;
+    // lower() so a regression in enqueueJob's normalization leaks no row a
+    // later suite would collide with, instead of hiding behind the cleanup.
+    await sql`DELETE FROM ingest_job WHERE lower(target) LIKE 'test-owner/queue-spec%'`;
     await sql`DELETE FROM repository_denylist WHERE full_name = ${BLOCKED}`;
   }
 
@@ -205,6 +207,27 @@ describe.skipIf(!DB_URL)('the queue', () => {
       const second = await jobs.enqueueJob(A);
       if (second.kind !== 'queued') throw new Error('unreachable');
       expect(second.id).not.toBe(first.id);
+    });
+
+    it('treats a mixed-case name as the same repository, and stores it lowercase', async () => {
+      // Without the boundary lowercase these are two active rows for one
+      // repository, at two GitHub requests each out of sixty an hour — and seed
+      // fan-out, which always emits lowercase, would collide with every human
+      // submission that did not.
+      const first = await jobs.enqueueJob(A.toUpperCase());
+      const second = await jobs.enqueueJob(A);
+      expect(second).toEqual(first);
+
+      const rows = await sql<{ target: string }[]>`
+        SELECT target FROM ingest_job WHERE lower(target) = ${A}
+      `;
+      expect(rows).toHaveLength(1);
+      expect(rows[0].target).toBe(A);
+    });
+
+    it('still refuses a denylisted repository when the caller passes mixed case', async () => {
+      await sql`INSERT INTO repository_denylist (full_name, reason) VALUES (${BLOCKED}, 'test')`;
+      expect(await jobs.enqueueJob(BLOCKED.toUpperCase())).toEqual({ kind: 'denylisted' });
     });
 
     it('creates no row for a denylisted target', async () => {

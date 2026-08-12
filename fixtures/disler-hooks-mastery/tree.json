@@ -1,0 +1,1208 @@
+{
+  "sha": "052ad1cbd5aeb1ec4a1def22012d1293c6225625",
+  "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/052ad1cbd5aeb1ec4a1def22012d1293c6225625",
+  "tree": [
+    {
+      "path": ".claude",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d7142229237b782bd694fd8a4a27631f4ec080d7",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/d7142229237b782bd694fd8a4a27631f4ec080d7"
+    },
+    {
+      "path": ".claude/agents",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3484ba093058df51068d3aacd5667c84190ef75b",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/3484ba093058df51068d3aacd5667c84190ef75b"
+    },
+    {
+      "path": ".claude/agents/crypto",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b3d079202edfd9966f68c2daf0765b896a36b068",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/b3d079202edfd9966f68c2daf0765b896a36b068"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-coin-analyzer-haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aab68bd01103a65e62b10cedaab728519eb3d5b4",
+      "size": 392,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/aab68bd01103a65e62b10cedaab728519eb3d5b4"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-coin-analyzer-opus.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b13e3b3d1e2108b7468b5299351d576ba0956f6b",
+      "size": 388,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/b13e3b3d1e2108b7468b5299351d576ba0956f6b"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-coin-analyzer-sonnet.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "238f615fd8eca1d05de61d0100cb51d406b5a47b",
+      "size": 394,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/238f615fd8eca1d05de61d0100cb51d406b5a47b"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-investment-plays-haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7347a8b8873fec9342f3d020bf7c362f96d42c66",
+      "size": 396,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7347a8b8873fec9342f3d020bf7c362f96d42c66"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-investment-plays-opus.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d4d72a2457fe55ac2d8c2e7e95c7ea519e1393f",
+      "size": 392,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0d4d72a2457fe55ac2d8c2e7e95c7ea519e1393f"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-investment-plays-sonnet.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "189ae1e7721825b12c8cebfa2c8cee2bb48ec6b9",
+      "size": 397,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/189ae1e7721825b12c8cebfa2c8cee2bb48ec6b9"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-market-agent-haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a15e11b88cd2dd41716997ebcdb017a6e2565d72",
+      "size": 303,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/a15e11b88cd2dd41716997ebcdb017a6e2565d72"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-market-agent-opus.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "213575b30b9f5988694bb437c4380fdd1cfee3e2",
+      "size": 299,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/213575b30b9f5988694bb437c4380fdd1cfee3e2"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-market-agent-sonnet.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "06b30add320d112e6387a184e6606773dc1dce88",
+      "size": 304,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/06b30add320d112e6387a184e6606773dc1dce88"
+    },
+    {
+      "path": ".claude/agents/crypto/crypto-movers-haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6406d09d27632d04f99ab7ced2d355c3ecdb5e8",
+      "size": 285,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/e6406d09d27632d04f99ab7ced2d355c3ecdb5e8"
+    },
+    {
+      "path": ".claude/agents/crypto/macro-crypto-correlation-scanner-haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "00e14cb75ac071e22bfccb5001e73e9bbbbfa924",
+      "size": 406,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/00e14cb75ac071e22bfccb5001e73e9bbbbfa924"
+    },
+    {
+      "path": ".claude/agents/crypto/macro-crypto-correlation-scanner-opus.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d59aaf2c0e66a00570255e58c2d0684d46f02fd2",
+      "size": 402,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d59aaf2c0e66a00570255e58c2d0684d46f02fd2"
+    },
+    {
+      "path": ".claude/agents/crypto/macro-crypto-correlation-scanner-sonnet.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "540160f63a58e26f159df86032d83e8824dda7d5",
+      "size": 407,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/540160f63a58e26f159df86032d83e8824dda7d5"
+    },
+    {
+      "path": ".claude/agents/hello-world-agent.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e92418246e82249083fc0d318f2bd22319e69dd7",
+      "size": 641,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/e92418246e82249083fc0d318f2bd22319e69dd7"
+    },
+    {
+      "path": ".claude/agents/llm-ai-agents-and-eng-research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d0718d1f3519a0a79ffe87726e0cd770c592233b",
+      "size": 3272,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d0718d1f3519a0a79ffe87726e0cd770c592233b"
+    },
+    {
+      "path": ".claude/agents/meta-agent.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "150dee1c6937bd8fc4b99601aa406788ff146c2b",
+      "size": 3371,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/150dee1c6937bd8fc4b99601aa406788ff146c2b"
+    },
+    {
+      "path": ".claude/agents/team",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "582d6834024c3ba2e39d8263e44b5891b3ea9f10",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/582d6834024c3ba2e39d8263e44b5891b3ea9f10"
+    },
+    {
+      "path": ".claude/agents/team/builder.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a1a5d00dac8292254e2711777662763ba43a3894",
+      "size": 1973,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/a1a5d00dac8292254e2711777662763ba43a3894"
+    },
+    {
+      "path": ".claude/agents/team/validator.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28ac085369c96e59257adc73169d810920e81724",
+      "size": 1769,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/28ac085369c96e59257adc73169d810920e81724"
+    },
+    {
+      "path": ".claude/agents/work-completion-summary.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c445a09cd36b436c6bf7f6b72eb66f526a8c8c6",
+      "size": 2395,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7c445a09cd36b436c6bf7f6b72eb66f526a8c8c6"
+    },
+    {
+      "path": ".claude/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e3a2f5e4f0e5890781893373b85f5d8d42cf190c",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/e3a2f5e4f0e5890781893373b85f5d8d42cf190c"
+    },
+    {
+      "path": ".claude/commands/agent_prompts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "3bc93d5356bbd36f19ac26867fbcc8aa90972ae1",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/3bc93d5356bbd36f19ac26867fbcc8aa90972ae1"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_coin_analyzer_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "feb6fa4967aceaa7e838cb32b4dc7ebace8fbe93",
+      "size": 3300,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/feb6fa4967aceaa7e838cb32b4dc7ebace8fbe93"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_investment_plays_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0a19e28dbb50f8c7756f59f35f061e26b3af63ec",
+      "size": 5117,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0a19e28dbb50f8c7756f59f35f061e26b3af63ec"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_market_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1f4e6f8266f036a364015fd9bbc60d706f853ab6",
+      "size": 2660,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/1f4e6f8266f036a364015fd9bbc60d706f853ab6"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_movers_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "43d69ecb290b3bca29df5d9b38a63a9b16b9fc82",
+      "size": 944,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/43d69ecb290b3bca29df5d9b38a63a9b16b9fc82"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_news_scanner_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ff511ec9d55f54c984fb2306443395f6203f9472",
+      "size": 891,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ff511ec9d55f54c984fb2306443395f6203f9472"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/crypto_price_check_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47dcdc42deca5b138cf09fb1d86c867901b74e0d",
+      "size": 936,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/47dcdc42deca5b138cf09fb1d86c867901b74e0d"
+    },
+    {
+      "path": ".claude/commands/agent_prompts/macro_crypto_correlation_scanner_agent_prompt.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23b5b022b68049e416e4c48e17735579312bad19",
+      "size": 3988,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/23b5b022b68049e416e4c48e17735579312bad19"
+    },
+    {
+      "path": ".claude/commands/all_tools.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d86f8c789a10cb74069aba25ee47428f5fb16b95",
+      "size": 247,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d86f8c789a10cb74069aba25ee47428f5fb16b95"
+    },
+    {
+      "path": ".claude/commands/build.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f2fd1cd94cc6abe746b9f267bffcfa790bfbfa65",
+      "size": 492,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/f2fd1cd94cc6abe746b9f267bffcfa790bfbfa65"
+    },
+    {
+      "path": ".claude/commands/cook.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0789de6edada9b1f2b7738d4cdc1c3cecb2a851c",
+      "size": 772,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0789de6edada9b1f2b7738d4cdc1c3cecb2a851c"
+    },
+    {
+      "path": ".claude/commands/cook_research_only.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a606b408543b52662b4e76c7c0f258469316386",
+      "size": 638,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7a606b408543b52662b4e76c7c0f258469316386"
+    },
+    {
+      "path": ".claude/commands/crypto_research.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02d8509cc47f176d311e20b9912e1c8134ffd907",
+      "size": 3569,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/02d8509cc47f176d311e20b9912e1c8134ffd907"
+    },
+    {
+      "path": ".claude/commands/crypto_research_haiku.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "55447986bdb6b9c8284cf4edfc6593bcd1afdaf8",
+      "size": 2785,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/55447986bdb6b9c8284cf4edfc6593bcd1afdaf8"
+    },
+    {
+      "path": ".claude/commands/git_status.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34d7d4c7a88836add8f776256b28495997cc4db7",
+      "size": 367,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/34d7d4c7a88836add8f776256b28495997cc4db7"
+    },
+    {
+      "path": ".claude/commands/plan.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fbb97e84a05b581ff12d6cb3dc8a3cb8d5535558",
+      "size": 4938,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/fbb97e84a05b581ff12d6cb3dc8a3cb8d5535558"
+    },
+    {
+      "path": ".claude/commands/plan_w_team.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c32a5138b8d3996451fa36993f45ffc96f953a4e",
+      "size": 14297,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/c32a5138b8d3996451fa36993f45ffc96f953a4e"
+    },
+    {
+      "path": ".claude/commands/prime.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3d05930b7e6952793020d7cd5cd1fd24c6d3ad35",
+      "size": 631,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/3d05930b7e6952793020d7cd5cd1fd24c6d3ad35"
+    },
+    {
+      "path": ".claude/commands/prime_tts.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "da6de4ca334f4ba0d984911365ced44bcce7f14a",
+      "size": 844,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/da6de4ca334f4ba0d984911365ced44bcce7f14a"
+    },
+    {
+      "path": ".claude/commands/question.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "61d3b9d3dadbb8af766a5a8ca9546216186387e3",
+      "size": 1302,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/61d3b9d3dadbb8af766a5a8ca9546216186387e3"
+    },
+    {
+      "path": ".claude/commands/sentient.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4436d9fa2c1175808c791d0177a8cf72a2694a61",
+      "size": 388,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/4436d9fa2c1175808c791d0177a8cf72a2694a61"
+    },
+    {
+      "path": ".claude/commands/update_status_line.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "19c655b3939cc0052b6fa311641ffeb1e687716a",
+      "size": 1428,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/19c655b3939cc0052b6fa311641ffeb1e687716a"
+    },
+    {
+      "path": ".claude/hooks",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "83f3c70b78d0c453d51563f678f82297504cece9",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/83f3c70b78d0c453d51563f678f82297504cece9"
+    },
+    {
+      "path": ".claude/hooks/notification.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "7312cc2de6bd08f70d797ee338f7e6300eed1d10",
+      "size": 4063,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7312cc2de6bd08f70d797ee338f7e6300eed1d10"
+    },
+    {
+      "path": ".claude/hooks/permission_request.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "07b2d8d7fe4bc0d0ec10a03d1caf6d2e1af5047f",
+      "size": 7915,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/07b2d8d7fe4bc0d0ec10a03d1caf6d2e1af5047f"
+    },
+    {
+      "path": ".claude/hooks/post_tool_use.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "81a6e82be6349eaabd939ceb720830c5e66408e2",
+      "size": 1234,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/81a6e82be6349eaabd939ceb720830c5e66408e2"
+    },
+    {
+      "path": ".claude/hooks/post_tool_use_failure.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "719fe52112f7968c4177fc532ee176a550e937d8",
+      "size": 2374,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/719fe52112f7968c4177fc532ee176a550e937d8"
+    },
+    {
+      "path": ".claude/hooks/pre_compact.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "33e076ab0cef43c05d20bc4fac8e775bbb8431f9",
+      "size": 3941,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/33e076ab0cef43c05d20bc4fac8e775bbb8431f9"
+    },
+    {
+      "path": ".claude/hooks/pre_tool_use.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "13962f9a46ebaa475ac9e21e53847a4915a9d01e",
+      "size": 5145,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/13962f9a46ebaa475ac9e21e53847a4915a9d01e"
+    },
+    {
+      "path": ".claude/hooks/session_end.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "16855adfd5733c0a893c580840953d3dc879fcbe",
+      "size": 4063,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/16855adfd5733c0a893c580840953d3dc879fcbe"
+    },
+    {
+      "path": ".claude/hooks/session_start.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "54fb6e65b7532a80e2c1087a22184577c70e78d8",
+      "size": 6629,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/54fb6e65b7532a80e2c1087a22184577c70e78d8"
+    },
+    {
+      "path": ".claude/hooks/setup.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "26fa11ee893504f8a060b693813153b8e453fd82",
+      "size": 10661,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/26fa11ee893504f8a060b693813153b8e453fd82"
+    },
+    {
+      "path": ".claude/hooks/stop.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "5940d245f15ab0fc5e9762f6f88b0f82f849fcc6",
+      "size": 7465,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/5940d245f15ab0fc5e9762f6f88b0f82f849fcc6"
+    },
+    {
+      "path": ".claude/hooks/subagent_start.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "e1a7ea140b9bfdf9b41ccaa171515b964aa75778",
+      "size": 4962,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/e1a7ea140b9bfdf9b41ccaa171515b964aa75778"
+    },
+    {
+      "path": ".claude/hooks/subagent_stop.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9246c29e849e601c959444a41ea68944782a4c06",
+      "size": 10803,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/9246c29e849e601c959444a41ea68944782a4c06"
+    },
+    {
+      "path": ".claude/hooks/user_prompt_submit.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "63129cb219a14c80b15366e9528d59b5b75e1a5b",
+      "size": 6424,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/63129cb219a14c80b15366e9528d59b5b75e1a5b"
+    },
+    {
+      "path": ".claude/hooks/utils",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2cb6f7cc907e7ec4ead63b2ab1f7cedd394e9d7d",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/2cb6f7cc907e7ec4ead63b2ab1f7cedd394e9d7d"
+    },
+    {
+      "path": ".claude/hooks/utils/llm",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f723cce240e22d6c26f03186446a0879b9825b93",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/f723cce240e22d6c26f03186446a0879b9825b93"
+    },
+    {
+      "path": ".claude/hooks/utils/llm/anth.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "172615cb68e033619be9b868eb8f60169ab674f5",
+      "size": 5760,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/172615cb68e033619be9b868eb8f60169ab674f5"
+    },
+    {
+      "path": ".claude/hooks/utils/llm/oai.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "da8aab86c8ca6d6d67493a8e69f0e97e70fb24ee",
+      "size": 5747,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/da8aab86c8ca6d6d67493a8e69f0e97e70fb24ee"
+    },
+    {
+      "path": ".claude/hooks/utils/llm/ollama.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "664f0f64e50d19134762bc88102381598e342e4c",
+      "size": 5637,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/664f0f64e50d19134762bc88102381598e342e4c"
+    },
+    {
+      "path": ".claude/hooks/utils/llm/task_summarizer.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cdba3beddcde6a15e10f38b3447fb4f9efe60cdd",
+      "size": 4898,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/cdba3beddcde6a15e10f38b3447fb4f9efe60cdd"
+    },
+    {
+      "path": ".claude/hooks/utils/tts",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b3e5db631c3ffcc2a81a71a6c6d9ad4365d092e8",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/b3e5db631c3ffcc2a81a71a6c6d9ad4365d092e8"
+    },
+    {
+      "path": ".claude/hooks/utils/tts/elevenlabs_tts.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9b5ddb294900a9f2738efcef22489926cfb82095",
+      "size": 2644,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/9b5ddb294900a9f2738efcef22489926cfb82095"
+    },
+    {
+      "path": ".claude/hooks/utils/tts/openai_tts.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ab8b22326c0dd561071d7405568123718cacc24c",
+      "size": 2684,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ab8b22326c0dd561071d7405568123718cacc24c"
+    },
+    {
+      "path": ".claude/hooks/utils/tts/pyttsx3_tts.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "7378aa03c180770b6d755865ad17334d07e3d1eb",
+      "size": 1997,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7378aa03c180770b6d755865ad17334d07e3d1eb"
+    },
+    {
+      "path": ".claude/hooks/utils/tts/tts_queue.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a11e69ea7b8a42b78c75ad58c9b9a42b6052f513",
+      "size": 8603,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/a11e69ea7b8a42b78c75ad58c9b9a42b6052f513"
+    },
+    {
+      "path": ".claude/hooks/validators",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e8eede03890f24fbcf1f0ee749506933b69d9f1c",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/e8eede03890f24fbcf1f0ee749506933b69d9f1c"
+    },
+    {
+      "path": ".claude/hooks/validators/ruff_validator.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "bae06e5754dca2a028785785f4af6078efc30b98",
+      "size": 3051,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/bae06e5754dca2a028785785f4af6078efc30b98"
+    },
+    {
+      "path": ".claude/hooks/validators/ty_validator.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "9d57d53fced4f899c53fac92187db3b731a72dc9",
+      "size": 3040,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/9d57d53fced4f899c53fac92187db3b731a72dc9"
+    },
+    {
+      "path": ".claude/hooks/validators/validate_file_contains.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "829ca7860dcc8023fdccd4a1a701ec544a29fe65",
+      "size": 10641,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/829ca7860dcc8023fdccd4a1a701ec544a29fe65"
+    },
+    {
+      "path": ".claude/hooks/validators/validate_new_file.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "c3a9161ce1787183dfa7af6dfe6f091dde30e0fd",
+      "size": 7152,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/c3a9161ce1787183dfa7af6dfe6f091dde30e0fd"
+    },
+    {
+      "path": ".claude/output-styles",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "574dd93237567c5588944a06812fec8270fbe287",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/574dd93237567c5588944a06812fec8270fbe287"
+    },
+    {
+      "path": ".claude/output-styles/bullet-points.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2330ea8a70ec8302592328a5e37c7febc54bd00f",
+      "size": 3561,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/2330ea8a70ec8302592328a5e37c7febc54bd00f"
+    },
+    {
+      "path": ".claude/output-styles/genui.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47e559ddbd463f917b802da2ba091009a81aed35",
+      "size": 5956,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/47e559ddbd463f917b802da2ba091009a81aed35"
+    },
+    {
+      "path": ".claude/output-styles/html-structured.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4be01a4c5160109347e42bb16e77d6c7cacfcd23",
+      "size": 2594,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/4be01a4c5160109347e42bb16e77d6c7cacfcd23"
+    },
+    {
+      "path": ".claude/output-styles/markdown-focused.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "62d3cd5cc494a11de86c79ff34d7e33ecd3a3c2c",
+      "size": 2248,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/62d3cd5cc494a11de86c79ff34d7e33ecd3a3c2c"
+    },
+    {
+      "path": ".claude/output-styles/table-based.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f9f5a7e7d3668fe2af4847f4301613df8c094dd",
+      "size": 1835,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/6f9f5a7e7d3668fe2af4847f4301613df8c094dd"
+    },
+    {
+      "path": ".claude/output-styles/tts-summary.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "de01bc7c0ea2fde7d5724b026ce0c64f0aac41f6",
+      "size": 2083,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/de01bc7c0ea2fde7d5724b026ce0c64f0aac41f6"
+    },
+    {
+      "path": ".claude/output-styles/ultra-concise.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28778661277c6b6ee8ac334dafb56dd4012258a9",
+      "size": 579,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/28778661277c6b6ee8ac334dafb56dd4012258a9"
+    },
+    {
+      "path": ".claude/output-styles/yaml-structured.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "37072c31a88e3c886a76c77c1d66902b217010d3",
+      "size": 1854,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/37072c31a88e3c886a76c77c1d66902b217010d3"
+    },
+    {
+      "path": ".claude/settings.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0fdfc223476fa4db24ef526043f295f5abe00eb4",
+      "size": 3572,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0fdfc223476fa4db24ef526043f295f5abe00eb4"
+    },
+    {
+      "path": ".claude/status_lines",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e1f2a0fe1da7a2f72795b41c300091d98378a324",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/e1f2a0fe1da7a2f72795b41c300091d98378a324"
+    },
+    {
+      "path": ".claude/status_lines/status_line.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ff90be304a7d01f827c3bc6ed9105e8e2f646a4f",
+      "size": 4147,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ff90be304a7d01f827c3bc6ed9105e8e2f646a4f"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v2.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "dc9911c14a2e0bb1fde763a8b74d64fb5f60cf40",
+      "size": 4794,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/dc9911c14a2e0bb1fde763a8b74d64fb5f60cf40"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v3.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "d93bb8b643aa34412340cf2a3002cdcfbd34a47d",
+      "size": 5481,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d93bb8b643aa34412340cf2a3002cdcfbd34a47d"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v4.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "74075467059adf9e140719f07e4f7d6849709709",
+      "size": 5723,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/74075467059adf9e140719f07e4f7d6849709709"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v5.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "ba5c58fed4377050aa797582522590218f1f1220",
+      "size": 3237,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ba5c58fed4377050aa797582522590218f1f1220"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v6.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "82196d5ef9e1c2393ba71b77788ff3a673cace42",
+      "size": 3548,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/82196d5ef9e1c2393ba71b77788ff3a673cace42"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v7.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "b7b5dd2a2b74354674a7740c5858af3b7baaa389",
+      "size": 4550,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/b7b5dd2a2b74354674a7740c5858af3b7baaa389"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v8.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0408e9e0de2cdb0a8d33daca70dbb0eaa97e7b0c",
+      "size": 3081,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0408e9e0de2cdb0a8d33daca70dbb0eaa97e7b0c"
+    },
+    {
+      "path": ".claude/status_lines/status_line_v9.py",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "98b16300fd1b701da08f4ce46a594980691592bb",
+      "size": 4903,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/98b16300fd1b701da08f4ce46a594980691592bb"
+    },
+    {
+      "path": ".env.sample",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1b0721e97aa9efceac4cb993d2f8f55330fec130",
+      "size": 152,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/1b0721e97aa9efceac4cb993d2f8f55330fec130"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "79053c56dacfac6a87b699fa7e0a91991c0f5148",
+      "size": 1198,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/79053c56dacfac6a87b699fa7e0a91991c0f5148"
+    },
+    {
+      "path": ".mcp.json.sample",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f510341758286bad0890913755e6a87f8adfb99",
+      "size": 198,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0f510341758286bad0890913755e6a87f8adfb99"
+    },
+    {
+      "path": "CLAUDE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0adccd1a273c80cfb634048f47fa308fc3120c66",
+      "size": 41392,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0adccd1a273c80cfb634048f47fa308fc3120c66"
+    },
+    {
+      "path": "ai_docs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "741d845028f2cc597399611617cdd86035854631",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/741d845028f2cc597399611617cdd86035854631"
+    },
+    {
+      "path": "ai_docs/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1cf157ac0697f7ae8c353d635e456ebafb52dcd9",
+      "size": 375,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/1cf157ac0697f7ae8c353d635e456ebafb52dcd9"
+    },
+    {
+      "path": "ai_docs/claude_code_hooks_docs.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f85c3bb5779c5d44902a706e5bb408eb378f5de8",
+      "size": 55707,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/f85c3bb5779c5d44902a706e5bb408eb378f5de8"
+    },
+    {
+      "path": "ai_docs/claude_code_hooks_getting_started.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dce2460566d77135df2ce62e8567c56f0f3998f4",
+      "size": 13550,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/dce2460566d77135df2ce62e8567c56f0f3998f4"
+    },
+    {
+      "path": "ai_docs/claude_code_status_lines_docs.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6eae8f4364f6253b4d5a8f82a8d96c087762e076",
+      "size": 11171,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/6eae8f4364f6253b4d5a8f82a8d96c087762e076"
+    },
+    {
+      "path": "ai_docs/claude_code_subagents_docs.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dfe20f773328b7d4115cd6ed405ba3d560e90eb5",
+      "size": 39077,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/dfe20f773328b7d4115cd6ed405ba3d560e90eb5"
+    },
+    {
+      "path": "ai_docs/legacy",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "527c0d6086c123bfc6e5de99bcf584941f0438d5",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/527c0d6086c123bfc6e5de99bcf584941f0438d5"
+    },
+    {
+      "path": "ai_docs/legacy/anthropic_custom_slash_commands.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4a8a04d3f6b4d5ed34a9534b5519b6773652f86f",
+      "size": 9799,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/4a8a04d3f6b4d5ed34a9534b5519b6773652f86f"
+    },
+    {
+      "path": "ai_docs/legacy/anthropic_docs_subagents.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "717853d3b517a00337b544bd6ad4ab57df26ade0",
+      "size": 11804,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/717853d3b517a00337b544bd6ad4ab57df26ade0"
+    },
+    {
+      "path": "ai_docs/legacy/anthropic_output_styles.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ed82308232233193b9342b3a82e9269678de3e93",
+      "size": 3648,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ed82308232233193b9342b3a82e9269678de3e93"
+    },
+    {
+      "path": "ai_docs/legacy/anthropic_quick_start.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d3e7471279b687ca7bf779102042a84419bad3b4",
+      "size": 6655,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d3e7471279b687ca7bf779102042a84419bad3b4"
+    },
+    {
+      "path": "ai_docs/legacy/cc_hooks_docs.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3bf077063ee934535741eef5e60486bce263f944",
+      "size": 9497,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/3bf077063ee934535741eef5e60486bce263f944"
+    },
+    {
+      "path": "ai_docs/legacy/cc_hooks_v0_repomix.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ee88eb241fd4b00c306d1f0a62c0c34a801a50ee",
+      "size": 72551,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ee88eb241fd4b00c306d1f0a62c0c34a801a50ee"
+    },
+    {
+      "path": "ai_docs/legacy/openai_quick_start.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47dc5049774c41ed30def24d943fdef4ecf61ed4",
+      "size": 9417,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/47dc5049774c41ed30def24d943fdef4ecf61ed4"
+    },
+    {
+      "path": "ai_docs/legacy/user_prompt_submit_hook.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ca42c2f4a352625d48e623de300b0c484c449d0e",
+      "size": 10561,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ca42c2f4a352625d48e623de300b0c484c449d0e"
+    },
+    {
+      "path": "ai_docs/legacy/uv-single-file-scripts.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7da89ac90b827e0a7106de2e0d7d56c704f86e58",
+      "size": 4132,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/7da89ac90b827e0a7106de2e0d7d56c704f86e58"
+    },
+    {
+      "path": "apps",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4cb34836ab69038c11426a2c7380bc741610d3b7",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/4cb34836ab69038c11426a2c7380bc741610d3b7"
+    },
+    {
+      "path": "apps/hello.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "258c35f619766f7f558630c4d66aebde882c4795",
+      "size": 136,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/258c35f619766f7f558630c4d66aebde882c4795"
+    },
+    {
+      "path": "apps/hello.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ad86b2ec3f95de5c9c251e64627cabb849332eb1",
+      "size": 21,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ad86b2ec3f95de5c9c251e64627cabb849332eb1"
+    },
+    {
+      "path": "apps/task-manager",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "cb34ca69e2fa28d042fffcaa454a35da5a74b1b0",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/cb34ca69e2fa28d042fffcaa454a35da5a74b1b0"
+    },
+    {
+      "path": "apps/task-manager/bun.lock",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4255392fe2f97ac60687542bca1f096cb0720428",
+      "size": 4587,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/4255392fe2f97ac60687542bca1f096cb0720428"
+    },
+    {
+      "path": "apps/task-manager/package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be3ace4efc8bf5272cd21fef531eb5413a21eb30",
+      "size": 365,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/be3ace4efc8bf5272cd21fef531eb5413a21eb30"
+    },
+    {
+      "path": "apps/task-manager/src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "75886cada943809cb7163452db0b5ec52818fcab",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/75886cada943809cb7163452db0b5ec52818fcab"
+    },
+    {
+      "path": "apps/task-manager/src/commands",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "973a85263d7ca41db212da95504a78f3ac7d38ba",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/973a85263d7ca41db212da95504a78f3ac7d38ba"
+    },
+    {
+      "path": "apps/task-manager/src/commands/add.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "895c13d6c3d6f2413462f8fe48efed3e2c99e5c7",
+      "size": 2176,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/895c13d6c3d6f2413462f8fe48efed3e2c99e5c7"
+    },
+    {
+      "path": "apps/task-manager/src/commands/complete.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae1563e7b25a1be92c156de6e71daaca9f8397a5",
+      "size": 2078,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ae1563e7b25a1be92c156de6e71daaca9f8397a5"
+    },
+    {
+      "path": "apps/task-manager/src/commands/delete.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "06f6890542003b2e9cfc13c6ba3d9000ba2d62df",
+      "size": 2123,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/06f6890542003b2e9cfc13c6ba3d9000ba2d62df"
+    },
+    {
+      "path": "apps/task-manager/src/commands/list.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "46dbf1557f191bb24720a0871922ecab2fe22a7d",
+      "size": 2474,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/46dbf1557f191bb24720a0871922ecab2fe22a7d"
+    },
+    {
+      "path": "apps/task-manager/src/commands/stats.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ddbfb6c6e1ae39d8ddf9be316d4dffd6d987c271",
+      "size": 627,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ddbfb6c6e1ae39d8ddf9be316d4dffd6d987c271"
+    },
+    {
+      "path": "apps/task-manager/src/db",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "145ed43c7262ef45b00e2b9c7de8f971ad7d97a8",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/145ed43c7262ef45b00e2b9c7de8f971ad7d97a8"
+    },
+    {
+      "path": "apps/task-manager/src/db/database.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dddaa749c4150a152cda93abeea69961facfeba2",
+      "size": 1538,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/dddaa749c4150a152cda93abeea69961facfeba2"
+    },
+    {
+      "path": "apps/task-manager/src/db/migrations.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "79ffbc24750199345b0824aed0a580d1fc4a179d",
+      "size": 980,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/79ffbc24750199345b0824aed0a580d1fc4a179d"
+    },
+    {
+      "path": "apps/task-manager/src/db/repository.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ace7414a425ac8f5deb69b557c0a1abe3328fb95",
+      "size": 8865,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ace7414a425ac8f5deb69b557c0a1abe3328fb95"
+    },
+    {
+      "path": "apps/task-manager/src/index.ts",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "4ba4e52d2217bf31ce40de69e65024f7316a8bb3",
+      "size": 1076,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/4ba4e52d2217bf31ce40de69e65024f7316a8bb3"
+    },
+    {
+      "path": "apps/task-manager/src/types.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df7a4d05a7500efd306e592c0655488fe2c8fb88",
+      "size": 2148,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/df7a4d05a7500efd306e592c0655488fe2c8fb88"
+    },
+    {
+      "path": "apps/task-manager/src/utils",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e83a1eccf375a7eda696bdb4bd27eec51ff6649e",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/e83a1eccf375a7eda696bdb4bd27eec51ff6649e"
+    },
+    {
+      "path": "apps/task-manager/src/utils/formatter.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae33c406626054098f283836b97875d07acdd7a2",
+      "size": 7370,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/ae33c406626054098f283836b97875d07acdd7a2"
+    },
+    {
+      "path": "apps/task-manager/src/utils/validation.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "80e67f13c182b9bcfab5dced7c12820b9fc0d688",
+      "size": 5320,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/80e67f13c182b9bcfab5dced7c12820b9fc0d688"
+    },
+    {
+      "path": "apps/task-manager/tsconfig.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5325dd4a0dcc733f142cacc56e90afd70a3fd304",
+      "size": 503,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/5325dd4a0dcc733f142cacc56e90afd70a3fd304"
+    },
+    {
+      "path": "images",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bbdb630f0a5fe03b8041e308c3cd2f0e83d83d10",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/bbdb630f0a5fe03b8041e308c3cd2f0e83d83d10"
+    },
+    {
+      "path": "images/SubAgentChain.gif",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0792b475535b18e9e65e6d4f0dade5319923a522",
+      "size": 321026,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/0792b475535b18e9e65e6d4f0dade5319923a522"
+    },
+    {
+      "path": "images/SubAgentFlow.gif",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f6557ef46bd1318e9e3446a6ac4165c49ee3f777",
+      "size": 278716,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/f6557ef46bd1318e9e3446a6ac4165c49ee3f777"
+    },
+    {
+      "path": "images/cctask.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c2c6f73c6ebef97a759f976170f278796872d33",
+      "size": 1026675,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/6c2c6f73c6ebef97a759f976170f278796872d33"
+    },
+    {
+      "path": "images/genui.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2b82d4aafdeed4a4c8d3fa9134a83952285fb0e3",
+      "size": 983697,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/2b82d4aafdeed4a4c8d3fa9134a83952285fb0e3"
+    },
+    {
+      "path": "images/hooked.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a5ee236770ea3a80f1e9313d6b862b2f7e6f3f46",
+      "size": 852801,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/a5ee236770ea3a80f1e9313d6b862b2f7e6f3f46"
+    },
+    {
+      "path": "images/subagents.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28fff60db9fa0f4711e3aae84ae7ba75e345fc5f",
+      "size": 1003067,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/28fff60db9fa0f4711e3aae84ae7ba75e345fc5f"
+    },
+    {
+      "path": "ruff.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16f80427bd474fcdb852a21632db6d69bc957b3e",
+      "size": 99,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/16f80427bd474fcdb852a21632db6d69bc957b3e"
+    },
+    {
+      "path": "specs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "8c6954d14f74bdd1dd14745b596a3b71413c2ce2",
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/trees/8c6954d14f74bdd1dd14745b596a3b71413c2ce2"
+    },
+    {
+      "path": "specs/bun-cli-task-manager.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "673556ecc3c026fda6bc2bd651dc1ccecb5c84a0",
+      "size": 14230,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/673556ecc3c026fda6bc2bd651dc1ccecb5c84a0"
+    },
+    {
+      "path": "specs/hooks-update-with-team.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d4e5df8935c7096a06d1cad75589fcef33df88ed",
+      "size": 16582,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d4e5df8935c7096a06d1cad75589fcef33df88ed"
+    },
+    {
+      "path": "specs/subagent-tts-summary-queue.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b12c52894ac261fac0eafe5a4de45f0b8e105968",
+      "size": 15144,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/b12c52894ac261fac0eafe5a4de45f0b8e105968"
+    },
+    {
+      "path": "ty.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d97f3c3562e6f21dbe4a25de45e188e9f63be13f",
+      "size": 298,
+      "url": "https://api.github.com/repos/disler/claude-code-hooks-mastery/git/blobs/d97f3c3562e6f21dbe4a25de45e188e9f63be13f"
+    }
+  ],
+  "truncated": false
+}

@@ -28,6 +28,32 @@ export default async function RepositoryPage({ params }: Props) {
   if (!found) notFound();
 
   const { repository, packages } = found;
+
+  // Every artifact here, listed or not. COR-07's other half: a suppressed
+  // artifact stays reachable at its own URL, and the page that still shows it is
+  // the page that owes the reader an explanation.
+  const notListed = packages.filter((p) => p.notListedBecause !== null);
+  const byReason = {
+    fork: notListed.filter((p) => p.notListedBecause === 'fork').length,
+    duplicate: notListed.filter((p) => p.notListedBecause === 'duplicate').length,
+    unparsed: notListed.filter((p) => p.notListedBecause === 'unparsed').length,
+  };
+  // Says where the artifact is, or what AgentDock did, never what it is worth.
+  // "A fork on GitHub" is a location. "Byte-identical to" is a measurement.
+  // "AgentDock could not read" is a verb of observation about AgentDock, not a
+  // judgment about the file. None of it implies an excluded artifact is worse
+  // than an included one, and none of it uses a word from the rule 6 list.
+  const reasons = [
+    byReason.fork > 0
+      ? `${byReason.fork} ${byReason.fork === 1 ? 'is' : 'are'} in a fork of another repository`
+      : null,
+    byReason.duplicate > 0
+      ? `${byReason.duplicate} ${byReason.duplicate === 1 ? 'is' : 'are'} byte-identical to an artifact AgentDock already lists`
+      : null,
+    byReason.unparsed > 0
+      ? `${byReason.unparsed} ${byReason.unparsed === 1 ? 'has' : 'have'} a file whose frontmatter AgentDock could not read`
+      : null,
+  ].filter((line) => line !== null);
   // What AgentDock is currently doing about this repository. A succeeded job
   // adds nothing the timestamp below does not already say, so only an unfinished
   // or failed one is linked.
@@ -49,6 +75,9 @@ export default async function RepositoryPage({ params }: Props) {
         <span>{repository.stars} GitHub stars</span>
         <span>Licence, detected by GitHub: {repository.licenseSpdx ?? 'not detected'}</span>
         {repository.isArchived ? <span>Archived on GitHub</span> : null}
+        {/* Same register as the archived disclosure beside it: a fact GitHub
+            reports about where this repository is, not a claim about it. */}
+        {repository.isFork ? <span>A fork on GitHub</span> : null}
       </p>
       <p className="row-meta">
         <span>
@@ -79,6 +108,16 @@ export default async function RepositoryPage({ params }: Props) {
       <h2>
         {packages.length} skill{packages.length === 1 ? '' : 's'}
       </h2>
+      {/* Nothing at all when the count is zero. A line reading "0 of these are
+          not in AgentDock's listings" is noise on every well-formed repository,
+          which is most of them. */}
+      {notListed.length > 0 ? (
+        <p className="muted">
+          {notListed.length} of these {notListed.length === 1 ? 'is' : 'are'} on this page and not
+          in AgentDock&apos;s listings elsewhere: {reasons.join('; ')}. Each one is still readable
+          here.
+        </p>
+      ) : null}
       {packages.length === 0 ? (
         <p className="muted">AgentDock currently lists nothing from this repository.</p>
       ) : (

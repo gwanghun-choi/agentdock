@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DETECTORS } from './index';
-import { skill } from './skill';
+import { skill, toolTokens } from './skill';
 import type { Candidate, ParseResult, TreeEntry } from './types';
 
 const ROOT = 'fixtures';
@@ -228,6 +228,49 @@ describe('skill.parse — conformance is recorded, never enforced', () => {
     expect(isArtifact(wrongShape) && wrongShape.warnings.join(' ')).toContain(
       'allowed-tools is neither a string nor a list',
     );
+  });
+
+  // 05-05. A grant carrying an argument holds spaces, commas and colons inside
+  // its parentheses; splitting on /[\s,]+/ cut it into fragments that are not
+  // grants. Measured at 56 of 110 findings over the seven frozen corpora before
+  // the fix. Each case below is a real shape from that corpus.
+  it('splits allowed-tools on grant boundaries, not on whitespace inside a grant', () => {
+    const tokensOf = (raw: string) => toolTokens(raw);
+
+    // The corpus shape that produced the fragments: 6 grants, one with two
+    // interior spaces. The flat split returned 14.
+    expect(
+      tokensOf(
+        'Bash(git checkout --branch:*), Bash(git add:*), Bash(git status:*), ' +
+          'Bash(git push:*), Bash(git commit:*), Bash(gh pr create:*)',
+      ),
+    ).toEqual([
+      'Bash(git checkout --branch:*)',
+      'Bash(git add:*)',
+      'Bash(git status:*)',
+      'Bash(git push:*)',
+      'Bash(git commit:*)',
+      'Bash(gh pr create:*)',
+    ]);
+
+    // No space after the comma — also real, also two grants.
+    expect(tokensOf('Bash(./scripts/gh.sh:*),Bash(./scripts/edit-issue-labels.sh:*)')).toEqual([
+      'Bash(./scripts/gh.sh:*)',
+      'Bash(./scripts/edit-issue-labels.sh:*)',
+    ]);
+
+    // Unchanged shapes: bare names, a mixed whitespace/comma list, a coarse
+    // grant, and the list form. These tokenised correctly before the fix and
+    // must still, or the fix has traded one defect for another.
+    expect(tokensOf('Read, Grep, Bash(git:*)')).toEqual(['Read', 'Grep', 'Bash(git:*)']);
+    expect(tokensOf('Read Write, Bash')).toEqual(['Read', 'Write', 'Bash']);
+    expect(tokensOf('Bash(*)')).toEqual(['Bash(*)']);
+    expect(toolTokens(['Read', 'Bash(git add:*)'])).toEqual(['Read', 'Bash(git add:*)']);
+
+    // Nesting, and a stray ')' from malformed input: the clamp must not let
+    // depth go negative and disable splitting for the rest of the string.
+    expect(tokensOf('Bash(foo(bar baz):*), Read')).toEqual(['Bash(foo(bar baz):*)', 'Read']);
+    expect(tokensOf('add:*) , Read')).toEqual(['add:*)', 'Read']);
   });
 
   it('records the key set and the specification-purity flag on every artifact', async () => {

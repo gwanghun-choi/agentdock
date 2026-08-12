@@ -207,9 +207,29 @@ const SOURCE_RULES = [
 ];
 
 // ING-02, in auditable form: the hostnames AgentDock may contact appear in one
-// directory, so `git grep` answers "what can this reach" completely.
-const HOST_PATTERN = /api\.github\.com|raw\.githubusercontent\.com/;
-const HOST_DIR = 'src/github/';
+// directory each, so `git grep` answers "what can this reach" completely.
+//
+// A pair per host family, not one pattern: the third host arrived in Phase 5 and
+// the single hardcoded pattern did not match it, so a registry client written
+// anywhere would have passed this rule in silence. Adding a host means adding a
+// pair here — and the allowlist-coverage test in check-boundaries.test.ts fails
+// the build if a client grows a host that no pair covers.
+//
+// A directory registered before it exists is inert, not an error: sourceFiles
+// walks only what is on disk.
+/** @type {{ pattern: RegExp, dir: string, label: string }[]} */
+export const HOST_RULES = [
+  {
+    pattern: /api\.github\.com|raw\.githubusercontent\.com/,
+    dir: 'src/github/',
+    label: 'a GitHub host',
+  },
+  {
+    pattern: /registry\.modelcontextprotocol\.io/,
+    dir: 'src/registry/',
+    label: 'the MCP registry host',
+  },
+];
 
 /**
  * The files rule 5 inspects. Exported so the test-file exemption is checkable:
@@ -249,8 +269,10 @@ export function checkSourceBoundaries(path, text) {
   }
 
   const normalized = path.split(sep).join('/');
-  if (HOST_PATTERN.test(stripped) && !normalized.startsWith(HOST_DIR)) {
-    problems.push(`names a GitHub host outside ${HOST_DIR} (no-host-sprawl)`);
+  for (const { pattern, dir, label } of HOST_RULES) {
+    if (pattern.test(stripped) && !normalized.startsWith(dir)) {
+      problems.push(`names ${label} outside ${dir} (no-host-sprawl)`);
+    }
   }
 
   return problems;

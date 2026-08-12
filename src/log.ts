@@ -20,6 +20,21 @@ type IngestLog = {
   updated: number;
   unchanged: number;
   removed: number;
+  /**
+   * marketplace.json entries that named no GitHub-reachable repository — an npm
+   * source, an archive URL, or a relative path pointing inside the catalog's own
+   * repository. Counted by src/detect/catalog.ts since Phase 3 and, until Phase
+   * 5, discarded by the pipeline's seeds branch before it reached anything: that
+   * branch continues without ever reading result.warnings, so the count died one
+   * function after it was computed.
+   *
+   * A number, not a message: this type's key set is closed on purpose, and an
+   * integer with a documented provenance is what that decision permits. Emitted
+   * on every ingest line including as zero, because a field that appears only
+   * when non-zero makes its absence ambiguous between "no catalog" and "an older
+   * build".
+   */
+  seedsSkipped: number;
   truncated: boolean;
   durationMs: number;
   rateRemaining: number | null;

@@ -147,6 +147,79 @@ and changes no code. Two things worth knowing before reaching for one:
 
 The home page shows what was left after AgentDock's most recent request.
 
+## Filling the index from empty
+
+This is the whole cold start: an empty schema to a browsable catalog. It is
+written against `agentdock_test`, which is disposable, so you can run it exactly
+as printed without going near development data. Measured end to end on
+2026-08-11: **831 artifacts held and 678 in the listings, from nothing, in 106
+seconds and 6 core requests.**
+
+**No token is required.** Every number here is the unauthenticated baseline the
+project is designed for — 60 core requests an hour, two per repository.
+`GITHUB_TOKEN` is optional, needs no scopes, changes no code, and raises the
+ceiling to 5,000 an hour if you are in a hurry. Nothing below needs it.
+
+```bash
+# 1. Empty the test schema. Not db:test:setup — see the warning below.
+bun run db:test:reset
+#    agentdock_test: emptied 9 table(s); artifact_type, __drizzle_migrations kept.
+
+# 2. Write the operator seed list. No network at all; the file is committed.
+DATABASE_SCHEMA=agentdock_test bun run corpus:sync --source=seeds --no-enqueue
+#    corpus-sync: source=seeds in-file=15 written=15 dropped-by-cap=0 ...
+#    corpus-sync: listed=0 of held=0 artifact(s) ...
+
+# 3. Ingest three repositories. Six core requests, about two minutes.
+DATABASE_SCHEMA=agentdock_test bun run corpus:sync --source=seeds --enqueue=3 --drain=3
+#    {"event":"ingest","owner":"davila7",...,"found":402,"truncated":true,...}
+#    {"event":"ingest","owner":"wshobson",...,"found":383,...}
+#    {"event":"ingest","owner":"anthropics","repo":"claude-code",...,"found":46,...}
+#    corpus-sync: drained 3 job(s) of at most 3
+#    corpus-sync: listed=678 of held=831 artifact(s) ...
+
+# 4. Look at it. `listed` above is the number the home page renders.
+DATABASE_SCHEMA=agentdock_test bun run dev
+
+# 5. REQUIRED. Put the schema back before running the suite.
+bun run db:test:reset
+
+# 6. Prove it is back.
+bun run ci
+```
+
+**The two numbers.** `listed` is what the home page shows and what
+`countPackages()` returns; `held` is everything AgentDock stored. The difference
+is not loss — every held artifact is still readable at its own URL, on its
+repository's page, carrying the reason it is not in the listings (a fork, a
+byte-identical copy of something already listed, or a file whose frontmatter
+AgentDock could not read). If the two are equal, nothing has been suppressed.
+
+**Step 5 is required, and `db:test:setup` will not do it.** `db:test:setup` is
+`drizzle-kit generate` followed by `scripts/migrate.mjs`, and both are no-ops
+once the schema already matches `src/db/schema.ts` — it reports "already up to
+date" and leaves every row exactly where it was. Six vitest suites share
+`agentdock_test`, `claimJob` takes the oldest claimable row in the *whole*
+schema, and `jobs.test.ts` only cleans up its own `test-owner/queue-spec%`
+sentinels. One real repository name left behind in `ingest_job` therefore makes
+another suite's assertions nondeterministic, and the failure gets blamed on that
+suite. `bun run db:test:reset` is the step that actually empties it.
+
+**What it costs.** Two core requests per repository (metadata plus one recursive
+tree), sixty an hour unauthenticated, so about thirty repositories an hour. File
+bodies come from `raw.githubusercontent.com` and cost no quota. Wall clock, not
+quota, is what binds a single repository: `CAPS.wallClockMs` is 120 seconds at
+`CAPS.concurrency` 2, so a repository at the 400-file cap takes up to two
+minutes. `davila7/claude-code-templates` is one of those — it holds 1,300
+candidate paths against a cap of 400, so **900 go unread and it is permanently
+partial**, which its own page says.
+
+To fill the real `agentdock` schema instead, drop the `DATABASE_SCHEMA` prefix
+and repeat step 3 until `corpus-sync` reports `considered=0`. Each invocation is
+bounded by `CORPUS_CAPS.maxEnqueuePerSync` (25 repositories, 50 core requests)
+and prints what it left behind. Never run `db:test:reset` against it — it cannot
+reach `agentdock`, the schema name is a literal in the script.
+
 ## Fixtures
 
 `fixtures/` holds frozen GitHub responses for four real repositories, pinned to
@@ -178,7 +251,9 @@ so seeded rows are exactly what a live ingest would produce.
 | `bun run db:migrate` | Apply the reviewed migrations in `drizzle/` |
 | `bun run db:seed [fixture]` | Ingest a frozen fixture through the real pipeline |
 | `bun run db:reset --confirm` | Empty the `agentdock` schema |
-| `bun run db:test:setup` | Build the `agentdock_test` schema for database-backed tests |
+| `bun run db:test:setup` | Build the `agentdock_test` schema for database-backed tests. Applies DDL only — a no-op once the schema matches, and it deletes **no** rows. |
+| `bun run db:test:reset` | Empty every data table in `agentdock_test`, keeping the DDL and `artifact_type`. The schema name is a literal in the script and it takes no argument, so it cannot reach `agentdock`. |
+| `bun run corpus:sync --source=...` | Acquire seeds from one corpus source, fan them out under a cap, optionally drain some. See [Filling the index from empty](#filling-the-index-from-empty). |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
 | `bun run analyze:backfill [limit]` | Re-run the capability analyzers over every stored `package_version` with `analyzed_at` still null — reads stored bytes only, issues no GitHub request. Needs a database; deliberately not part of `ci`. Default limit 500. |
 | `bun run verify:worker` | Start a built server, make no request, and assert a pre-seeded job still ran. Needs a database and a build; deliberately not part of `ci`. |
@@ -260,6 +335,13 @@ read or destroy development data. `agentdock_app` cannot create schemas, so
 db:test:setup` applies the current schema definitions to it, writing its
 generated SQL into the git-ignored `.drizzle-test/` so it can never be confused
 with the reviewed migrations in `drizzle/`.
+
+`db:test:setup` applies **DDL only**. Once the schema matches `src/db/schema.ts`
+it is a no-op that reports "already up to date" and deletes nothing, so it is not
+a way to empty the schema. `bun run db:test:reset` is — and anything that leaves
+a row behind for a real repository name has to use it, because `claimJob` takes
+the oldest claimable row in the whole schema and each suite only cleans up its
+own sentinels.
 
 Vitest runs test **files in parallel** against that one schema. A database-backed
 suite must therefore key its rows on a sentinel no other suite can produce — for

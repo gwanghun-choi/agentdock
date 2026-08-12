@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: planning
 progress:
   total_phases: 9
-  completed_phases: 5
-  total_plans: 32
-  completed_plans: 22
-  percent: 69
+  completed_phases: 6
+  total_plans: 34
+  completed_plans: 27
+  percent: 79
 ---
 
 # Project State
@@ -16,16 +16,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-10)
 
 **Core value:** A developer who needs a specific agent capability can find a trustworthy, current artifact in one search — and can see what it will actually do to their machine before installing it.
-**Current focus:** Phase 5 — Corpus & Cold Start (not yet planned)
+**Current focus:** Phase 6 — Search & Browse (not yet planned)
 
 ## Current Position
 
-Phase: 4 of 9 complete (Capability Disclosure)
-Plan: 4 of 4 in Phase 4
-Status: Phase 4 complete and verified — ready to plan Phase 5
-Last activity: 2026-08-11 — Phase 4 executed. A detail page now carries a file inventory with the executable bit, a two-section capability panel (declared by the author / observed in the file text), a hidden-content panel with visible sentinels, and a permanent "What AgentDock does not check" block. Every finding links to its exact line at the pinned commit — verified live: `anthropics/skills` `skills/xlsx/SKILL.md#L16` returns HTTP 200 and the stored evidence matches that GitHub line byte-for-byte. CAP-10 is enforced mechanically by a sixth `check-boundaries` rule that fails CI on a verdict word in UI copy; demonstrated by injecting "verified and safe", watching CI fail, and removing it. ROADMAP's CAP-13 kill switch fired three times and deleted three detectors on measured evidence — the naive HTML-comment pattern at 26/26 false positives (25 of them inside fenced code blocks), a hidden-styled-HTML class at 1/1, and a credentials pilot whose 27 hits were all defensive prose.
+Phase: 5 of 9 complete (Corpus & Cold Start)
+Plan: 5 of 5 in Phase 5
+Status: Phase 5 complete and verified — ready to plan Phase 6
+Last activity: 2026-08-12 — Phase 5 executed in five sequential waves, adding **zero migrations**: every storage need was already satisfied by an existing column, and seed state is derived by joining `repo_seed.full_name` to `ingest_job`/`repository` rather than stored, so it cannot drift. The index now holds **1,137 packages across 16 repositories, 921 of them listed**, with all six artifact types present — acquired from the MCP registry, an operator seed list, catalog fan-out and curated-link expansion, and no crawler. COR-07 verified end to end: a suppressed package is absent from `listPackages` yet present on its own repository detail page. The cold start reproduces from an empty `agentdock_test` in 105.9 s and 6 core requests, clearing the 500-artifact floor from nothing.
 
-Progress: [███████░░░] 69%
+Every wave falsified a plan claim by running it rather than reading it — five in total, each fixed with a regression test: a registry watermark that would have permanently skipped part of the name space; a global seed ordering needing 11.1 days of quota to reach the operator's own seeds; a floor predicate that would have cut the listing to 469, below COR-06's own floor, by treating `partial` as failure; `bun run db:test:setup`, used by the plan as both "empty the schema" and "restore it", which empties nothing; and a fixture capture filter that would have logged a second fabricated "absence of data" for `allowed-tools`.
+
+Progress: [████████░░] 79%
 
 ## Performance Metrics
 
@@ -66,16 +68,21 @@ Progress: [███████░░░] 69%
 |---------|--------|-------|
 | ~~Database role decision~~ | — | **RESOLVED 2026-08-10.** Branch A approved and applied: `agentdock_app` created as a non-superuser owning only `agentdock` and `agentdock_test`. Isolation verified 7/7. |
 
-### Carried into Phase 5
+### Carried into Phase 6
 
 | Item | Note |
 |------|------|
-| The disclosure panel is reachable only for `skill` artifacts | `sourcePathFromUrl` in `src/db/queries/packages.ts` hardcodes `SKILL.md`, so a plugin, MCP, command or hook package has no detail URL that resolves. Findings ARE computed and stored for every artifact with a body — only the page is unreachable. CAP-01..14 do not require the other five, so it was left and recorded rather than widened silently. |
-| `install` sits at 10%, not the 5% first recorded | Re-labelled during phase verification: the first hand-check missed a negated instruction (`"preinstalled — do not run npm install first"`), which the procedure explicitly defines as a negative. The negation class is systematic, not a one-off. Still under the 20% kill line, so it ships. |
-| `install`'s 13 `npx <tool>` hits are scored positive on an argued reading | `npx tsc --noEmit` runs a tool rather than installing one; they count as positives because `npx` fetches from the registry before executing. If that reading is ever rejected the rate goes to 75% and the detector dies. Recorded in `fixtures/capability-precision.md` so the decision is visible. |
-| `network_request` is the closest shipped margin at 15% | Both false positives are on one line, and both come from a same-line rule rather than a verb-adjacent-to-URL rule. A tighter rule is a different claim needing its own twenty hits. |
-| `declaredCapabilities` and `observedRemoteExecution` have zero real-world instances | `allowed-tools` appears zero times across the four frozen corpora, and no `curl \| sh` shape exists in them either. Both ship validated only against hand-written fixtures; their 0% is the absence of data, not a clean pass. Phase 5's corpus growth is the first chance to measure them for real. |
-| All precision figures are precision, not recall | Nothing measures what the detectors MISS. The CAP-09 block says so on every detail page. |
+| `artifactsTruncated` conflates three unrelated causes | `skipped.length > 0` mixes the file cap, the wall-clock deadline, and a raw fetch that threw, and the count itself is destroyed at `src/ingest/pipeline.ts:377`. Measured consequence: `anthropics/skills` reads truncated with **19 of 19 candidates readable today**, and since Phase 2 a truncated scan suppresses delisting — so one transient blip marks a repository permanently partial and it never converges. `davila7/claude-code-templates` is the genuine case: 1,300 candidates against a cap of 400, 900 unread. Found during Phase 5, deliberately **not fixed** — it is a logging-and-classification change outside that phase's files. Same shape as Phase 4's `seedsSkipped`, which Phase 5 did close. |
+| `src/db/queries/jobs.test.ts` has two intermittently flaky concurrency tests | ~2 runs in 14, pre-existing, and aggravated by the DB-backed test files Phase 5 added. It failed once running in isolation, which rules out only cross-suite contention. A `pg_advisory_xact_lock` would remove the class permanently; Phase 5 deliberately did not expand into test-infrastructure work. |
+| The detail page is still reachable only for `skill` artifacts | `sourcePathFromUrl` in `src/db/queries/packages.ts` hardcodes `SKILL.md`. Carried from Phase 4 and **still true** — but the stakes rose: the corpus now holds 387 commands, 113 plugins, 16 hooks and 15 MCP declarations whose rows exist, whose findings are computed, and whose pages do not resolve. Phase 6 is search; a generic artifact route is the natural companion and should be decided there rather than drifting further. |
+| Fork suppression ships with zero real positives | Sixteen repositories, none a fork. `repository.isFork` was already fetched and stored (`src/github/repo.ts:35`, `src/db/schema.ts:83`) and is now read, but the path is fixture-validated only. No fork was hunted down to make the number non-zero. Absence of data, not a clean pass. |
+| `network_request` gained **zero** hits from a doubled corpus | Still 2/13 = 15%, the narrowest shipped margin, now on seven corpora and 169 files instead of four and 84. The corpus grew and this detector learned nothing — that is a fact about the corpus, not a re-validation of the detector. |
+| `install` detects 0 of 6 real install directives found by hand | `npm ci` appears six times in `addyosmani-agent-skills skills/ci-cd-and-automation/SKILL.md` and the alternation does not contain it. Twenty other install shapes were searched for and appear zero times, so the corpus cannot speak to them. This is the phase's only recall measurement and it is a floor on a hand-picked sample, not a corpus-wide rate. |
+| `observedRemoteExecution` and `observedHiddenContent` remain at zero across seven corpora | 169 files, no `curl \| sh` shape, no hidden-content instance. A **larger** absence of data than Phase 4 recorded, and still not a measured clean pass. |
+| Provenance is single-valued and last-writer-wins | Three sources can name one repository; `repo_seed.discovered_from` keeps only the most recent. Measured during Phase 5: a curated-link run re-tagged 253 registry seeds and 4 of the 15 operator seeds. No single-valued column makes "which source found this" true when three did. Left alone deliberately — the phase brief forbids an elaborate provenance graph — and recorded as a maintainer decision. |
+| COR-05 ships as measured incompleteness, by design | `topic:claude-code` holds 57,970 repositories with 36,487 at 0–1 stars; a star ladder cannot subdivide that below the 1,000-result cap, and 58,000 repos × 2 calls is eighty days of quota. The sweep therefore names every shard it could not reach with that shard's measured size. Criterion 4's intent — no *silent* truncation — is met; blanket coverage was never reachable and is not claimed. |
+| `.env.example` is still unverified | The harness denies all `.env*` access. Phase 5 added no new secret and needs no new variable, so nothing changed — but the Phase 0..4 items (`DATABASE_URL`, `GITHUB_TOKEN`, `INGEST_WORKER`) remain confirmable only by hand. Not circumvented. |
+
 
 ### Carried into Phase 4
 
@@ -136,7 +143,9 @@ Progress: [███████░░░] 69%
 
 ## Next Action
 
-Run `/gsd-plan-phase 5` to plan Corpus & Cold Start.
+Run `/gsd-plan-phase 6` to plan Search & Browse. Phase 6 is the first phase with a real
+corpus to tune against — 921 listed artifacts across six types, which is what the ROADMAP's
+sequencing argument was waiting for ("relevance cannot be tuned against twenty rows").
 
 ---
-*Last updated: 2026-08-10 after Phase 2 execution and live verification*
+*Last updated: 2026-08-12 after Phase 5 execution, independent verification (16/16) and the browser checkpoint*

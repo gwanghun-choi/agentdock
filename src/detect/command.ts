@@ -1,4 +1,5 @@
 import { parseFrontmatter } from './frontmatter';
+import { toolTokens } from './skill';
 import type { Candidate, Detector, ParseResult, TreeEntry } from './types';
 
 /**
@@ -29,11 +30,12 @@ function length(value: string): number {
   return [...value].length;
 }
 
-function toolTokens(value: unknown): string[] | null {
-  if (typeof value === 'string') return value.split(/[\s,]+/).filter(Boolean);
-  if (Array.isArray(value)) return value.map(String);
-  return null;
-}
+// Was a byte-identical private copy of skill.ts's toolTokens, and it carried
+// the same grant-fragmentation defect (05-05). Commands are where
+// `allowed-tools` actually lives, so fixing only the exported copy would have
+// left the fault in place on the artifact type that has the most instances of
+// it. One implementation, imported — see skill.ts for why the split is
+// depth-aware.
 
 export const command: Detector = {
   type: 'command',

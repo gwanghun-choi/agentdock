@@ -827,6 +827,45 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
       ]);
     });
 
+    it('reports the entries that named no reachable repository on the ingest log line', async () => {
+      // Two github-reachable entries and three that are not: an npm source, an
+      // archive URL, and a relative path pointing inside this same repository.
+      // Before this field, catalog.ts computed the count and the pipeline's
+      // seeds branch discarded it one function later without ever reading it.
+      const mixed = JSON.stringify({
+        name: 'agentdock-test-marketplace',
+        owner: { name: 'Test Owner' },
+        plugins: [
+          { name: 'a', source: { source: 'github', repo: 'seed-owner-a/seed-repo-a' } },
+          {
+            name: 'b',
+            source: { source: 'url', url: 'https://github.com/seed-owner-b/seed-repo-b' },
+          },
+          { name: 'c', source: './plugins/c' },
+          { name: 'd', source: { source: 'npm', package: 'some-package' } },
+          { name: 'e', source: { source: 'archive', url: 'https://example.com/x.tar.gz' } },
+        ],
+      });
+      stubGitHub({ files: { [MARKETPLACE_PATH]: mixed } });
+
+      const result = await ingestRepository(FULL_NAME);
+      expect(result).toMatchObject({ ok: true, seeds: 2 });
+
+      const line = JSON.parse(logSpy.mock.calls.at(-1)?.[0] as string);
+      expect(line.seedsSkipped).toBe(3);
+    });
+
+    it('reports zero, not an absent key, when the repository has no catalog at all', async () => {
+      // A field that appears only when non-zero makes its absence ambiguous
+      // between "no catalog" and "an older build".
+      stubGitHub({ files: { [MARKETPLACE_PATH]: EMPTY_MARKETPLACE } });
+
+      await ingestRepository(FULL_NAME);
+
+      const line = JSON.parse(logSpy.mock.calls.at(-1)?.[0] as string);
+      expect(line).toHaveProperty('seedsSkipped', 0);
+    });
+
     it('delists the failed catalog row once the marketplace is fixed, because a parsed catalog contributes no package id', async () => {
       stubGitHub({ files: { [MARKETPLACE_PATH]: malformedMarketplace } });
       await ingestRepository(FULL_NAME);

@@ -1,8 +1,17 @@
 import { toolTokens } from '@/detect/skill';
 import type { AnalyzeInput, Finding } from './types';
 
-/** Bumped when the rule changes, so a precision row names a specific version. */
-export const DECLARED_VERSION = '1';
+/**
+ * Bumped when the rule changes, so a precision row names a specific version.
+ *
+ * 2 (05-05): no edit in this file. toolTokens, which this analyzer reuses from
+ * skill.ts rather than re-implementing, stopped splitting a grant on the spaces
+ * inside its own parentheses. What this analyzer emits therefore changed —
+ * `Bash(git add:*)` is now one finding where it was two fragments — so a rate
+ * recorded against version 1 is not a rate about version 2, and the record's
+ * Version column has to say which one it means.
+ */
+export const DECLARED_VERSION = '2';
 
 type ServerMeta = { name?: unknown; command?: unknown };
 type HandlerMeta = { event?: unknown; command?: unknown };

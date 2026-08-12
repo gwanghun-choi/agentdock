@@ -44,6 +44,12 @@ export const agentdock = pgSchema(AGENTDOCK_SCHEMA);
 /**
  * Key/value facts about this deployment of the schema. Written at boot, read by
  * the status page.
+ *
+ * Phase 5 widened it to carry one more kind of deployment fact: where each
+ * corpus acquisition sweep stopped, and how far it can honestly claim to have
+ * looked (`corpus_sweep:<source>`, src/db/queries/syncState.ts). That state has
+ * to survive between invocations and this phase adds no migration, so it lands
+ * here rather than in a column of its own.
  */
 export const schemaMeta = agentdock.table('schema_meta', {
   key: text('key').primaryKey(),
@@ -289,7 +295,16 @@ export const repoSeed = agentdock.table(
     // constrained type on a populated table is a DROP, which this project's
     // boundary scanner treats as destructive. Same reason as artifact_type.
     sourceKind: text('source_kind').notNull(),
-    /** The catalog's own repository, as owner/repo. Provenance, not a join. */
+    /**
+     * Where this seed came from. Provenance, not a join.
+     *
+     * Originally the catalog's own repository as owner/repo, which is still what
+     * the ingest path writes. Phase 5 widened it: an operator-driven acquisition
+     * source writes its own name instead — 'mcp-registry' today. Never a
+     * hostname, deliberately (05-CONTEXT D-12): a hostname as a data value is a
+     * hostname literal in whatever file writes it, and check:boundaries rule 5
+     * would then decide where that code is allowed to live.
+     */
     discoveredFrom: text('discovered_from').notNull(),
     discoveredPath: text('discovered_path').notNull(),
     /** The catalog entry verbatim: name, description, version, subdir, tags. */

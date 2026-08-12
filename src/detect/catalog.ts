@@ -122,6 +122,9 @@ export const catalog: Detector = {
       );
     }
 
-    return { ok: true, status: 'seeds', seeds, warnings };
+    // The warning stays for the artifact branch's convention; the number is what
+    // travels. The pipeline's seeds branch never reads warnings, so until this
+    // field existed the count was computed here and discarded one function later.
+    return { ok: true, status: 'seeds', seeds, warnings, skipped: notSeedable };
   },
 };

@@ -30,12 +30,26 @@ export type ClaimedJob = {
  * The denylist is checked here as well as inside the pipeline. Here it means a
  * removed repository never becomes a row a maintainer has to look at; there it
  * is the durable guarantee, because the list can change between the two moments.
+ *
+ * `target` is lowercased once, here, and the denylist check, the insert and the
+ * conflict clause all use that one value. Before this the check lowercased and
+ * the insert did not, so `Anthropics/Skills` typed by a human and
+ * `anthropics/skills` emitted by a seed produced two simultaneously-active jobs
+ * for one repository — two GitHub requests each, out of sixty an hour. The
+ * unique index stays on the raw column deliberately (05-CONTEXT D-01):
+ * `ingest_job.target` is an internal identity key, never a display value, so
+ * normalizing at the boundary is strictly cheaper than an expression index and
+ * also fixes the function's disagreement with itself. Seed fan-out relies on
+ * this: repo_seed.full_name is lowercased at write, and the anti-join in
+ * src/db/queries/seeds.ts is a plain equality only because both sides are.
  */
 export async function enqueueJob(fullName: string): Promise<EnqueueResult> {
+  const target = fullName.toLowerCase();
+
   const [blocked] = await db
     .select({ fullName: repositoryDenylist.fullName })
     .from(repositoryDenylist)
-    .where(eq(repositoryDenylist.fullName, fullName.toLowerCase()))
+    .where(eq(repositoryDenylist.fullName, target))
     .limit(1);
   if (blocked) return { kind: 'denylisted' };
 
@@ -47,7 +61,7 @@ export async function enqueueJob(fullName: string): Promise<EnqueueResult> {
 
   const [row] = await db
     .insert(ingestJob)
-    .values({ target: fullName })
+    .values({ target })
     .onConflictDoUpdate({
       target: ingestJob.target,
       targetWhere: sql`${ingestJob.status} in ('queued','running')`,

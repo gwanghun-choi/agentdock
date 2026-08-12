@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GitHubError,
   githubFetch,
+  githubRepoFromUrl,
   MAX_REDIRECTS,
   normalizeRepo,
   rateLimitState,
@@ -96,6 +97,58 @@ describe('normalizeRepo — the SSRF table', () => {
 
   it('refuses a bare .git repository name once the suffix is stripped', () => {
     expect(normalizeRepo('anthropics/.git')).toBeNull();
+  });
+});
+
+describe('githubRepoFromUrl — the one predicate every caller shares', () => {
+  // Three callers now read it: the catalog detector over a marketplace.json
+  // source, the registry adapter over a server's repository.url, and the
+  // curated-link extractor over a README. None of them may name a host itself,
+  // so every host and route decision has to be correct here.
+  const NOTHING = [
+    // Site routes, not accounts. Each is a well-formed owner/repo string that
+    // normalizeRepo accepts happily, so without the reserved-segment guard a
+    // curated list's topic and organisation links become seeds — and then two
+    // core requests each, spent learning they are 404s.
+    'https://github.com/topics/claude-code',
+    'https://github.com/orgs/anthropics/repositories',
+    'https://github.com/sponsors/anthropics',
+    'https://github.com/users/anthropics/projects',
+    'https://github.com/settings/tokens',
+    'https://github.com/TOPICS/claude-code',
+    // Not a repository path at all.
+    'https://github.com/anthropics',
+    'https://github.com/',
+    // Not github.com. The last two are the lookalike shapes a link list carries.
+    'https://gist.github.com/anthropics/aaaa',
+    'https://raw.githubusercontent.com/anthropics/skills/main/README.md',
+    'https://gitlab.com/anthropics/skills',
+    'https://github.com.evil.example/anthropics/skills',
+    'https://github.com@evil.example/anthropics/skills',
+  ];
+
+  const REPOSITORIES: [string, string, string][] = [
+    ['https://github.com/anthropics/skills', 'anthropics', 'skills'],
+    ['https://github.com/anthropics/skills.git', 'anthropics', 'skills'],
+    ['https://github.com/anthropics/skills/blob/main/README.md', 'anthropics', 'skills'],
+    ['https://github.com/anthropics/skills?tab=readme#install', 'anthropics', 'skills'],
+    // "new" is reserved as an owner; as a repository name it is ordinary.
+    ['https://github.com/anthropics/new', 'anthropics', 'new'],
+    // Plain HTTP is deliberately still a repository here. This function returns
+    // a NAME, not a fetch target: the owner/repo it yields is fetched over https
+    // by githubFetch, which refuses any other scheme. Rejecting the scheme here
+    // would drop real repositories linked over http in older READMEs and buy
+    // nothing. src/corpus/links.ts narrows to https at extraction instead, where
+    // an http token in an untrusted document is worth not even parsing.
+    ['http://github.com/anthropics/skills', 'anthropics', 'skills'],
+  ];
+
+  it.each(NOTHING)('yields nothing for %j', (url) => {
+    expect(githubRepoFromUrl(new URL(url))).toBeNull();
+  });
+
+  it.each(REPOSITORIES)('reads %j as %s/%s', (url, owner, repo) => {
+    expect(githubRepoFromUrl(new URL(url))).toEqual({ owner, repo });
   });
 });
 

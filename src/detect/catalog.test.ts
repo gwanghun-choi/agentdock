@@ -124,6 +124,32 @@ describe('catalog.parse — the six source shapes', () => {
     expect(result.warnings.join(' ')).toContain('4 of 7 entries');
   });
 
+  it('carries the unreachable count as a number, because the warning goes nowhere', () => {
+    // The number is what travels. The pipeline's seeds branch continues without
+    // reading warnings — the artifact branch writes them to parse_errors, this
+    // one does not — so before this field the count was computed here and
+    // destroyed one function later.
+    return parseAt('.claude-plugin/marketplace.json', SIX_SHAPES).then((result) => {
+      if (!result.ok || result.status !== 'seeds') throw new Error('expected seeds');
+      expect(result.skipped).toBe(4);
+    });
+  });
+
+  it('reports zero skipped when every entry named a repository', async () => {
+    const allReachable = JSON.stringify({
+      name: 'm',
+      owner: { name: 'o' },
+      plugins: [
+        { name: 'a', source: { source: 'github', repo: 'some-owner/some-repo' } },
+        { name: 'b', source: { source: 'github', repo: 'other-owner/other-repo' } },
+      ],
+    });
+    const result = await parseAt('.claude-plugin/marketplace.json', allReachable);
+    if (!result.ok || result.status !== 'seeds') throw new Error('expected seeds');
+    expect(result.skipped).toBe(0);
+    expect(result.warnings).toEqual([]);
+  });
+
   it('carries the git-subdir path in hint, never a fetchable URL the pipeline would follow', async () => {
     const result = await parseAt('.claude-plugin/marketplace.json', SIX_SHAPES);
     if (!result.ok || result.status !== 'seeds') throw new Error('expected seeds');
