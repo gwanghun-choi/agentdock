@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { DockIcon, SearchIcon } from '@/components/Icon';
 import './globals.css';
 
 export const metadata = {
@@ -30,10 +31,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <header className="site-header">
           <div className="wrap">
             <Link href="/" className="brand">
+              <DockIcon />
               AgentDock
             </Link>
-            <nav>
+            {/* Relative hrefs throughout. An internal link must never carry a
+                scheme: the deployment is served over plain HTTP today and behind
+                TLS later, and neither should require a code change. */}
+            <nav aria-label="Main">
               <Link href="/artifacts">Artifacts</Link>
+              <Link href="/artifacts?q=">
+                <SearchIcon />
+                Search
+              </Link>
             </nav>
           </div>
         </header>

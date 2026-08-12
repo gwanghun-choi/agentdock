@@ -6,8 +6,11 @@ import { config, proxy } from './proxy';
  * The proxy is pure with respect to its input, so no server is started here.
  * The served-response check lives in the plan's build verification instead.
  */
-function request(url = 'https://agentdock.test/skills'): NextRequest {
-  return new Request(url) as unknown as NextRequest;
+function request(
+  url = 'https://agentdock.test/skills',
+  headers?: Record<string, string>,
+): NextRequest {
+  return new Request(url, { headers }) as unknown as NextRequest;
 }
 
 function policy(res: Response): string {
@@ -66,6 +69,61 @@ describe('proxy — the production policy', () => {
   ])('locks down %s', (fragment) => {
     vi.stubEnv('NODE_ENV', 'production');
     expect(policy(proxy(request())).split('; ')).toContain(fragment);
+  });
+});
+
+// The NCP deployment is served at http://49.50.138.22:18100 with no TLS and no
+// terminating proxy. `upgrade-insecure-requests` rewrote every in-page link to
+// https://, where nothing listens, so the home page loaded and each internal
+// navigation failed. These pin the directive to the scheme the request actually
+// arrived on, in both directions — a one-sided test would let the bug back in by
+// simply deleting the directive.
+describe('proxy — upgrade-insecure-requests follows the request scheme', () => {
+  const has = (res: Response) => policy(res).split('; ').includes('upgrade-insecure-requests');
+
+  it('omits the upgrade on a plain HTTP origin, so internal links stay HTTP', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(has(proxy(request('http://49.50.138.22:18100/artifacts')))).toBe(false);
+  });
+
+  it('keeps the upgrade on an HTTPS origin', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(has(proxy(request('https://agentdock.test/artifacts')))).toBe(true);
+  });
+
+  // Behind a TLS-terminating proxy the socket is HTTP while the browser's origin
+  // is HTTPS. Trusting the socket would strip the upgrade from the one deployment
+  // shape that genuinely wants it.
+  it('trusts x-forwarded-proto over the socket scheme', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(
+      has(proxy(request('http://internal:3000/artifacts', { 'x-forwarded-proto': 'https' }))),
+    ).toBe(true);
+    expect(has(proxy(request('https://internal/artifacts', { 'x-forwarded-proto': 'http' })))).toBe(
+      false,
+    );
+  });
+
+  it('reads only the leftmost value when several proxies appended one', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(
+      has(proxy(request('http://internal:3000/x', { 'x-forwarded-proto': 'https, http' }))),
+    ).toBe(true);
+  });
+
+  // Everything else in the policy is scheme-independent. If a future change makes
+  // another directive conditional, this catches it.
+  it('changes nothing else between the two schemes', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const strip = (res: Response) =>
+      policy(res)
+        .split('; ')
+        .filter((d) => d !== 'upgrade-insecure-requests')
+        .map((d) => d.replace(/'nonce-[A-Za-z0-9+/=]+'/, "'nonce-X'"));
+
+    expect(strip(proxy(request('http://49.50.138.22:18100/a')))).toEqual(
+      strip(proxy(request('https://agentdock.test/a'))),
+    );
   });
 });
 

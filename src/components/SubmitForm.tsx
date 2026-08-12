@@ -16,13 +16,13 @@ export function SubmitForm() {
 
   return (
     <form action={action} className="submit">
-      <label htmlFor="repo">GitHub repository</label>
+      <label htmlFor="repo">Index a public GitHub repository</label>
       <div className="submit-row">
         <input
           id="repo"
           name="repo"
           required
-          placeholder="anthropics/skills"
+          placeholder="owner/repository — for example anthropics/skills"
           // Cosmetic only. The enforcement is in the server action.
           pattern="[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9._-]+"
           aria-describedby="repo-help repo-result"
@@ -31,11 +31,12 @@ export function SubmitForm() {
         />
         <button type="submit" disabled={pending}>
           {/* Reading is no longer what the request does — it queues one. */}
-          {pending ? 'Queuing…' : 'Index'}
+          {pending ? 'Queuing…' : 'Index repository'}
         </button>
       </div>
       <p id="repo-help" className="muted">
-        Owner and repository, like <code>anthropics/skills</code>. Public repositories only.
+        Owner and repository, like <code>anthropics/skills</code>. Public repositories only. Each
+        one costs two of the sixty requests GitHub allows per hour.
       </p>
       <p
         id="repo-result"

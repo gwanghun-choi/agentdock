@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isBundledScript } from '@/analyze/files';
+import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
+import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SkillBody } from '@/components/SkillBody';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
@@ -16,15 +18,9 @@ export const dynamic = 'force-dynamic';
 // which needs types that exist only after a build or an explicit generation step.
 type Props = { params: Promise<{ owner: string; repo: string; path: string[] }> };
 
-// Verbatim from the seeded artifact_type.label rows (drizzle/0001, drizzle/0003).
-const TYPE_LABELS: Record<string, string> = {
-  skill: 'Agent Skill',
-  plugin: 'Claude Code Plugin',
-  catalog: 'Plugin Marketplace',
-  mcp_server: 'MCP Server',
-  command: 'Slash Command',
-  hook: 'Hook Configuration',
-};
+// The label map moved to components/ArtifactBadge.tsx so the badge, this page's
+// Type row and any future surface cannot drift apart. Same strings, verbatim
+// from the seeded artifact_type.label rows (drizzle/0001, drizzle/0003).
 
 // The File section's closing sentence. Single-line and named, rather than
 // inline JSX text broken across lines, so it is one exact, unambiguous
@@ -103,23 +99,42 @@ export default async function PackagePage({ params }: Props) {
 
   return (
     <>
-      <h1>{detail.name}</h1>
-      {detail.summary ? <p className="lede">{detail.summary}</p> : null}
-
-      <dl className="facts">
-        <dt>Type</dt>
-        <dd>{TYPE_LABELS[detail.type] ?? detail.type}</dd>
-
-        <dt>Source repository</dt>
-        <dd>
-          <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>{' '}
+      {/* One shell for all six types: badge, name, repository, description, then
+          the two links a reader reaches for. Nothing here is skill-specific —
+          the only type-conditional block on this page is Install, further down,
+          and it stays conditional. */}
+      <div className="detail-head">
+        <ArtifactBadge type={detail.type} />
+        <h1>{detail.name}</h1>
+        <p className="repo-line">
+          <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+          <span aria-hidden="true">/</span>
+          <span className="path">{detail.sourcePath}</span>
+        </p>
+        {detail.summary ? <p className="lede">{detail.summary}</p> : null}
+        <div className="detail-actions">
+          {/* Both leave AgentDock, and both say so with the same icon — §16's
+              internal/external distinction, made visible rather than implied. */}
+          <a href={source} rel="noopener noreferrer" target="_blank">
+            <ExternalIcon /> View this file at commit {detail.commitSha.slice(0, 7)}
+          </a>
           <a
             href={`https://github.com/${detail.fullName}`}
             rel="noopener noreferrer"
             target="_blank"
           >
-            on GitHub
+            <ExternalIcon /> Repository on GitHub
           </a>
+        </div>
+      </div>
+
+      <dl className="facts">
+        <dt>Type</dt>
+        <dd>{artifactTypeLabel(detail.type)}</dd>
+
+        <dt>Source repository</dt>
+        <dd>
+          <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
         </dd>
 
         <dt>Path in repository</dt>

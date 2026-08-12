@@ -50,6 +50,16 @@ Keep the `docker ps` output. Step 8 compares against it.
 `docker-compose.yml` requires `AGENTDOCK_PORT` and fails loudly if unset — it has
 no default, deliberately, so it cannot silently grab a port another service wants.
 
+**`AGENTDOCK_PORT` must reach Compose itself, not just the container.** A service's
+`env_file:` is injected into the running container; it is *not* read when Compose
+interpolates `${AGENTDOCK_PORT}` in the `ports:` mapping. Only Compose's own env
+file is, which by default is `.env` — a name this repository gitignores and does
+not ship. So every Compose command below passes `--env-file .env.production`,
+which makes that one file serve both jobs. Omitting the flag fails with
+`AGENTDOCK_PORT ... required`, which is the intended loud failure rather than a
+silent default. (Found while deploying: the earlier revision of this document
+described `env_file:` alone as sufficient, and it is not.)
+
 Pick a port that appears in neither `ss -lntp` nor `docker ps`. Verify:
 
 ```bash
@@ -73,7 +83,7 @@ Create `/opt/agentdock/.env.production`. It is gitignored (`.env.*`) and is
 **never** baked into the image — compose injects it at run time only.
 
 ```dotenv
-DATABASE_URL=postgresql://agentdock_app:agentdock12@host.docker.internal:5432/didim_api
+DATABASE_URL=postgresql://agentdock_app:<PASSWORD>@host.docker.internal:5432/didim_api
 DATABASE_SCHEMA=agentdock
 NODE_ENV=production
 
@@ -90,8 +100,17 @@ INGEST_WORKER=1
 # GITHUB_TOKEN=
 ```
 
-`agentdock12` is the test password supplied for this deployment. Rotate it before
-anything but testing, with `ALTER ROLE agentdock_app PASSWORD '…';` as a superuser.
+`<PASSWORD>` is the credential the maintainer set for `agentdock_app` when the role
+was created; it is deliberately not written down here, in `.env.example`, or in any
+other tracked file. Rotate it before this is anything but a test deployment, with
+`ALTER ROLE agentdock_app PASSWORD '…';` as a superuser.
+
+Step 5's check reads it from your shell, so export it for that session only and let
+it leave no trace in the file:
+
+```bash
+read -rs AGENTDOCK_DB_PASSWORD && export AGENTDOCK_DB_PASSWORD
+```
 
 ## Step 5 — verify `host.docker.internal` actually resolves
 
@@ -108,7 +127,7 @@ Then the real SQL check — this must print `didim_api | agentdock_app | agentdo
 
 ```bash
 docker run --rm --add-host=host.docker.internal:host-gateway \
-  -e PGPASSWORD='agentdock12' postgres:16-alpine \
+  -e PGPASSWORD="$AGENTDOCK_DB_PASSWORD" postgres:16-alpine \
   psql -h host.docker.internal -p 5432 -U agentdock_app -d didim_api \
        -c "SET search_path TO agentdock;" \
        -tAc "SELECT current_database()||' | '||current_user||' | '||current_schema();"
@@ -124,8 +143,8 @@ rather than `host.docker.internal`.
 
 ```bash
 cd /opt/agentdock
-docker compose build agentdock
-docker compose up -d agentdock
+docker compose --env-file .env.production build agentdock
+docker compose --env-file .env.production up -d agentdock
 ```
 
 **Never run** `docker compose down`, `docker system prune`, `docker container prune`
@@ -196,7 +215,7 @@ race itself on restart.
 
 ```bash
 cd /opt/agentdock
-docker compose --profile tools run --rm migrate
+docker compose --env-file .env.production --profile tools run --rm migrate
 ```
 
 ## Restart behaviour

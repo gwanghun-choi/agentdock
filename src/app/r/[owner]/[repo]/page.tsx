@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { PackageRows } from '@/components/PackageRows';
 import { latestJobForTarget } from '@/db/queries/jobs';
@@ -61,8 +62,19 @@ export default async function RepositoryPage({ params }: Props) {
 
   return (
     <>
-      <h1>{repository.fullName}</h1>
-      {repository.description ? <p className="lede">{repository.description}</p> : null}
+      <div className="detail-head">
+        <h1>{repository.fullName}</h1>
+        {repository.description ? <p className="lede">{repository.description}</p> : null}
+        <div className="detail-actions">
+          <a
+            href={`https://github.com/${repository.fullName}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <ExternalIcon /> Repository on GitHub
+          </a>
+        </div>
+      </div>
 
       {repository.treeTruncated ? (
         // A visible state, never a silent claim of completeness.
@@ -105,8 +117,12 @@ export default async function RepositoryPage({ params }: Props) {
         ) : null}
       </p>
 
+      {/* "skill" was wrong here for five of the six types. This repository page
+          has listed commands, plugins, hooks and MCP declarations since Phase 3;
+          calling all of them skills was the same Skill-only wording leak the
+          detail route carried, in the one place that survived it. */}
       <h2>
-        {packages.length} skill{packages.length === 1 ? '' : 's'}
+        {packages.length} artifact{packages.length === 1 ? '' : 's'}
       </h2>
       {/* Nothing at all when the count is zero. A line reading "0 of these are
           not in AgentDock's listings" is noise on every well-formed repository,

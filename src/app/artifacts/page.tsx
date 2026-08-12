@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { z } from 'zod';
+import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
 import {
   ARTIFACT_TYPE_IDS,
@@ -58,8 +59,13 @@ const CAPABILITY_FILTER_LABELS: Record<(typeof CAPABILITY_FILTER_IDS)[number], s
  * (zero-result and non-empty alike), grounded in Phase 5's measured facts —
  * 16 repositories, two of them 69% of artifacts, no GitHub-wide crawl.
  */
+// The repository count used to be written into this sentence as "16
+// repositories". It was measured during Phase 5 and is already wrong in
+// production, where the corpus has grown — a hardcoded count is a claim that
+// rots silently. The scope statement is true at any size, which is what it is
+// for; the exact totals are already on the page beside the results.
 const SCOPE_SENTENCE =
-  'AgentDock indexes a curated and registry-derived corpus of 16 repositories. ' +
+  'AgentDock indexes a curated and registry-derived corpus. ' +
   'It is not a complete index of GitHub.';
 
 const NO_FILTERS: SearchFilters = { types: [], capabilities: [] };
@@ -172,15 +178,25 @@ export default async function ArtifactsPage({
   const last = Math.max(1, Math.ceil(total / SEARCH_CAPS.pageSize));
 
   const searchForm = (
+    // No role="search": the label names the field, and the native <search>
+    // element is the semantic answer the linter asks for — but wrapping a GET
+    // form in one changes nothing a reader or a screen reader gets here.
     <form method="get" action="/artifacts" className="search">
       <label htmlFor="q">Search artifacts</label>
-      <input
-        id="q"
-        name="q"
-        type="search"
-        defaultValue={q}
-        maxLength={SEARCH_CAPS.maxQueryLength}
-      />
+      <div className="search-row">
+        <span className="field">
+          <SearchIcon />
+          <input
+            id="q"
+            name="q"
+            type="search"
+            placeholder="Name, description, repository or path"
+            defaultValue={q}
+            maxLength={SEARCH_CAPS.maxQueryLength}
+          />
+        </span>
+        <button type="submit">Search</button>
+      </div>
       <div className="facets">
         <label htmlFor="type">Type</label>
         <select id="type" name="type" defaultValue={selectedTypes[0] ?? ''}>
@@ -206,7 +222,6 @@ export default async function ArtifactsPage({
           ))}
         </fieldset>
       </div>
-      <button type="submit">Search</button>
     </form>
   );
 
@@ -214,18 +229,32 @@ export default async function ArtifactsPage({
   const searchControls = (
     <>
       {searchForm}
-      <p className="muted">
-        These filters describe what AgentDock observed while reading the files, not everything an
-        artifact can do.
+      <p className="notice">
+        <InfoIcon />
+        <span>
+          These filters describe what AgentDock observed while reading the files, not everything an
+          artifact can do.
+        </span>
       </p>
     </>
   );
 
   const nextSteps = (
-    <p className="muted">
-      <Link href={hrefFor(q, 1, NO_FILTERS)}>Clear filters</Link>{' '}
-      <Link href="/artifacts">Browse all artifacts</Link>
+    <p className="actions">
+      <Link className="btn btn-quiet" href={hrefFor(q, 1, NO_FILTERS)}>
+        Clear filters
+      </Link>
+      <Link className="btn btn-quiet" href="/artifacts">
+        Browse all artifacts
+      </Link>
     </p>
+  );
+
+  const pageHead = (
+    <div className="page-head">
+      <h1>Artifacts</h1>
+      <p className="muted">{SCOPE_SENTENCE}</p>
+    </div>
   );
 
   // Corpus empty (browse mode, nothing indexed at all, no filter applied).
@@ -235,11 +264,16 @@ export default async function ArtifactsPage({
   if (!hasQuery && !hasFilters && total === 0) {
     return (
       <>
-        <h1>Artifacts</h1>
+        {pageHead}
         {searchControls}
-        <p className="muted">
-          No artifacts indexed yet. <Link href="/">Submit a repository</Link>.
-        </p>
+        <div className="empty">
+          <p className="muted">No artifacts indexed yet.</p>
+          <p className="actions">
+            <Link className="btn" href="/">
+              Submit a repository
+            </Link>
+          </p>
+        </div>
       </>
     );
   }
@@ -249,12 +283,18 @@ export default async function ArtifactsPage({
   if (total > 0 && items.length === 0) {
     return (
       <>
-        <h1>Artifacts</h1>
+        {pageHead}
         {searchControls}
-        <p className="muted">
-          There is no page {page}. <Link href={hrefFor(q, 1, filters)}>Back to the first page</Link>{' '}
-          of {total} artifacts.
-        </p>
+        <div className="empty">
+          <p className="muted">
+            There is no page {page}. This result set has {total} artifacts.
+          </p>
+          <p className="actions">
+            <Link className="btn btn-quiet" href={hrefFor(q, 1, filters)}>
+              <ArrowLeftIcon /> Back to the first page
+            </Link>
+          </p>
+        </div>
       </>
     );
   }
@@ -266,14 +306,19 @@ export default async function ArtifactsPage({
     const filterLabels = appliedFilterLabels(filters);
     return (
       <>
-        <h1>Artifacts</h1>
+        {pageHead}
         {searchControls}
-        <p className="muted">
-          No artifacts matched {q ? `"${q}"` : 'the applied filters'}
-          {filterLabels.length > 0 ? ` (${filterLabels.join(', ')})` : ''}.
-        </p>
-        {nextSteps}
-        <p className="muted">{SCOPE_SENTENCE}</p>
+        <div className="empty">
+          <p>
+            No artifacts matched {q ? `"${q}"` : 'the applied filters'}
+            {filterLabels.length > 0 ? ` (${filterLabels.join(', ')})` : ''}.
+          </p>
+          {/* Never "does not exist" — the corpus is not the ecosystem (D-38). */}
+          <p className="muted">
+            AgentDock has not indexed a match. That is not the same as the artifact not existing.
+          </p>
+          {nextSteps}
+        </div>
       </>
     );
   }
@@ -289,35 +334,49 @@ export default async function ArtifactsPage({
   if (hasQuery && total === 0 && items.length > 0) {
     return (
       <>
-        <h1>Artifacts</h1>
+        {pageHead}
         {searchControls}
-        <p className="muted">
-          No exact match for &quot;{q}&quot;. Showing close matches by name and summary instead.
-        </p>
+        {/* DIS-04 made legible: the heading states the miss, the subheading
+            names what is being shown instead. Never a bare "0 results". */}
+        <div className="result-bar">
+          <p>
+            <strong>No exact match for &quot;{q}&quot;</strong>
+            <br />
+            <span className="muted">Close matches by name and summary</span>
+          </p>
+        </div>
         <PackageRows items={items} />
-        <p className="muted">{SCOPE_SENTENCE}</p>
       </>
     );
   }
 
   return (
     <>
-      <h1>Artifacts</h1>
+      {pageHead}
       {searchControls}
-      <p className="muted">
-        {q
-          ? `Showing ${offset + 1}–${offset + items.length} of ${total} for "${q}".`
-          : `Showing ${offset + 1}–${offset + items.length} of ${total}.`}
-      </p>
+      <div className="result-bar">
+        <p className="muted">
+          {q
+            ? `Showing ${offset + 1}–${offset + items.length} of ${total} for "${q}"`
+            : `Showing ${offset + 1}–${offset + items.length} of ${total}`}
+        </p>
+      </div>
       <PackageRows items={items} />
-      <p className="pager">
-        {page > 1 ? <Link href={hrefFor(q, page - 1, filters)}>← Previous</Link> : null}
-        {page < last ? <Link href={hrefFor(q, page + 1, filters)}>Next →</Link> : null}
+      <nav className="pager" aria-label="Pagination">
+        {page > 1 ? (
+          <Link href={hrefFor(q, page - 1, filters)} rel="prev">
+            <ArrowLeftIcon /> Previous
+          </Link>
+        ) : null}
+        {page < last ? (
+          <Link href={hrefFor(q, page + 1, filters)} rel="next">
+            Next <ArrowRightIcon />
+          </Link>
+        ) : null}
         <span className="muted">
           Page {page} of {last}
         </span>
-      </p>
-      <p className="muted">{SCOPE_SENTENCE}</p>
+      </nav>
     </>
   );
 }

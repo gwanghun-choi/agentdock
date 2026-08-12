@@ -1,155 +1,136 @@
+/*
+ * AgentDock design system.
+ *
+ * Plain CSS with custom properties, deliberately. A utility framework or a
+ * component kit would mean a build step, a class-name rewrite of every file, and
+ * a client runtime, to reach the same rendered result on five server-rendered
+ * pages. `light-dark()` gives both themes from one declaration with no toggle,
+ * no stored preference and no anti-flash inline script — which matters because
+ * the CSP forbids inline script by name.
+ *
+ * Every class the components already used is still here. New work is additive.
+ */
+
 :root {
   color-scheme: light dark;
-  --bg: light-dark(#ffffff, #0b0d10);
-  --fg: light-dark(#16191d, #e6e8eb);
-  --muted: light-dark(#5c636b, #9aa2ab);
-  --border: light-dark(#e3e6ea, #23272d);
-  --accent: light-dark(#1a56b8, #7aa7f0);
 
-  /* One scale, four steps. */
+  /* Surfaces climb away from the page: --bg is the canvas, --surface is a card
+     on it, --surface-2 is a well inside a card. */
+  --bg: light-dark(#fcfcfd, #0b0d10);
+  --surface: light-dark(#ffffff, #12151a);
+  --surface-2: light-dark(#f6f7f9, #171b21);
+  --fg: light-dark(#16191d, #e6e8eb);
+  --fg-strong: light-dark(#0a0c0f, #f6f8fa);
+  --muted: light-dark(#5c636b, #9aa2ab);
+  --faint: light-dark(#878e96, #6b737c);
+  --border: light-dark(#e3e6ea, #23272d);
+  --border-strong: light-dark(#d0d5db, #2e343c);
+  --accent: light-dark(#1a56b8, #7aa7f0);
+  --accent-hover: light-dark(#124291, #a3c3f7);
+  --accent-soft: light-dark(#eef3fc, #16202f);
+  --on-accent: light-dark(#ffffff, #0b0d10);
+
+  --t-xs: 0.75rem;
   --t-sm: 0.8125rem;
   --t-base: 0.9375rem;
   --t-lg: 1.125rem;
   --t-xl: 1.5rem;
+  --t-2xl: 2rem;
+
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+
+  --shadow: 0 1px 2px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 40%));
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans KR", sans-serif;
+
+  /* One column width for everything, so the header rule, the content and the
+     footer rule all align. */
+  --wrap: 72rem;
+  /* Prose is capped far below the shell: unbounded line length is the single
+     biggest readability problem the previous stylesheet had. */
+  --prose: 46rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
-  background: var(--bg);
-  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: var(--t-base);
-  line-height: 1.55;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-}
-
-/* A 1,077-character description and a 78-character path are both in the measured
-   corpus, so this is a real constraint and not a hypothetical one. min-width on
-   a flex child is the piece that is usually missing. */
-p,
-li,
-td,
-dd,
-dt {
-  overflow-wrap: anywhere;
-}
-
-code,
-.path {
-  word-break: break-all;
-  font-family: var(--mono);
-  font-size: 0.9em;
-}
-
-* {
-  min-width: 0;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.skip-link {
-  position: absolute;
-  left: -9999px;
-}
-
-.skip-link:focus {
-  left: 0.5rem;
-  top: 0.5rem;
   background: var(--bg);
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  z-index: 1;
+  color: var(--fg);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Shell ──────────────────────────────────────────────────────────────── */
+/* ---------- typography ---------- */
 
-/* One 64rem column, 1rem gutters. Everything sits in this. */
-.wrap {
-  width: 100%;
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 0 1rem;
-  box-sizing: border-box;
+h1,
+h2,
+h3 {
+  color: var(--fg-strong);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-wrap: balance;
 }
-
-.site-header {
-  border-bottom: 1px solid var(--border);
-}
-
-.site-header .wrap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 1rem;
-  padding-block: 0.75rem;
-}
-
-.brand {
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: inherit;
-  text-decoration: none;
-}
-
-.site-header nav {
-  margin-left: auto;
-  display: flex;
-  gap: 1rem;
-  font-size: var(--t-sm);
-}
-
-main {
-  flex: 1;
-  padding-block: 2rem 3rem;
-}
-
-.site-footer {
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: var(--t-sm);
-}
-
-.site-footer .wrap {
-  padding-block: 1rem 1.5rem;
-}
-
-/* ── Type ───────────────────────────────────────────────────────────────── */
 
 h1 {
-  font-size: var(--t-xl);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  margin: 0 0 0.5rem;
+  font-size: var(--t-2xl);
+  font-weight: 660;
+  margin: 0 0 var(--s-3);
 }
 
 h2 {
   font-size: var(--t-lg);
-  margin: 2rem 0 0.75rem;
+  font-weight: 620;
+  margin: var(--s-6) 0 var(--s-3);
 }
 
 h3 {
   font-size: var(--t-base);
-  margin: 1.5rem 0 0.5rem;
+  font-weight: 620;
+  margin: var(--s-5) 0 var(--s-2);
+}
+
+p {
+  margin: 0 0 var(--s-3);
+  max-width: var(--prose);
 }
 
 a {
   color: var(--accent);
-  /* Colour only, 120ms. Nothing animates on load. */
-  transition: color 120ms ease;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 2px;
 }
 
 a:hover {
-  color: var(--fg);
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
 }
 
 .muted {
@@ -158,279 +139,1022 @@ a:hover {
 }
 
 .lede {
-  max-width: 46rem;
-  margin: 0 0 0.5rem;
+  font-size: var(--t-lg);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: var(--prose);
+}
+
+.path,
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.path {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+dt {
+  font-weight: 600;
 }
 
 .error {
-  /* Deliberately not red. Colour is never a verdict in this interface, and a
-     failed submission is a message, not a rating. */
-  color: var(--fg);
-  border-left: 3px solid var(--border);
-  padding-left: 0.75rem;
+  color: light-dark(#9a2340, #f293ad);
 }
 
 .ok {
-  color: var(--muted);
+  color: light-dark(#0b6b58, #6ed4b8);
 }
 
-.error:empty,
-.ok:empty {
-  display: none;
-}
-
-/* ── Submit ─────────────────────────────────────────────────────────────── */
-
-.submit {
-  margin: 1.5rem 0 0;
-  max-width: 34rem;
-}
-
-.submit label {
-  display: block;
-  font-size: var(--t-sm);
-  color: var(--muted);
-  margin-bottom: 0.35rem;
-}
-
-.submit-row {
+.actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  margin: var(--s-4) 0 0;
+  max-width: none;
 }
 
-.submit input {
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- shell ---------- */
+
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--s-5);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: light-dark(rgb(255 255 255 / 85%), rgb(11 13 16 / 85%));
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  height: 3.5rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 650;
+  font-size: var(--t-base);
+  letter-spacing: -0.01em;
+  color: var(--fg-strong);
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--fg-strong);
+}
+
+.brand svg {
+  color: var(--accent);
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-inline-start: auto;
+}
+
+.site-header nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.site-header nav a:hover {
+  background: var(--surface-2);
+  color: var(--fg-strong);
+}
+
+main {
   flex: 1;
-  font: inherit;
-  font-family: var(--mono);
-  font-size: var(--t-sm);
-  padding: 0.5rem 0.6rem;
-  color: var(--fg);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  padding-block: var(--s-6) var(--s-7);
 }
 
-.submit button {
-  font: inherit;
-  font-size: var(--t-sm);
-  padding: 0.5rem 0.9rem;
-  color: var(--bg);
-  background: var(--fg);
-  border: 1px solid var(--fg);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 120ms ease;
-  white-space: nowrap;
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  padding-block: var(--s-5);
+  margin-top: var(--s-7);
 }
 
-.submit button:hover {
-  opacity: 0.85;
+.site-footer p {
+  margin: 0;
+  max-width: var(--prose);
+  color: var(--faint);
+  font-size: var(--t-xs);
+  line-height: 1.6;
 }
 
-.submit button[disabled] {
-  opacity: 0.5;
-  cursor: default;
+.skip-link {
+  position: absolute;
+  left: -9999px;
 }
 
-/* ── Search ─────────────────────────────────────────────────────────────── */
-
-/* One rule for the form row (06-02 decision 8: the new form "needs even
-   less" than .submit). Native <input>/<button> chrome is left alone; only
-   alignment, wrapping and spacing are set here so the row holds together at
-   narrow widths (D-51). The global :focus-visible outline already covers
-   visible focus (D-50), so no focus rule is added here. */
-.search {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 0.75rem;
-  margin: 1rem 0 1.5rem;
+.skip-link:focus {
+  left: var(--s-4);
+  top: var(--s-4);
+  z-index: 100;
+  padding: var(--s-2) var(--s-3);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: var(--r-md);
 }
 
-/* Type <select> + capability checkboxes, inside .search's own form (06-03:
-   D-29's "avoid a large filter panel" — one row of native controls, no
-   bespoke chip/badge styling). */
-.facets {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem 1rem;
+/* ---------- page header ---------- */
+
+.page-head {
+  margin-bottom: var(--s-5);
 }
 
-.facets fieldset {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 0.75rem;
-  border: 0;
-  padding: 0;
+.page-head h1 {
+  margin-bottom: var(--s-2);
+}
+
+.page-head p {
   margin: 0;
 }
 
-.facets label {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
+/* ---------- hero ---------- */
+
+.hero {
+  padding-block: var(--s-4) var(--s-6);
 }
 
-/* ── Rows, not cards ────────────────────────────────────────────────────── */
+.hero h1 {
+  font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
+  margin-bottom: var(--s-3);
+}
+
+/* ---------- cards & sections ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin: var(--s-6) 0 var(--s-3);
+  flex-wrap: wrap;
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+.section-head a {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---------- badges ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 0.125rem var(--s-2);
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Type hues are identity, not judgement — no colour here means "safe" or
+   "risky". They exist so a scanning eye can group a long list by kind. */
+.badge-skill {
+  color: light-dark(#1a56b8, #90b8f5);
+  background: light-dark(#eef3fc, #14203056);
+  border-color: light-dark(#c9dbf7, #2b3d59);
+}
+
+.badge-command {
+  color: light-dark(#7a3d00, #f0b678);
+  background: light-dark(#fdf3e8, #2a1c0d56);
+  border-color: light-dark(#f2d9bd, #4d3719);
+}
+
+.badge-plugin {
+  color: light-dark(#6b2fa0, #c9a2f0);
+  background: light-dark(#f6eefd, #1f142b56);
+  border-color: light-dark(#e2cdf5, #3d2a55);
+}
+
+.badge-mcp_server {
+  color: light-dark(#0b6b58, #6ed4b8);
+  background: light-dark(#e9f8f3, #0c231d56);
+  border-color: light-dark(#bfe8db, #1d453a);
+}
+
+.badge-hook {
+  color: light-dark(#9a2340, #f293ad);
+  background: light-dark(#fdeef2, #2b101856);
+  border-color: light-dark(#f5cdd8, #55232f);
+}
+
+.badge-catalog {
+  color: light-dark(#4a5560, #a9b4c0);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+/* ---------- artifact rows ---------- */
 
 .rows {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
 }
 
 .rows > li {
-  border-bottom: 1px solid var(--border);
-  padding: 0.75rem 0;
+  padding: var(--s-4) var(--s-5);
+  border-top: 1px solid var(--border);
+}
+
+.rows > li:first-child {
+  border-top: 0;
+}
+
+.rows > li:hover {
+  background: var(--surface-2);
 }
 
 .row-title {
   display: flex;
+  align-items: center;
+  gap: var(--s-2);
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 0.5rem;
-  font-size: var(--t-base);
+  margin: 0 0 var(--s-1);
+  max-width: none;
 }
 
 .row-title a {
   font-weight: 600;
+  font-size: var(--t-base);
+  color: var(--fg-strong);
   text-decoration: none;
 }
 
 .row-title a:hover {
+  color: var(--accent);
   text-decoration: underline;
 }
 
+/* The repository name trails the artifact name, quieter and monospaced so the
+   two are never confused at a glance. */
+.row-title .repo {
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
 .row-desc {
-  margin: 0.15rem 0 0.25rem;
-  color: var(--fg);
-  /* Three lines here; the full text is on the detail page. */
+  margin: 0 0 var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  max-width: var(--prose);
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .row-meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--t-sm);
   display: flex;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
   flex-wrap: wrap;
-  gap: 0 0.5rem;
+  margin: 0;
+  max-width: none;
+  font-size: var(--t-xs);
+  color: var(--faint);
 }
 
-/* A path is never clamped. A truncated path is a useless path. */
-.row-meta .path {
+.row-meta a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
   color: var(--muted);
+  text-decoration: none;
 }
 
-/* ── Detail ─────────────────────────────────────────────────────────────── */
+.row-meta a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
 
-.facts {
-  display: grid;
-  grid-template-columns: minmax(9rem, 14rem) 1fr;
-  gap: 0.4rem 1.25rem;
-  margin: 1rem 0 0;
-  padding: 1rem 0 0;
-  border-top: 1px solid var(--border);
+.row-meta svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* The path must never be clamped — a truncated path is a useless path. */
+.row-meta .path {
+  font-size: var(--t-xs);
+}
+
+/* ---------- forms ---------- */
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+}
+
+.input,
+.submit input,
+.search input[type="search"],
+.facets select {
+  width: 100%;
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  min-height: 2.5rem;
+}
+
+.input:hover,
+.submit input:hover,
+.search input[type="search"]:hover {
+  border-color: var(--muted);
+}
+
+.btn,
+.submit button,
+.search button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover,
+.submit button:hover,
+.search button[type="submit"]:hover {
+  background: var(--accent-hover);
+}
+
+.btn[disabled],
+.submit button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-quiet {
+  background: var(--surface);
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+
+.btn-quiet:hover {
+  background: var(--surface-2);
+  color: var(--fg-strong);
+}
+
+/* index form */
+
+.submit {
+  display: block;
+  margin: 0;
+}
+
+.submit label {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: 560;
+  color: var(--fg-strong);
+  margin-bottom: var(--s-2);
+}
+
+.submit-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: stretch;
+}
+
+.submit-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
   font-size: var(--t-sm);
 }
 
-.facts dt {
+.submit .muted,
+.submit .ok,
+.submit .error {
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-sm);
+}
+
+.ok:empty,
+.error:empty {
+  display: none;
+}
+
+/* search panel */
+
+.search {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: var(--s-3);
+}
+
+.search > label[for="q"] {
+  font-size: var(--t-sm);
+  font-weight: 560;
+  color: var(--fg-strong);
+  margin: 0;
+}
+
+.search-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: stretch;
+}
+
+.search-row .field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* The magnifier sits inside the field; the input gets left padding to clear it.
+   Pointer events off so the icon never eats a click meant for the input. */
+.search-row .field svg {
+  position: absolute;
+  left: var(--s-3);
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+  pointer-events: none;
+}
+
+.search-row .field input[type="search"] {
+  padding-left: 2.25rem;
+}
+
+.facets {
+  display: flex;
+  gap: var(--s-4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding-top: var(--s-1);
+}
+
+.facets > label[for="type"] {
+  display: none;
+}
+
+.facets select {
+  width: auto;
+  min-width: 12rem;
+  font-size: var(--t-sm);
+}
+
+.facets fieldset {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.facets legend {
+  float: left;
+  padding: 0 var(--s-2) 0 0;
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Checkbox + text as one chip, so the whole thing is a comfortable click
+   target rather than a 13px box. */
+.facets fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--t-xs);
   color: var(--muted);
+  cursor: pointer;
+  min-height: 1.875rem;
 }
 
-.facts dd {
+.facets fieldset label:hover {
+  border-color: var(--muted);
+  color: var(--fg-strong);
+}
+
+.facets fieldset label:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.facets fieldset input[type="checkbox"] {
+  accent-color: var(--accent);
   margin: 0;
 }
 
-@media (max-width: 40rem) {
-  .facts {
-    grid-template-columns: 1fr;
-    gap: 0 0;
-  }
+/* ---------- result meta & pager ---------- */
 
-  .facts dd {
-    margin: 0 0 0.6rem;
-  }
+.result-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
 }
 
-.notes {
+.result-bar p {
   margin: 0;
-  padding-left: 1.1rem;
 }
 
 .pager {
   display: flex;
-  gap: 1rem;
-  align-items: baseline;
-  margin-top: 1.25rem;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  margin: var(--s-4) 0 0;
+  max-width: none;
+}
+
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--fg);
   font-size: var(--t-sm);
+  text-decoration: none;
+}
+
+.pager a:hover {
+  background: var(--surface-2);
+  border-color: var(--muted);
+  color: var(--accent);
 }
 
 .pager .muted {
-  margin-left: auto;
+  margin-inline-start: auto;
+}
+
+/* ---------- notices ---------- */
+
+.notice {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  margin-bottom: var(--s-4);
+  max-width: none;
+}
+
+.notice svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--faint);
+}
+
+.notice p {
+  margin: 0;
+  max-width: none;
+}
+
+.notice strong {
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+
+.empty {
+  padding: var(--s-6) var(--s-5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  text-align: center;
+}
+
+.empty p {
+  margin-inline: auto;
+}
+
+.empty .actions {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--s-4);
+}
+
+/* ---------- stats ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--s-1);
+  padding: 0;
+  margin: 0;
+}
+
+.stats > div {
+  padding: var(--s-3) var(--s-4);
+  border-left: 2px solid var(--border);
+}
+
+.stats dt {
+  margin: 0;
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+
+.stats dd {
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-lg);
+  font-weight: 600;
+  color: var(--fg-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats dd small {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ---------- detail page ---------- */
+
+.detail-head {
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--s-5);
+}
+
+.detail-head .badge {
+  margin-bottom: var(--s-3);
+}
+
+.detail-head h1 {
+  margin-bottom: var(--s-2);
+  overflow-wrap: anywhere;
+}
+
+.detail-head .repo-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  margin: 0 0 var(--s-3);
+  max-width: none;
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+
+.detail-actions {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  margin-top: var(--s-4);
+}
+
+.detail-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.detail-actions a:hover {
+  background: var(--surface-2);
+  border-color: var(--muted);
+  color: var(--accent);
+}
+
+.detail-actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: var(--s-2) var(--s-4);
+  margin: 0 0 var(--s-5);
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  font-size: var(--t-sm);
+}
+
+.facts dt {
+  margin: 0;
+  color: var(--faint);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 2px;
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.notes {
+  color: var(--muted);
+  font-size: var(--t-sm);
 }
 
 .install code {
   display: block;
-  padding: 0.4rem 0.6rem;
+  padding: var(--s-3);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: light-dark(#f6f7f9, #14171b);
+  border-radius: var(--r-md);
+  overflow-x: auto;
+  white-space: pre;
 }
 
-/* The rendered artifact body. Bordered, never shadowed, and visually inside the
-   page rather than floating above it. */
+/* ---------- markdown body ---------- */
+
 .body {
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
+  max-width: var(--prose);
+  overflow-wrap: anywhere;
 }
 
 .body pre {
-  overflow-x: auto;
-  padding: 0.75rem;
+  padding: var(--s-4);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: light-dark(#f6f7f9, #14171b);
+  border-radius: var(--r-md);
+  overflow-x: auto;
 }
 
 .body table {
-  border-collapse: collapse;
   display: block;
+  width: 100%;
   overflow-x: auto;
+  border-collapse: collapse;
 }
 
-.body th,
-.body td {
+.body td,
+.body th {
+  padding: var(--s-2) var(--s-3);
   border: 1px solid var(--border);
-  padding: 0.3rem 0.5rem;
   text-align: left;
 }
 
 .body blockquote {
-  margin: 1rem 0;
-  padding-left: 0.9rem;
-  border-left: 2px solid var(--border);
+  margin: var(--s-4) 0;
+  padding-left: var(--s-4);
+  border-left: 3px solid var(--border-strong);
   color: var(--muted);
 }
 
-/* The file inventory (CAP-01/CAP-03). Same plain border-and-padding register
-   as .body table — no icons, no colour, no badge. */
-.files {
-  border-collapse: collapse;
-  margin: 0.5rem 0 0;
-  font-size: var(--t-sm);
+.body img {
+  max-width: 100%;
+  height: auto;
 }
 
-.files th,
-.files td {
-  border: 1px solid var(--border);
-  padding: 0.3rem 0.5rem;
+/* ---------- file inventory ---------- */
+
+.files {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  display: block;
+  overflow-x: auto;
+}
+
+.files td,
+.files th {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border);
   text-align: left;
 }
+
+.files th {
+  color: var(--faint);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* ---------- utilities ---------- */
+
+/* Present to assistive technology, absent visually. Used where a section needs
+   a programmatic name but a visible heading would be redundant beside the
+   control it labels. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Inline icons sit on the text baseline wherever they appear beside a label. */
+.row-meta span,
+.row-meta a,
+.section-head a,
+.stats dd,
+.brand,
+.pager a,
+.detail-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.stats dd {
+  display: block;
+}
+
+.row-meta .path svg,
+.section-head a svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--faint);
+}
+
+.section-head a svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.brand svg {
+  width: 18px;
+  height: 18px;
+}
+
+.site-header nav a svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pager a svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 40rem) {
+  :root {
+    --t-2xl: 1.625rem;
+  }
+
+  .wrap {
+    padding-inline: var(--s-4);
+  }
+
+  main {
+    padding-block: var(--s-5) var(--s-6);
+  }
+
+  .site-header .wrap {
+    gap: var(--s-3);
+  }
+
+  /* Stack the index form: a side-by-side input and button leaves the input too
+     narrow to read a repository name in. */
+  .submit-row {
+    flex-direction: column;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+
+  .facets {
+    gap: var(--s-3);
+  }
+
+  .facets select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .rows > li {
+    padding: var(--s-4);
+  }
+
+  /* Two columns of facts become one; a 7rem label column against a 45-character
+     value column is unreadable at this width. */
+  .facts {
+    grid-template-columns: 1fr;
+    gap: var(--s-1) 0;
+  }
+
+  .facts dd {
+    margin-bottom: var(--s-3);
+  }
+
+  .pager .muted {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+}
+
+/* No prefers-reduced-motion block: this stylesheet declares no animation and no
+   transition, so the usual blanket override would suppress nothing. Add one
+   alongside the first motion that ships, not before it. */
