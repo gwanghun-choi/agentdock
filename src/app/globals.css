@@ -247,6 +247,32 @@ a:hover {
   margin: 1rem 0 1.5rem;
 }
 
+/* Type <select> + capability checkboxes, inside .search's own form (06-03:
+   D-29's "avoid a large filter panel" — one row of native controls, no
+   bespoke chip/badge styling). */
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+.facets fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.facets label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
 /* ── Rows, not cards ────────────────────────────────────────────────────── */
 
 .rows {
