@@ -43,6 +43,13 @@
       "when": 1786425140106,
       "tag": "0005_rainy_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786506877223,
+      "tag": "0006_silly_black_tom",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import {
   bigint,
   bigserial,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -104,6 +105,15 @@ export const repository = agentdock.table(
   ],
 );
 
+/**
+ * tsvector has no first-class Drizzle column builder, so it is declared as a
+ * custom type. The driver reads/writes it as a plain string; PostgreSQL does
+ * the tokenizing.
+ */
+const tsvector = customType<{ data: string; driverData: string }>({
+  dataType: () => 'tsvector',
+});
+
 export const packageTable = agentdock.table(
   'package',
   {
@@ -146,6 +156,21 @@ export const packageTable = agentdock.table(
      * real inventory measured is 83 entries.
      */
     files: jsonb('files').$type<FileEntry[]>().notNull().default(sql`'[]'::jsonb`),
+    /**
+     * Generated, weighted full-text search column: A=name, B=summary,
+     * C=source_path with '/' and '.' replaced by spaces (to_tsvector treats
+     * a whole slash-delimited path as one lexeme otherwise — verified live,
+     * 06-RESEARCH.md), D=type with '_' replaced by a space so a search for
+     * "mcp server" reaches type = 'mcp_server'. STORED and maintained
+     * entirely by PostgreSQL — no trigger, no application backfill.
+     */
+    searchVector: tsvector('search_vector').generatedAlwaysAs(
+      sql`setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
+          setweight(to_tsvector('english', coalesce(summary, '')), 'B') ||
+          setweight(to_tsvector('english',
+            replace(replace(coalesce(source_path, ''), '/', ' '), '.', ' ')), 'C') ||
+          setweight(to_tsvector('english', replace(coalesce(type, ''), '_', ' ')), 'D')`,
+    ),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -154,10 +179,11 @@ export const packageTable = agentdock.table(
     // repository_id is keyed on the immutable node id.
     unique('package_identity').on(t.repositoryId, t.type, t.sourcePath),
     index('package_live_idx').on(t.type, t.updatedAt.desc()),
+    index('package_search_vector_idx').using('gin', t.searchVector),
   ],
 );
-// No search_tsv column and no pg_trgm index in this phase: pg_trgm is not
-// installed in this instance and must not be installed here.
+// search_vector ships here (this phase). pg_trgm is still installed out of
+// band only, by a superuser (D-03) — never by an AgentDock migration (D-04).
 
 export const packageVersion = agentdock.table(
   'package_version',
