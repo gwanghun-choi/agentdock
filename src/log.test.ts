@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AttemptOutcome } from '@/ingest/errors';
 import { messageFor, OUTCOME_MESSAGES } from '@/ingest/errors';
+import type { SearchLog } from '@/log';
 import { log } from '@/log';
 
 /**
@@ -159,5 +160,112 @@ describe('the outcome field', () => {
     const rejected: AttemptOutcome = notAnOutcome;
 
     expect(OUTCOMES).not.toContain(rejected);
+  });
+});
+
+/**
+ * DIS-08's line. Extending this file rather than creating a second one —
+ * this plan's own research_drift note records that both 06-RESEARCH.md and
+ * 06-VALIDATION.md claimed no test file existed for log.ts, and it does,
+ * carrying the exact sentinel/capture/exact-key-set discipline this line
+ * needs to reuse rather than duplicate.
+ */
+const SEARCH_KEYS = [
+  'capabilities',
+  'durationMs',
+  'event',
+  'page',
+  'query',
+  'resultCount',
+  'totalCount',
+  'ts',
+  'types',
+];
+
+/** A fully populated search line — every field carrying a real value. */
+function searchEntryFor(overrides: Partial<SearchLog> = {}): SearchLog {
+  return {
+    event: 'search',
+    query: 'mcp server',
+    types: ['mcp_server'],
+    capabilities: ['no_network', 'no_shell'],
+    page: 1,
+    resultCount: 12,
+    totalCount: 12,
+    durationMs: 42,
+    ...overrides,
+  };
+}
+
+describe('the search log line', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('serializes exactly the declared key set, asserted the same way the ingest line already is', () => {
+    const parsed = JSON.parse(capture(searchEntryFor()));
+    expect(Object.keys(parsed).sort()).toEqual(SEARCH_KEYS);
+    expect(parsed.ts).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('carries resultCount as the number 0, present rather than omitted, for a zero-result search', () => {
+    const parsed = JSON.parse(capture(searchEntryFor({ resultCount: 0, totalCount: 0 })));
+    expect(parsed).toHaveProperty('resultCount', 0);
+    expect(typeof parsed.resultCount).toBe('number');
+  });
+
+  it('carries types and capabilities as empty arrays, present rather than omitted, for an unfiltered entry', () => {
+    const parsed = JSON.parse(capture(searchEntryFor({ types: [], capabilities: [] })));
+    expect(parsed.types).toEqual([]);
+    expect(parsed.capabilities).toEqual([]);
+  });
+
+  it('carries query as the empty string, present rather than omitted, for a browse request', () => {
+    const parsed = JSON.parse(capture(searchEntryFor({ query: '' })));
+    expect(parsed).toHaveProperty('query', '');
+  });
+
+  it('carries neither planted sentinel, in an ordinary populated line', () => {
+    const line = capture(searchEntryFor());
+    expect(line).not.toContain(TOKEN);
+    expect(line).not.toContain(DSN);
+    expect(line).not.toContain('ghp_');
+    expect(line).not.toContain('postgres://');
+    expect(line).not.toMatch(/Bearer|authorization|password/i);
+  });
+
+  it('DOES carry a sentinel planted inside the query field — the query is genuinely free-form, and that is documented here rather than silently assumed absent', () => {
+    // query is the one deliberate exception to this union's closed-field
+    // rule (log.ts's own doc). Every other field on SearchLog is a number,
+    // a bounded id from a closed set, or the fixed string 'search' — none
+    // of them can carry a credential. query can, because a user can type
+    // anything, and D-44 accepts that risk rather than dropping the field
+    // DIS-08 requires. The line still stays on stdout only, with no
+    // account, session, cookie or IP anywhere near it (v1 has no auth).
+    const line = capture(searchEntryFor({ query: `search ${TOKEN} term` }));
+    expect(line).toContain(TOKEN);
+  });
+
+  it('stays under a stated length bound with the longest query SEARCH_CAPS permits', () => {
+    // SEARCH_CAPS.maxQueryLength is 200 (src/db/queries/search.ts) — not
+    // imported here (log.ts stays DB-free at module load), so the bound is
+    // restated as a literal for this one length assertion.
+    const longestQuery = 'x'.repeat(200);
+    const line = capture(searchEntryFor({ query: longestQuery }));
+    expect(line.length).toBeLessThan(600);
+  });
+
+  it('log() still accepts an ingest entry unchanged', () => {
+    expect(() => capture(entryFor('ok'))).not.toThrow();
+  });
+
+  it('log() still accepts a worker entry unchanged', () => {
+    expect(() => capture({ event: 'worker', state: 'started', jobId: null })).not.toThrow();
+  });
+
+  it('rejects an event value outside the closed union at type-check time', () => {
+    const notAnEvent = 'not-a-real-event';
+    // @ts-expect-error — SearchLog's event union has no member for this string.
+    const rejected: SearchLog = { ...searchEntryFor(), event: notAnEvent };
+
+    expect(rejected.event).not.toBe('search');
   });
 });
