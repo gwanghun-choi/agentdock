@@ -35,9 +35,11 @@ const envSchema = z.object({
   // it is rejected here rather than discovered when a statement lands elsewhere.
   DATABASE_SCHEMA: z.enum(['agentdock', 'agentdock_test']).default('agentdock'),
   GITHUB_TOKEN: githubToken,
-  // Not a secret. '0' disables the in-process loop, which is the escape hatch
-  // for the day an ingest measurably delays a page render.
-  INGEST_WORKER: z.enum(['0', '1']).default('1'),
+  // INGEST_WORKER is gone, not defaulted. It switched an in-process poll loop
+  // that `register()` started at web boot, which made every deploy and restart
+  // an ingest trigger; the loop was deleted rather than defaulted off, because a
+  // flag would have left the coupling one environment variable away from
+  // returning. Ingestion is `bun run sync`, from cron.
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

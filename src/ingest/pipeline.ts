@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { ANALYZERS } from '@/analyze';
 import { fileInventory } from '@/analyze/files';
 import { analyzeArtifact } from '@/analyze/run';
+import { type DiscoveryRejection, discoveryRejection } from '@/corpus/policy';
 import { db } from '@/db/client';
 import { repositoryDenylist } from '@/db/schema';
 import { DETECTORS } from '@/detect';
@@ -180,17 +181,55 @@ export async function ingestRepository(
     // cannot.
     let passes: DetectorPass[] = [];
 
+    /**
+     * The automatic-discovery gate.
+     *
+     * One check, in the one function every source — registry, seed list, link
+     * lists, topic sweep and the scheduled refresh — already routes through, so
+     * a source added later inherits it by existing rather than by remembering
+     * to.
+     *
+     * `known === null` is the whole condition, and it is what makes this an
+     * ENTRY gate rather than a deletion rule (src/corpus/policy.ts). A
+     * repository AgentDock has read before keeps being re-read whatever its
+     * stars do; only one nobody has looked at yet is turned away.
+     *
+     * It runs inside the path selector rather than after the fetch, and that
+     * placement is the difference between the gate working and the gate being
+     * decoration. `fetchRepoScanInputs` reads every wanted file before it
+     * returns, so a check on its result would decline the repository AFTER
+     * spending up to 400 raw reads and 120 seconds on it. Returning no paths
+     * declines it before the first one. Both core requests are spent either way
+     * — the sha and the metadata arrive in them, and there is no cheaper way to
+     * learn a star count than to ask for it.
+     */
+    let rejection: DiscoveryRejection | null = null;
+
     // One place decides which paths are worth reading, and it reads paths only —
     // so a repository with no artifacts costs zero file fetches.
     const inputs = await fetchRepoScanInputs(
       owner,
       repo,
-      (tree) => {
+      (tree, metadata) => {
+        if (known === null) rejection = discoveryRejection(metadata);
+        if (rejection !== null) return [];
         passes = collectCandidates(DETECTORS, tree.entries);
         return orderedNeeds(passes);
       },
       known,
     );
+
+    // Read back after the fetch rather than thrown from inside the callback: a
+    // throw would travel the catch below and be mapped onto `storage_failed`,
+    // which is a lie about both what happened and whether to retry.
+    //
+    // Narrowed through a local, because TypeScript's control-flow analysis
+    // cannot see that the callback above ran.
+    const declined: DiscoveryRejection | null = rejection;
+    if (declined !== null) {
+      emit({ outcome: declined, commitSha: inputs.tree.commitSha });
+      return { ok: false, outcome: declined, message: messageFor(declined) };
+    }
 
     if (inputs.unchanged) {
       const touched = await touchRepository(

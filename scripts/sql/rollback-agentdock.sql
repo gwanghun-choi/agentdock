@@ -2,8 +2,7 @@
 --
 -- Reverses scripts/sql/bootstrap-agentdock.sql. Run as a superuser.
 --
---   docker exec -i didim-mcp-service-backend-db-1 \
---     psql -U mcp -d mcpdb -v ON_ERROR_STOP=1 -f - < scripts/sql/rollback-agentdock.sql
+--   psql -U <superuser> -d <database> -v ON_ERROR_STOP=1 -f scripts/sql/rollback-agentdock.sql
 --
 -- SAFE only while AgentDock holds no data worth keeping. CASCADE here is bounded
 -- to objects inside the two named schemas: AgentDock never creates a reference

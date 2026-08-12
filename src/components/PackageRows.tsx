@@ -19,6 +19,22 @@ import { detailHref, type PackageListItem, permalink } from '@/db/queries/packag
  * visible. Its href still comes from `permalink()`, unchanged — the commit-SHA
  * provenance invariant is not a presentation concern.
  */
+/**
+ * 12,400 -> "12.4k". One decimal below a hundred thousand, none above, so the
+ * column never widens past five characters and a row's metadata line does not
+ * reflow around a popular repository.
+ *
+ * Truncates rather than rounds: 12,999 is "12.9k", never "13k". A count shown
+ * larger than it is is the one direction this must not round in.
+ */
+export function compactStars(stars: number): string {
+  if (stars < 1_000) return String(stars);
+  const thousands = stars / 1_000;
+  return thousands < 100
+    ? `${(Math.floor(thousands * 10) / 10).toFixed(1)}k`
+    : `${Math.floor(thousands)}k`;
+}
+
 export function PackageRows({
   items,
   showRepo = true,
@@ -39,6 +55,15 @@ export function PackageRows({
           <p className="row-meta">
             <span className="path">
               <FileIcon /> {p.sourcePath}
+            </span>
+            {/* The repository's star count, in the metadata line beside the
+                path and the read date — the register of "facts about where this
+                came from", never a rank or a score. It is not a sort key, not a
+                badge, and not styled to compete with the name: `title` says in
+                words what the glyph means so it cannot be read as a rating.
+                src/db/queries/search.ts consults it for nothing. */}
+            <span title={`${p.stars.toLocaleString('en-US')} GitHub stars`}>
+              ★ {compactStars(p.stars)}
             </span>
             {p.scannedAt ? (
               <span>

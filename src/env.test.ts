@@ -4,7 +4,7 @@ import { normalizeGithubToken, parseEnv } from './env';
 const SENTINEL = 'sentinel-value-that-is-not-a-real-password';
 
 const valid = {
-  DATABASE_URL: `postgres://agentdock_app:${SENTINEL}@localhost:5432/mcpdb`,
+  DATABASE_URL: `postgres://agentdock_app:${SENTINEL}@localhost:5432/agentdock`,
 };
 
 describe('parseEnv', () => {
@@ -20,7 +20,7 @@ describe('parseEnv', () => {
   });
 
   it('rejects a connection string that is not PostgreSQL', () => {
-    expect(() => parseEnv({ DATABASE_URL: 'mysql://localhost:3306/mcpdb' })).toThrowError(
+    expect(() => parseEnv({ DATABASE_URL: 'mysql://localhost:3306/agentdock' })).toThrowError(
       /postgres:\/\//,
     );
   });
@@ -28,7 +28,7 @@ describe('parseEnv', () => {
   it('never echoes a credential into the error message', () => {
     let message = '';
     try {
-      parseEnv({ DATABASE_URL: `mysql://agentdock_app:${SENTINEL}@localhost:3306/mcpdb` });
+      parseEnv({ DATABASE_URL: `mysql://agentdock_app:${SENTINEL}@localhost:3306/agentdock` });
     } catch (error) {
       message = (error as Error).message;
     }

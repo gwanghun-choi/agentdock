@@ -317,9 +317,13 @@ async function fuzzySearch(
   // wider (client.test.ts rejects 'agentdock, public' explicitly), so an
   // unqualified pg_trgm function or operator resolves to nothing and raises
   // 42883 — which the catch below would swallow into a permanent, silent
-  // "no fuzzy results". pg_trgm lives in public on the deployment target
-  // (didim_api, verified 2026-08-12), so both the function and the `<%`
-  // operator name it. The index in schema.ts uses public.gin_trgm_ops and
+  // "no fuzzy results". pg_trgm lives in `public` — where PostgreSQL puts a
+  // trusted extension, and where it was verified to be on the deployment target
+  // on 2026-08-12 — so both the function and the `<%` operator name it. A
+  // deployment that installed it elsewhere changes these three references and
+  // the index in schema.ts together, or none of them: a predicate that differs
+  // from the index expression by a qualifier cannot use it, and the symptom is
+  // a plan, not an error. The index in schema.ts uses public.gin_trgm_ops and
   // still accelerates OPERATOR(public.<%).
   const similarity = sql<number>`public.word_similarity(${q}, ${matchExpr})`;
 

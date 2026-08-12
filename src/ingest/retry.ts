@@ -39,6 +39,12 @@ const DISPOSITION: Record<IngestOutcome, Disposition> = {
   ok: 'succeeded',
   denylisted: 'succeeded',
   no_artifacts: 'succeeded',
+  // The three discovery-gate outcomes are successes for the same reason
+  // `denylisted` is: the job did its work and the answer is no. Retrying would
+  // spend two more core requests to re-read a fork count that has not moved.
+  forked: 'succeeded',
+  archived: 'succeeded',
+  below_star_floor: 'succeeded',
   invalid_input: 'terminal',
   unreadable: 'terminal',
   too_large: 'terminal',

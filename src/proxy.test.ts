@@ -72,18 +72,25 @@ describe('proxy — the production policy', () => {
   });
 });
 
-// The NCP deployment is served at http://49.50.138.22:18100 with no TLS and no
-// terminating proxy. `upgrade-insecure-requests` rewrote every in-page link to
-// https://, where nothing listens, so the home page loaded and each internal
-// navigation failed. These pin the directive to the scheme the request actually
-// arrived on, in both directions — a one-sided test would let the bug back in by
-// simply deleting the directive.
+// A deployment served over plain HTTP, with no TLS and no terminating proxy,
+// is a supported shape: `AGENTDOCK_PORT` publishes a port and nothing requires
+// a certificate in front of it. `upgrade-insecure-requests` rewrote every
+// in-page link to https://, where nothing listens, so the home page loaded and
+// each internal navigation failed. These pin the directive to the scheme the
+// request actually arrived on, in both directions — a one-sided test would let
+// the bug back in by simply deleting the directive.
+//
+// The host below is deliberately a documentation-reserved address (RFC 5737)
+// rather than the address of any real deployment: a test is a tracked file, and
+// a tracked file naming a live host is one grep away from being a target list.
+const HTTP_ORIGIN = 'http://192.0.2.10:8080';
+
 describe('proxy — upgrade-insecure-requests follows the request scheme', () => {
   const has = (res: Response) => policy(res).split('; ').includes('upgrade-insecure-requests');
 
   it('omits the upgrade on a plain HTTP origin, so internal links stay HTTP', () => {
     vi.stubEnv('NODE_ENV', 'production');
-    expect(has(proxy(request('http://49.50.138.22:18100/artifacts')))).toBe(false);
+    expect(has(proxy(request(`${HTTP_ORIGIN}/artifacts`)))).toBe(false);
   });
 
   it('keeps the upgrade on an HTTPS origin', () => {
@@ -121,7 +128,7 @@ describe('proxy — upgrade-insecure-requests follows the request scheme', () =>
         .filter((d) => d !== 'upgrade-insecure-requests')
         .map((d) => d.replace(/'nonce-[A-Za-z0-9+/=]+'/, "'nonce-X'"));
 
-    expect(strip(proxy(request('http://49.50.138.22:18100/a')))).toEqual(
+    expect(strip(proxy(request(`${HTTP_ORIGIN}/a`)))).toEqual(
       strip(proxy(request('https://agentdock.test/a'))),
     );
   });

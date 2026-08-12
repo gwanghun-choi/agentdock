@@ -11,7 +11,7 @@
 // `CREATE SCHEMA IF NOT EXISTS "<migrations schema>"` before touching the
 // history table. PostgreSQL checks CREATE on the *database* before it checks
 // whether the schema already exists, so that statement fails with 42501 for
-// agentdock_app — which is NOCREATEDB and holds no CREATE on mcpdb — even
+// agentdock_app — which is NOCREATEDB and holds no CREATE on the database — even
 // though the schema is right there and the role owns it.
 //
 // The fix is not to grant that privilege. In a database shared with another

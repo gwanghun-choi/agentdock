@@ -1,295 +1,388 @@
 # AgentDock
 
-An open index of AI agent artifacts. You give it a public GitHub repository; it
-reads the skill, plugin, catalog, MCP server, command and hook files inside,
-records what they declare, and links back to the exact file at the exact
-commit it read.
+An open index of AI agent artifacts — skills, plugins, marketplaces, MCP
+servers, slash commands and hooks — discovered from established public GitHub
+repositories, parsed, and linked back to the exact file at the exact commit
+AgentDock read.
+
+![AgentDock artifact discovery interface](docs/images/agentdock-artifacts.png)
 
 **AgentDock reads files and reports what it read. It does not run them, and it
-cannot say whether an artifact is safe.** There is no risk score, no grade, and
+cannot say whether an artifact is safe.** There is no risk score, no grade and
 no safety badge anywhere in the interface, by design.
 
-AgentDock detects all six artifact types — Agent Skills, plugins, plugin
-marketplaces, MCP servers, commands and hooks. Capability disclosure — what an
-artifact can reach, not just what it declares — comes later.
+## What AgentDock is
 
-## Running it locally
+A small, self-hostable registry. It watches a set of public repositories,
+notices the artifact files inside them, records what those files declare, and
+makes the result searchable. That is the whole product.
 
-AgentDock uses the PostgreSQL instance already running on this machine
-(container `didim-mcp-service-backend-db-1`, database `mcpdb`). It connects as
-`agentdock_app`, a non-superuser role that owns the `agentdock` and
-`agentdock_test` schemas and holds no privilege on anything else in that
-database — including the schema belonging to the other application that shares
-it.
+It is **not** a marketplace, an installer, a package manager, or a complete
+index of GitHub. Nothing is executed, nothing is mirrored, and nothing is
+recommended.
 
-### One-time database bootstrap
+Two things follow from that, and they are the reason for most of the design
+decisions below:
 
-Read `scripts/sql/bootstrap-agentdock.sql`, then run it as a superuser and set
-the password interactively:
+- **The corpus is not the ecosystem.** Every result page says so. An artifact
+  AgentDock has not indexed is not an artifact that does not exist.
+- **Popularity is a scheduling signal, not a safety guarantee.** The star floor
+  below decides which unread repositories a small request budget is spent on
+  first. It says nothing about any artifact.
+
+## Supported artifacts
+
+Six types, one detector each in `src/detect/`:
+
+| Type | Recognised by |
+|---|---|
+| **Agent Skill** | `SKILL.md` with YAML frontmatter |
+| **Claude Code Plugin** | `.claude-plugin/plugin.json`, or a directory shaped like one |
+| **Plugin Marketplace** | `.claude-plugin/marketplace.json` — a catalog, which contributes repositories rather than artifacts |
+| **MCP Server** | `.mcp.json`, and the MCP registry's own entries |
+| **Slash Command** | a Markdown file under `.claude/commands/` |
+| **Hook Configuration** | a `hooks` block in `.claude/settings.json` |
+
+Detection is by file shape, never by repository name or topic. A repository with
+none of these costs zero file reads: the tree is inspected for paths first, and
+only matching paths are fetched.
+
+## Discovery policy
+
+A repository is added by automatic discovery when **all** of these hold:
+
+- public
+- at least **50 GitHub stars**
+- not a fork
+- not archived
+- and it actually contains a supported artifact file
+
+There is **no submission form**. AgentDock has no accounts, no sign-in and no
+operator review, so an endpoint that let an anonymous visitor name a repository
+would be an unauthenticated way to spend a shared request budget and to put
+anything at all into a public index, with nobody to hold responsible for it.
+
+The star floor lives in exactly one place, `src/corpus/policy.ts`, and everything
+else — the topic sweep's own floor, the messages, the UI copy — reads it from
+there.
+
+**It is an entry gate, not a deletion rule.** A repository whose stars later fall
+below the floor keeps every artifact it contributed and keeps being re-read on
+the ordinary schedule. Removing artifacts because a repository became less
+popular would be a trust score wearing a different hat, and
+`src/db/queries/search.ts` consults the floor for nothing — a test asserts the
+complete list of modules allowed to import it.
+
+## How indexing works
 
 ```
-docker exec -i didim-mcp-service-backend-db-1 \
-  psql -U mcp -d mcpdb -v ON_ERROR_STOP=1 -f - < scripts/sql/bootstrap-agentdock.sql
-
-docker exec -it didim-mcp-service-backend-db-1 psql -U mcp -d mcpdb
-\password agentdock_app
-\q
+      registry            seed list         curated lists       topic search
+   (MCP registry)      (config/seeds)     (awesome-*.md)     (GitHub search API)
+          │                   │                  │                   │
+          └───────────────────┴────────┬─────────┴───────────────────┘
+                                       ▼
+                                   repo_seed                 no GitHub core cost
+                                       │
+                                       ▼
+                                  ingest_job                 the queue
+                                       │
+                                       ▼
+                          ┌───────────────────────┐
+                          │  metadata + tree      │          2 core requests
+                          ├───────────────────────┤
+                          │  discovery gate       │  ──────► declined: stop here
+                          ├───────────────────────┤
+                          │  commit sha unchanged?│  ──────► unchanged: stop here
+                          ├───────────────────────┤
+                          │  detect → fetch files │          raw host, no quota
+                          │  → parse → analyze    │
+                          └───────────┬───────────┘
+                                      ▼
+                          package / package_version /
+                          capability_finding  ──────────────► search, browse
 ```
 
-`\password` prompts without echo and sends only a SCRAM verifier, so the
-plaintext never reaches a file, a command line, a server log, or the terminal.
+Both gates sit above the expensive part. A declined repository and an unchanged
+one each cost two core requests and **zero** file reads, against the up-to-400
+raw fetches and two minutes of wall clock a full read can take.
 
-- Rollback: `scripts/sql/rollback-agentdock.sql`
-- Proof the boundary holds: `scripts/sql/verify-isolation.sql`
+## Scheduled synchronization
 
-### Every time
+**The web server does not ingest.** `docker compose up`, a restart, a crash
+recovery and a rollback all issue zero GitHub requests. There is no in-process
+worker and no `INGEST_WORKER` flag — the poll loop that used to start at boot was
+deleted rather than defaulted off, because a flag would leave the coupling one
+environment variable away from returning.
+
+Ingestion is one command, which cron runs twice a day and which exits:
+
+```bash
+bun run sync
+```
+
+It discovers from every source, re-checks stored repositories whose last read is
+older than twelve hours (least-recently-read first, so the corpus rotates rather
+than starving its tail), drains the queue, and prints a summary:
 
 ```
-cp .env.example .env      # fill in the password you chose
+AgentDock scheduled sync
+
+  Repositories processed        12
+    ingested (new or changed)   11
+    unchanged, no files read     0
+    no artifacts found           0
+
+  Declined by discovery policy   0
+    below 50 stars               0
+    archived on GitHub           0
+    a fork                       0
+
+  Could not be read              0
+  Rate limited, deferred         1
+  Other failures                 0
+
+  GitHub core requests left      0 of 60
+  Duration                      94s
+```
+
+Every cap prints what it dropped. A run that stops on an exhausted budget says
+how much of the cap it left unspent; a refresh pass that could not reach every
+stale repository says how many it left behind. A cap that prints nothing reads
+as "we covered everything".
+
+**Incremental by commit sha.** A repository whose default branch has not moved
+since the last read short-circuits before a single file is fetched. Running the
+sync twice in a row therefore reads almost nothing the second time — which is
+the property the twice-daily schedule depends on.
+
+## Search
+
+- **Full text** over name, summary, path and type, weighted A→D, in a
+  PostgreSQL generated `tsvector` column maintained by the database.
+- **Typo tolerance** — when full text finds nothing, a trigram pass over name and
+  summary offers close matches, labelled as close matches and never as exact
+  ones.
+- **Filters** by artifact type and by capability observation, applied in SQL
+  inside the same predicate the count uses.
+- **URL as state.** Query, filters and page are all in the address bar, the form
+  is a plain GET with native controls, and the whole page works with JavaScript
+  disabled.
+- **Permalinks.** Every artifact has a stable URL, and every "source on GitHub"
+  link points at the commit sha AgentDock actually read — never at a branch,
+  which would drift.
+
+Capability filters narrow results; they are never a ranking input. Neither are
+stars, downloads, or anything else about a repository's popularity.
+
+## Architecture
+
+```
+Next.js 16 (App Router, all routes force-dynamic, one client component)
+        │
+        └── PostgreSQL 16          the only datastore. No cache, no queue
+             ├── search: tsvector + GIN, pg_trgm for typo tolerance
+             └── the ingest queue: SELECT … FOR UPDATE SKIP LOCKED
+```
+
+There is no Redis, no OpenSearch, no vector database and no message broker. The
+queue is a table, the scheduler is cron, and the lock manager is PostgreSQL.
+
+```
+src/
+  app/          pages only — no server functions, deliberately
+    artifacts/                   browse and search
+    r/[owner]/[repo]/            a repository and what AgentDock lists for it
+    r/[owner]/[repo]/[...path]/  one artifact: every field, and the permalink
+  components/   the sanitizing Markdown renderer, listing rows, inline icons
+  corpus/       policy.ts (the discovery gate), caps.ts (every acquisition
+                bound), refresh.ts (which stored repository to re-check),
+                fanout.ts, seedList.ts, links.ts, search.ts
+  db/           schema, connection, and the read queries the pages use
+  detect/       six detectors, tolerant frontmatter parsing, capped JSON parsing
+  analyze/      capability observation — what a file references, never a verdict
+  github/       the HTTP client, metadata, tree and raw reads
+  ingest/       pipeline.ts (the whole path), persist.ts (the one transaction),
+                errors.ts (everything a person can be told), retry.ts (the delay
+                curve and the per-outcome disposition), worker.ts (one job)
+  proxy.ts      the per-request nonce and the Content-Security-Policy
+scripts/        migrate, sync, corpus reset, boundary scan, fixture capture
+fixtures/       frozen GitHub responses and hand-written hostile inputs
+```
+
+## Local development
+
+```bash
+cp .env.example .env      # fill in the password you chose during bootstrap
 bun install
 bun run db:migrate
 bun run dev               # http://localhost:3000
 ```
 
-`bun run dev` refuses to start unless it is connected as `agentdock_app` with a
-`search_path` confined to a schema AgentDock owns.
+`bun run dev` refuses to start unless it is connected as a role whose
+`search_path` is confined to a schema AgentDock owns.
 
-Open the home page and paste `anthropics/skills`. Submitting no longer waits for
-GitHub: it writes one row to `ingest_job` and hands back a job page at
-`/jobs/{id}`, which re-renders itself until the job reaches a terminal status. To
-get realistic rows without touching the network at all, run `bun run db:seed`
-instead — see **Fixtures** below.
-
-### The background worker
-
-Ingestion runs in a poll loop started from `src/instrumentation.ts` when the
-server boots — there is no second command and no service beyond PostgreSQL.
-Durability lives in the job row rather than in the process: a job whose worker
-died is returned to the queue by an age sweep, and two workers claiming at once
-are arbitrated by PostgreSQL rather than by application code.
-
-```
-INGEST_WORKER=0 bun run dev     # start the server with the loop turned off
-bun run verify:worker           # prove the loop starts at boot, spending no GitHub quota
-```
-
-`INGEST_WORKER` is optional and defaults to on. It is not a secret; it is the
-escape hatch for the day an ingest measurably delays a page render. Turning it
-off costs nothing that is not recoverable: submissions still write their job
-rows, they simply wait, and whichever process next runs with the loop on picks
-them up in the order they were requested.
-
-Submitting a repository returns as soon as its row is written, and the job page
-at `/jobs/{id}` shows what happened to it. Submitting one that is already queued
-or already being read sends you to that same job rather than starting a second.
-
-### What happens when a run fails
-
-A repository is read **at most three times** before AgentDock stops trying, and
-two of the failures never get a second attempt at all: GitHub returns a
-byte-identical response for a repository that does not exist and one that is
-private, and a repository past the size cap will be past it again — so retrying
-either spends the shared budget to learn the same thing twice. Only an
-unreachable GitHub and a storage failure are retried, on a widening delay of one,
-two and four minutes.
-
-Running out of GitHub budget is **not** a failure. The job is scheduled for when
-the budget returns and keeps the attempt it would otherwise have spent, because
-waiting for a clock is not a failed attempt. That schedule is clamped to an hour,
-since the reset time arrives in a response header. When fewer than two requests
-remain the loop stops claiming altogether, so an empty budget produces one
-deferral rather than one failed job per repository waiting.
-
-A job that has exhausted its attempts shows the reason it recorded and a control
-that starts a new run. Nothing retry-specific happens behind that control: a
-finished job has left the active-job index, so the ordinary submit mints a new
-one.
-
-## What is where
-
-```
-src/
-  app/          pages, and actions.ts — the submit server function
-    r/[owner]/[repo]/            a repository and what AgentDock lists for it
-    r/[owner]/[repo]/[...path]/  one artifact: every field, and the permalink
-  components/   the sanitizing Markdown renderer, the submit form, listing rows
-  db/           schema, connection, and the read queries the pages use
-  detect/       six detectors, tolerant frontmatter parsing, capped JSON parsing
-  github/       the HTTP client, metadata, tree and raw reads
-  ingest/       pipeline.ts (the whole path), persist.ts (the one transaction),
-                errors.ts (the nine things a person can be told),
-                retry.ts (the delay curve and the per-outcome disposition),
-                worker.ts (the poll loop, the reaper, the budget gate)
-  proxy.ts      the per-request nonce and the Content-Security-Policy
-  env.ts        configuration parsing; log.ts  one line per ingest
-fixtures/       frozen GitHub responses and hostile inputs
-scripts/        migrate, boundary scan, fixture capture, seed
-```
-
-Every page is server-rendered and reads the database at request time. There is
-one client component in the project — the submit form — and it holds no data,
-only the pending flag.
-
-## The GitHub budget
-
-AgentDock runs **unauthenticated**: GitHub allows it **60 core requests an
-hour**, and one repository costs **two** (metadata plus one recursive tree), so
-roughly thirty repositories an hour. File bodies come from
-`raw.githubusercontent.com`, which costs no quota at all.
-
-`GITHUB_TOKEN` is optional and needs **no scopes**. Setting it raises the limit
-and changes no code. Two things worth knowing before reaching for one:
-
-- A `304` conditional response **does** consume quota when unauthenticated —
-  GitHub's exemption applies only to authorized requests. So conditional
-  requests save nothing here.
-- GraphQL is unavailable unauthenticated (its limit is 0).
-
-The home page shows what was left after AgentDock's most recent request.
-
-## Filling the index from empty
-
-This is the whole cold start: an empty schema to a browsable catalog. It is
-written against `agentdock_test`, which is disposable, so you can run it exactly
-as printed without going near development data. Measured end to end on
-2026-08-11: **831 artifacts held and 678 in the listings, from nothing, in 106
-seconds and 6 core requests.**
-
-**No token is required.** Every number here is the unauthenticated baseline the
-project is designed for — 60 core requests an hour, two per repository.
-`GITHUB_TOKEN` is optional, needs no scopes, changes no code, and raises the
-ceiling to 5,000 an hour if you are in a hurry. Nothing below needs it.
+Nothing is indexed yet, and the dev server will not index anything. To fill it:
 
 ```bash
-# 1. Empty the test schema. Not db:test:setup — see the warning below.
-bun run db:test:reset
-#    agentdock_test: emptied 9 table(s); artifact_type, __drizzle_migrations kept.
+# Frozen fixtures, no network at all. Four real repositories, pinned to a sha.
+bun run db:seed
+bun run db:seed baoyu-skills
 
-# 2. Write the operator seed list. No network at all; the file is committed.
-DATABASE_SCHEMA=agentdock_test bun run corpus:sync --source=seeds --no-enqueue
-#    corpus-sync: source=seeds in-file=15 written=15 dropped-by-cap=0 ...
-#    corpus-sync: listed=0 of held=0 artifact(s) ...
-
-# 3. Ingest three repositories. Six core requests, about two minutes.
-DATABASE_SCHEMA=agentdock_test bun run corpus:sync --source=seeds --enqueue=3 --drain=3
-#    {"event":"ingest","owner":"davila7",...,"found":402,"truncated":true,...}
-#    {"event":"ingest","owner":"wshobson",...,"found":383,...}
-#    {"event":"ingest","owner":"anthropics","repo":"claude-code",...,"found":46,...}
-#    corpus-sync: drained 3 job(s) of at most 3
-#    corpus-sync: listed=678 of held=831 artifact(s) ...
-
-# 4. Look at it. `listed` above is the number the home page renders.
-DATABASE_SCHEMA=agentdock_test bun run dev
-
-# 5. REQUIRED. Put the schema back before running the suite.
-bun run db:test:reset
-
-# 6. Prove it is back.
-bun run ci
-```
-
-**The two numbers.** `listed` is what the home page shows and what
-`countPackages()` returns; `held` is everything AgentDock stored. The difference
-is not loss — every held artifact is still readable at its own URL, on its
-repository's page, carrying the reason it is not in the listings (a fork, a
-byte-identical copy of something already listed, or a file whose frontmatter
-AgentDock could not read). If the two are equal, nothing has been suppressed.
-
-**Step 5 is required, and `db:test:setup` will not do it.** `db:test:setup` is
-`drizzle-kit generate` followed by `scripts/migrate.mjs`, and both are no-ops
-once the schema already matches `src/db/schema.ts` — it reports "already up to
-date" and leaves every row exactly where it was. Six vitest suites share
-`agentdock_test`, `claimJob` takes the oldest claimable row in the *whole*
-schema, and `jobs.test.ts` only cleans up its own `test-owner/queue-spec%`
-sentinels. One real repository name left behind in `ingest_job` therefore makes
-another suite's assertions nondeterministic, and the failure gets blamed on that
-suite. `bun run db:test:reset` is the step that actually empties it.
-
-**What it costs.** Two core requests per repository (metadata plus one recursive
-tree), sixty an hour unauthenticated, so about thirty repositories an hour. File
-bodies come from `raw.githubusercontent.com` and cost no quota. Wall clock, not
-quota, is what binds a single repository: `CAPS.wallClockMs` is 120 seconds at
-`CAPS.concurrency` 2, so a repository at the 400-file cap takes up to two
-minutes. `davila7/claude-code-templates` is one of those — it holds 1,300
-candidate paths against a cap of 400, so **900 go unread and it is permanently
-partial**, which its own page says.
-
-To fill the real `agentdock` schema instead, drop the `DATABASE_SCHEMA` prefix
-and repeat step 3 until `corpus-sync` reports `considered=0`. Each invocation is
-bounded by `CORPUS_CAPS.maxEnqueuePerSync` (25 repositories, 50 core requests)
-and prints what it left behind. Never run `db:test:reset` against it — it cannot
-reach `agentdock`, the schema name is a literal in the script.
-
-## Fixtures
-
-`fixtures/` holds frozen GitHub responses for four real repositories, pinned to
-a commit SHA, plus hand-written hostile inputs (`adversarial/`, `xss/`). **No
-test opens a socket** — the whole suite runs against these bytes.
-
-```
-bun run db:seed                    # ingest anthropics/skills from disk, no network
-bun run db:seed baoyu-skills       # or any other fixture directory
-bun run fixtures:capture           # re-capture from GitHub: 2 core requests per repo
+# Or the real thing, bounded. ~25 repositories and 50 of 60 core requests.
+bun run sync
 ```
 
 `db:seed` runs the **real** pipeline with `fetch` replaced by a fixture reader,
 so seeded rows are exactly what a live ingest would produce.
 
+## Database
+
+AgentDock is built to share a PostgreSQL server with something else. It owns two
+schemas — `agentdock` and `agentdock_test` — and holds no privilege on anything
+outside them.
+
+```bash
+# Once, as a superuser. Read it first.
+psql -d <database> -v ON_ERROR_STOP=1 -f scripts/sql/bootstrap-agentdock.sql
+psql -d <database> -c '\password agentdock_app'
+```
+
+`\password` prompts without echo and sends only a SCRAM verifier, so the
+plaintext never reaches a file, a command line or a server log.
+
+- Rollback: `scripts/sql/rollback-agentdock.sql`
+- Proof the boundary holds: `scripts/sql/verify-isolation.sql`
+
+Search's typo tolerance needs `pg_trgm`. AgentDock never installs it — the
+migration that uses it opens with a guard that fails loudly, naming the exact
+command, if it is missing:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;   -- superuser, once
+```
+
+### Why `scripts/migrate.mjs` and not `drizzle-kit migrate`
+
+Both drizzle-kit and drizzle-orm's own migrator begin with
+`CREATE SCHEMA IF NOT EXISTS`. PostgreSQL checks `CREATE` on the *database*
+before checking whether the schema already exists, so that statement fails with
+`42501` for a role that is `NOCREATEDB` and holds no `CREATE` on the database —
+which is exactly what AgentDock's role is, on purpose.
+
+Granting that privilege would hand AgentDock the ability to create schemas in a
+database it shares. So `scripts/migrate.mjs` reuses drizzle's own migration
+reader and history-table format — same files, same hashes, same
+`__drizzle_migrations` columns — and omits the one statement the role cannot
+run. Switching back later needs no data change. `drizzle-kit generate` is
+untouched; it is offline and opens no connection.
+
+## Docker deployment
+
+```bash
+cp .env.example .env.production      # add AGENTDOCK_PORT
+docker compose --env-file .env.production --profile tools run --rm migrate
+docker compose --env-file .env.production build agentdock
+docker compose --env-file .env.production up -d agentdock
+```
+
+`--env-file` is not optional. A service's `env_file:` is injected into the
+container but is *not* read when Compose interpolates `${AGENTDOCK_PORT}` in the
+`ports:` mapping — only Compose's own env file is, and this repository ships no
+`.env`. Omitting the flag fails loudly, which is the intended behaviour rather
+than a silent default port.
+
+`AGENTDOCK_PORT` has no default deliberately, so it cannot silently take a port
+another service on the host wants.
+
+See [DEPLOY.md](DEPLOY.md) for the full runbook, including the one-time corpus
+reset and cron registration.
+
+## Scheduled job setup
+
+Twice a day, twelve hours apart — which is what makes the schedule and the
+twelve-hour staleness cutoff agree:
+
+```cron
+0 3,15 * * * cd /path/to/agentdock && docker compose --env-file .env.production --profile tools run --rm sync >> /var/log/agentdock-sync.log 2>&1
+```
+
+Replace `/path/to/agentdock` with wherever you deployed it. Do not add a systemd
+timer as well: two schedulers running the same one-shot is how a
+60-requests-an-hour budget gets spent twice.
+
+## Testing
+
+```bash
+bun run ci     # boundary scan, lint, type-check, tests — exactly what CI runs
+```
+
+**No test opens a socket.** `fixtures/` holds frozen GitHub responses for four
+real repositories pinned to a commit sha, plus hand-written hostile inputs
+(`adversarial/`, `xss/`), and the whole suite runs against those bytes.
+
+Database-backed suites use the `agentdock_test` schema and skip visibly when
+there is no `DATABASE_URL`, so CI stays green without a database while a local
+run exercises the real queries.
+
+```bash
+bun run db:test:setup     # build agentdock_test (DDL only — deletes nothing)
+bun run db:test:reset     # empty it (the schema name is a literal in the script)
+```
+
+Vitest runs test **files in parallel** against that one schema, so a
+database-backed suite keys its rows on a sentinel no other suite can produce.
+
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `bun run dev` | Development server |
-| `bun run build` | Production build. Needs no database — every page that reads one is request-time. |
-| `bun run start` | Serve the build |
-| `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which hangs on these vitest-authored files. |
+| `bun run dev` | Development server. Starts no ingestion. |
+| `bun run build` / `bun run start` | Production build and serve. The build needs no database. |
+| `bun run sync` | **The scheduled job.** Discover, refresh, drain, summarize. |
+| `bun run corpus:sync --source=…` | The same machinery with sources and caps exposed, for filling an index by hand |
+| `bun run corpus:reset --confirm` | Empty the corpus. Refuses unless `AGENTDOCK_ALLOW_CORPUS_RESET=1` as well. Drops nothing. |
+| `bun run ci` | Boundary scan, lint, type-check, tests |
+| `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which hangs on these files. |
 | `bun run lint` / `bun run format` | Biome, check and write |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run check:boundaries` | The migration and source boundary scan |
-| `bun run ci` | Boundary scan, lint, type-check, tests — exactly what CI runs |
-| `bun run db:generate` | Generate a migration from `src/db/schema.ts`. Offline; opens no connection. |
+| `bun run db:generate` | Generate a migration from `src/db/schema.ts`. Offline. |
 | `bun run db:migrate` | Apply the reviewed migrations in `drizzle/` |
 | `bun run db:seed [fixture]` | Ingest a frozen fixture through the real pipeline |
-| `bun run db:reset --confirm` | Empty the `agentdock` schema |
-| `bun run db:test:setup` | Build the `agentdock_test` schema for database-backed tests. Applies DDL only — a no-op once the schema matches, and it deletes **no** rows. |
-| `bun run db:test:reset` | Empty every data table in `agentdock_test`, keeping the DDL and `artifact_type`. The schema name is a literal in the script and it takes no argument, so it cannot reach `agentdock`. |
-| `bun run corpus:sync --source=...` | Acquire seeds from one corpus source, fan them out under a cap, optionally drain some. See [Filling the index from empty](#filling-the-index-from-empty). |
+| `bun run db:reset --confirm` | Drop every table in `agentdock` (development only) |
+| `bun run db:test:setup` / `db:test:reset` | Build / empty the test schema |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
-| `bun run analyze:backfill [limit]` | Re-run the capability analyzers over every stored `package_version` with `analyzed_at` still null — reads stored bytes only, issues no GitHub request. Needs a database; deliberately not part of `ci`. Default limit 500. |
-| `bun run verify:worker` | Start a built server, make no request, and assert a pre-seeded job still ran. Needs a database and a build; deliberately not part of `ci`. |
+| `bun run analyze:backfill [limit]` | Re-run the capability analyzers over stored bytes. Issues no GitHub request. |
 
 There is deliberately no `db:push` and no `db:pull`. Those are the only migration
-commands that diff live database state, and this database holds another
+commands that diff live database state, and this database may hold another
 application's data; `bun run check:boundaries` fails the build if such a script
 ever appears.
 
-**CI runs `bun run build` and then `bun run ci` — the same single command you
-run**, so the two cannot drift. The build comes first because it regenerates a
-type declaration the linter then reads; linting first can fail on a file the
-build was about to fix.
+CI runs `bun run build` and then `bun run ci` — the same commands you run, so the
+two cannot drift. The build comes first because it regenerates a type
+declaration the linter then reads.
 
-## How the schema boundary is enforced
+## Security and trust model
 
-Four layers, weakest to strongest. The first three are conventions a bug can
-defeat; the fourth is enforced by PostgreSQL.
+**AgentDock does not tell you whether an artifact is safe.** It reads files and
+reports what it read.
 
-1. **Connection** — `search_path` is pinned to one schema on every connection.
-2. **ORM** — every table hangs off `pgSchema()`, so every emitted statement is
-   schema-qualified. `search_path` is a default, not a fence.
-3. **Migrations** — `drizzle-kit generate` runs offline and cannot see another
-   schema exists; `scripts/check-boundaries.mjs` then rejects any generated SQL
-   that names a schema AgentDock does not own, leaves a target unqualified, or
-   carries an unreviewed destructive verb.
-4. **Database** — `agentdock_app` is not a superuser, cannot create databases,
-   roles, or schemas, and holds no privilege on any object outside its two
-   schemas. A statement that defeats layers 1–3 fails with a permission error
-   instead of succeeding.
+What it does say is what it *observed* while reading, in a vocabulary of
+observation rather than judgement:
 
-## Source boundary rules
+- *No network request observed*
+- *No Bash grant declared*
+- *No bundled script files*
 
-`bun run check:boundaries` also scans every non-test file under `src/` and fails
-the build on four constructions. Each is a requirement that can be enforced
-structurally, so it is enforced rather than remembered.
+Each of those describes what AgentDock looked at, not everything an artifact can
+do. The interface says so on every page that shows one. Null and empty are kept
+distinct throughout: an artifact analysed and found to declare nothing reads
+differently from one nothing has analysed.
+
+Four structural rules are enforced by `bun run check:boundaries` on every
+non-test file under `src/`, because each is a requirement that can be enforced
+rather than remembered:
 
 | Rule | Fails on | What it protects |
 |---|---|---|
@@ -297,53 +390,34 @@ structurally, so it is enforced rather than remembered.
 | `no-execution` | `child_process`, `execSync`, `spawnSync`, `node:vm` | Nothing from a scanned repository is ever run. |
 | `no-disk-write` | `writeFileSync`, `createWriteStream`, `mkdirSync`, … | Repository content never reaches disk, which removes archive extraction and path traversal by construction. |
 | `no-host-sprawl` | a GitHub hostname named outside `src/github/` | `git grep` answers "what can this reach" completely. Every URL is built from two validated parts. |
-| `no-verdict-vocabulary` | *safe*, *clean*, *verified*, *trusted*, *approved*, *malicious*, *grade*, *risk score* in `src/app/**` or `src/components/**` UI copy | CAP-10/CAP-12: no page ever renders a safety verdict. A `SANCTIONED` list of exact substrings, each with a reason, is the product's own ledger of the few places it is allowed to say the word — see `src/app/r/[owner]/[repo]/[...path]/page.tsx`'s "What AgentDock does not check" section, which permanently states the limits of everything above it. |
+| `no-verdict-vocabulary` | *safe*, *clean*, *verified*, *trusted*, *approved*, *malicious*, *grade*, *risk score* in UI copy | No page ever renders a safety verdict. |
 
-## Why migrations are applied by `scripts/migrate.mjs`
+The 50-star floor is **not** part of this. It is a scheduling rule about a
+request budget and buys no assurance about anything it admits.
 
-`drizzle-kit migrate` and drizzle-orm's own migrator both begin with
-`CREATE SCHEMA IF NOT EXISTS "<migrations schema>"`. PostgreSQL checks `CREATE`
-on the *database* before it checks whether the schema already exists, so that
-statement fails with `42501 permission denied for database mcpdb` for a role
-that is `NOCREATEDB` and holds no `CREATE` on the database — which is exactly
-what `agentdock_app` is, on purpose.
+Every artifact body is stored as a capped excerpt with attribution, never as a
+mirror, and every rendered body goes through a sanitizing Markdown pipeline.
 
-Granting that privilege would hand AgentDock the ability to create schemas in a
-database it shares with another application, which is the one thing layer 4
-exists to prevent. So `scripts/migrate.mjs` reuses drizzle's own migration
-reader and history-table format — the same files, hashes, and
-`__drizzle_migrations` columns — and omits the one statement the role cannot
-run. Migration history stays in `agentdock.__drizzle_migrations`; no `drizzle`
-schema is ever created. Switching back to drizzle's migrator later needs no data
-change.
+## Limitations
 
-`drizzle-kit generate` is untouched.
+- **The corpus is small and deliberately bounded.** Every acquisition source has
+  a cap, and every cap prints what it dropped.
+- **Unauthenticated GitHub is 60 requests an hour**, two per repository — about
+  thirty repositories an hour, which is the real limit on how fast the index can
+  grow. `GITHUB_TOKEN` raises it to 5,000 and needs no scopes.
+- **A large repository is read partially.** 400 files per pass, 120 seconds of
+  wall clock. A repository cut short says so on its own page, and nothing is
+  delisted from an incomplete read — a partial read is not evidence of absence.
+- **Capability observation is not analysis.** It reads a file's declared
+  frontmatter and its text; it does not resolve imports, follow references or
+  execute anything.
+- **Search is PostgreSQL full text plus trigrams.** No embeddings, no semantic
+  search, no ranking by anything but text relevance.
+- **Ordering is by recency, not quality.** There is no "most starred" sort, and
+  adding one would need a deliberate decision about what it means.
 
-## Environment
+## Development workflow
 
-Bun loads `.env` only for processes running on the Bun runtime. Any script that
-needs a credential is therefore launched with `bun`, never with `node`; the
-vitest config loads `.env` itself through Node's `process.loadEnvFile`. On CI
-there is no `.env`, so the database-backed suites skip visibly rather than
-failing.
-
-## Test database
-
-Database-backed tests use the `agentdock_test` schema, so a test run can never
-read or destroy development data. `agentdock_app` cannot create schemas, so
-`agentdock_test` is created once during the bootstrap above; `bun run
-db:test:setup` applies the current schema definitions to it, writing its
-generated SQL into the git-ignored `.drizzle-test/` so it can never be confused
-with the reviewed migrations in `drizzle/`.
-
-`db:test:setup` applies **DDL only**. Once the schema matches `src/db/schema.ts`
-it is a no-op that reports "already up to date" and deletes nothing, so it is not
-a way to empty the schema. `bun run db:test:reset` is — and anything that leaves
-a row behind for a real repository name has to use it, because `claimJob` takes
-the oldest claimable row in the whole schema and each suite only cleans up its
-own sentinels.
-
-Vitest runs test **files in parallel** against that one schema. A database-backed
-suite must therefore key its rows on a sentinel no other suite can produce — for
-`repository` that means both `github_node_id` and `full_name`, which carry
-separate unique indexes.
+See [CLAUDE.md](CLAUDE.md). In short: read the source before changing it, keep
+the diff narrow, add a regression test for anything that was a bug, and run
+`bun run ci` and `bun run build` before calling it done.

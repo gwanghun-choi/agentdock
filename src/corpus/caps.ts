@@ -1,3 +1,5 @@
+import { MIN_REPOSITORY_STARS } from './policy';
+
 /**
  * The bounds every corpus acquisition source shares.
  *
@@ -65,28 +67,41 @@ export const CORPUS_CAPS = {
    */
   maxSearchRequests: 60,
   /**
-   * The star value the ladder stops at.
+   * The star value the ladder stops at — the registry's own discovery floor, not
+   * a second number.
    *
-   * A SCHEDULING decision about work not yet done, not a judgment about an
-   * artifact — the distinction matters because 05-CONTEXT D-03 refuses stars as
-   * a listing input, and these two decisions read as a contradiction otherwise.
-   * D-03 refuses to exclude an artifact AgentDock has ALREADY READ from its
-   * listings on a popularity signal. This floor decides which repositories to
-   * spend a scarce fetch budget on FIRST, among repositories nobody has looked
-   * at yet — the same kind of decision the operator seed list makes by ordering
-   * on artifact density and the registry sweep makes by ordering on recency.
-   * Nothing is excluded by it: a zero-star repository remains submittable by
-   * hand, ingestible, and listable.
+   * It was 10 while the ingest path accepted anything a source named. Now that
+   * `discoveryRejection` refuses a new repository below MIN_REPOSITORY_STARS,
+   * a lower sweep floor would write seeds whose only outcome is two core
+   * requests spent learning they are ineligible — the most expensive way there
+   * is to discover a number the search API already returned. One constant, so
+   * the sweep names what the gate accepts.
    *
-   * The value is not a quality threshold either. Measured 2026-08-11,
-   * topic:claude-code holds 36,487 repositories at 0-1 stars — 63% of the topic,
-   * two indivisible star values each roughly eighteen times the 1,000-result cap,
-   * so that region is unreachable by sharding at any depth. At this floor the
-   * sweep still names more repositories than the ingest budget can consume for
-   * months. The floor's job is to make the first few hundred the densest, not to
-   * make the set finite.
+   * See src/corpus/policy.ts for why a star floor is a scheduling decision
+   * rather than a judgment, and measured 2026-08-11: topic:claude-code holds
+   * 36,487 repositories at 0-1 stars, 63% of the topic, in two indivisible star
+   * values each roughly eighteen times the 1,000-result paging cap. The floor's
+   * job is to make the first few hundred the densest, not to make the set
+   * finite — at this value the sweep still names more repositories than the
+   * ingest budget can consume for months.
    */
-  searchMinStars: 10,
+  searchMinStars: MIN_REPOSITORY_STARS,
+  /**
+   * Already-stored repositories one scheduled sync may re-check for upstream
+   * changes, oldest read first.
+   *
+   * 25 x 2 core requests, the same arithmetic as maxEnqueuePerSync above and
+   * for the same reason — except that most of these cost nothing beyond those
+   * two, because an unmoved commit sha short-circuits before a single file is
+   * read (src/github/scan.ts). Two syncs a day therefore re-check up to 50
+   * repositories daily against a 60-an-hour unauthenticated budget.
+   *
+   * Bounds one invocation. Does NOT bound the corpus: a corpus larger than
+   * 2 x this per day is re-checked on a rotation rather than in full, which is
+   * what ordering on scanned_at buys, and the sync prints how many were still
+   * stale when it stopped.
+   */
+  maxRefreshPerSync: 25,
   /**
    * Milliseconds between search requests. 10 a minute is the unauthenticated
    * ceiling, so 6,500 ms is that rate with margin; a burst instead earns a 403

@@ -84,8 +84,8 @@ export function proxy(request: NextRequest) {
     // outage: the deployment at http://<host>:<port> loads (the address bar is not
     // upgraded, and the policy only arrives with that first response), then every
     // link inside the page is upgraded to https://<host>:<port>, where no TLS
-    // listener exists. Observed exactly that way on the NCP deployment: the home
-    // page opened, and each internal link failed.
+    // listener exists. Observed exactly that way on a plain-HTTP deployment: the
+    // home page opened, and every internal link failed.
     //
     // Emitting it only for requests that already arrived over HTTPS keeps the
     // protection wherever it can protect anything — a page served over HTTPS is

@@ -48,9 +48,16 @@ if (!url) {
 const sql = postgres(url, { max: 1, connection: { search_path: SCHEMA }, onnotice: () => {} });
 
 try {
-  const [{ db: database }] = await sql`select current_database() as db`;
-  if (database !== 'mcpdb') {
-    throw new Error(`Refusing to reset: current_database() is ${database}, expected mcpdb`);
+  // The SCHEMA, not the database name. AgentDock is self-hostable, so the
+  // database differs per deployment and a literal name here would refuse to run
+  // for everyone but its author while asserting nothing AgentDock owns. The
+  // schema is the boundary, and SCHEMA is a literal in this file.
+  const [{ schema }] = await sql`select current_schema() as schema`;
+  if (schema !== SCHEMA) {
+    throw new Error(
+      `Refusing to reset: current_schema() is ${schema}, expected ${SCHEMA}. ` +
+        'The connection is not confined to the schema this script empties.',
+    );
   }
 
   const tables = await sql`

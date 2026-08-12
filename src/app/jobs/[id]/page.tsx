@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
-import { requeueJob } from '@/app/actions';
 import { JobPanel } from '@/components/JobPanel';
 import { PollUntilDone } from '@/components/PollUntilDone';
 import { getJobView } from '@/db/queries/jobs';
@@ -12,6 +11,16 @@ const jobId = z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER);
 
 type Props = { params: Promise<{ id: string }> };
 
+/**
+ * A read-only view of one ingest run.
+ *
+ * No retry control any more, and JobPanel's `retry` slot is left empty rather
+ * than filled with a disabled button. The control was a form posting an
+ * arbitrary `repo` value to a server function, which made it a public endpoint
+ * for enqueueing any repository on GitHub — the same hole the home page's index
+ * form was, in the place nobody looked. Re-reading a repository is now the
+ * scheduled sync's job and reaches this page as a new row.
+ */
 export default async function JobPage({ params }: Props) {
   const parsed = jobId.safeParse((await params).id);
   if (!parsed.success) notFound();
@@ -23,19 +32,7 @@ export default async function JobPage({ params }: Props) {
 
   return (
     <>
-      <JobPanel
-        job={job}
-        // Supplied here rather than imported by the panel, so the panel stays a
-        // component that reaches nothing and its suite stays runnable without a
-        // database. Nothing retry-specific happens on the other side: a terminal
-        // job has left the active-job index, so the same enqueue mints a new one.
-        retry={
-          <form action={requeueJob}>
-            <input type="hidden" name="repo" value={job.target} />
-            <button type="submit">Try again</button>
-          </form>
-        }
-      />
+      <JobPanel job={job} />
       <PollUntilDone done={done} />
     </>
   );

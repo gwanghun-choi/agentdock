@@ -7,12 +7,11 @@
 --
 -- HOW TO RUN:
 --
---   docker exec -i didim-mcp-service-backend-db-1 \
---     psql -U mcp -d mcpdb -v ON_ERROR_STOP=1 -f - < scripts/sql/bootstrap-agentdock.sql
+--   psql -U <superuser> -d <database> -v ON_ERROR_STOP=1 -f scripts/sql/bootstrap-agentdock.sql
 --
 -- Then set the password separately (it is NOT in this file, by design):
 --
---   docker exec -it didim-mcp-service-backend-db-1 psql -U mcp -d mcpdb
+--   psql -U <superuser> -d <database>
 --   \password agentdock_app
 --   \q
 --
@@ -40,9 +39,11 @@ CREATE ROLE agentdock_app
   NOREPLICATION;
 
 -- The two schemas AgentDock will ever own. agentdock_app cannot create schemas
--- itself: mcpdb has no explicit ACL, so PUBLIC holds CONNECT and TEMPORARY but
--- not CREATE on the database. Both are therefore created here, in the only
--- superuser session this project gets.
+-- itself: a database with no explicit ACL grants PUBLIC only CONNECT and
+-- TEMPORARY, never CREATE. Both are therefore created here, in the only
+-- superuser session this project gets. This statement is also the check: if
+-- your database DID grant CREATE to PUBLIC, that is a pre-existing exposure
+-- worth knowing about, and it is not AgentDock's to revoke.
 CREATE SCHEMA agentdock      AUTHORIZATION agentdock_app;
 CREATE SCHEMA agentdock_test AUTHORIZATION agentdock_app;
 

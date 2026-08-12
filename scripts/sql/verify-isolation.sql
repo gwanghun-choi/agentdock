@@ -2,8 +2,7 @@
 --
 -- Proves the AgentDock isolation boundary holds. Run as a SUPERUSER:
 --
---   docker exec -i didim-mcp-service-backend-db-1 \
---     psql -U mcp -d mcpdb -v ON_ERROR_STOP=1 -f - < scripts/sql/verify-isolation.sql
+--   psql -U <superuser> -d <database> -v ON_ERROR_STOP=1 -f scripts/sql/verify-isolation.sql
 --
 -- Read-only, except for section 7, which runs probe statements under
 -- SET LOCAL ROLE inside a transaction that is unconditionally rolled back.

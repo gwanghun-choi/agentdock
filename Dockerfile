@@ -1,4 +1,4 @@
-# AgentDock production image — single-server Docker deployment (NCP).
+# AgentDock production image — single-server Docker deployment.
 #
 # Three stages so the runtime carries neither bun nor the build toolchain:
 #   deps    installs from the committed lockfile only

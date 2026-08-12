@@ -10,7 +10,8 @@
 --      that same literal
 --   3. the connecting role owns nothing outside agentdock and agentdock_test,
 --      so a statement that escaped 1 and 2 still fails with a permission error
---   4. the session flag and the database name are both asserted first
+--   4. the session flag and the connection's current_schema are both asserted
+--      first
 --
 -- The schema itself is deliberately not dropped: agentdock_app has no CREATE
 -- privilege on the database and could not recreate it without another
@@ -19,8 +20,15 @@
 DO $$
 DECLARE stmt text;
 BEGIN
-  IF current_database() <> 'mcpdb' THEN
-    RAISE EXCEPTION 'Refusing to reset: current_database() is %, expected mcpdb', current_database();
+  -- The SCHEMA, not the database name. AgentDock is meant to be self-hosted, so
+  -- the database it lives in differs per deployment and a literal name here
+  -- would be one deployment's name pretending to be a safety property — it would
+  -- also refuse to run for everyone else. The schema is the boundary AgentDock
+  -- actually owns, and it is what the loop below deletes from.
+  IF current_schema() <> 'agentdock' THEN
+    RAISE EXCEPTION
+      'Refusing to reset: current_schema() is %, expected agentdock. The connection is not confined to the schema this file empties.',
+      current_schema();
   END IF;
 
   IF current_setting('agentdock.allow_reset', true) IS DISTINCT FROM 'yes' THEN

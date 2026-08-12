@@ -13,6 +13,9 @@ const OUTCOMES: IngestOutcome[] = [
   'no_artifacts',
   'unavailable',
   'storage_failed',
+  'forked',
+  'archived',
+  'below_star_floor',
 ];
 
 const FAILURES: GitHubFailure[] = [
@@ -32,9 +35,12 @@ describe('the outcome table', () => {
     for (const outcome of named) {
       expect(messageFor(outcome).length).toBeGreaterThan(20);
     }
-    // Nine outcomes, eight of which a person can be shown.
-    expect(OUTCOMES).toHaveLength(9);
-    expect(new Set(messages).size).toBe(8);
+    // Twelve outcomes, eleven of which a person can be shown. The three added
+    // by the discovery gate (src/corpus/policy.ts) carry messages for the same
+    // reason every other one does: a job page that showed a bare status token
+    // would make the policy invisible to the person it applied to.
+    expect(OUTCOMES).toHaveLength(12);
+    expect(new Set(messages).size).toBe(11);
   });
 
   it('says nothing on success, so there is no empty banner to render', () => {

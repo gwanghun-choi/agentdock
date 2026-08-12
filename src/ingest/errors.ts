@@ -1,3 +1,4 @@
+import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { GitHubError } from '@/github/client';
 
 export type IngestOutcome =
@@ -9,7 +10,14 @@ export type IngestOutcome =
   | 'too_large'
   | 'no_artifacts'
   | 'unavailable'
-  | 'storage_failed';
+  | 'storage_failed'
+  // The three automatic-discovery gate outcomes (src/corpus/policy.ts). Named
+  // separately rather than folded into one `not_eligible` because the scheduled
+  // sync's summary reports a count per reason, and a single outcome would make
+  // "36 forks" and "36 unpopular repositories" the same line.
+  | 'forked'
+  | 'archived'
+  | 'below_star_floor';
 
 /**
  * What an attempt row can record. Every ingestion outcome, plus the no-change
@@ -56,6 +64,25 @@ export const OUTCOME_MESSAGES: Record<Exclude<IngestOutcome, 'ok'>, string> = {
 
   storage_failed:
     'AgentDock read the repository but could not store the result. Nothing was saved.',
+
+  // The three gate sentences below say what AgentDock's schedule does, never
+  // what a repository is worth. Each names the rule and, where there is one, the
+  // number — a reader who disagrees with the policy can then see the policy
+  // rather than guess at it.
+  forked:
+    'AgentDock does not add forks through automatic discovery. ' +
+    'The upstream repository is what it reads.',
+
+  archived:
+    'That repository is archived on GitHub, so automatic discovery does not add it. ' +
+    'Anything AgentDock already read from it stays readable.',
+
+  // Interpolated, never retyped: the floor has exactly one definition and a
+  // sentence carrying a stale copy of it is worse than a sentence without one.
+  below_star_floor:
+    `AgentDock adds repositories with at least ${MIN_REPOSITORY_STARS} GitHub stars ` +
+    'through automatic discovery. That is how it decides which unread repositories ' +
+    'to spend a small request budget on first; it is not a statement about any artifact.',
 };
 
 /** Adds the reset time when it is known, because "try later" without a when is not actionable. */

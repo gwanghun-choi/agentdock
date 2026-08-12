@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import { ArrowRightIcon } from '@/components/Icon';
+import { ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
-import { SubmitForm } from '@/components/SubmitForm';
+import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { countPackages, listPackages } from '@/db/queries/packages';
-import { rateLimitState } from '@/github/client';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
 // CI, where there is no database.
@@ -12,74 +11,83 @@ export const dynamic = 'force-dynamic';
 export default async function HomePage() {
   const [recent, total] = await Promise.all([listPackages({ limit: 10 }), countPackages()]);
 
-  // The remaining allowance as of AgentDock's last GitHub request. Read from the
-  // headers the client already saw rather than fetched: a page render that
-  // depends on an upstream call is a page that a slow upstream can take down,
-  // and the number here would be the same number.
-  const rate = rateLimitState();
-
   return (
     <>
-      {/* Description, then the one action. The previous page opened with two
-          paragraphs of prose above the form; indexing a repository is what this
-          page is for, so it sits directly under a single sentence. */}
+      {/* Description, then the one action. The action used to be a form that
+          indexed whatever repository a visitor typed; AgentDock has no accounts
+          and no operator review, so that was an unauthenticated way to spend a
+          shared 60-request budget and to put any repository at all into the
+          index. Browsing is what this page is for now, so that is the button. */}
       <section className="hero">
         <h1>Find agent artifacts, and see where they came from.</h1>
         <p className="lede">
-          An open index of skills, plugins, marketplaces, MCP servers, commands and hooks. Paste a
-          public GitHub repository and AgentDock reads the files that declare them, records what
-          they declare, and links back to the exact file at the exact commit it read.
+          An open index of skills, plugins, marketplaces, MCP servers, commands and hooks. AgentDock
+          reads the files that declare them in established public repositories, records what they
+          declare, and links back to the exact file at the exact commit it read.
+        </p>
+        <p className="actions">
+          <Link className="btn" href="/artifacts">
+            Browse artifacts <ArrowRightIcon />
+          </Link>
+          <Link className="btn btn-quiet" href="/artifacts?q=">
+            <SearchIcon /> Search
+          </Link>
         </p>
       </section>
 
-      <section className="card" aria-labelledby="index-heading">
-        <h2 className="sr-only" id="index-heading">
-          Index a repository
-        </h2>
-        <SubmitForm />
-      </section>
-
-      {/* The budget was a four-line paragraph. The numbers are the content, so
-          they are the thing that is large; the sentence explaining them stays,
-          because dropping it would make the numbers unreadable rather than
-          compact. */}
-      <section aria-labelledby="budget-heading">
+      {/* What used to be the submit form's job — telling a visitor how a
+          repository gets in here — stated as the policy it actually is. Every
+          number and every condition below is the same one the code enforces:
+          the star floor is imported, not retyped, and the other three come
+          straight from discoveryRejection's own ordering. */}
+      <section aria-labelledby="policy-heading">
         <div className="section-head">
-          <h2 id="budget-heading">Request budget</h2>
+          <h2 id="policy-heading">How a repository gets indexed</h2>
         </div>
         <div className="card">
+          <p>
+            AgentDock discovers repositories on its own, twice a day, from a public registry, a
+            curated seed list and GitHub&apos;s own topic search. There is no submission form:
+            nothing is added by request.
+          </p>
           <dl className="stats">
             <div>
-              <dt>GitHub API</dt>
+              <dt>Stars</dt>
               <dd>
-                Unauthenticated
-                <small>no token configured</small>
+                {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
               </dd>
             </div>
             <div>
-              <dt>Allowance</dt>
+              <dt>Visibility</dt>
               <dd>
-                60<small>requests per hour</small>
+                Public<small>private repositories are unreadable, not excluded</small>
               </dd>
             </div>
             <div>
-              <dt>Capacity</dt>
+              <dt>Not a fork</dt>
               <dd>
-                ~30<small>repositories per hour, at two requests each</small>
+                Upstream only<small>the original is what gets read</small>
               </dd>
             </div>
             <div>
-              <dt>Remaining</dt>
+              <dt>Not archived</dt>
               <dd>
-                {rate ? rate.remaining : '—'}
-                <small>
-                  {rate
-                    ? `of ${rate.limit} after the most recent request`
-                    : 'no call since startup'}
-                </small>
+                Active<small>an archive has no next commit</small>
               </dd>
             </div>
           </dl>
+          {/* The one sentence that keeps the star floor from reading as a
+              quality claim. It is a scheduling rule about a small request
+              budget, and src/corpus/policy.ts says the same thing to the next
+              person who reads the code. */}
+          <p className="notice">
+            <InfoIcon />
+            <span>
+              The star floor decides which unread repositories AgentDock spends its small GitHub
+              request budget on first. It is a popularity signal used for scheduling, not a
+              statement about any artifact.
+            </span>
+          </p>
         </div>
       </section>
 
@@ -94,7 +102,9 @@ export default async function HomePage() {
         </div>
         {recent.length === 0 ? (
           <div className="empty">
-            <p className="muted">Nothing indexed yet. Submit a repository above to start.</p>
+            <p className="muted">
+              Nothing indexed yet. The scheduled sync fills this the next time it runs.
+            </p>
           </div>
         ) : (
           <PackageRows items={recent} />

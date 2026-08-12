@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
+import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import {
   ARTIFACT_TYPE_IDS,
   CAPABILITY_FILTER_IDS,
@@ -65,8 +66,9 @@ const CAPABILITY_FILTER_LABELS: Record<(typeof CAPABILITY_FILTER_IDS)[number], s
 // rots silently. The scope statement is true at any size, which is what it is
 // for; the exact totals are already on the page beside the results.
 const SCOPE_SENTENCE =
-  'AgentDock indexes a curated and registry-derived corpus. ' +
-  'It is not a complete index of GitHub.';
+  `AgentDock indexes public, non-fork, non-archived repositories with at least ` +
+  `${MIN_REPOSITORY_STARS} GitHub stars, discovered from a registry, a curated seed list ` +
+  'and topic search. It is not a complete index of GitHub.';
 
 const NO_FILTERS: SearchFilters = { types: [], capabilities: [] };
 
@@ -267,10 +269,15 @@ export default async function ArtifactsPage({
         {pageHead}
         {searchControls}
         <div className="empty">
-          <p className="muted">No artifacts indexed yet.</p>
+          {/* No "submit a repository" link any more: there is nothing to submit
+              to. The honest next step is the policy that decides what arrives
+              here, which the home page states. */}
+          <p className="muted">
+            No artifacts indexed yet. The scheduled sync fills this the next time it runs.
+          </p>
           <p className="actions">
-            <Link className="btn" href="/">
-              Submit a repository
+            <Link className="btn btn-quiet" href="/">
+              How a repository gets indexed
             </Link>
           </p>
         </div>

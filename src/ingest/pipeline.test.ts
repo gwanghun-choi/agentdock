@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { DETECTORS } from '@/detect';
 import type { Detector } from '@/detect/types';
 import { CAPS } from '@/github/scan';
@@ -207,6 +208,104 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+  });
+
+  /**
+   * The automatic-discovery gate, through the real pipeline rather than through
+   * discoveryRejection alone (which policy.test.ts covers on its own).
+   *
+   * What is proved here is the wiring: that the gate runs before any file is
+   * read, that it applies only to a repository AgentDock has never read, and
+   * that a rejection stores nothing. The reference fixture is a 167,306-star
+   * public non-fork, so every rejection below is produced by overriding exactly
+   * one field of its metadata.
+   */
+  describe('the automatic-discovery gate', () => {
+    const withMeta = (patch: Record<string, unknown>) =>
+      JSON.stringify({ ...JSON.parse(repoJson), ...patch });
+
+    async function repositoryRowCount(): Promise<number> {
+      const [row] = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM repository WHERE github_node_id = ${NODE_ID}
+      `;
+      return row.n;
+    }
+
+    it.each([
+      ['below the floor', { stargazers_count: MIN_REPOSITORY_STARS - 1 }, 'below_star_floor'],
+      ['archived', { archived: true }, 'archived'],
+      ['a fork', { fork: true }, 'forked'],
+    ])('declines a new repository that is %s', async (_label, patch, outcome) => {
+      stubGitHub({ repo: withMeta(patch) });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result).toMatchObject({ ok: false, outcome });
+      // Nothing stored. A gate that wrote the repository row and then declined
+      // would leave a row the refresh pass re-reads twice a day forever.
+      expect(await repositoryRowCount()).toBe(0);
+      expect(await storedPackages()).toHaveLength(0);
+    });
+
+    it.each([
+      ['at exactly the floor', { stargazers_count: MIN_REPOSITORY_STARS }],
+      ['one above the floor', { stargazers_count: MIN_REPOSITORY_STARS + 1 }],
+    ])('admits a new repository %s', async (_label, patch) => {
+      stubGitHub({ repo: withMeta(patch) });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result.ok).toBe(true);
+      expect(await repositoryRowCount()).toBe(1);
+    });
+
+    it('reads no file at all when it declines, so the raw host is never contacted', async () => {
+      stubGitHub({ repo: withMeta({ stargazers_count: 0 }) });
+
+      await ingestRepository(FULL_NAME);
+
+      // The two core requests were already in flight when the gate ran; what it
+      // saves is the up-to-400 raw reads below it. `contacted` proves the
+      // difference rather than asserting it.
+      expect(contacted).toEqual(['api.github.com', 'api.github.com']);
+      expect(contacted).not.toContain('raw.githubusercontent.com');
+    });
+
+    /**
+     * The entry-gate/deletion-rule distinction, which is the single most
+     * load-bearing property in src/corpus/policy.ts. A repository read while it
+     * was popular keeps being read after its stars fall, and keeps its
+     * artifacts. The opposite behaviour would make the corpus silently shed
+     * everything that went out of fashion.
+     */
+    it('keeps re-reading a repository it already read, whatever its stars do', async () => {
+      stubGitHub();
+      const first = await ingestRepository(FULL_NAME);
+      expect(first.ok).toBe(true);
+
+      // Same repository, now far below the floor, and pushed to a new commit so
+      // the unchanged short circuit does not answer instead of the gate.
+      stubGitHub({
+        repo: withMeta({ stargazers_count: 1 }),
+        tree: treeAt('c'.repeat(40)),
+      });
+      const second = await ingestRepository(FULL_NAME);
+
+      expect(second.ok).toBe(true);
+      if (!second.ok) throw new Error('unreachable');
+      expect(second.commitSha).toBe('c'.repeat(40));
+      expect(await repositoryRowCount()).toBe(1);
+      expect((await storedPackages()).length).toBeGreaterThan(0);
+    });
+
+    it('keeps re-reading one that has since been archived', async () => {
+      stubGitHub();
+      expect((await ingestRepository(FULL_NAME)).ok).toBe(true);
+
+      stubGitHub({ repo: withMeta({ archived: true }), tree: treeAt('d'.repeat(40)) });
+      expect((await ingestRepository(FULL_NAME)).ok).toBe(true);
+      expect(await repositoryRowCount()).toBe(1);
+    });
   });
 
   it('stores every skill the reference repository holds', async () => {

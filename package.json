@@ -16,7 +16,9 @@
     "precision": "bun scripts/capability-precision.mjs",
     "db:seed": "bun scripts/seed-fixture.mjs",
     "analyze:backfill": "bun scripts/analyze-backfill.mjs",
+    "sync": "bun scripts/corpus-sync.mjs --scheduled",
     "corpus:sync": "bun scripts/corpus-sync.mjs",
+    "corpus:reset": "bun scripts/corpus-reset.mjs",
     "ci": "bun run check:boundaries && bun run lint && bun run typecheck && bun run test",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun scripts/migrate.mjs",
@@ -24,8 +26,7 @@
     "db:test:generate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun --bun drizzle-kit generate",
     "db:test:migrate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun scripts/migrate.mjs",
     "db:test:setup": "bun run db:test:generate && bun run db:test:migrate",
-    "db:test:reset": "bun scripts/test-reset.mjs",
-    "verify:worker": "bun scripts/verify-worker-boot.mjs"
+    "db:test:reset": "bun scripts/test-reset.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

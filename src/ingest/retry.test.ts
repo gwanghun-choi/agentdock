@@ -46,11 +46,26 @@ describe('the delay curve', () => {
 
 describe('the disposition table', () => {
   it('classifies every outcome the union holds', () => {
-    expect(OUTCOMES).toHaveLength(9);
+    expect(OUTCOMES).toHaveLength(12);
     for (const outcome of OUTCOMES) {
       expect(dispositionFor(outcome)).toBeDefined();
     }
   });
+
+  /**
+   * The three discovery-gate outcomes must never be retried. Each is a
+   * deterministic answer about a repository — its fork bit, its archive bit, its
+   * star count against a constant — so a retry spends two more core requests out
+   * of sixty an hour to receive the same answer. Classifying one as `retryable`
+   * would do that three times per repository the policy declines, which on a
+   * topic sweep is most of them.
+   */
+  it.each(['forked', 'archived', 'below_star_floor'] as const)(
+    'settles %s in one attempt rather than retrying a constant',
+    (outcome) => {
+      expect(dispositionFor(outcome)).toBe('succeeded');
+    },
+  );
 
   it.each(['unreadable', 'too_large', 'invalid_input'] as const)(
     'treats %s as terminal on the first attempt',

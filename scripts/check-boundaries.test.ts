@@ -29,7 +29,7 @@ describe('checkMigrationSql', () => {
   });
 
   it('rejects a statement naming a schema AgentDock does not own', () => {
-    const problems = checkMigrationSql('CREATE TABLE "didim_mcp"."mcp_tools" ("id" int);');
+    const problems = checkMigrationSql('CREATE TABLE "other_app"."their_table" ("id" int);');
     expect(problems.join(' ')).toMatch(/does not own/);
   });
 

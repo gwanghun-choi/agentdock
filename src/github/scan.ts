@@ -51,7 +51,7 @@ export type ScanInputs = {
 export async function fetchRepoScanInputs(
   owner: string,
   repo: string,
-  selectPaths: (tree: RepoTree) => string[],
+  selectPaths: (tree: RepoTree, metadata: RepoMetadata) => string[],
   knownSha?: string | null,
 ): Promise<ScanInputs> {
   const deadline = Date.now() + CAPS.wallClockMs;
@@ -87,7 +87,15 @@ export async function fetchRepoScanInputs(
     };
   }
 
-  const wanted = selectPaths(bounded);
+  // The metadata is handed to the selector as well as the tree, because the
+  // caller's decision about which paths are worth reading can depend on facts
+  // about the repository rather than only on what is in it — AgentDock's
+  // discovery gate returns no paths at all for a repository its policy declines
+  // (src/ingest/pipeline.ts). Passing it here rather than adding a rejection
+  // parameter keeps every policy out of this module: this function still knows
+  // only "the caller asked for these paths", and an empty list costs zero raw
+  // reads by construction rather than by a second branch.
+  const wanted = selectPaths(bounded, metadata);
   const taken = wanted.slice(0, CAPS.maxFiles);
   const skipped = wanted.slice(CAPS.maxFiles);
 

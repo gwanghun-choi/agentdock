@@ -1,9 +1,15 @@
-# AgentDock — single-server Docker deployment (NCP).
+# AgentDock — single-server Docker deployment.
 #
-# This file starts ONE service and creates ONE network. It attaches to no
-# pre-existing network, reuses no pre-existing volume, and declares no volume of
-# its own. `docker compose up -d agentdock` therefore cannot affect any other
-# compose project on the host.
+# `docker compose up -d` starts ONE long-running service and creates ONE
+# network. It attaches to no pre-existing network, reuses no pre-existing
+# volume, and declares no volume of its own, so it cannot affect another compose
+# project sharing the host.
+#
+# The web container serves pages and nothing else. It issues no GitHub request
+# at startup, drains no queue and discovers no repository — `docker compose up`,
+# a restart and a crash recovery all cost zero GitHub requests. Ingestion is the
+# `sync` service below, which cron runs twice a day and which exits when it is
+# done.
 #
 # AGENTDOCK_PORT has no safe default on a server that already runs other
 # services, so it is required rather than defaulted — compose fails loudly if it
@@ -32,8 +38,35 @@ services:
     networks:
       - agentdock
 
+  # The scheduled ingest. Never starts with `up` — it is behind a profile, so
+  # only an explicit invocation runs it:
+  #
+  #   docker compose --env-file .env.production --profile tools run --rm sync
+  #
+  # One shot: it discovers, re-checks what it already holds, reads what changed,
+  # prints a summary and exits. Nothing stays resident, so two runs cannot
+  # overlap into two workers competing for the same 60-an-hour budget — and if
+  # one does overlap the next, PostgreSQL's SKIP LOCKED claim arbitrates rather
+  # than application code.
+  #
+  # `restart` is deliberately absent. A one-shot that restarts on exit is a
+  # daemon, and this must stay something cron starts and the clock bounds.
+  sync:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: build
+    image: agentdock-tools:local
+    env_file:
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - agentdock
+    command: ["bun", "run", "sync"]
+
   # Never starts with `up`. Runs only when named explicitly:
-  #   docker compose --profile tools run --rm migrate
+  #   docker compose --env-file .env.production --profile tools run --rm migrate
   # Uses the build stage because the runtime image intentionally carries neither
   # bun nor drizzle-kit. Migrations are an operator action, not a boot step: a
   # container that migrates on start would race itself on any future restart.
@@ -42,7 +75,7 @@ services:
     build:
       context: .
       target: build
-    image: agentdock-migrate:local
+    image: agentdock-tools:local
     env_file:
       - .env.production
     extra_hosts:
@@ -50,6 +83,26 @@ services:
     networks:
       - agentdock
     command: ["bun", "run", "db:migrate"]
+
+  # The one-time corpus reset. Two gates and it still refuses by default:
+  # AGENTDOCK_ALLOW_CORPUS_RESET must be 1 in .env.production AND --confirm must
+  # be on the command line. Deletes rows in `agentdock` only; drops nothing.
+  #
+  #   docker compose --env-file .env.production --profile tools run --rm \
+  #     corpus-reset bun run corpus:reset --confirm
+  corpus-reset:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: build
+    image: agentdock-tools:local
+    env_file:
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - agentdock
+    command: ["bun", "run", "corpus:reset"]
 
 networks:
   agentdock:

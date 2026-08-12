@@ -200,9 +200,10 @@ export const packageTable = agentdock.table(
 // out of band only, by a superuser (D-03), never by an AgentDock migration
 // (D-04); the migration's own DO guard fails loudly, naming the exact
 // command, when it is absent. The schema qualifier is public rather than
-// agentdock because that is where pg_trgm actually lives on the deployment
-// target (didim_api, verified 2026-08-12) — AgentDock reads the shared
-// operator class and still creates every object it owns inside agentdock.
+// agentdock because `public` is where PostgreSQL puts a trusted extension,
+// and where pg_trgm was verified to be on the deployment target on
+// 2026-08-12 — AgentDock reads the shared operator class and still creates
+// every object it owns inside agentdock.
 
 export const packageVersion = agentdock.table(
   'package_version',
