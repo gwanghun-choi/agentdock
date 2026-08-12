@@ -204,4 +204,115 @@ describe.skipIf(!DB_URL)('the search query', () => {
     // partial parse must not be scored any lower for that reason alone.
     expect(byPath.get('partial/SKILL.md')?.rank).toBe(byPath.get('ok/SKILL.md')?.rank);
   });
+
+  it("returns identical rows in identical order for 'MCP' and 'mcp'", async () => {
+    const r = await repo('case-fold');
+    await artifact(r, 'x/SKILL.md', [{ hash: 'cf1' }], { name: 'MCPWidget example' });
+
+    const upper = await search.searchPackages({ q: search.normalizeQuery('MCPWidget') });
+    const lower = await search.searchPackages({ q: search.normalizeQuery('mcpwidget') });
+    expect(upper.map((x) => x.sourcePath)).toEqual(lower.map((x) => x.sourcePath));
+    expect(upper.map((x) => x.sourcePath)).toContain('x/SKILL.md');
+  });
+
+  it("escapes '%' before the repository-name ILIKE operand, so '100%' does not silently match the whole corpus (Reference E #16)", async () => {
+    // All three repository names contain the digits "100" (though none
+    // contains the literal three-character sequence "100%"), which is
+    // exactly the shape that turns a missing LIKE escape into a
+    // match-everything bug: an unescaped '%' in the query "100%" collapses
+    // the trailing wildcard into a bare "contains '100'" test, which would
+    // match all three. Package name/summary/sourcePath are deliberately
+    // unrelated words, so the FTS predicate cannot also match "100" and
+    // muddy which predicate the assertion is about.
+    const r1 = await repo('match-100-a');
+    const r2 = await repo('match-100-b');
+    const r3 = await repo('match-100-c');
+    await artifact(r1, 'x/SKILL.md', [{ hash: 'esc1' }], { name: 'unrelated-alpha' });
+    await artifact(r2, 'y/SKILL.md', [{ hash: 'esc2' }], { name: 'unrelated-beta' });
+    await artifact(r3, 'z/SKILL.md', [{ hash: 'esc3' }], { name: 'unrelated-gamma' });
+
+    const total = 3;
+    const results = await search.searchPackages({ q: search.normalizeQuery('100%') });
+    expect(results.length).toBeLessThan(total);
+    expect(results.length).toBe(0);
+  });
+
+  it("escapes '_' before the repository-name ILIKE operand, so 'a_b' does not match a repository whose name contains 'axb' (Reference E #17)", async () => {
+    const r = await repo('axb-repo');
+    await artifact(r, 'x/SKILL.md', [{ hash: 'us1' }], { name: 'unrelated-name' });
+
+    const results = await search.searchPackages({ q: search.normalizeQuery('a_b') });
+    expect(results.map((x) => x.sourcePath)).not.toContain('x/SKILL.md');
+  });
+
+  describe('normalizeQuery', () => {
+    it('trims and collapses internal whitespace runs to one space', () => {
+      expect(search.normalizeQuery('  mcp   server  ')).toBe('mcp server');
+    });
+
+    it("returns '' for empty, whitespace-only and undefined input", () => {
+      expect(search.normalizeQuery('')).toBe('');
+      expect(search.normalizeQuery('   ')).toBe('');
+      expect(search.normalizeQuery(undefined)).toBe('');
+    });
+
+    it('takes the first element of a repeated parameter delivered as an array', () => {
+      expect(search.normalizeQuery(['mcp', 'skill'])).toBe('mcp');
+    });
+
+    it('truncates ASCII input at exactly SEARCH_CAPS.maxQueryLength UTF-16 code units', () => {
+      const input = 'a'.repeat(search.SEARCH_CAPS.maxQueryLength + 50);
+      const result = search.normalizeQuery(input);
+      expect(result.length).toBe(search.SEARCH_CAPS.maxQueryLength);
+      expect(result).toBe('a'.repeat(search.SEARCH_CAPS.maxQueryLength));
+    });
+
+    it('truncates emoji input — outside the BMP, two UTF-16 units each — at the same unit count', () => {
+      const input = '🚀'.repeat(search.SEARCH_CAPS.maxQueryLength); // 2x maxQueryLength UTF-16 units
+      const result = search.normalizeQuery(input);
+      expect(result.length).toBe(search.SEARCH_CAPS.maxQueryLength);
+    });
+
+    it('truncates Korean input at the same UTF-16 unit count', () => {
+      const input = '한'.repeat(search.SEARCH_CAPS.maxQueryLength + 50);
+      const result = search.normalizeQuery(input);
+      expect(result.length).toBe(search.SEARCH_CAPS.maxQueryLength);
+    });
+
+    it('does not lowercase — the logged query must match what the user typed', () => {
+      expect(search.normalizeQuery('MCP Server')).toBe('MCP Server');
+    });
+  });
+
+  describe('Reference E — the adversarial and edge query set (18 inputs)', () => {
+    const cases: { label: string; raw: string | string[] | undefined }[] = [
+      { label: "1 — ''", raw: '' },
+      { label: "2 — '   '", raw: '   ' },
+      { label: '3 — absent parameter', raw: undefined },
+      { label: "4 — ['mcp','skill'] (repeated param)", raw: ['mcp', 'skill'] },
+      { label: "5 — 'm'", raw: 'm' },
+      { label: "6 — 'mcp & drop table'", raw: 'mcp & drop table' },
+      { label: '7 — SQL injection string', raw: "'; DROP TABLE package; --" },
+      { label: "8 — 'mcp:*'", raw: 'mcp:*' },
+      { label: "9 — 'a!b'", raw: 'a!b' },
+      { label: "10 — 'mcp|server'", raw: 'mcp|server' },
+      { label: '11 — unbalanced quote', raw: '"unbalanced' },
+      { label: '12 — unclosed parenthesis', raw: '(unclosed' },
+      { label: '13 — 5000-character string', raw: 'x'.repeat(5000) },
+      { label: '14 — emoji', raw: '🚀🎉' },
+      { label: '15 — Korean', raw: '한국어 검색' },
+      { label: "16 — '100%'", raw: '100%' },
+      { label: "17 — 'a_b'", raw: 'a_b' },
+      { label: "18 — 'MCP' (case)", raw: 'MCP' },
+    ];
+
+    it('has exactly 18 cases', () => {
+      expect(cases.length).toBe(18);
+    });
+
+    it.each(cases)('reaches searchPackages without throwing: $label', async ({ raw }) => {
+      const q = search.normalizeQuery(raw);
+      await expect(search.searchPackages({ q })).resolves.toBeInstanceOf(Array);
+    });
+  });
 });
