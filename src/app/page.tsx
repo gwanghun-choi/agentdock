@@ -2,12 +2,15 @@ import Link from 'next/link';
 import {
   ArchiveIcon,
   ArrowRightIcon,
+  DockIcon,
   ForkIcon,
   GlobeIcon,
   InfoIcon,
+  RepoIcon,
   SearchIcon,
   StarIcon,
 } from '@/components/Icon';
+import { IndexFlow } from '@/components/IndexFlow';
 import { PackageRows } from '@/components/PackageRows';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { countPackages, listPackages } from '@/db/queries/packages';
@@ -26,21 +29,33 @@ export default async function HomePage() {
           and no operator review, so that was an unauthenticated way to spend a
           shared 60-request budget and to put any repository at all into the
           index. Browsing is what this page is for now, so that is the button. */}
+      {/* Two columns above 64rem, and the second one is the point. The copy has
+          always been capped at --prose (46rem) inside a 72rem shell, so 40% of
+          this section was empty canvas on every desktop that ever loaded it.
+          What fills it is not decoration: it is the four steps the sentence to
+          its left describes, named and drawn, which is the one thing the
+          paragraph could not do. Below 64rem it stacks underneath, in reading
+          order, because that is the order it is written in. */}
       <section className="hero">
-        <h1>Find agent artifacts, and see where they came from.</h1>
-        <p className="lede">
-          An open index of skills, plugins, marketplaces, MCP servers, commands and hooks. AgentDock
-          reads the files that declare them in established public repositories, records what they
-          declare, and links back to the exact file at the exact commit it read.
-        </p>
-        <p className="actions">
-          <Link className="btn" href="/artifacts">
-            Browse artifacts <ArrowRightIcon />
-          </Link>
-          <Link className="btn btn-quiet" href="/artifacts?q=">
-            <SearchIcon /> Search
-          </Link>
-        </p>
+        <div className="hero-copy">
+          <h1>Find agent artifacts, and see where they came from.</h1>
+          <p className="lede">
+            An open index of skills, plugins, marketplaces, MCP servers, commands and hooks.
+            AgentDock reads the files that declare them in established public repositories, records
+            what they declare, and links back to the exact file at the exact commit it read.
+          </p>
+          <p className="actions">
+            <Link className="btn" href="/artifacts">
+              Browse artifacts <ArrowRightIcon />
+            </Link>
+            <Link className="btn btn-quiet" href="/artifacts?q=">
+              <SearchIcon /> Search
+            </Link>
+          </p>
+        </div>
+        <div className="hero-visual">
+          <IndexFlow total={total} />
+        </div>
       </section>
 
       {/* What used to be the submit form's job — telling a visitor how a
@@ -58,46 +73,70 @@ export default async function HomePage() {
             curated seed list and GitHub&apos;s own topic search. There is no submission form:
             nothing is added by request.
           </p>
-          {/* One glyph per condition, so four conditions read as four kinds of
+          {/* The four conditions, joined to what they decide.
+
+              They used to be four bordered columns with nothing above or below
+              them, which left a reader to work out for themselves what the four
+              were conditions *for*. The rail names both ends: a repository
+              AgentDock has found goes in, and a repository AgentDock reads
+              comes out.
+
+              The rail is a bracket, not an arrow, and the line under it says so
+              in words. All four have to hold; there is no first one, no order
+              between them, and nothing here is a stage a repository passes
+              through — src/corpus/policy.ts evaluates them as one predicate,
+              and a chain of arrows would have drawn a pipeline that does not
+              exist.
+
+              One glyph per condition, so four conditions read as four kinds of
               thing at a glance instead of as four short paragraphs. Each is the
               ordinary sign for the noun it labels and none of them is a status
               light: no tick, no cross, no green, no red. Nothing here says a
               repository that fails a condition is worse than one that passes —
               only that AgentDock did not read it. */}
-          <dl className="stats">
-            <div>
-              <dt>
-                <StarIcon /> Stars
-              </dt>
-              <dd>
-                {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
-              </dd>
-            </div>
-            <div>
-              <dt>
-                <GlobeIcon /> Visibility
-              </dt>
-              <dd>
-                Public<small>private repositories are unreadable, not excluded</small>
-              </dd>
-            </div>
-            <div>
-              <dt>
-                <ForkIcon /> Not a fork
-              </dt>
-              <dd>
-                Upstream only<small>the original is what gets read</small>
-              </dd>
-            </div>
-            <div>
-              <dt>
-                <ArchiveIcon /> Not archived
-              </dt>
-              <dd>
-                Active<small>an archive has no next commit</small>
-              </dd>
-            </div>
-          </dl>
+          <div className="gate">
+            <p className="gate-end">
+              <RepoIcon /> A repository AgentDock has found
+            </p>
+            <dl className="stats">
+              <div>
+                <dt>
+                  <StarIcon /> Stars
+                </dt>
+                <dd>
+                  {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <GlobeIcon /> Visibility
+                </dt>
+                <dd>
+                  Public<small>private repositories are unreadable, not excluded</small>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <ForkIcon /> Not a fork
+                </dt>
+                <dd>
+                  Upstream only<small>the original is what gets read</small>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <ArchiveIcon /> Not archived
+                </dt>
+                <dd>
+                  Active<small>an archive has no next commit</small>
+                </dd>
+              </div>
+            </dl>
+            <p className="gate-end gate-out">
+              <DockIcon /> AgentDock reads it
+            </p>
+            <p className="gate-note">All four hold at once. They are conditions, not steps.</p>
+          </div>
           {/* The one sentence that keeps the star floor from reading as a
               quality claim. It is a scheduling rule about a small request
               budget, and src/corpus/policy.ts says the same thing to the next

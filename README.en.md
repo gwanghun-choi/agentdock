@@ -187,11 +187,12 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
 - **URL as state.** Query, filters and page are all in the address bar, the form
   is a plain GET with native controls, and the whole page works with JavaScript
   disabled.
-- **Keyboard.** `/` puts the cursor in the search field from anywhere, or goes
-  to the search page if you are not on it; Ctrl/Cmd+K does the same and also
-  works from inside the field, selecting the query so the next keystroke
-  replaces it. Nothing here is a separate search surface — the key acts on the
-  same form and the same route.
+- **Keyboard.** `/` and Ctrl/Cmd+K put the cursor in the search field. On a page
+  that has the field they focus it and select the query, so the next keystroke
+  replaces it; on a page that does not, a small launcher opens as a native
+  `<dialog>` — Escape closes it, and a query submits straight to the search
+  page. It is not a second search implementation: the launcher sends the same
+  `q` to the same route with the same GET.
 - **Permalinks.** Every artifact has a stable URL, and every "source on GitHub"
   link points at the commit SHA AgentDock actually read — never at a branch,
   which would drift.
@@ -220,6 +221,13 @@ keyboard shortcut that puts the cursor in the search field (`/`, or Ctrl/Cmd+K),
 and the error boundary, which the framework requires to be a client component.
 Search, filtering and pagination are a GET form with native controls, so they
 work with JavaScript disabled.
+
+So is the motion. The index-flow diagram on the home page, the order a list
+arrives in, and every hover and focus response are CSS — the diagram is HTML and
+CSS rather than an SVG asset, and there is no scroll observer anywhere. Every
+keyframe animation is declared inside one
+`prefers-reduced-motion: no-preference` block, so for a reader who asked for
+less motion there is nothing left to switch off: it is never declared.
 
 ```
 src/

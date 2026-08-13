@@ -6,15 +6,23 @@ import { useEffect } from 'react';
 /**
  * Holds no state and renders nothing. It binds one keyboard shortcut.
  *
- * Why a client component at all: this is the whole of the "command palette"
- * question, answered at the size the answer is worth. AgentDock is a catalogue
- * with one search route, and the thing a developer reaches for in a catalogue is
- * the key that puts the cursor in the search box. A palette with its own overlay
- * would be a second search surface — its own result rendering, its own empty
- * state, its own idea of what matches — built over the same route the page
- * already renders, and the two would drift. There is no new query, no new
- * endpoint and no overlay here: the key focuses the field the server already
- * sent, or navigates to the route that contains it.
+ * Why a client component at all: the key has to reach a field the server already
+ * sent, and only the client knows which page it landed on. There are three
+ * outcomes, in order:
+ *
+ *   1. The page has the search field (`/artifacts`) — focus it and select what
+ *      is in it, so the next keystroke replaces the previous query.
+ *   2. It does not — open `SearchLauncher`'s <dialog> with `showModal()`. The
+ *      top layer, the focus trap, the inert background and Escape are the
+ *      platform's; this call is the entire client cost of the palette.
+ *   3. Neither is available — navigate to `/artifacts`, which has the field.
+ *      This is the path a browser without <dialog> takes, and the path this
+ *      component took for every page before the launcher existed.
+ *
+ * What is deliberately absent from all three is a second search implementation.
+ * The launcher submits a GET to `/artifacts` with the same `q` the page's own
+ * form submits; there is no new query, no new endpoint, and nothing renders a
+ * result anywhere but on the route that already does.
  *
  * `/` is the advertised key — the hint drawn inside the search field, as
  * `.search-row .field::after` — because it is the one that is right on every
@@ -57,6 +65,22 @@ export function SearchHotkey() {
         }
       }
 
+      const dialog = document.getElementById('search-launcher');
+      const isDialog = dialog instanceof HTMLDialogElement;
+
+      // The chord fires from inside a field, including from inside the
+      // launcher's own. Pressing it again while the launcher is open must not
+      // fall through to the navigation below, which would leave the modal open
+      // over a page change.
+      if (isDialog && dialog.open) {
+        const inside = document.getElementById('launcher-q');
+        if (inside instanceof HTMLInputElement) {
+          event.preventDefault();
+          inside.select();
+        }
+        return;
+      }
+
       const field = document.getElementById('q');
       if (field instanceof HTMLInputElement) {
         event.preventDefault();
@@ -67,9 +91,16 @@ export function SearchHotkey() {
         return;
       }
 
-      // Not on a page that has the field. Go to the one that does; its own
-      // autofocus is not assumed, so the reader lands on the search route with
-      // the form in view.
+      // Not on a page that has the field. Open the launcher over this one — no
+      // navigation, so the page a reader was reading is still there behind it
+      // and still there when they press Escape.
+      if (isDialog) {
+        event.preventDefault();
+        dialog.showModal();
+        return;
+      }
+
+      // No field and no <dialog> support. Go to the route that has the field.
       event.preventDefault();
       router.push('/artifacts');
     }

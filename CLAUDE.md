@@ -92,11 +92,22 @@ not replace `bun run ci`.
   A comment restating the code is noise.
 - **Avoid new client-side dependencies.** There are three client components,
   and `git grep -l "^'use client'" src/` is the list: a polling effect on the
-  job page, a keyboard shortcut that focuses the search field, and the error
-  boundary, which the framework requires to be one. None of them holds data and
-  none of them fetches. A package that ships `'use client'` turns every import
-  site into a client component; measure before adopting one. The measurement
-  that rejected `lucide-react` is written up in `src/components/Icon.tsx`.
+  job page, a keyboard shortcut that focuses the search field or opens the
+  launcher, and the error boundary, which the framework requires to be one. None
+  of them holds data and none of them fetches. A package that ships
+  `'use client'` turns every import site into a client component; measure before
+  adopting one. The measurement that rejected `lucide-react` is written up in
+  `src/components/Icon.tsx`, and the one that rejected `motion` in
+  `src/app/globals.css`'s motion block.
+- **Motion has two mechanisms and neither is optional.** A transition takes its
+  duration from `--dur` or `--dur-fast`, which the `prefers-reduced-motion:
+  reduce` block redefines. A keyframe animation is declared inside the single
+  `prefers-reduced-motion: no-preference` block, so under the preference it does
+  not exist. `src/app/motion.test.ts` fails on a transition that writes its own
+  duration and on an `animation` or `@keyframes` written anywhere else in the
+  file. Both rules are one line to satisfy and silent to break — a reader who
+  asked for less motion sees the same page as everyone else, and it looks
+  correct to whoever wrote it.
 
 ## Before you call it done
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DockIcon, SearchIcon } from '@/components/Icon';
 import { SearchHotkey } from '@/components/SearchHotkey';
+import { SearchLauncher } from '@/components/SearchLauncher';
 import './globals.css';
 
 export const metadata = {
@@ -54,9 +55,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Renders nothing. It binds `/` and Ctrl/Cmd+K to the search field —
-            the only JavaScript this layout loads, and the page is complete
-            without it. */}
+        {/* A closed <dialog>: display:none, and absent from the accessibility
+            tree, until something calls showModal() on it. Server-rendered
+            markup, no client component, and its close button works with
+            JavaScript off because <form method="dialog"> is the platform's. */}
+        <SearchLauncher />
+
+        {/* Renders nothing. It binds `/` and Ctrl/Cmd+K to the search field, or
+            to the launcher above on a page that has no field — the only
+            JavaScript this layout loads, and every page is complete without
+            it. */}
         <SearchHotkey />
 
         {/* The skip link's destination, and the one main landmark per page. */}

@@ -1,15 +1,16 @@
 import type { SVGProps } from 'react';
 
 /**
- * Twelve inline SVGs, not an icon package.
+ * Fourteen inline SVGs, not an icon package.
  *
  * `lucide-react@1.31` was installed and measured first. Every icon it exports
  * imports `dist/esm/Icon.mjs`, which carries `'use client'` — so each icon
  * becomes a client component and ships JavaScript. Adding a client runtime so
  * that a magnifier can appear next to a search box inverts that trade for
  * decoration. Four thousand icons were also a large answer to a question about
- * twelve. Re-checked when this file grew from eight to twelve: the four added
- * here cost nothing at runtime, and the package's terms have not changed.
+ * twelve. Re-checked when this file grew from eight to twelve, and again at
+ * fourteen: the icons added here cost nothing at runtime, and the package's
+ * terms have not changed.
  *
  * (The parenthetical that used to name `SubmitForm` here was stale — that
  * component was deleted with the public index form. The client components this
@@ -169,6 +170,29 @@ export function ArchiveIcon(props: IconProps) {
       <rect height="5" rx="1" width="20" x="2" y="3" />
       <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
       <path d="M10 12h4" />
+    </Svg>
+  );
+}
+
+/** A repository, in GitHub's own sense: a bound volume of files. Distinct from
+ *  GlobeIcon, which labels the visibility condition rather than the thing. */
+export function RepoIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+    </Svg>
+  );
+}
+
+/** A commit on a line, drawn the way every git graph draws one. It marks the
+ *  provenance step: what AgentDock read is a file at one sha, not a branch. */
+export function CommitIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M3 12h6" />
+      <path d="M15 12h6" />
     </Svg>
   );
 }

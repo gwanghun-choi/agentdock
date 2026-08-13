@@ -57,6 +57,13 @@
   --r-lg: 10px;
 
   --shadow: 0 1px 2px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 40%));
+  /* Two steps above --shadow, for the two things that actually leave the
+     surface: a row under the cursor, and the launcher over the page. Both are
+     tinted toward the ink rather than toward black, and both are offset down
+     rather than spread evenly, so a dark theme gets depth without the grey haze
+     an evenly-spread black shadow paints on a dark canvas. */
+  --shadow-lift: 0 4px 12px -4px light-dark(rgb(16 24 40 / 14%), rgb(0 0 0 / 55%));
+  --shadow-modal: 0 24px 60px -24px light-dark(rgb(16 24 40 / 35%), rgb(0 0 0 / 80%));
 
   /* Two durations and one curve, and nothing may declare its own. Both sit
      inside the 120–250 ms band where a transition reads as the same object
@@ -68,6 +75,28 @@
   --dur-fast: 120ms;
   --dur: 180ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* A third duration and a second curve, and they are for keyframe animations
+     only — no transition in this file may use them, which is why the reduced
+     motion block below does not redefine them and motion.test.ts fails on a
+     transition that reaches for one. Transitions are switched off by
+     redefining --dur and --dur-fast; animations are switched off by not being
+     declared, because every `animation` in this file is inside the single
+     `prefers-reduced-motion: no-preference` block near the end.
+
+     --dur-slow is the entrance band: long enough that something arriving reads
+     as arriving rather than as appearing, short enough that a reader who came
+     to read a list is not waiting on it. --ease-emphasized decelerates harder
+     than --ease and overshoots nothing, which is what a thing coming to rest
+     wants and what a colour swap does not. */
+  --dur-slow: 320ms;
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* The hero's canvas. A dot grid is the drafting surface this subject's own
+     tools draw on — a node canvas, a schematic, graph paper — and at 8% it is a
+     texture rather than a pattern: there when you look for it, gone when you
+     read over it. */
+  --grid-dot: light-dark(rgb(22 25 29 / 13%), rgb(230 232 235 / 11%));
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans:
@@ -323,13 +352,278 @@ main {
 
 /* ---------- hero ---------- */
 
+/*
+ * One column until 64rem, two above it.
+ *
+ * The copy has always been capped at --prose inside a --wrap shell, so on every
+ * desktop this page ever loaded, two fifths of the hero was blank canvas beside
+ * a paragraph. The second column is what goes there, and it is not decoration:
+ * it is the four steps the paragraph describes, named and drawn. Below the
+ * breakpoint it stacks under the copy, in the order it is written in.
+ */
 .hero {
+  position: relative;
+  /* So the -1 layer below stays inside this section rather than sliding under
+     the page background. */
+  isolation: isolate;
+  display: grid;
+  gap: var(--s-6);
   padding-block: var(--s-4) var(--s-6);
+}
+
+/*
+ * The dot grid.
+ *
+ * Inset to 0 on both inline edges on purpose: bleeding it past the wrap's
+ * padding would put a painted box wider than the viewport on a phone, and a
+ * horizontal scrollbar is a high price for eight pixels of texture. It bleeds
+ * upward instead, under the sticky header, which is the direction with no
+ * overflow to cause.
+ *
+ * The mask is what keeps it from reading as a pattern: the grid is at its
+ * strongest behind the headline and gone before it reaches the first card.
+ */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: calc(var(--s-6) * -1) 0 0;
+  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(120% 95% at 22% 34%, #000 0%, transparent 78%);
+  pointer-events: none;
 }
 
 .hero h1 {
   font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
   margin-bottom: var(--s-3);
+}
+
+/* The flow gets a frame, in the same surface, border and radius as every card
+   on the site. Floating on the canvas it read as four stray captions in the
+   margin; framed, it reads as the one object the hero is about — and it is
+   made out of the same parts as the rest of the interface, which is what keeps
+   it from looking pasted on. The dot grid runs behind and around it. */
+.hero-visual {
+  min-width: 0;
+  padding: var(--s-5) var(--s-5) var(--s-5) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem);
+    align-items: center;
+    gap: var(--s-7);
+    padding-block: var(--s-6) var(--s-7);
+  }
+
+  /* The lede stops at the column, not at --prose, so the two columns have an
+     edge between them rather than a ragged one. */
+  .hero-copy .lede {
+    max-width: 33rem;
+  }
+}
+
+/* ---------- index flow ---------- */
+
+/*
+ * The signature element: what AgentDock does, drawn the way this subject's own
+ * tools draw a sequence — a spine with a node on it per step. See
+ * IndexFlow.tsx for why it is HTML and CSS rather than an SVG.
+ *
+ * Everything is measured from one x: the spine sits at 5px with a width of 2,
+ * so its centre is 6px; every node, tick and pulse is centred on the same 6px,
+ * and the 1.75rem left padding is what clears them.
+ */
+.flow {
+  position: relative;
+  display: grid;
+  gap: var(--s-4);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.75rem;
+}
+
+/*
+ * The spine, and the pulse on it, in one element.
+ *
+ * Two backgrounds on a 2px column: a short accent gradient parked above the
+ * top, and the rail itself. The pulse is that gradient's vertical position
+ * animating from off one end to off the other — which needs no knowledge of how
+ * tall the spine is, and so survives the labels wrapping to two lines at any
+ * width. A separate absolutely-positioned dot would have needed the height.
+ */
+.flow::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: 2px;
+  background:
+    linear-gradient(transparent, var(--accent), transparent) 0 -60% / 100% 42% no-repeat,
+    var(--border-strong);
+  transform-origin: top;
+}
+
+.flow > li {
+  position: relative;
+}
+
+/* The node. A ring on the rail, in the surface colour, so the rail appears to
+   pass behind it. */
+.flow > li::before {
+  content: "";
+  position: absolute;
+  left: -1.75rem;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+}
+
+/* The last node is filled, the way a git graph fills the commit it is pointing
+   at. It is also the only step with a number on it. */
+.flow > li:last-child::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* And the rail stops there. The spine is one element sized from the list, so it
+   runs the full height of the last step — past the node, down the side of the
+   count. A line continuing below the last node says there is a next step. This
+   paints the surface back over that stub; it is 12px wide, the node's own
+   width, and starts where the node ends. */
+.flow > li:last-child::after {
+  content: "";
+  position: absolute;
+  left: -1.75rem;
+  top: 17px;
+  bottom: -0.5rem;
+  width: 12px;
+  background: var(--surface);
+}
+
+.flow-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  max-width: none;
+  color: var(--fg-strong);
+  font-size: var(--t-base);
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.flow-title svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.flow-note {
+  margin: var(--s-1) 0 0;
+  max-width: 32rem;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+}
+
+/* The declaring filenames, in the same monospace the rest of the page uses for
+   a path, because that is what they are. They wrap into whatever number of rows
+   the column gives them, which is why they are chips and not a diagram row. */
+.flow-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+}
+
+.flow-files li {
+  padding: 0.0625rem var(--s-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.flow-count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin: var(--s-2) 0 0;
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+/*
+ * The count-up.
+ *
+ * The number in the markup is the real one and is the only one anything but a
+ * sighted reader ever sees: the text node says 155 in the first byte of HTML
+ * and never changes, so a screen reader reads 155 and a browser with this
+ * stylesheet missing shows 155. `color: transparent` hides those digits from
+ * the screen and the pseudo-element draws animated ones over them, counting a
+ * registered custom property from 0 up to --target.
+ *
+ * ponytail: the drawn digits are ungrouped. CSS counters have no grouping
+ * style, so 12400 cannot be spelled 12,400 here — which is why the markup
+ * passes the raw number rather than a localised one, matching the "Browse all N
+ * artifacts" link two sections down that has always been ungrouped. Revisit at
+ * a corpus above ten thousand, where a separator starts to matter; the upgrade
+ * is to delete the pseudo-element and animate nothing.
+ *
+ * Without @property, --count is an unregistered property, the keyframe
+ * interpolates it discretely and the reader sees 0 flip straight to the final
+ * number instead of counting to it. Nothing vanishes in that case: counter()
+ * and counter-reset are CSS 2.1, and the fallback is the end state.
+ */
+/* `inherits: true`, and it is load-bearing: the value is animated on .count and
+   read on .count::after, and a pseudo-element inherits from its originating
+   element rather than sharing its declarations. Registered as non-inheriting
+   first, which rendered a permanent 0 — the pseudo-element was falling back to
+   initial-value on every frame. */
+@property --count {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.count {
+  --count: var(--target);
+  position: relative;
+  /* Not inline: an inline box is not a containing block a pseudo-element can
+     cover with inset: 0. */
+  display: inline-block;
+  color: transparent;
+  font-size: var(--t-lg);
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.count::after {
+  counter-reset: indexed var(--count);
+  content: counter(indexed);
+  position: absolute;
+  inset: 0;
+  color: var(--fg-strong);
 }
 
 /* ---------- cards & sections ---------- */
@@ -451,6 +745,7 @@ main {
  * common case — "Agent Skill" is 4.88rem, and most rows are skills.
  */
 .rows > li {
+  position: relative;
   display: grid;
   grid-template-columns: 9rem minmax(0, 1fr);
   column-gap: var(--s-4);
@@ -458,7 +753,8 @@ main {
   border-top: 1px solid var(--border);
   transition:
     background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .rows > li:first-child {
@@ -470,13 +766,26 @@ main {
    pointer navigation gets for free.
 
    The accent edge is an inset shadow, not a border or a left padding change,
-   because both of those move the row's content by two pixels on hover — a
-   whole list nudging sideways under the cursor. A shadow paints inside the box
-   and shifts nothing. */
+   because both of those change the row's box and reflow the text inside it —
+   a whole list nudging sideways under the cursor. A shadow paints inside the
+   box and reflows nothing.
+
+   The lift is one pixel, and it is a transform for the same reason: a transform
+   is painted, not laid out, so the row moves without the twenty rows below it
+   moving with it. One pixel plus the outer shadow is what separates the row
+   from the list; two would be a card popping out of a table. z-index puts the
+   lifted row's shadow over its neighbours instead of under them, which is the
+   difference between depth and a smudge. The list's own `overflow: hidden`
+   clips the spill at the very top and bottom edges, which is correct — the
+   list is not lifting, one row inside it is. */
 .rows > li:hover,
 .rows > li:focus-within {
+  z-index: 1;
   background: var(--surface-2);
-  box-shadow: inset 2px 0 0 var(--accent);
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    var(--shadow-lift);
+  transform: translateY(-1px);
 }
 
 .row-type {
@@ -726,6 +1035,16 @@ textarea {
 
 /* search panel */
 
+/* The panel answers to focus, not only the field inside it.
+ *
+ * A search box on a page of results is the one control a reader arrives
+ * intending to use, and until now the only thing that acknowledged reaching it
+ * was a 2px outline on a 40px input inside a 900px card. :focus-within moves the
+ * whole panel: the border takes the accent, a soft ring appears outside it and
+ * the card lifts off the page. The facets underneath do not fade — dimming a
+ * control a reader might tab to next is a contrast regression dressed as
+ * emphasis — so the panel gains emphasis rather than its neighbours losing it.
+ */
 .search {
   display: grid;
   gap: var(--s-3);
@@ -735,6 +1054,16 @@ textarea {
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
   margin-bottom: var(--s-3);
+  transition:
+    border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    var(--shadow-lift);
 }
 
 .search > label[for="q"] {
@@ -873,7 +1202,9 @@ textarea {
   transition:
     background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
 }
 
 .facets fieldset label:hover {
@@ -881,11 +1212,26 @@ textarea {
   color: var(--fg-strong);
 }
 
+/* Selection is carried on six channels now, not one, and none of them is hue:
+   the control's own filled shape, the background, the border, the text colour,
+   the weight — and the two that move, a ring growing out of the chip and a
+   one-pixel lift.
+ *
+ * The two that move are what makes changing a filter legible as a change. A
+ * sliding indicator that travels between chips was the other candidate and was
+ * dropped: the chips are six different widths, so a shared bar needs each chip's
+ * measured position, which in CSS means either equal-width columns (six labels
+ * from "All types" to "Hook Configurations", so the grid would be as wide as
+ * the longest and mostly empty) or anchor positioning, which Firefox does not
+ * ship. A ring that grows where the selection landed says the same thing and
+ * says it at every width. */
 .facets fieldset label:has(input:checked) {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 560;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transform: translateY(-1px);
 }
 
 /* The ring belongs on the chip, not on the 13px control buried inside it —
@@ -900,6 +1246,165 @@ textarea {
 .facets fieldset input[type="radio"] {
   accent-color: var(--accent);
   margin: 0;
+}
+
+/* ---------- search launcher ---------- */
+
+/*
+ * The palette. A native <dialog> in the top layer, so the backdrop, the focus
+ * trap, the inert background and Escape are the platform's and none of them is
+ * re-implemented here — which is the whole reason a component library was not
+ * needed for this.
+ *
+ * It opens from the top rather than the centre: the key that opens it is the
+ * key that means "search", the thing it opens over is a page the reader was
+ * already reading, and a box that lands where the header is reads as an
+ * extension of the header rather than as an interruption.
+ *
+ * The entry and exit are one transition, using @starting-style for the entry
+ * and `transition-behavior: allow-discrete` for `display` and `overlay` on the
+ * way out — without the latter the element leaves the top layer on frame one
+ * and the exit is never seen. `allow-discrete` is its own declaration and not
+ * part of the shorthand, because in the shorthand a browser that does not know
+ * it discards the whole `transition`.
+ */
+.launcher {
+  margin: 12vh auto auto;
+  width: min(38rem, calc(100vw - 2rem));
+  padding: var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--shadow-modal);
+  opacity: 1;
+  translate: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    translate var(--dur) var(--ease),
+    display var(--dur) var(--ease),
+    overlay var(--dur) var(--ease);
+  transition-behavior: allow-discrete;
+}
+
+.launcher:not([open]) {
+  opacity: 0;
+  translate: 0 -0.5rem;
+}
+
+@starting-style {
+  .launcher[open] {
+    opacity: 0;
+    translate: 0 -0.5rem;
+  }
+}
+
+.launcher::backdrop {
+  background: light-dark(rgb(16 24 40 / 28%), rgb(0 0 0 / 55%));
+  backdrop-filter: blur(2px);
+  transition: background var(--dur) var(--ease);
+}
+
+@starting-style {
+  .launcher[open]::backdrop {
+    background: transparent;
+  }
+}
+
+.launcher-form {
+  display: flex;
+  gap: var(--s-2);
+  align-items: stretch;
+}
+
+/* Reuses .field wholesale — the same magnifier, the same padding and the same
+   focus colour as the field on /artifacts, because it is the same control doing
+   the same job. The `/` hint is the one thing it does not want: the reader is
+   already here, and they got here with the key. */
+.launcher .field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.launcher .field svg {
+  position: absolute;
+  left: var(--s-3);
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+  pointer-events: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.launcher .field:focus-within svg {
+  color: var(--accent);
+}
+
+.launcher input[type="search"] {
+  width: 100%;
+  padding: var(--s-2) var(--s-3) var(--s-2) 2.25rem;
+  min-height: 2.5rem;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.launcher .field:focus-within input[type="search"] {
+  border-color: var(--accent);
+}
+
+.launcher-form button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-2) var(--s-4);
+  min-height: 2.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-sm);
+  font-weight: 560;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.launcher button[type="submit"]:hover {
+  background: var(--accent-hover);
+}
+
+.launcher-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  color: var(--faint);
+  font-size: var(--t-xs);
+}
+
+.launcher-hint button {
+  padding: var(--s-1) var(--s-3);
+  min-height: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.launcher-hint button:hover {
+  background: var(--surface-2);
+  color: var(--fg-strong);
 }
 
 /* ---------- result meta & pager ---------- */
@@ -1002,13 +1507,8 @@ textarea {
     transparent
   );
   transform: translateX(-100%);
-  animation: skeleton-sweep 1.4s var(--ease) infinite;
-}
-
-@keyframes skeleton-sweep {
-  to {
-    transform: translateX(100%);
-  }
+  /* The sweep itself is declared with every other animation in this file, in
+     the single prefers-reduced-motion: no-preference block near the end. */
 }
 
 /* Widths that vary a little down the list, because a column of identical bars
@@ -1108,6 +1608,124 @@ textarea {
 .stats > div {
   padding: var(--s-3) var(--s-4);
   border-left: 2px solid var(--border);
+}
+
+/* ---------- discovery gate ---------- */
+
+/*
+ * The four discovery conditions, joined to what they decide.
+ *
+ * They used to be four bordered columns floating between two paragraphs, which
+ * left a reader to work out what the four were conditions *for*. This names
+ * both ends — a repository AgentDock found goes in, a repository AgentDock
+ * reads comes out — and draws the four as a manifold hanging off one rail
+ * between them.
+ *
+ * A manifold and not a chain, deliberately. src/corpus/policy.ts evaluates the
+ * four as a single predicate; there is no first condition and no order between
+ * them, so there are no arrowheads anywhere in here and .gate-note says as much
+ * in words. A row of chevrons would have drawn a pipeline that does not exist.
+ *
+ * Everything lines up on one x, the same way the flow does: dots are 10px wide
+ * at left 1px, every stem and tick is 1px at left 6px, and every label clears
+ * them with a 1.5rem indent.
+ */
+.gate {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+.gate-end {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding-left: var(--s-5);
+  max-width: none;
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  font-weight: 560;
+}
+
+.gate-end::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 999px;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+}
+
+/* The outcome end is filled, like the flow's last node, for the same reason:
+   it is the state the rest of the drawing arrives at. */
+.gate-out::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.gate-end svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--accent);
+}
+
+/* The stems into and out of the rail. Each is exactly the height of .gate's
+   own row gap, so it spans the space between two rows and nothing else. */
+.gate-end::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  width: 1px;
+  height: var(--s-3);
+  background: var(--border-strong);
+}
+
+.gate-end:not(.gate-out)::after {
+  top: 100%;
+}
+
+.gate-out::after {
+  bottom: 100%;
+}
+
+/* The rail is the four columns' shared top border: with no gap between them
+   the four borders meet and read as one line. When the grid wraps to two
+   columns on a narrow window each row grows its own rail, which is still the
+   correct drawing. */
+.gate .stats {
+  gap: 0;
+}
+
+.gate .stats > div {
+  position: relative;
+  padding: var(--s-4) var(--s-4) var(--s-2) var(--s-5);
+  border-left: 0;
+  border-top: 1px solid var(--border-strong);
+}
+
+.gate .stats > div::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0;
+  width: 1px;
+  height: var(--s-3);
+  background: var(--border-strong);
+}
+
+.gate-note {
+  margin: 0;
+  padding-left: var(--s-5);
+  max-width: none;
+  color: var(--faint);
+  font-size: var(--t-xs);
 }
 
 .stats dt {
@@ -1488,6 +2106,25 @@ textarea {
     margin-inline-start: 0;
     width: 100%;
   }
+
+  /* Same stacking as .search-row, and for the same reason: a side-by-side input
+     and button leaves the input too narrow to read a query in. */
+  .launcher-form {
+    flex-direction: column;
+  }
+
+  /* Higher up the screen. 12vh of a 844px phone is 100px of backdrop above a
+     box whose whole job is to be under the reader's thumb. */
+  .launcher {
+    margin-top: 6vh;
+  }
+
+  /* The four conditions are one column here, so each grows its own rail and its
+     own tick — which is the same drawing, one condition per row. The bottom
+     padding closes the gap the stacked rails would otherwise leave. */
+  .gate .stats > div {
+    padding-bottom: var(--s-3);
+  }
 }
 
 /* ---------- coarse pointers ---------- */
@@ -1507,8 +2144,290 @@ textarea {
  */
 @media (pointer: coarse) {
   .row-meta a,
-  .row-meta span {
+  .row-meta span,
+  /* "Browse all N artifacts" measured 158×21 at 390px on this sweep: a
+     standalone link at the end of a section heading, so 2.5.8's inline-in-a-
+     sentence exception does not cover it. Same treatment, same reason — the
+     text does not change size, only the box around it. */
+  .section-head a {
     min-height: 24px;
+  }
+}
+
+/* ---------- motion ---------- */
+
+/*
+ * Every keyframe animation in this stylesheet is declared here, and nowhere
+ * else.
+ *
+ * There are two kinds of motion in this file and they are switched off two
+ * different ways. A transition is a state change — a colour under the cursor, a
+ * glyph leaning two pixels — and it reads its duration from --dur or --dur-fast,
+ * which the reduced-motion block below redefines; that is the whole mechanism,
+ * and motion.test.ts fails on any transition that writes its own duration.
+ *
+ * An animation is not a state change, so a shorter duration is not a smaller
+ * version of it: a spine drawing itself and a number counting up have no
+ * quieter form, only a present one and an absent one. Rather than declare them
+ * and then suppress them, they are declared inside a `no-preference` block —
+ * under the preference they do not exist, the elements render at the styles
+ * they animate to, and there is nothing to switch off. motion.test.ts asserts
+ * that this block is the only place an `animation` or an `@keyframes` appears.
+ *
+ * Every animation here runs once, on arrival, except the spine's pulse, which
+ * is a seven-second cycle on a two-pixel-wide element in one section of one
+ * page. Nothing loops anywhere else, and nothing anywhere is triggered by
+ * scrolling: an IntersectionObserver reveal on every section is the pattern
+ * that makes a page feel like it is performing rather than loading, and it
+ * would also be the first JavaScript this stylesheet ever required.
+ *
+ * All of it is opacity and transform, plus one background-position and one
+ * custom property. None of it changes a box, so none of it can shift the
+ * layout, and `backwards` fill without `forwards` means every element's resting
+ * style is the one written above — an animation that never runs leaves nothing
+ * invisible.
+ *
+ * `motion@13.1.0` was installed and measured against this, on 2026-08-13,
+ * rather than rejected on principle. The scaffold was the smallest honest one:
+ * a single `<motion.li>` inside `<AnimatePresence>` reproducing the row stagger
+ * below — one of the eight animations here — imported from a page.
+ *
+ *     this stylesheet          590,203 B client JS (176,054 B gzip), 10 chunks
+ *     with motion              713,873 B client JS (216,503 B gzip), 11 chunks
+ *
+ * +40 KB gzipped and a chunk, for the eight rules `.rows > li:nth-child()`
+ * spends about 300 bytes of gzipped CSS on. The cost is structural rather than
+ * incidental: 128 of framer-motion's 164 ESM modules carry `'use client'`, so
+ * the list that renders database rows on the server becomes a Client Component
+ * and every row crosses the boundary as serialized props.
+ *
+ * The comparison is not close, and it is not close for a reason: what was
+ * wanted here is entrance, stagger and one loop, which is what CSS keyframes
+ * are. Motion earns its size on layout animation — an indicator physically
+ * travelling between two elements of different widths, the shared-element
+ * transitions `layoutId` exists for — and the one place this design wanted that
+ * is the filter chips, where the decision and the CSS alternative are written
+ * up beside `.facets fieldset label:has(input:checked)`. Revisit if a
+ * requirement arrives that is genuinely a layout animation; a second entrance
+ * effect is not one.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* --- the page arriving --- */
+
+  /* Every top-level block of every page, in document order. React remounts this
+     subtree on a route change, so this is also what a navigation looks like:
+     the same sequence, on the new page's blocks. It is not a view transition —
+     see README.md for why that was left alone. */
+  @keyframes page-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  main > * {
+    animation: page-rise var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  main > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  main > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  main > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  /* Past the fourth block the delay stops growing. A page with nine sections
+     would otherwise still be assembling half a second after it arrived. */
+  main > :nth-child(n + 5) {
+    animation-delay: 200ms;
+  }
+
+  /* --- the hero --- */
+
+  @keyframes grid-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .hero::before {
+    animation: grid-in 900ms var(--ease) backwards;
+  }
+
+  /* The spine draws itself downward, then a light travels it every seven
+     seconds. The light is the gradient layer's vertical position moving from
+     off one end to off the other, which needs no knowledge of the spine's
+     height — see the .flow::before rule. */
+  @keyframes spine-draw {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  @keyframes spine-pulse {
+    0% {
+      background-position-y: -60%;
+    }
+
+    55%,
+    100% {
+      background-position-y: 160%;
+    }
+  }
+
+  .flow::before {
+    animation:
+      spine-draw 700ms var(--ease-emphasized) backwards,
+      spine-pulse 7s var(--ease) 1000ms infinite;
+  }
+
+  /* Each step docks onto the spine from the right, after the spine has reached
+     it. The node is the step's own ::before, so it travels with it rather than
+     needing a second animation kept in step with this one. */
+  @keyframes flow-step-in {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+  }
+
+  .flow > li {
+    animation: flow-step-in var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  .flow > li:nth-child(1) {
+    animation-delay: 240ms;
+  }
+
+  .flow > li:nth-child(2) {
+    animation-delay: 380ms;
+  }
+
+  .flow > li:nth-child(3) {
+    animation-delay: 520ms;
+  }
+
+  .flow > li:nth-child(4) {
+    animation-delay: 660ms;
+  }
+
+  /* The seven filenames, after the step that holds them. This is the one place
+     the sequence is worth the extra rules: they are the concrete answer to
+     "what does AgentDock read", and arriving one at a time is what makes a
+     reader count them. */
+  @keyframes chip-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+
+  .flow-files li {
+    animation: chip-in 220ms var(--ease-emphasized) backwards;
+  }
+
+  .flow-files li:nth-child(1) {
+    animation-delay: 560ms;
+  }
+
+  .flow-files li:nth-child(2) {
+    animation-delay: 605ms;
+  }
+
+  .flow-files li:nth-child(3) {
+    animation-delay: 650ms;
+  }
+
+  .flow-files li:nth-child(4) {
+    animation-delay: 695ms;
+  }
+
+  .flow-files li:nth-child(5) {
+    animation-delay: 740ms;
+  }
+
+  .flow-files li:nth-child(6) {
+    animation-delay: 785ms;
+  }
+
+  .flow-files li:nth-child(n + 7) {
+    animation-delay: 830ms;
+  }
+
+  /* The count. `backwards` holds it at 0 through the delay, and the implied
+     `to` is the element's own --count, which is --target. */
+  @keyframes count-up {
+    from {
+      --count: 0;
+    }
+  }
+
+  .count {
+    animation: count-up 800ms var(--ease-emphasized) 700ms backwards;
+  }
+
+  /* --- lists --- */
+
+  /* A short stagger down the first screenful, and a flat delay after it. Eight
+     rows at 25ms is 200ms of sequence; a list of twenty-five at the same step
+     would be 600ms, and the twenty-fifth row is not something anyone is waiting
+     to see arrive. */
+  @keyframes row-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  .rows > li {
+    animation: row-in 260ms var(--ease-emphasized) backwards;
+  }
+
+  .rows > li:nth-child(2) {
+    animation-delay: 25ms;
+  }
+
+  .rows > li:nth-child(3) {
+    animation-delay: 50ms;
+  }
+
+  .rows > li:nth-child(4) {
+    animation-delay: 75ms;
+  }
+
+  .rows > li:nth-child(5) {
+    animation-delay: 100ms;
+  }
+
+  .rows > li:nth-child(6) {
+    animation-delay: 125ms;
+  }
+
+  .rows > li:nth-child(7) {
+    animation-delay: 150ms;
+  }
+
+  .rows > li:nth-child(n + 8) {
+    animation-delay: 175ms;
+  }
+
+  /* --- the loading placeholder --- */
+
+  /* A slow sweep of light, not a pulse: a shimmer that blinks twenty times down
+     a list draws more attention than the content it stands in for. */
+  @keyframes skeleton-sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  .skeleton::after {
+    animation: skeleton-sweep 1.4s var(--ease) infinite;
   }
 }
 
@@ -1541,9 +2460,20 @@ textarea {
  * future component might, and silently breaking an event is a bad way to honour
  * an accessibility preference.
  *
- * The skeleton sweep is the one animation with a literal duration, because a
- * keyframe timing is not a state transition and does not belong in the same
- * token. It is switched off outright.
+ * This block covers transitions and only transitions. Keyframe animations are
+ * not suppressed from here and never were: they are all declared inside the
+ * `prefers-reduced-motion: no-preference` block above, so under this preference
+ * there is no animation in the stylesheet to switch off. A keyframe timing is
+ * not a state transition and does not belong on the same token — and an
+ * animation has no quieter form to shorten it to, only a present one and an
+ * absent one.
+ *
+ * The skeleton's sweep layer is removed rather than left in place. With no
+ * animation it would sit at `translateX(-100%)`, painting a gradient entirely
+ * outside its own box — invisible today, and one careless edit to that
+ * transform away from being a static bright band across every placeholder for
+ * exactly the readers who asked not to see one. `display: none` costs a line
+ * and removes the possibility.
  */
 @media (prefers-reduced-motion: reduce) {
   :root {

@@ -25,11 +25,11 @@ const css = readFileSync('src/app/globals.css', 'utf8');
  *  otherwise be read as declarations. */
 const code = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/** The `@media (prefers-reduced-motion: reduce)` block, and only it. Matched by
- *  brace balance from the at-rule rather than by a lazy `[\s\S]*?}`, which would
- *  stop at the first nested rule's closing brace and read as empty. */
-function reducedMotionBlock(source: string): string {
-  const start = source.indexOf('@media (prefers-reduced-motion: reduce)');
+/** One at-rule's body, by brace balance from the at-rule rather than by a lazy
+ *  `[\s\S]*?}`, which would stop at the first nested rule's closing brace and
+ *  read as empty. */
+function atRuleBody(source: string, atRule: string): string {
+  const start = source.indexOf(atRule);
   if (start === -1) return '';
   const open = source.indexOf('{', start);
   let depth = 0;
@@ -41,6 +41,13 @@ function reducedMotionBlock(source: string): string {
     }
   }
   return '';
+}
+
+const REDUCE = '@media (prefers-reduced-motion: reduce)';
+const NO_PREFERENCE = '@media (prefers-reduced-motion: no-preference)';
+
+function reducedMotionBlock(source: string): string {
+  return atRuleBody(source, REDUCE);
 }
 
 describe('the reduced-motion contract', () => {
@@ -91,5 +98,86 @@ describe('every animated declaration is reachable by that block', () => {
     );
 
     expect(untokenized).toEqual([]);
+  });
+});
+
+/**
+ * The stylesheet's second motion mechanism, and the one the token override
+ * cannot reach.
+ *
+ * A transition is a state change and has a quieter form — a shorter one — which
+ * is why redefining two durations is enough for all of them. An animation does
+ * not: a spine drawing itself and a number counting up are either present or
+ * absent, and a 0.01ms version of either is a flicker rather than a courtesy.
+ * So they are not declared-then-suppressed. Every `animation` and every
+ * `@keyframes` in this file sits inside a single
+ * `@media (prefers-reduced-motion: no-preference)` block, and under the
+ * preference there is nothing in the stylesheet to switch off.
+ *
+ * That is a structural guarantee exactly as long as it is true of every rule,
+ * which is what this suite checks. One `animation: fade 400ms` written outside
+ * the block keeps running for a reader who asked the operating system for less
+ * motion, and it looks completely correct to whoever wrote it.
+ */
+describe('every keyframe animation is inside the no-preference block', () => {
+  const block = atRuleBody(code, NO_PREFERENCE);
+
+  /** Every `animation` / `animation-name` declaration, and every `@keyframes`
+   *  at-rule name. `animation-delay` and `animation-duration` are deliberately
+   *  not matched: they are inert on an element with no `animation-name`, so
+   *  they cannot start anything on their own. */
+  function motionSites(source: string): string[] {
+    return [
+      ...[...source.matchAll(/\banimation(?:-name)?\s*:([^;}]*)[;}]/g)].map((m) => m[1].trim()),
+      ...[...source.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => `@keyframes ${m[1]}`),
+    ];
+  }
+
+  it('declares the block, and the block declares animations', () => {
+    expect(block).not.toBe('');
+    // Guards the assertion below against passing on an empty set — the way a
+    // regex that stops matching turns into a green suite.
+    expect(motionSites(block).length).toBeGreaterThan(10);
+  });
+
+  it('declares no animation anywhere else in the file', () => {
+    const outside = motionSites(code.replace(block, ' '));
+
+    expect(outside).toEqual([]);
+  });
+
+  it('keeps the two blocks distinct, so neither is matched by the other', () => {
+    // `indexOf` finds the first occurrence, and `no-preference` and `reduce`
+    // share a prefix up to the colon. If a rename ever made one a substring of
+    // the other, both helpers above would silently read the same block and
+    // every assertion here would pass against the wrong text.
+    expect(NO_PREFERENCE.includes(REDUCE)).toBe(false);
+    expect(REDUCE.includes(NO_PREFERENCE)).toBe(false);
+    expect(atRuleBody(code, REDUCE)).not.toBe(atRuleBody(code, NO_PREFERENCE));
+  });
+});
+
+/**
+ * The count-up reads a value the browser interpolates, and it reads it from a
+ * pseudo-element. A pseudo-element inherits from its originating element rather
+ * than sharing its declarations, so `inherits: false` — the registration a
+ * reader reaches for first, and the one this file had — leaves `--count` at its
+ * initial value on every frame and the page renders a permanent 0. Measured
+ * exactly that way in Chromium before the fix.
+ */
+describe('the animated count', () => {
+  it('registers --count as inheriting', () => {
+    const rule = atRuleBody(code, '@property --count');
+
+    expect(rule).not.toBe('');
+    expect(rule).toMatch(/inherits:\s*true/);
+    expect(rule).toMatch(/syntax:\s*"<integer>"/);
+  });
+
+  it('takes the number it counts to from the element, not from the stylesheet', () => {
+    // --target is set by IndexFlow.tsx from countPackages(). A literal here
+    // would be a hardcoded corpus size that rots the moment the corpus grows —
+    // the exact failure the scope sentence on /artifacts was rewritten to avoid.
+    expect(code).toMatch(/--count:\s*var\(--target\)/);
   });
 });
