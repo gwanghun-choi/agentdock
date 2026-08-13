@@ -7,9 +7,9 @@ Hook — 를 모아 놓은 공개 index입니다. 자리를 잡은 공개 GitHub
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
-![AgentDock 홈 화면. 검색창, repository에서 artifact index까지의 가로 pipeline, 그리고 가장 최근에 읽은 artifact를 크게 보여주는 dashboard](docs/images/agentdock-home.png)
+![AgentDock 홈 화면 전체. 위에서부터 검색창, repository에서 artifact index까지의 가로 pipeline, 가장 최근에 읽은 artifact와 그 창을 설명하는 숫자를 담은 Recently indexed dashboard, 카드 rail과 artifact 목록, 그리고 repository 수집 조건을 보여주는 discovery gate](docs/images/agentdock-home.png)
 
-홈은 세 부분입니다.
+위 이미지는 잘라낸 화면이 아니라 홈 페이지 전체입니다. 홈은 세 부분입니다.
 
 - **검색과 pipeline.** 검색창이 페이지가 여는 컨트롤이고, 그 아래로
   repository → 선언 파일 → 읽기 → commit에 기록까지 네 단계가 가로로 흐릅니다.

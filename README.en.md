@@ -7,9 +7,9 @@ servers, slash commands and hooks — discovered from established public GitHub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
-![The AgentDock home page: a search field, a horizontal pipeline from repository to artifact index, and a dashboard leading with the most recently read artifact](docs/images/agentdock-home.png)
+![The whole AgentDock home page, top to bottom: a search field, a horizontal pipeline from repository to artifact index, a Recently indexed dashboard leading with the most recently read artifact and the figures describing its window, a card rail and an artifact list, and the discovery gate that decides which repositories get read](docs/images/agentdock-home.png)
 
-The home page is in three parts.
+That image is the whole page, not a crop of it. The home page is in three parts.
 
 - **Search and the pipeline.** The search field is the control the page opens
   with, and under it four stages run left to right: a repository, the files that
