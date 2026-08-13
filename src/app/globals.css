@@ -22,7 +22,14 @@
   --fg: light-dark(#16191d, #e6e8eb);
   --fg-strong: light-dark(#0a0c0f, #f6f8fa);
   --muted: light-dark(#5c636b, #9aa2ab);
-  --faint: light-dark(#878e96, #6b737c);
+  /* Was light-dark(#878e96, #6b737c), and it failed WCAG AA in both themes:
+     measured 3.31:1 light and 3.81:1 dark against --surface, 3.09:1 and 3.59:1
+     against the footer's --surface-2. This colour carries the row metadata line
+     — path, star count, read date — at 12px, which is normal text and needs
+     4.5:1. These values measure 5.24 / 5.88 on --surface and 4.89 / 5.56 on
+     --surface-2. Nothing else in the palette was below the floor; the badge
+     hues measured 5.89:1 at worst. */
+  --faint: light-dark(#666d75, #8b939c);
   --border: light-dark(#e3e6ea, #23272d);
   --border-strong: light-dark(#d0d5db, #2e343c);
   --accent: light-dark(#1a56b8, #7aa7f0);
@@ -50,6 +57,17 @@
   --r-lg: 10px;
 
   --shadow: 0 1px 2px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 40%));
+
+  /* Two durations and one curve, and nothing may declare its own. Both sit
+     inside the 120–250 ms band where a transition reads as the same object
+     changing state rather than as an animation playing: --dur-fast is for a
+     colour swap under the cursor, --dur for anything that also moves. The
+     curve decelerates hard so the change registers immediately and settles
+     quietly. Every use of these is suppressed wholesale by the
+     prefers-reduced-motion block at the end of this file. */
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans:
@@ -126,6 +144,7 @@ a {
   color: var(--accent);
   text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
   text-underline-offset: 2px;
+  transition: color var(--dur-fast) var(--ease);
 }
 
 a:hover {
@@ -243,6 +262,9 @@ dt {
   font-size: var(--t-sm);
   font-weight: 500;
   text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .site-header nav a:hover {
@@ -411,17 +433,55 @@ main {
   overflow: hidden;
 }
 
+/* Two columns, and the left one is the whole point.
+ *
+ * The type badge used to sit inline between the artifact name and the
+ * repository, so its x position moved with the length of every name above it.
+ * Down a screenful of twenty rows that is twenty different left edges, and the
+ * eye cannot group the list by kind without reading each line — which is the
+ * one thing a type label exists to spare it. Pulling the badge into a fixed
+ * column puts every one of them on the same vertical line, so "show me the
+ * plugins" becomes a glance instead of a scan.
+ *
+ * 9rem, from measuring the rendered pills rather than guessing: at this font
+ * and padding the six labels come out 4.88 / 5.13 / 6.56 / 7.75 / 7.81 /
+ * 7.94rem, so "Hook Configuration" is the widest at 7.94rem and the column
+ * clears it by ~1rem before the 1rem column-gap. It was 10.5rem first, which
+ * cleared the widest label by 2.5rem and left an obvious dead gutter on the
+ * common case — "Agent Skill" is 4.88rem, and most rows are skills.
+ */
 .rows > li {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  column-gap: var(--s-4);
   padding: var(--s-4) var(--s-5);
   border-top: 1px solid var(--border);
+  transition:
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 .rows > li:first-child {
   border-top: 0;
 }
 
-.rows > li:hover {
+/* focus-within as well as hover: tabbing through the list must light the same
+   row the cursor would, or keyboard navigation loses the reading position that
+   pointer navigation gets for free.
+
+   The accent edge is an inset shadow, not a border or a left padding change,
+   because both of those move the row's content by two pixels on hover — a
+   whole list nudging sideways under the cursor. A shadow paints inside the box
+   and shifts nothing. */
+.rows > li:hover,
+.rows > li:focus-within {
   background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row-type {
+  /* Optical alignment with the title's cap height, not its line box. */
+  padding-top: 2px;
 }
 
 .row-title {
@@ -443,6 +503,13 @@ main {
 .row-title a:hover {
   color: var(--accent);
   text-decoration: underline;
+}
+
+/* The name responds to the cursor anywhere in the row, not only over the four
+   words of the link itself. The row is the target; the title is where the row
+   says so. */
+.rows > li:hover .row-title a {
+  color: var(--accent);
 }
 
 /* The repository name trails the artifact name, quieter and monospaced so the
@@ -494,9 +561,42 @@ main {
   height: 12px;
 }
 
+/* The one external link in the row, pushed to the right edge so it lands at
+   the same x on every row regardless of how long the path above it is. It is
+   the only anchored column the metadata line has, and it is the right one to
+   anchor: "leave for GitHub" is the action a reader repeats down a list. */
+.row-source {
+  margin-inline-start: auto;
+}
+
+/* The only thing that moves on hover, and it moves two pixels along the
+   direction the glyph already points. Enough to read as "this goes out",
+   short enough that a list of twenty does not shimmer. */
+.row-source svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+.rows > li:hover .row-source svg {
+  transform: translate(2px, -2px);
+}
+
 /* The path must never be clamped — a truncated path is a useless path. */
 .row-meta .path {
   font-size: var(--t-xs);
+}
+
+/* Digits in the metadata line are compared down a column, so they get fixed
+   advance widths. A star count that reflows its own width per row is noise. */
+.row-stars {
+  font-variant-numeric: tabular-nums;
+}
+
+.row-stars svg {
+  /* Filled, unlike every other icon here, because a star outline at 12px reads
+     as a smudge. It is still currentColor and still --faint, so it carries no
+     more weight than the read date beside it. */
+  fill: currentColor;
+  stroke: none;
 }
 
 /* ---------- forms ---------- */
@@ -510,8 +610,7 @@ textarea {
 
 .input,
 .submit input,
-.search input[type="search"],
-.facets select {
+.search input[type="search"] {
   width: 100%;
   padding: var(--s-2) var(--s-3);
   background: var(--surface);
@@ -519,6 +618,7 @@ textarea {
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   min-height: 2.5rem;
+  transition: border-color var(--dur-fast) var(--ease);
 }
 
 .input:hover,
@@ -544,6 +644,21 @@ textarea {
   font-weight: 560;
   cursor: pointer;
   white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+/* The arrow on a primary action leans forward under the cursor. Only the
+   glyph moves; the button itself does not grow, lift or tilt, because a
+   control that changes size on hover moves everything laid out beside it. */
+.btn svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+.btn:hover svg {
+  transform: translateX(2px);
 }
 
 .btn:hover,
@@ -652,50 +767,97 @@ textarea {
   height: 16px;
   color: var(--faint);
   pointer-events: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.search-row .field:focus-within svg {
+  color: var(--accent);
 }
 
 .search-row .field input[type="search"] {
   padding-left: 2.25rem;
+  padding-right: 2.75rem;
 }
 
+/* The shortcut hint, inside the field at the trailing edge.
+ *
+ * A pseudo-element rather than a <kbd> in the markup, because it is decoration
+ * and a pseudo-element is the only way to say so that leaves nothing for the
+ * accessibility tree to reach. The alternative — a real element with
+ * aria-hidden — puts a hidden node inside a form control, which is the pattern
+ * that makes a screen reader announce something other than what is on screen.
+ *
+ * It disappears the moment the field has focus: at that point the reader is
+ * already where the key would have taken them, and a hint that outstays its
+ * usefulness is just something else in the box. */
+.search-row .field::after {
+  content: "/";
+  position: absolute;
+  right: var(--s-3);
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  line-height: 1;
+  padding: 0.25em 0.45em;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--faint);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.search-row .field:focus-within::after {
+  opacity: 0;
+}
+
+/* One row per facet, each led by its own label. Two rows rather than one wrap
+   soup: type and capability answer different questions, and a reader choosing
+   a type should not have to work out where the type chips stop. */
 .facets {
-  display: flex;
-  gap: var(--s-4);
-  align-items: flex-start;
-  flex-wrap: wrap;
-  padding-top: var(--s-1);
-}
-
-.facets > label[for="type"] {
-  display: none;
-}
-
-.facets select {
-  width: auto;
-  min-width: 12rem;
-  font-size: var(--t-sm);
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
 }
 
 .facets fieldset {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--s-2);
   flex-wrap: wrap;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
+/* float, because a legend is not a flex item of its own fieldset — floating it
+   is what puts the label on the same line as the chips it names. */
 .facets legend {
   float: left;
-  padding: 0 var(--s-2) 0 0;
+  padding: 0 var(--s-3) 0 0;
   font-size: var(--t-xs);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  line-height: 1.875rem;
 }
 
-/* Checkbox + text as one chip, so the whole thing is a comfortable click
-   target rather than a 13px box. */
+/* Control + text as one chip, so the whole thing is a comfortable click target
+   rather than a 13px box.
+ *
+ * The type filter was a <select>. A native menu is one control that hides five
+ * of its six options until it is opened, which costs two interactions to change
+ * a filter and shows nothing about what the alternatives are. As chips the whole
+ * axis is legible at rest and switching is one click. The form is unchanged
+ * underneath: a radio group named `type` submits exactly one value, which is
+ * what the <select> did, so the URL, the parser and the query are all identical.
+ *
+ * Selected state is carried on four channels, not one: the control's own filled
+ * shape, the background, the border and the text colour. Nothing here is
+ * distinguishable by hue alone. */
 .facets fieldset label {
   display: inline-flex;
   align-items: center;
@@ -708,6 +870,10 @@ textarea {
   color: var(--muted);
   cursor: pointer;
   min-height: 1.875rem;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .facets fieldset label:hover {
@@ -719,9 +885,19 @@ textarea {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
+  font-weight: 560;
 }
 
-.facets fieldset input[type="checkbox"] {
+/* The ring belongs on the chip, not on the 13px control buried inside it —
+   otherwise tabbing through the filters outlines something the reader can
+   barely see. */
+.facets fieldset label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.facets fieldset input[type="checkbox"],
+.facets fieldset input[type="radio"] {
   accent-color: var(--accent);
   margin: 0;
 }
@@ -761,6 +937,10 @@ textarea {
   color: var(--fg);
   font-size: var(--t-sm);
   text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .pager a:hover {
@@ -769,8 +949,97 @@ textarea {
   color: var(--accent);
 }
 
+/* Each arrow leans the way it navigates. */
+.pager a svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+.pager a[rel="prev"]:hover svg {
+  transform: translateX(-2px);
+}
+
+.pager a[rel="next"]:hover svg {
+  transform: translateX(2px);
+}
+
 .pager .muted {
   margin-inline-start: auto;
+}
+
+/* ---------- loading skeleton ---------- */
+
+/*
+ * Every page here reads the database at request time, so a navigation shows the
+ * previous page until the query returns. These placeholders are what
+ * loading.tsx renders in that gap, and they exist to hold the layout still: the
+ * bars are the sizes the real rows will be, in the same two-column grid, so the
+ * content that arrives lands where the placeholder was rather than shoving the
+ * page down.
+ *
+ * A slow sweep of light, not a pulse: a shimmer that blinks twenty times down a
+ * list draws more attention than the content it is standing in for. The whole
+ * effect is suppressed under prefers-reduced-motion, where the bars simply sit
+ * there — which is still a correct skeleton.
+ */
+.skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  /* Its own height, so a bar is visible in a text flow with no content in it. */
+  min-height: 0.75rem;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%)),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-sweep 1.4s var(--ease) infinite;
+}
+
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Widths that vary a little down the list, because a column of identical bars
+   reads as a table and not as prose waiting to arrive. */
+.skeleton-title {
+  width: 9rem;
+  height: 0.9375rem;
+}
+
+.skeleton-line {
+  width: 100%;
+  max-width: var(--prose);
+  height: 0.75rem;
+  margin-top: var(--s-2);
+}
+
+.skeleton-line:nth-of-type(2) {
+  width: 72%;
+}
+
+.skeleton-meta {
+  width: 60%;
+  max-width: 26rem;
+  height: 0.6875rem;
+  margin-top: var(--s-3);
+}
+
+.skeleton-badge {
+  width: 6.5rem;
+  height: 1.25rem;
+  border-radius: 999px;
 }
 
 /* ---------- notices ---------- */
@@ -842,11 +1111,24 @@ textarea {
 }
 
 .stats dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
   margin: 0;
   font-size: var(--t-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--faint);
+}
+
+/* One glyph per condition, so the four read as four kinds of thing rather than
+   four paragraphs. Each is the ordinary sign for what it labels — a star for
+   stars, a globe for public, a branch for a fork, a box for an archive — and
+   none of them is a status light: there is no green, no red, and no tick. */
+.stats dt svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
 }
 
 .stats dd {
@@ -912,6 +1194,10 @@ textarea {
   font-size: var(--t-sm);
   font-weight: 500;
   text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .detail-actions a:hover {
@@ -923,6 +1209,11 @@ textarea {
 .detail-actions svg {
   width: 14px;
   height: 14px;
+  transition: transform var(--dur) var(--ease);
+}
+
+.detail-actions a:hover svg {
+  transform: translate(1px, -1px);
 }
 
 .facts {
@@ -1098,6 +1389,24 @@ textarea {
 
 /* ---------- responsive ---------- */
 
+/*
+ * The row's type column stops earning its keep before the viewport reaches
+ * phone width. 10.5rem out of a ~46rem content box is a fifth of the line
+ * given to a label, and the descriptions start breaking every three words.
+ * At this width the badge goes back above the title — still at a constant
+ * position, just a horizontal one instead of a vertical one.
+ */
+@media (max-width: 52rem) {
+  .rows > li {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-2);
+  }
+
+  .row-type {
+    padding-top: 0;
+  }
+}
+
 @media (max-width: 40rem) {
   :root {
     --t-2xl: 1.625rem;
@@ -1129,13 +1438,39 @@ textarea {
     gap: var(--s-3);
   }
 
-  .facets select {
-    width: 100%;
-    min-width: 0;
+  /* No keyboard to press it with. */
+  .search-row .field::after {
+    display: none;
+  }
+
+  .search-row .field input[type="search"] {
+    padding-right: var(--s-3);
   }
 
   .rows > li {
     padding: var(--s-4);
+  }
+
+  /*
+   * The metadata line was the worst thing on a phone: four facts of wildly
+   * different lengths in one wrapping flex row, so the path broke mid-segment
+   * on one card and the read date sat alone on the next, and no two rows in a
+   * list wrapped the same way. Giving the path its own full-width line makes
+   * the shape identical on every row — path, then the three short facts —
+   * which is what makes a list scannable at this width at all.
+   */
+  .row-meta {
+    gap: var(--s-2) var(--s-3);
+  }
+
+  .row-meta .path {
+    flex: 1 0 100%;
+  }
+
+  /* Nothing to push against once the path is on its own line, and an auto
+     margin here would strand the link off on the right by itself. */
+  .row-source {
+    margin-inline-start: 0;
   }
 
   /* Two columns of facts become one; a 7rem label column against a 45-character
@@ -1155,6 +1490,72 @@ textarea {
   }
 }
 
-/* No prefers-reduced-motion block: this stylesheet declares no animation and no
-   transition, so the usual blanket override would suppress nothing. Add one
-   alongside the first motion that ships, not before it. */
+/* ---------- coarse pointers ---------- */
+
+/*
+ * Keyed on the pointing device, not on the viewport width, because that is the
+ * thing the rule is actually about — a narrow window on a desktop still has a
+ * mouse, and a tablet in landscape still has a finger.
+ *
+ * Measured at 390px with a touch context: the metadata line's links come out
+ * 109×19 CSS px, and every "source on GitHub" in a list of eighteen was one of
+ * them. WCAG 2.2's target-size minimum is 24×24, and 19px of height stacked
+ * directly under a description that is not a link is a row where the wrong
+ * thing gets tapped. The text does not change size; only the box around it
+ * grows, and `align-items: center` was already there to keep the glyph and the
+ * label on one baseline while it does.
+ */
+@media (pointer: coarse) {
+  .row-meta a,
+  .row-meta span {
+    min-height: 24px;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+/*
+ * This block used to be a comment explaining why it was absent — the stylesheet
+ * declared no animation, so there was nothing to suppress. Motion ships now, so
+ * it ships with its own off switch, which is the arrangement that comment asked
+ * for.
+ *
+ * Everything this stylesheet animates is a state change a reader could equally
+ * well be told about instantly: a background under the cursor, a glyph leaning
+ * two pixels, a sweep across a placeholder. None of it carries information the
+ * static end state does not, so the honest response to the preference is to
+ * remove the transition and keep the end state, not to substitute a shorter one.
+ *
+ * It is done by redefining the two duration tokens, not by the usual
+ * `*, *::before, *::after { transition-duration: 0.01ms !important }`. That
+ * blanket rule needs `!important` because a universal selector loses to every
+ * class in the file, and `!important` in a stylesheet is a thing later authors
+ * have to fight. Redefining the tokens needs neither: every transition here
+ * reads its duration from `--dur-fast` or `--dur` — the rule declared where
+ * those are defined, and checked here, is that nothing writes its own — so
+ * changing the two values changes all of them, at the same specificity they
+ * already had.
+ *
+ * 0.01ms rather than 0 is the conventional value that still lets a
+ * `transitionend` handler fire. Nothing in this codebase listens for one, but a
+ * future component might, and silently breaking an event is a bad way to honour
+ * an accessibility preference.
+ *
+ * The skeleton sweep is the one animation with a literal duration, because a
+ * keyframe timing is not a state transition and does not belong in the same
+ * token. It is switched off outright.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur: 0.01ms;
+  }
+
+  .skeleton::after {
+    display: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

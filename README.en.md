@@ -187,6 +187,11 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
 - **URL as state.** Query, filters and page are all in the address bar, the form
   is a plain GET with native controls, and the whole page works with JavaScript
   disabled.
+- **Keyboard.** `/` puts the cursor in the search field from anywhere, or goes
+  to the search page if you are not on it; Ctrl/Cmd+K does the same and also
+  works from inside the field, selecting the query so the next keystroke
+  replaces it. Nothing here is a separate search surface — the key acts on the
+  same form and the same route.
 - **Permalinks.** Every artifact has a stable URL, and every "source on GitHub"
   link points at the commit SHA AgentDock actually read — never at a branch,
   which would drift.
@@ -197,7 +202,7 @@ stars, downloads, or anything else about a repository's popularity.
 ## Architecture
 
 ```
-Next.js 16 (App Router, all routes force-dynamic, one client component)
+Next.js 16 (App Router, all routes force-dynamic, three client components)
         │
         └── PostgreSQL 16          the only datastore. No cache, no queue
              ├── search: tsvector + GIN, pg_trgm for typo tolerance
@@ -206,6 +211,15 @@ Next.js 16 (App Router, all routes force-dynamic, one client component)
 
 There is no Redis, no OpenSearch, no vector database and no message broker. The
 queue is a table, the scheduler is cron, and the lock manager is PostgreSQL.
+
+The front end is the same shape. Every page is a Server Component rendering
+plain CSS with custom properties — no UI kit, no CSS framework, no animation
+library and no icon package. Three components carry `'use client'`, none of
+them holds data or fetches anything: a polling effect on the job page, a
+keyboard shortcut that puts the cursor in the search field (`/`, or Ctrl/Cmd+K),
+and the error boundary, which the framework requires to be a client component.
+Search, filtering and pagination are a GET form with native controls, so they
+work with JavaScript disabled.
 
 ```
 src/

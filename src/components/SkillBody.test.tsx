@@ -173,6 +173,33 @@ describe('SkillBody — ordinary Markdown still works', () => {
     expect(html).toContain('href="https://example.test/page"');
   });
 
+  /**
+   * `.body pre` scrolls horizontally, so a code fence wider than the column is
+   * a scrollable region — and one with no focusable content is unreachable by
+   * keyboard, which is WCAG 2.1.1. axe-core reported exactly this on the
+   * reference artifact's own code blocks, at mobile width, in both themes.
+   *
+   * The fix is a `tabIndex` on the rendered element, which is why the assertion
+   * is here and not on the stylesheet: the attribute comes from this
+   * component's `components` override, and removing that override is the way it
+   * would silently come back.
+   */
+  it('makes a fenced code block reachable by keyboard', () => {
+    const html = render(source);
+    expect(html).toMatch(/<pre[^>]*tabindex="0"/i);
+  });
+
+  /**
+   * The override runs after rehype-sanitize, on React's side. It must not have
+   * become a way for an author to put a tabindex — or anything else — on some
+   * other element by writing it in a body.
+   */
+  it('still strips an author-written tabindex from the source', () => {
+    const html = render('<div tabindex="5">reachable</div>\n\nplain paragraph\n');
+    expect(html).not.toContain('tabindex="5"');
+    expect(html).not.toContain('<div');
+  });
+
   it('renders a hundred thousand characters without error', () => {
     const big = `# Big\n\n${'word '.repeat(20_000)}`;
     expect(big.length).toBeGreaterThan(100_000);

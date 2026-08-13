@@ -184,6 +184,10 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
   것과 동일한 술어(predicate)를 써서 SQL 안에서 적용됩니다.
 - **URL이 곧 상태.** 검색어, 필터, 페이지가 모두 주소창에 있습니다. 폼은 native
   control을 쓰는 평범한 GET이고, JavaScript를 꺼도 페이지 전체가 동작합니다.
+- **키보드.** `/`는 어디에서든 검색 입력에 커서를 놓고, 검색 페이지가 아니라면
+  그쪽으로 이동합니다. Ctrl/Cmd+K도 같은 일을 하며 입력란 안에서도 동작해서
+  기존 검색어를 선택해 둡니다 — 다음 타자가 그대로 덮어씁니다. 별도의 검색
+  화면은 없습니다. 키는 같은 폼과 같은 route에 작용합니다.
 - **Permalink.** 모든 artifact에 고정 URL이 있고, 모든 "source on GitHub" 링크는
   AgentDock이 실제로 읽은 commit SHA를 가리킵니다. branch를 가리키지 않습니다 —
   branch는 움직이기 때문입니다.
@@ -194,7 +198,7 @@ capability 필터는 결과를 좁힐 뿐 ranking 입력값이 아닙니다. sta
 ## Architecture
 
 ```
-Next.js 16 (App Router, 모든 route가 force-dynamic, client component 1개)
+Next.js 16 (App Router, 모든 route가 force-dynamic, client component 3개)
         │
         └── PostgreSQL 16          유일한 datastore. cache 없음, queue 없음
              ├── 검색: tsvector + GIN, 오타 허용은 pg_trgm
@@ -203,6 +207,14 @@ Next.js 16 (App Router, 모든 route가 force-dynamic, client component 1개)
 
 Redis도, OpenSearch도, vector database도, message broker도 없습니다. 큐는
 테이블이고, scheduler는 cron이고, lock manager는 PostgreSQL입니다.
+
+프런트엔드도 같은 모양입니다. 모든 페이지는 Server Component이고, 스타일은
+custom property를 쓰는 순수 CSS입니다 — UI kit도, CSS framework도, animation
+library도, icon package도 없습니다. `'use client'`를 가진 component는 3개뿐이며
+어느 것도 데이터를 갖거나 fetch하지 않습니다: job 페이지의 polling effect,
+검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 그리고
+framework가 client component이기를 요구하는 error boundary입니다. 검색, 필터,
+페이지네이션은 native control을 쓰는 GET form이라 JavaScript를 꺼도 동작합니다.
 
 ```
 src/

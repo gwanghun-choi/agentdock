@@ -64,3 +64,38 @@ describe('the star count in a row', () => {
     expect(html).toContain('0 GitHub stars');
   });
 });
+
+/**
+ * The row is a two-column grid whose left column exists so that every type
+ * badge in a list lands on the same vertical line — see the component's own
+ * doc. That only holds while the badge is a child of `.row-type` and not of
+ * `.row-title`, which is where it used to be, and moving it back would restore
+ * the ragged left edge without breaking any other assertion in this file.
+ */
+describe('the shape the type column depends on', () => {
+  const html = renderToStaticMarkup(<PackageRows items={[item({ type: 'plugin' })]} />);
+
+  it('puts the badge in its own cell, not inline in the title', () => {
+    expect(html).toContain('<div class="row-type">');
+    // The badge markup follows .row-type immediately: nothing between the cell
+    // and the label it exists to hold.
+    expect(html).toMatch(/<div class="row-type"><span class="badge badge-plugin">/);
+  });
+
+  it('leaves the title to the name and the repository only', () => {
+    const title = html.match(/<p class="row-title">([\s\S]*?)<\/p>/);
+
+    expect(title).not.toBeNull();
+    expect(title?.[1]).toContain('canvas-design');
+    expect(title?.[1]).toContain('anthropics/skills');
+    expect(title?.[1]).not.toContain('badge');
+  });
+
+  it('marks the external link so it can be anchored to the row edge', () => {
+    // .row-source is what pushes the GitHub permalink to a constant x on every
+    // row. Without the class the link still works and still points at the right
+    // commit; the metadata line just goes back to four ragged columns.
+    expect(html).toContain('class="row-source"');
+    expect(html).toContain('source on GitHub');
+  });
+});

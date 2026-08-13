@@ -51,6 +51,25 @@ export function SkillBody({ markdown }: { markdown: string }) {
         a: ({ node: _node, ...props }) => (
           <a {...props} rel="noopener noreferrer nofollow ugc" target="_blank" />
         ),
+        // `.body pre` scrolls horizontally, and a region that scrolls with no
+        // way to focus it is unreachable by keyboard — WCAG 2.1.1. axe-core
+        // reported it as a serious violation on both mobile runs over the
+        // reference artifact, on three separate code blocks; it was the only
+        // violation a 28-run sweep found anywhere.
+        //
+        // This is an override on the React side, applied after rehype-sanitize
+        // has already run. It adds no tag and no attribute to the allowlist —
+        // the schema above is untouched, and a `tabindex` written by an author
+        // in a body is still stripped before this ever sees the node.
+        //
+        // The linter objects, and this is the case its rule does not cover. Its
+        // concern is inert elements in the tab order; a <pre> that scrolls is
+        // not inert — it holds content a reader can only reach by scrolling it,
+        // and focus is the only way a keyboard reaches a scroll container.
+        // Removing the attribute makes axe's scrollable-region-focusable fail
+        // again, which is a measured WCAG failure traded for a lint heuristic.
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core.
+        pre: ({ node: _node, ...props }) => <pre {...props} tabIndex={0} />,
       }}
     >
       {markdown}

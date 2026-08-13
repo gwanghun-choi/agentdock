@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DockIcon, SearchIcon } from '@/components/Icon';
+import { SearchHotkey } from '@/components/SearchHotkey';
 import './globals.css';
 
 export const metadata = {
@@ -39,6 +40,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 TLS later, and neither should require a code change. */}
             <nav aria-label="Main">
               <Link href="/artifacts">Artifacts</Link>
+              {/* No shortcut hint here. It was tried and removed: a <kbd> inside
+                  the link needs aria-hidden to keep "slash" out of the link's
+                  accessible name, and aria-hidden on a descendant of a focusable
+                  element is the pattern that produces a control a screen reader
+                  announces differently from what is on screen. The hint belongs
+                  next to the field the key acts on, which is where it is. */}
               <Link href="/artifacts?q=">
                 <SearchIcon />
                 Search
@@ -46,6 +53,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </header>
+
+        {/* Renders nothing. It binds `/` and Ctrl/Cmd+K to the search field —
+            the only JavaScript this layout loads, and the page is complete
+            without it. */}
+        <SearchHotkey />
 
         {/* The skip link's destination, and the one main landmark per page. */}
         <main id="main" className="wrap">

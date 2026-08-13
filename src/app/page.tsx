@@ -1,5 +1,13 @@
 import Link from 'next/link';
-import { ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
+import {
+  ArchiveIcon,
+  ArrowRightIcon,
+  ForkIcon,
+  GlobeIcon,
+  InfoIcon,
+  SearchIcon,
+  StarIcon,
+} from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { countPackages, listPackages } from '@/db/queries/packages';
@@ -50,27 +58,41 @@ export default async function HomePage() {
             curated seed list and GitHub&apos;s own topic search. There is no submission form:
             nothing is added by request.
           </p>
+          {/* One glyph per condition, so four conditions read as four kinds of
+              thing at a glance instead of as four short paragraphs. Each is the
+              ordinary sign for the noun it labels and none of them is a status
+              light: no tick, no cross, no green, no red. Nothing here says a
+              repository that fails a condition is worse than one that passes —
+              only that AgentDock did not read it. */}
           <dl className="stats">
             <div>
-              <dt>Stars</dt>
+              <dt>
+                <StarIcon /> Stars
+              </dt>
               <dd>
                 {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
               </dd>
             </div>
             <div>
-              <dt>Visibility</dt>
+              <dt>
+                <GlobeIcon /> Visibility
+              </dt>
               <dd>
                 Public<small>private repositories are unreadable, not excluded</small>
               </dd>
             </div>
             <div>
-              <dt>Not a fork</dt>
+              <dt>
+                <ForkIcon /> Not a fork
+              </dt>
               <dd>
                 Upstream only<small>the original is what gets read</small>
               </dd>
             </div>
             <div>
-              <dt>Not archived</dt>
+              <dt>
+                <ArchiveIcon /> Not archived
+              </dt>
               <dd>
                 Active<small>an archive has no next commit</small>
               </dd>

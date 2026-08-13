@@ -84,7 +84,12 @@ export default async function RepositoryPage({ params }: Props) {
       ) : null}
 
       <p className="row-meta">
-        <span>{repository.stars} GitHub stars</span>
+        {/* Grouped, like every other count a reader is asked to take in at a
+            glance. "167306" and "167,306" report the same number; only one of
+            them can be read without counting digits. The listing rows already
+            spelled it this way in their own title attribute, so this is the two
+            surfaces agreeing rather than a new format. */}
+        <span>{repository.stars.toLocaleString('en-US')} GitHub stars</span>
         <span>Licence, detected by GitHub: {repository.licenseSpdx ?? 'not detected'}</span>
         {repository.isArchived ? <span>Archived on GitHub</span> : null}
         {/* Same register as the archived disclosure beside it: a fact GitHub

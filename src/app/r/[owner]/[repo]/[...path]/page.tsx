@@ -162,8 +162,10 @@ export default async function PackagePage({ params }: Props) {
         <dd>{utc(detail.scannedAt)}</dd>
 
         <dt>GitHub stars</dt>
-        {/* GitHub's number, labelled as GitHub's. Never an AgentDock signal. */}
-        <dd>{detail.stars}</dd>
+        {/* GitHub's number, labelled as GitHub's. Never an AgentDock signal.
+            Digit-grouped for the same reason the repository page and the
+            listing rows group it: it is a number to read, not to parse. */}
+        <dd>{detail.stars.toLocaleString('en-US')}</dd>
 
         <dt>Permalink</dt>
         <dd>

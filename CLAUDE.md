@@ -10,9 +10,9 @@ Read AGENTS.md first. Nothing here overrides anything there.
 
 This project is built by the [ponytail](https://github.com/DietrichGebert/ponytail)
 plugin's rules, at **full** intensity, and the codebase already reflects them:
-one datastore, one client component, no CLI library, no icon package, no cache
-layer, no state manager. Changes that add any of those need an argument, not a
-preference.
+one datastore, three small client components, no CLI library, no icon package,
+no UI kit, no CSS framework, no animation library, no cache layer, no state
+manager. Changes that add any of those need an argument, not a preference.
 
 The ladder, in order. Stop at the first rung that holds:
 
@@ -90,9 +90,13 @@ not replace `bun run ci`.
   record what was measured and what was rejected — "1,152 ms → 25.5 ms",
   "measured 2026-08-11, 253 registry seeds were re-tagged". Keep that register.
   A comment restating the code is noise.
-- **Avoid new client-side dependencies.** There is one client component and it
-  holds only a pending flag. A package that ships `'use client'` turns every
-  import site into a client component; measure before adopting one.
+- **Avoid new client-side dependencies.** There are three client components,
+  and `git grep -l "^'use client'" src/` is the list: a polling effect on the
+  job page, a keyboard shortcut that focuses the search field, and the error
+  boundary, which the framework requires to be one. None of them holds data and
+  none of them fetches. A package that ships `'use client'` turns every import
+  site into a client component; measure before adopting one. The measurement
+  that rejected `lucide-react` is written up in `src/components/Icon.tsx`.
 
 ## Before you call it done
 

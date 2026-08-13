@@ -196,21 +196,43 @@ export default async function ArtifactsPage({
             defaultValue={q}
             maxLength={SEARCH_CAPS.maxQueryLength}
           />
+          {/* The shortcut hint is drawn by CSS, as `.field::after`, and is not
+              in this markup at all. It was a <kbd aria-hidden="true"> first;
+              aria-hidden inside a control is the pattern that makes what a
+              screen reader announces differ from what is on screen, and the
+              linter is right to refuse it. A pseudo-element is decoration by
+              construction — there is no node for the accessibility tree to
+              reach — which is exactly what this is. SearchHotkey.tsx makes the
+              key work; the field only says that it does. */}
         </span>
         <button type="submit">Search</button>
       </div>
       <div className="facets">
-        <label htmlFor="type">Type</label>
-        <select id="type" name="type" defaultValue={selectedTypes[0] ?? ''}>
-          <option value="">All types</option>
-          {ARTIFACT_TYPE_IDS.map((id) => (
-            <option key={id} value={id}>
-              {TYPE_FILTER_LABELS[id]}
-            </option>
-          ))}
-        </select>
+        {/* Was a <select>. A radio group named `type` submits exactly one value,
+            which is precisely what the menu did — same parameter, same single
+            value, same parseTypeFilter on the way back in, so the URL and the
+            query are byte-identical to what they were. What changes is that all
+            six options are legible without opening anything and switching costs
+            one click instead of two.
+
+            The "All types" option is value="" for the same reason the <option>
+            was: it submits `type=`, which parseTypeFilter drops, which is the
+            unfiltered state. */}
         <fieldset>
-          <legend className="muted">Capability</legend>
+          <legend>Type</legend>
+          <label>
+            <input type="radio" name="type" value="" defaultChecked={selectedTypes.length === 0} />{' '}
+            All types
+          </label>
+          {ARTIFACT_TYPE_IDS.map((id) => (
+            <label key={id}>
+              <input type="radio" name="type" value={id} defaultChecked={selectedTypes[0] === id} />{' '}
+              {TYPE_FILTER_LABELS[id]}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset>
+          <legend>Capability</legend>
           {CAPABILITY_FILTER_IDS.map((id) => (
             <label key={id}>
               <input
