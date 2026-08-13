@@ -222,12 +222,20 @@ and the error boundary, which the framework requires to be a client component.
 Search, filtering and pagination are a GET form with native controls, so they
 work with JavaScript disabled.
 
-So is the motion. The index-flow diagram on the home page, the order a list
-arrives in, and every hover and focus response are CSS — the diagram is HTML and
-CSS rather than an SVG asset, and there is no scroll observer anywhere. Every
-keyframe animation is declared inside one
-`prefers-reduced-motion: no-preference` block, so for a reader who asked for
-less motion there is nothing left to switch off: it is never declared.
+So is the motion. The index-flow diagram on the home page, the rail of recently
+indexed cards drifting past under it, the order a list arrives in, and every
+hover and focus response are CSS — the diagram is HTML and CSS rather than an
+SVG asset, and there is no scroll observer anywhere. Every keyframe animation is
+declared inside one `prefers-reduced-motion: no-preference` block, so for a
+reader who asked for less motion there is nothing left to switch off: it is
+never declared.
+
+The rail moves on its own, so it carries an **always-visible stop control**
+(WCAG 2.2.2). Hover and focus stop it too, but neither is what makes it
+conformant — an interaction a reader never performs is not a mechanism they
+have. On a touch pointer and under reduced motion the rail does not move at
+all: it is a scroll-snapping carousel, and the stop control is not shown,
+because there is nothing to stop.
 
 ```
 src/

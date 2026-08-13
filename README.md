@@ -218,11 +218,18 @@ library도, icon package도 없습니다. `'use client'`를 가진 component는 
 framework가 client component이기를 요구하는 error boundary입니다. 검색, 필터,
 페이지네이션은 native control을 쓰는 GET form이라 JavaScript를 꺼도 동작합니다.
 
-모션도 마찬가지입니다. 홈의 index flow 다이어그램, 목록이 순서대로 등장하는
-방식, hover와 focus 반응은 전부 CSS입니다 — 다이어그램은 SVG asset이 아니라
-HTML과 CSS이고, scroll observer도 없습니다. keyframe animation은 전부
-`prefers-reduced-motion: no-preference` 블록 하나 안에만 선언되어 있어서, 모션을
-줄여 달라고 한 사용자에게는 끌 것이 남지 않습니다. 애초에 선언되지 않습니다.
+모션도 마찬가지입니다. 홈의 index flow 다이어그램, 최근 인덱싱 항목이 천천히
+흐르는 카드 rail, 목록이 순서대로 등장하는 방식, hover와 focus 반응은 전부
+CSS입니다 — 다이어그램은 SVG asset이 아니라 HTML과 CSS이고, scroll observer도
+없습니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
+블록 하나 안에만 선언되어 있어서, 모션을 줄여 달라고 한 사용자에게는 끌 것이
+남지 않습니다. 애초에 선언되지 않습니다.
+
+rail은 자동으로 움직이므로 **항상 보이는 정지 컨트롤**을 가집니다(WCAG 2.2.2).
+hover와 focus도 멈추지만 그 둘은 준수 근거가 아닙니다 — 호버하지 않는 사용자에게는
+없는 것과 같기 때문입니다. 터치 기기와 reduced-motion에서는 자동 이동 없이
+스크롤 스냅 carousel이 되고, 그때는 멈출 것이 없으므로 정지 컨트롤도 표시되지
+않습니다.
 
 ```
 src/

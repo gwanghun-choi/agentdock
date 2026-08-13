@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArtifactRail } from '@/components/ArtifactRail';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -19,8 +20,24 @@ import { countPackages, listPackages } from '@/db/queries/packages';
 // CI, where there is no database.
 export const dynamic = 'force-dynamic';
 
+/**
+ * One query, two readings.
+ *
+ * The rail drifts through all eighteen; the list underneath reads the ten it
+ * always read. Eighteen is a rail long enough that the loop is not obvious at a
+ * glance and short enough that a cycle stays under two minutes at a readable
+ * speed — and it is one `listPackages` call, the same one this page has always
+ * made, with a larger limit. No second query, no second round trip.
+ */
+const RAIL_ITEMS = 18;
+const LIST_ROWS = 10;
+
 export default async function HomePage() {
-  const [recent, total] = await Promise.all([listPackages({ limit: 10 }), countPackages()]);
+  const [recent, total] = await Promise.all([listPackages({ limit: RAIL_ITEMS }), countPackages()]);
+  // Exact rather than approximate: the repository this artifact came from was
+  // read on this date. Not "the corpus was read on" — that is a different claim
+  // and this page does not have the number for it.
+  const newestRead = recent[0]?.scannedAt?.toISOString().slice(0, 10) ?? null;
 
   return (
     <>
@@ -152,13 +169,46 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="recent-heading">
+      {/* The board. Three layers, in the order a reader uses them: what this is
+          and what to do next, then the rail to glance at, then the rows to
+          read. The rail never replaces the rows — a feed you can only watch go
+          past is not a feed you can use, and the rows are also where a reader
+          who cannot or does not want to track a moving target gets everything
+          the rail shows. */}
+      <section aria-labelledby="recent-heading" className="board">
         <div className="section-head">
           <h2 id="recent-heading">Recently indexed</h2>
           {recent.length > 0 ? (
-            <Link href="/artifacts">
-              Browse all {total} artifacts <ArrowRightIcon />
-            </Link>
+            <p className="board-meta">
+              {recent.length} most recent
+              {newestRead ? ` · newest read ${newestRead}` : ''}
+            </p>
+          ) : null}
+          {recent.length > 0 ? (
+            <p className="board-actions">
+              {/* WCAG 2.2.2. Hovering pauses the rail and so does focusing a
+                  card, but neither is a mechanism for a reader who does
+                  neither — someone reading with a magnifier, or on a device
+                  with no hover at all on a viewport wide enough to still be
+                  animating. This is that mechanism, and it is a checkbox
+                  because a checkbox is a real control with a real state that
+                  the keyboard already reaches, and because :has() makes it
+                  work with no JavaScript.
+
+                  It is hidden wherever there is nothing to pause — reduced
+                  motion, and coarse pointers, where the rail is a plain
+                  scroller. A pause button for something standing still is
+                  worse than no button. */}
+              <label className="rail-pause">
+                <input type="checkbox" /> Pause
+              </label>
+              <Link className="board-search" href="/artifacts?q=">
+                <SearchIcon /> Search
+              </Link>
+              <Link href="/artifacts">
+                Browse all {total} artifacts <ArrowRightIcon />
+              </Link>
+            </p>
           ) : null}
         </div>
         {recent.length === 0 ? (
@@ -168,7 +218,10 @@ export default async function HomePage() {
             </p>
           </div>
         ) : (
-          <PackageRows items={recent} />
+          <>
+            <ArtifactRail items={recent} />
+            <PackageRows items={recent.slice(0, LIST_ROWS)} />
+          </>
         )}
       </section>
     </>

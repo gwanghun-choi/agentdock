@@ -1764,6 +1764,308 @@ textarea {
   color: var(--muted);
 }
 
+/* ---------- activity board ---------- */
+
+/*
+ * "Recently indexed" as a board rather than a heading over a list: a header row
+ * that says what the feed is and what to do with it, a rail to glance at, and
+ * the rows to actually read.
+ *
+ * The three layers are deliberately not equal. The rail is the thing that moves
+ * and the thing that must not become the point — the hero's diagram is this
+ * page's one loud object, and a second animated element competing with it is how
+ * a product page turns into a screensaver. So the rail is short, quiet, and
+ * sits above content that says the same thing standing still.
+ */
+.board-meta {
+  margin: 0;
+  max-width: none;
+  color: var(--faint);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.board-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin: 0;
+  margin-inline-start: auto;
+  max-width: none;
+  font-size: var(--t-sm);
+}
+
+.board-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.board-search svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The rail's pause control, styled as one of the filter chips because it is the
+   same kind of thing: a small binary the reader sets and the page obeys. Hidden
+   by default and shown only where the rail actually moves — see the motion
+   block. */
+.rail-pause {
+  display: none;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  cursor: pointer;
+  min-height: 1.875rem;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.rail-pause:hover {
+  border-color: var(--muted);
+  color: var(--fg-strong);
+}
+
+.rail-pause:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 560;
+}
+
+/* The ring goes on the chip, not on the 13px control inside it — the same rule
+   the facet chips follow. */
+.rail-pause:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rail-pause input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+/* ---------- the rail ---------- */
+
+/*
+ * A scroll container first and an animation second, and that order is the
+ * accessibility answer rather than a style choice.
+ *
+ * `overflow-x: auto` is declared unconditionally, so on every configuration
+ * where the track is not being translated — reduced motion, a touch pointer,
+ * keyboard focus inside the rail — the rail is an ordinary horizontal scroller
+ * that the browser can scroll a focused card into view inside. A rail built as
+ * `overflow: hidden` plus a transform cannot do that: tab to the fifteenth card
+ * and focus lands somewhere off-screen with nothing able to bring it back. That
+ * is why focusing inside the rail cancels the animation outright rather than
+ * merely pausing it — cancelling returns the track to translate zero, which
+ * makes the scroll geometry honest again and hands the problem to the browser.
+ *
+ * `overscroll-behavior-x: contain` because a horizontal flick that runs off the
+ * end of a rail is otherwise a browser back-navigation on a touchpad.
+ *
+ * The scrollbar is hidden: this is a strip of cards inside a card, a persistent
+ * gutter under it reads as a bug, and the edge fade plus the rows immediately
+ * below carry the affordance. Container scroll-state queries would draw a
+ * better hint — the guidance for them is in modern-web-guidance — but they are
+ * Chrome-only today and the mask is not.
+ */
+/* The frame. Separate from .rail because .rail carries the edge mask, and a
+   mask fades the border it is painted on — a panel whose own outline dissolves
+   at both ends reads as broken, not soft. This element paints; the one inside
+   it clips and fades. */
+.rail-well {
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.rail {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding-block: var(--s-1);
+  /* Both edges fade so a card entering or leaving does so gradually instead of
+     being guillotined by the panel border. --s-6 of fade at each end, which is
+     about a fifth of a card. */
+  padding-inline: var(--s-3);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--s-5),
+    #000 calc(100% - var(--s-5)),
+    transparent
+  );
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail-track {
+  display: flex;
+  width: max-content;
+  transform-origin: left;
+}
+
+.rail-set {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * The gap is a trailing margin on every card, including the last one, and not
+ * the flex `gap` property. This is the seam.
+ *
+ * With `gap`, the track measures 2 × half + one gap, and translating it -50%
+ * stops half a gap short of the second half's start — so the loop shifts by
+ * half a gap every cycle and drifts visibly within a minute. With the space
+ * carried inside each item both halves are exactly equal and -50% lands on the
+ * duplicate's first card to the pixel.
+ */
+.rail-set > li {
+  margin-right: var(--s-3);
+}
+
+.rail-set-dup {
+  /* Rendered only where there is a loop for it to close. See the motion block. */
+  display: none;
+}
+
+.rail-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  /* Fixed, so the loop's period is an exact function of the card count and the
+     speed is the same on every home page regardless of how long a name is. */
+  width: 17rem;
+  height: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--fg);
+  text-decoration: none;
+  scroll-snap-align: start;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+/* The whole card is the target — one link, 17rem wide, rather than a name-sized
+   one inside a card-sized box that mostly does nothing when clicked. */
+.rail-card:hover,
+.rail-card:focus-visible {
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
+}
+
+.rail-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.rail-card-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--faint);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.rail-card-stars svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.rail-card-name {
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-card:hover .rail-card-name {
+  color: var(--accent);
+}
+
+.rail-card-repo {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-card-desc {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* `margin-top: auto` pins this to the bottom of whatever height the row of
+   cards settles on, so the closing line sits on one baseline across the rail
+   whether a card carries a two-line summary, a one-line summary or none. */
+.rail-card-read {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  margin-top: auto;
+  padding-top: var(--s-2);
+  color: var(--faint);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.rail-card-read svg {
+  flex: none;
+  width: 11px;
+  height: 11px;
+}
+
+/* Snap only where the rail is actually scrolled by hand. With the track being
+   translated instead, there is no scrolling for a snap point to catch, and a
+   snap that fires against an animation is a fight nobody wins. */
+@media (prefers-reduced-motion: reduce), (pointer: coarse) {
+  .rail {
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--s-4);
+  }
+}
+
 /* ---------- detail page ---------- */
 
 .detail-head {
@@ -2414,6 +2716,94 @@ textarea {
 
   .rows > li:nth-child(n + 8) {
     animation-delay: 175ms;
+  }
+
+  /* --- the activity rail --- */
+
+  /*
+   * Nested inside the no-preference block rather than beside it, so this
+   * stylesheet keeps exactly one place an animation can be declared and
+   * motion.test.ts keeps being able to say so.
+   *
+   * `pointer: coarse` is excluded outright rather than given a slower speed. A
+   * translated track and a finger are two ways to move the same strip and they
+   * do not compose: the flick fights the animation, and the thing a touch user
+   * wants — to push the rail along and stop it where they can read it — is
+   * exactly what the rail already is when nothing is translating it. On a
+   * touch device this is a scroll-snapping carousel, which is the better
+   * answer, not a degraded one.
+   */
+  @media (pointer: fine) {
+    @keyframes rail-scroll {
+      to {
+        /* Exactly one half. Both halves are identical widths — see the trailing
+           margin on .rail-set > li — so this lands on the duplicate's first
+           card and the loop has no seam. */
+        transform: translateX(-50%);
+      }
+    }
+
+    .rail-set-dup {
+      display: flex;
+    }
+
+    /*
+     * 6.5s per card, not a fixed total. Each card is a fixed 17rem plus a
+     * 0.75rem margin, so a half measures items × 284px and the speed is a
+     * constant 43.7 px/s whatever the feed length — measured at eighteen cards:
+     * a 5,112px half over 117s. A fixed total duration would instead crawl at
+     * eighteen cards and sprint at forty. One card-width takes 6.5 seconds to
+     * pass, which is the number that actually decides whether this is readable.
+     *
+     * `linear`, and it is the only linear timing in this file. Every other curve
+     * here decelerates because it is a thing arriving somewhere; a rail is not
+     * arriving anywhere, and an eased marquee visibly surges once a cycle.
+     */
+    .rail-track {
+      animation: rail-scroll calc(var(--rail-items) * 6.5s) linear infinite;
+    }
+
+    .rail-pause {
+      display: inline-flex;
+    }
+
+    /* Pause, not slow down. The reason a cursor lands on a moving card is to
+       read it or to click it, and a rail that is merely slower still walks the
+       click target out from under the pointer. Stopping is the only version
+       where the thing under the cursor is the thing that gets clicked. */
+    .rail:hover .rail-track {
+      animation-play-state: paused;
+    }
+
+    /* The explicit control, for every reader who is not hovering. */
+    .board:has(.rail-pause input:checked) .rail-track {
+      animation-play-state: paused;
+    }
+
+    /*
+     * Focus cancels the animation instead of pausing it, and hides the
+     * duplicate half with it.
+     *
+     * Pausing leaves the track mid-translate, where the scroll container's
+     * geometry no longer matches what is on screen and the browser cannot
+     * scroll a focused card into view. Cancelling returns the track to zero and
+     * the rail becomes an ordinary scroller, which is the one state in which
+     * tabbing to the fifteenth card actually shows it. The jump this costs is
+     * paid once, on entering the rail, by a reader who has just asked to stop
+     * looking at it and start reading it.
+     */
+    .rail:focus-within .rail-track {
+      animation: none;
+    }
+
+    .rail:focus-within .rail-set-dup {
+      display: none;
+    }
+
+    .rail:focus-within {
+      scroll-snap-type: x proximity;
+      scroll-padding-inline: var(--s-4);
+    }
   }
 
   /* --- the loading placeholder --- */

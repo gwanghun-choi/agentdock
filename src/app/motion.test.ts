@@ -25,22 +25,43 @@ const css = readFileSync('src/app/globals.css', 'utf8');
  *  otherwise be read as declarations. */
 const code = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/** One at-rule's body, by brace balance from the at-rule rather than by a lazy
- *  `[\s\S]*?}`, which would stop at the first nested rule's closing brace and
- *  read as empty. */
+/**
+ * One at-rule's body, by brace balance from the at-rule rather than by a lazy
+ * `[\s\S]*?}`, which would stop at the first nested rule's closing brace and
+ * read as empty.
+ *
+ * The at-rule's condition must match EXACTLY — nothing but whitespace between
+ * the text asked for and the opening brace. A plain `indexOf` matches a prefix,
+ * and this file now contains
+ * `@media (prefers-reduced-motion: reduce), (pointer: coarse)`, which is a
+ * different rule that happens to start with the same twenty-nine characters.
+ * With a prefix match the reduced-motion suite silently read that block instead
+ * — it found no duration tokens in it and failed, which is the good outcome;
+ * had the two blocks contained similar declarations it would have passed while
+ * asserting nothing about the rule it names.
+ */
 function atRuleBody(source: string, atRule: string): string {
-  const start = source.indexOf(atRule);
-  if (start === -1) return '';
-  const open = source.indexOf('{', start);
-  let depth = 0;
-  for (let i = open; i < source.length; i++) {
-    if (source[i] === '{') depth++;
-    if (source[i] === '}') {
-      depth--;
-      if (depth === 0) return source.slice(open + 1, i);
+  for (let from = 0; ; ) {
+    const start = source.indexOf(atRule, from);
+    if (start === -1) return '';
+    const open = source.indexOf('{', start + atRule.length);
+    if (open === -1) return '';
+
+    if (source.slice(start + atRule.length, open).trim() !== '') {
+      from = start + atRule.length;
+      continue;
     }
+
+    let depth = 0;
+    for (let i = open; i < source.length; i++) {
+      if (source[i] === '{') depth++;
+      if (source[i] === '}') {
+        depth--;
+        if (depth === 0) return source.slice(open + 1, i);
+      }
+    }
+    return '';
   }
-  return '';
 }
 
 const REDUCE = '@media (prefers-reduced-motion: reduce)';
@@ -144,6 +165,17 @@ describe('every keyframe animation is inside the no-preference block', () => {
     const outside = motionSites(code.replace(block, ' '));
 
     expect(outside).toEqual([]);
+  });
+
+  it('reads the block whose condition matches exactly, not one that starts the same way', () => {
+    // Regression. `@media (prefers-reduced-motion: reduce), (pointer: coarse)`
+    // — the rail's scroll-snap rule — shares its first twenty-nine characters
+    // with the reduced-motion block and appears earlier in the file. A prefix
+    // match returned that block instead, and every assertion about reduced
+    // motion was suddenly being made against a scroll-snap rule.
+    expect(code).toContain(`${REDUCE}, (pointer: coarse)`);
+    expect(atRuleBody(code, REDUCE)).toMatch(/--dur-fast:/);
+    expect(atRuleBody(code, REDUCE)).not.toMatch(/scroll-snap-type/);
   });
 
   it('keeps the two blocks distinct, so neither is matched by the other', () => {
