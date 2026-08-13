@@ -7,7 +7,11 @@ Hook — 를 모아 놓은 공개 index입니다. 자리를 잡은 공개 GitHub
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
-![AgentDock artifact discovery 화면](docs/images/agentdock-artifacts.png)
+![AgentDock 홈 화면. indexing pipeline 다이어그램, 최근 인덱싱 artifact가 흐르는 카드 rail과 그 정지 컨트롤, 그 아래 목록](docs/images/agentdock-home.png)
+
+홈은 하나의 board입니다 — 무엇이 어떻게 index되는지 보여주는 pipeline, 최근
+인덱싱된 artifact가 천천히 흐르는 카드 rail, 그리고 그 rail이 보여주는 것을
+정지 상태로 담은 목록. rail에는 항상 보이는 정지 컨트롤이 있습니다.
 
 **AgentDock은 파일을 읽고 읽은 내용을 보고합니다. 실행하지 않으며, 어떤
 artifact가 안전한지 말해주지 않습니다.** 위험 점수도, 등급도, 안전 배지도
@@ -174,6 +178,8 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
 않으며, star는 아예 참조하지 않습니다.**
 
 ## Search / Browse
+
+![AgentDock artifact 탐색 화면. 검색 입력, artifact type과 capability 필터, 경로·star·읽은 날짜·source 링크를 담은 결과 목록](docs/images/agentdock-artifacts.png)
 
 - **전문 검색(Full text).** 이름, 요약, 경로, type을 A→D 가중치로 색인합니다.
   PostgreSQL의 generated `tsvector` column이며 데이터베이스가 직접 유지합니다.

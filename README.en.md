@@ -7,7 +7,11 @@ servers, slash commands and hooks — discovered from established public GitHub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
-![AgentDock artifact discovery interface](docs/images/agentdock-artifacts.png)
+![The AgentDock home page: an indexing pipeline diagram, a rail of recently indexed artifacts drifting past as cards with a stop control beside it, and the list underneath](docs/images/agentdock-home.png)
+
+The home page is one board: a pipeline showing what gets indexed and how, a rail
+of recently indexed artifacts drifting slowly past, and a list holding still
+everything the rail shows. The rail carries an always-visible stop control.
 
 **AgentDock reads files and reports what it read. It does not run them, and it
 cannot say whether an artifact is safe.** There is no risk score, no grade and
@@ -176,6 +180,8 @@ archived repositories are skipped by the refresh pass — an archive has no next
 commit — but nothing is deleted, and **stars are not consulted at all**.
 
 ## Search / Browse
+
+![The AgentDock artifact browser: a search field, filters for artifact type and capability, and a result list carrying each artifact's path, stars, read date and source link](docs/images/agentdock-artifacts.png)
 
 - **Full text** over name, summary, path and type, weighted A→D, in a
   PostgreSQL generated `tsvector` column maintained by the database.
