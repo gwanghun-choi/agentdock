@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
+import { TYPE_FILTER_LABELS as SHARED_TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import {
   ARTIFACT_TYPE_IDS,
@@ -31,17 +32,20 @@ const pageParam = z.coerce.number().int().min(1).max(SEARCH_CAPS.maxPage).catch(
 /**
  * Type and capability labels, decoupled from the internal enum ids (D-26):
  * the ids live in search.ts's closed arrays so a route can validate against
- * them; the labels live here, beside the markup that renders them, matching
- * the seeded artifact_type.label values the detail page's own TYPE_LABELS
- * already use.
+ * them; the labels live beside the markup that renders them, matching the
+ * seeded artifact_type.label values the detail page's own TYPE_LABELS use.
+ *
+ * The type labels moved to `@/components/typeFilters` so the search launcher —
+ * which the root layout renders on every route, and which therefore must not
+ * pull `@/db/client` into its module graph — can render the same five chips
+ * without a second copy of the list.
+ *
+ * This line is what keeps the two honest. Annotating the shared object as a
+ * `Record` keyed by `ARTIFACT_TYPE_IDS` means a type added to search.ts and not
+ * to that module stops the build here, in the one file that can see both.
  */
-const TYPE_FILTER_LABELS: Record<(typeof ARTIFACT_TYPE_IDS)[number], string> = {
-  skill: 'Agent Skills',
-  plugin: 'Claude Code Plugins',
-  mcp_server: 'MCP Servers',
-  command: 'Slash Commands',
-  hook: 'Hook Configurations',
-};
+const TYPE_FILTER_LABELS: Record<(typeof ARTIFACT_TYPE_IDS)[number], string> =
+  SHARED_TYPE_FILTER_LABELS;
 
 /**
  * Phase 4's observation vocabulary (CapabilityPanel.tsx's own CATEGORY_LABELS
@@ -383,11 +387,23 @@ export default async function ArtifactsPage({
     <>
       {pageHead}
       {searchControls}
+      {/* The result set is the state of the search, so it is stated as one
+          rather than tucked into a metadata line: the size of the set, then the
+          slice of it on this page. Same three numbers as before — `total`,
+          `offset` and `items.length` — and the same pagination arithmetic; only
+          the sentence they are read in changed. */}
       <div className="result-bar">
+        <p className="result-count">
+          <strong>{total.toLocaleString('en-US')}</strong> {total === 1 ? 'artifact' : 'artifacts'}
+          {q ? (
+            <>
+              {' '}
+              for <span className="result-q">{q}</span>
+            </>
+          ) : null}
+        </p>
         <p className="muted">
-          {q
-            ? `Showing ${offset + 1}–${offset + items.length} of ${total} for "${q}"`
-            : `Showing ${offset + 1}–${offset + items.length} of ${total}`}
+          Showing {offset + 1}–{offset + items.length}
         </p>
       </div>
       <PackageRows items={items} />

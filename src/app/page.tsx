@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArtifactRail } from '@/components/ArtifactRail';
+import { BoardStats } from '@/components/BoardStats';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -219,6 +220,11 @@ export default async function HomePage() {
           </div>
         ) : (
           <>
+            {/* Three tiles describing the window, then the window. Every figure
+                on them is computed from `recent` — the array already fetched
+                above — and every one that could be mistaken for a corpus total
+                names its window in its own label. See BoardStats.tsx. */}
+            <BoardStats items={recent} newestRead={newestRead} />
             <ArtifactRail items={recent} />
             <PackageRows items={recent.slice(0, LIST_ROWS)} />
           </>

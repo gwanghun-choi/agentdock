@@ -9,9 +9,16 @@ AgentDock read.
 
 ![The AgentDock home page: an indexing pipeline diagram, a rail of recently indexed artifacts drifting past as cards with a stop control beside it, and the list underneath](docs/images/agentdock-home.png)
 
-The home page is one board: a pipeline showing what gets indexed and how, a rail
-of recently indexed artifacts drifting slowly past, and a list holding still
-everything the rail shows. The rail carries an always-visible stop control.
+The home page is one board: a pipeline showing what gets indexed and how, three
+tiles summarising what was read most recently, a rail of recently indexed
+artifacts drifting slowly past, and a list holding still everything the rail
+shows. The rail carries an always-visible stop control.
+
+Every figure on those tiles is computed from the list the page had already
+fetched — there is no second query — so each is true of that window and not of
+the corpus. Any tile that could be mistaken for a total says so in its own label
+("in these 18"), because a number printed without its window is read as a total
+by everyone who sees it.
 
 **AgentDock reads files and reports what it read. It does not run them, and it
 cannot say whether an artifact is safe.** There is no risk score, no grade and
@@ -198,7 +205,14 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
   replaces it; on a page that does not, a small launcher opens as a native
   `<dialog>` — Escape closes it, and a query submits straight to the search
   page. It is not a second search implementation: the launcher sends the same
-  `q` to the same route with the same GET.
+  `q` to the same route with the same GET. The type chips inside the launcher
+  are likewise plain `/artifacts?type=…` links — the same URL the search form
+  produces. The key hints drawn inside the search field appear only while
+  JavaScript is actually running, and name the modifier the reader has (`⌘K` or
+  `Ctrl K`): every shortcut here is bound by that script, so nothing advertises
+  a key that would do nothing.
+- **Artifact type is carried on three channels** — a glyph, a word and a hue —
+  so type is never signalled by colour alone and any one of the three is enough.
 - **Permalinks.** Every artifact has a stable URL, and every "source on GitHub"
   link points at the commit SHA AgentDock actually read — never at a branch,
   which would drift.

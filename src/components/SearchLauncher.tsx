@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { SearchIcon } from '@/components/Icon';
+import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
 
 /**
  * The command palette, at the size the answer is worth.
@@ -51,6 +53,25 @@ export function SearchLauncher() {
         </span>
         <button type="submit">Search</button>
       </form>
+      {/* Jump straight to a kind, without typing anything.
+
+          These are plain links to `/artifacts?type=…` — the same URL the
+          artifacts page's own radio group produces when you pick that type, and
+          the same one the address bar shows afterwards. No new parameter, no
+          new predicate, no ranking: the launcher still knows nothing about
+          searching and still has exactly one job, which is getting a reader to
+          the route that does.
+
+          A nav, not a list of buttons: every one of them is a destination. That
+          also means they are in the dialog's tab order for free, after the field
+          and its submit, which is the order they are read in. */}
+      <nav aria-label="Browse by type" className="launcher-quick">
+        {TYPE_FILTER_IDS.map((id) => (
+          <Link href={`/artifacts?type=${id}`} key={id}>
+            {TYPE_FILTER_LABELS[id]}
+          </Link>
+        ))}
+      </nav>
       {/* A div, not a <p>: a form is not phrasing content and cannot legally sit
           inside a paragraph. */}
       <div className="launcher-hint">

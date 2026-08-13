@@ -15,10 +15,18 @@
   color-scheme: light dark;
 
   /* Surfaces climb away from the page: --bg is the canvas, --surface is a card
-     on it, --surface-2 is a well inside a card. */
+     on it, --surface-2 is a well inside a card, --surface-3 is any of those
+     under the cursor.
+
+     --surface-3 exists because --surface-2 was doing two jobs. A well inside a
+     card and a row being hovered were the same colour, so a hovered row in a
+     list that already sat on --surface-2 changed by nothing at all — the state
+     was carried entirely by the accent edge and the lift. Splitting them is one
+     token and it gives the interactive state its own step on the ladder. */
   --bg: light-dark(#fcfcfd, #0b0d10);
   --surface: light-dark(#ffffff, #12151a);
   --surface-2: light-dark(#f6f7f9, #171b21);
+  --surface-3: light-dark(#eef1f5, #1d222a);
   --fg: light-dark(#16191d, #e6e8eb);
   --fg-strong: light-dark(#0a0c0f, #f6f8fa);
   --muted: light-dark(#5c636b, #9aa2ab);
@@ -43,6 +51,19 @@
   --t-lg: 1.125rem;
   --t-xl: 1.5rem;
   --t-2xl: 2rem;
+  /* A number that is the answer to a question, not a word in a sentence:
+     the count in the hero and the figures on the board's metric tiles. It is
+     the one size in this scale that is set in tabular figures — see .metric —
+     because a number that changes width as it counts is a number that jitters
+     the layout around it. */
+  --t-metric: 1.75rem;
+
+  /* The focus ring, in one place. It was the same two declarations written out
+     at four call sites, which is three chances for one of them to drift to a
+     different width and stop reading as the same ring. */
+  --ring: var(--accent);
+  --ring-w: 2px;
+  --ring-offset: 2px;
 
   --s-1: 0.25rem;
   --s-2: 0.5rem;
@@ -97,6 +118,20 @@
      texture rather than a pattern: there when you look for it, gone when you
      read over it. */
   --grid-dot: light-dark(rgb(22 25 29 / 13%), rgb(230 232 235 / 11%));
+
+  /* One ambient wash under the dot grid, and the alpha is the whole design.
+     The headline sits on top of it, so the cost was measured off the rendered
+     pixels rather than guessed: sampling the painted background inside the h1's
+     own box moves it from #0b0d10 to #0d1015 dark and #fcfcfd to #f9fafc light,
+     which costs 0.38:1 and 0.35:1 of headline contrast — 18.28 → 17.90 and
+     19.10 → 18.75. Both are an order of magnitude clear of the 4.5:1 floor, and
+     the lede over the same wash measures 7.53:1 and 5.93:1.
+
+     The reason to write the number down is that it is the thing that breaks
+     quietly if someone raises the alpha: nothing here will fail, it will just
+     get worse, and the next reader deserves to know what was measured and
+     against what. */
+  --hero-wash: light-dark(rgb(26 86 184 / 5%), rgb(122 167 240 / 9%));
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans:
@@ -225,8 +260,8 @@ dt {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: var(--ring-w) solid var(--ring);
+  outline-offset: var(--ring-offset);
   border-radius: var(--r-sm);
 }
 
@@ -391,6 +426,35 @@ main {
   background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
   background-size: 20px 20px;
   mask-image: radial-gradient(120% 95% at 22% 34%, #000 0%, transparent 78%);
+  pointer-events: none;
+}
+
+/*
+ * The wash, under the grid.
+ *
+ * Two radials rather than one: a broad one behind the headline and a tighter,
+ * cooler one behind the visual, so the section has a light direction instead of
+ * an evenly lit box. Both are the accent at single-digit alpha over --bg — this
+ * is depth, not colour, and at these values the page still reads as the same
+ * neutral canvas with something behind it.
+ *
+ * Static. An animated gradient here would be the largest moving thing on the
+ * page, permanently, behind the one paragraph that has to be read first — and
+ * it would be the second ambient animation on a page that already has the
+ * spine pulse and the rail. §7's rule is that motion carries information; this
+ * would carry none.
+ *
+ * z-index -2 puts it under the dot grid at -1, both inside the isolate on
+ * .hero, so neither escapes the section.
+ */
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: calc(var(--s-6) * -1) 0 0;
+  background-image:
+    radial-gradient(70% 60% at 18% 28%, var(--hero-wash), transparent 70%),
+    radial-gradient(50% 70% at 88% 42%, var(--hero-wash), transparent 72%);
   pointer-events: none;
 }
 
@@ -781,7 +845,7 @@ main {
 .rows > li:hover,
 .rows > li:focus-within {
   z-index: 1;
-  background: var(--surface-2);
+  background: var(--surface-3);
   box-shadow:
     inset 2px 0 0 var(--accent),
     var(--shadow-lift);
@@ -1105,24 +1169,41 @@ textarea {
 
 .search-row .field input[type="search"] {
   padding-left: 2.25rem;
+  /* Clears the `/` cap alone. The two-cap variants below clear both, and they
+     are keyed off the same attribute that draws the second cap so the padding
+     and the caps can never disagree. */
   padding-right: 2.75rem;
 }
 
-/* The shortcut hint, inside the field at the trailing edge.
+:root[data-platform="mac"] .search-row .field input[type="search"] {
+  padding-right: 6rem;
+}
+
+:root[data-platform="other"] .search-row .field input[type="search"] {
+  padding-right: 7.5rem;
+}
+
+/* The shortcut hints, inside the field at the trailing edge.
  *
- * A pseudo-element rather than a <kbd> in the markup, because it is decoration
+ * Pseudo-elements rather than <kbd>s in the markup, because they are decoration
  * and a pseudo-element is the only way to say so that leaves nothing for the
  * accessibility tree to reach. The alternative — a real element with
  * aria-hidden — puts a hidden node inside a form control, which is the pattern
  * that makes a screen reader announce something other than what is on screen.
  *
- * It disappears the moment the field has focus: at that point the reader is
+ * Two caps: the chord, then `/`. Both are drawn only under `html[data-hotkeys]`,
+ * which SearchHotkey.tsx sets on mount — the shortcuts are bound by that
+ * component, so with JavaScript off neither key works and neither cap is
+ * printed. A hint for a key that does nothing is worse than no hint. Same
+ * reason the chord's modifier comes from `data-platform` rather than being
+ * guessed at render time on a server that has no idea what it is rendering for.
+ *
+ * They disappear the moment the field has focus: at that point the reader is
  * already where the key would have taken them, and a hint that outstays its
  * usefulness is just something else in the box. */
+.search-row .field::before,
 .search-row .field::after {
-  content: "/";
   position: absolute;
-  right: var(--s-3);
   pointer-events: none;
   font-family: var(--mono);
   font-size: var(--t-xs);
@@ -1136,6 +1217,32 @@ textarea {
   transition: opacity var(--dur-fast) var(--ease);
 }
 
+/* The `/` cap is the right-hand anchor and has a fixed width, so the chord cap
+   beside it can be offset by a constant instead of by whatever the glyph
+   measured. */
+.search-row .field::after {
+  content: "/";
+  right: var(--s-3);
+  min-width: 1.45rem;
+  text-align: center;
+}
+
+:root:not([data-hotkeys]) .search-row .field::before,
+:root:not([data-hotkeys]) .search-row .field::after {
+  content: none;
+}
+
+:root[data-platform="mac"] .search-row .field::before {
+  content: "⌘K";
+  right: calc(var(--s-3) + 1.45rem + var(--s-1) + 0.9em);
+}
+
+:root[data-platform="other"] .search-row .field::before {
+  content: "Ctrl K";
+  right: calc(var(--s-3) + 1.45rem + var(--s-1) + 0.9em);
+}
+
+.search-row .field:focus-within::before,
 .search-row .field:focus-within::after {
   opacity: 0;
 }
@@ -1238,8 +1345,8 @@ textarea {
    otherwise tabbing through the filters outlines something the reader can
    barely see. */
 .facets fieldset label:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: var(--ring-w) solid var(--ring);
+  outline-offset: var(--ring-offset);
 }
 
 .facets fieldset input[type="checkbox"],
@@ -1378,6 +1485,39 @@ textarea {
   background: var(--accent-hover);
 }
 
+/* The quick-filter row, between the field and the hint.
+   Chips, at the same size and shape as the facet chips on the artifacts page —
+   they go to the same filter, so they are the same object seen earlier. */
+.launcher-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding: 0 var(--s-4) var(--s-3);
+}
+
+.launcher-quick a {
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.launcher-quick a:hover,
+.launcher-quick a:focus-visible {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  color: var(--fg-strong);
+}
+
 .launcher-hint {
   display: flex;
   align-items: center;
@@ -1420,6 +1560,40 @@ textarea {
 
 .result-bar p {
   margin: 0;
+}
+
+/* The size of the result set, at the weight of an answer rather than of a
+   caption. The figure is tabular so that paging between a 3-digit and a 4-digit
+   total does not shift the word beside it. */
+.result-count {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.result-count strong {
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The query, quoted by CSS rather than by the markup. The quotation marks were
+   literal characters in a template string, which put them inside the text a
+   screen reader reads out and made the query itself impossible to select
+   without them. */
+.result-q {
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 0.95em;
+}
+
+.result-q::before {
+  content: open-quote;
+}
+
+.result-q::after {
+  content: close-quote;
 }
 
 .pager {
@@ -1846,13 +2020,197 @@ textarea {
 /* The ring goes on the chip, not on the 13px control inside it — the same rule
    the facet chips follow. */
 .rail-pause:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: var(--ring-w) solid var(--ring);
+  outline-offset: var(--ring-offset);
 }
 
 .rail-pause input {
   accent-color: var(--accent);
   margin: 0;
+}
+
+/* ---------- board tiles (bento) ---------- */
+
+/*
+ * A three-cell bento over the rail: two figures and one small chart.
+ *
+ * Bento here means cells of unequal weight in one grid, not a wall of identical
+ * squares — the chart is worth two of the figures and gets two columns, and on a
+ * narrow viewport the whole thing becomes one column in reading order. Four
+ * equal tiles would have been a stat row, which is the pattern this is
+ * deliberately not: three of the four numbers a stat row wants do not exist
+ * without a query this page does not make.
+ *
+ * Same surface, border and radius as every other card on the site. These are not
+ * a separate visual species; they are the same object at a different size, which
+ * is what keeps a dashboard from looking pasted onto a document.
+ */
+/*
+ * Four tracks at desktop: two figures at one each, the chart at two.
+ *
+ * The columns are declared here and re-declared twice below rather than left to
+ * `auto-fit`, because auto-fit cannot express "the chart is worth two of the
+ * others" — it would give all three equal tracks and then hand the chart the
+ * same width as a five-character date. A figure tile stops being readable at
+ * about 10rem, which is where each of these steps down.
+ */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0 0 var(--s-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* The chart is worth two figures. */
+.tile-wide {
+  grid-column: span 2;
+}
+
+/* Two figures side by side, chart on its own row underneath. */
+@media (max-width: 64rem) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tile-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* One column. Two 10rem tiles do not fit beside each other on a 390px phone,
+   and a figure squeezed under its own label is not a figure. */
+@media (max-width: 34rem) {
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tile dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tile dt svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.tile dd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin: 0;
+  min-width: 0;
+}
+
+/*
+ * The figure.
+ *
+ * Tabular figures because two of these tiles hold numbers that change, and
+ * proportional digits change the width of the number as they do — a count going
+ * 9 → 10 nudges everything after it. `font-variant-numeric` costs nothing and
+ * removes the whole class of jitter.
+ */
+.metric {
+  color: var(--fg-strong);
+  font-size: var(--t-metric);
+  font-weight: 640;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile dd small {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/*
+ * The distribution.
+ *
+ * A row per kind: a proportional bar, the label, the count. The bar is sized off
+ * --share, which BoardStats sets as the fraction of the window this kind is —
+ * so the bar is proportioned inside the tile and makes no claim beyond it.
+ *
+ * It borrows the badge hue by class (`badge-skill` and friends), which means the
+ * bar and the badge on the row below are the same colour by construction rather
+ * than by two lists agreeing. `background: currentColor` picks up the badge
+ * rule's own `color`; the badge's border and background come along, so the bar
+ * is reset to a plain block first.
+ */
+.dist {
+  display: grid;
+  gap: var(--s-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dist > li {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr) 2ch;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-xs);
+}
+
+/* The track is the whole window; the bar is this kind's share of it. Sizing the
+   bar against a flexible track rather than a fixed length is what makes a
+   one-kind window read as "all of them" instead of as a short stub in an empty
+   tile — which is the shape this chart has whenever a sync happens to bring in
+   one repository's worth of one kind, i.e. often. */
+.dist-track {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.dist-bar {
+  display: block;
+  /* A floor of 4px so a single item in a long window is still a mark rather
+     than a sliver indistinguishable from nothing. */
+  width: max(4px, calc(var(--share) * 100%));
+  height: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: currentColor;
+  padding: 0;
+}
+
+.dist-label {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dist-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* ---------- the rail ---------- */
@@ -1971,10 +2329,16 @@ textarea {
 }
 
 /* The whole card is the target — one link, 17rem wide, rather than a name-sized
-   one inside a card-sized box that mostly does nothing when clicked. */
+   one inside a card-sized box that mostly does nothing when clicked.
+
+   Hovering used to go to --surface, which in the dark theme is *darker* than
+   the --surface-2 the card sits on: the card receded under the cursor while a
+   list row two sections down came forward. --surface-3 is the interactive step
+   in both themes, so every hovered thing on this page now moves the same
+   direction. */
 .rail-card:hover,
 .rail-card:focus-visible {
-  background: var(--surface);
+  background: var(--surface-3);
   border-color: var(--accent);
   box-shadow: var(--shadow-lift);
   transform: translateY(-1px);
@@ -2161,6 +2525,34 @@ textarea {
   margin: 0;
   color: var(--fg);
   overflow-wrap: anywhere;
+}
+
+/*
+ * Eleven facts read as eleven equally important facts, which is the hierarchy
+ * problem this page had: one flat column, every row the same weight, the two a
+ * reader actually came for buried in the middle of it.
+ *
+ * Above 64rem the eight short ones pair up two to a row, which halves the height
+ * of the block and lets the eye scan down two label columns instead of one long
+ * one. The three long ones — a path, a permalink and a sentence — keep the full
+ * width, because half a column wraps a URL into four lines and that is worse
+ * than the flat list was.
+ *
+ * No `grid-column` on any dt. The eight short pairs fill four rows exactly, so
+ * every `.fact-long` dt already starts a row, and forcing placement would only
+ * be a second thing to keep in step with the markup.
+ */
+@media (min-width: 64rem) {
+  .facts {
+    grid-template-columns:
+      minmax(7rem, max-content) minmax(0, 1fr)
+      minmax(7rem, max-content) minmax(0, 1fr);
+    column-gap: var(--s-5);
+  }
+
+  .facts .fact-long {
+    grid-column: 2 / -1;
+  }
 }
 
 .notes {

@@ -137,9 +137,6 @@ export default async function PackagePage({ params }: Props) {
           <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
         </dd>
 
-        <dt>Path in repository</dt>
-        <dd className="path">{detail.sourcePath}</dd>
-
         <dt>Licence, declared in the file</dt>
         {/* The measured corpus writes free prose here, not an identifier, so it
             is shown as the author's text and never faceted. */}
@@ -167,15 +164,31 @@ export default async function PackagePage({ params }: Props) {
             listing rows group it: it is a number to read, not to parse. */}
         <dd>{detail.stars.toLocaleString('en-US')}</dd>
 
+        {/* The three long values, together and last.
+
+            Above 64rem the short facts sit two to a row; these three carry a
+            path, a URL and a sentence, and half a column is not enough for any
+            of them — they take the full width instead (`fact-long`, see
+            globals.css). Grouping them here is also what makes that layout
+            fall out on its own: the eight short pairs above fill exactly four
+            two-up rows, so each of these starts a row of its own with no gap
+            left behind it.
+
+            Path moved down from beside "Source repository" to join them. It is
+            a location, like the permalink under it, and it is the one short-
+            looking fact that is routinely long. */}
+        <dt>Path in repository</dt>
+        <dd className="path fact-long">{detail.sourcePath}</dd>
+
         <dt>Permalink</dt>
-        <dd>
+        <dd className="fact-long">
           <a href={source} rel="noopener noreferrer" target="_blank" className="path">
             {source}
           </a>
         </dd>
 
         <dt>Frontmatter fields</dt>
-        <dd>
+        <dd className="fact-long">
           {extras.length === 0
             ? 'Uses only specification fields.'
             : `Also declares ${extras.join(', ')}, which the specification does not define.`}

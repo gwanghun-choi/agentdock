@@ -207,3 +207,97 @@ export function DockIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/*
+ * The six artifact types, one glyph each.
+ *
+ * A hue alone was carrying type identity in the badge, and hue is the one
+ * channel a reader may not have: the six badge colours are distinguishable to
+ * normal vision and several pairs are not to a deuteranope, which is why the
+ * label was always spelled out beside them. The glyph is the third channel, so
+ * the badge now reads as shape + word + colour and any one of the three is
+ * enough. `.badge svg` has sized these at 12px since the badge was written —
+ * this is the markup finally arriving to fill it.
+ *
+ * Each is the ordinary sign for the thing it names, drawn on the same 24×24 grid
+ * and 2px stroke as the fourteen above. None of them is a status light: no tick,
+ * no cross, no shield, nothing that could be read as a verdict on the artifact.
+ *
+ * They are chosen to survive 12px, which rules out interior detail. The test is
+ * whether two of them are still told apart in a column of twenty rows at a
+ * glance, not whether one is pretty at 24px.
+ */
+
+/** An Agent Skill: a document that instructs. The lines are the instructions;
+ *  the corner fold keeps it a file rather than a page of prose. */
+export function SkillIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h6" />
+      <path d="M8 17h4" />
+    </Svg>
+  );
+}
+
+/** A Claude Code Plugin: a plug, i.e. the thing that goes into the socket. */
+export function PluginIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 2v6" />
+      <path d="M15 2v6" />
+      <path d="M6 8h12v3a6 6 0 0 1-12 0Z" />
+      <path d="M12 17v5" />
+    </Svg>
+  );
+}
+
+/** A Plugin Marketplace: a catalogue, i.e. many of them in one place. Four
+ *  cells rather than a shopfront — nothing here is for sale. */
+export function CatalogIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect height="7" rx="1" width="7" x="3" y="3" />
+      <rect height="7" rx="1" width="7" x="14" y="3" />
+      <rect height="7" rx="1" width="7" x="3" y="14" />
+      <rect height="7" rx="1" width="7" x="14" y="14" />
+    </Svg>
+  );
+}
+
+/** An MCP Server: a rack, drawn the way every infrastructure diagram draws one.
+ *  The dot is the indicator lamp on the unit, not a health status. */
+export function ServerIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect height="6" rx="1.5" width="18" x="3" y="4" />
+      <rect height="6" rx="1.5" width="18" x="3" y="14" />
+      <path d="M7 7h.01" />
+      <path d="M7 17h.01" />
+    </Svg>
+  );
+}
+
+/** A Slash Command: a prompt waiting for one. The chevron and the rule are what
+ *  a terminal shows before you type, which is where these are typed. */
+export function CommandIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect height="16" rx="2" width="18" x="3" y="4" />
+      <path d="M8 10l2.5 2.5L8 15" />
+      <path d="M13 15h4" />
+    </Svg>
+  );
+}
+
+/** A Hook Configuration: something that fires when an event happens. The bolt is
+ *  the event, not a warning — these are configuration, and this page never says
+ *  a configuration is dangerous. */
+export function HookIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M13 2 4.5 13H11l-1 9 8.5-11H12Z" />
+    </Svg>
+  );
+}

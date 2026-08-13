@@ -24,11 +24,21 @@ import { useEffect } from 'react';
  * form submits; there is no new query, no new endpoint, and nothing renders a
  * result anywhere but on the route that already does.
  *
- * `/` is the advertised key — the hint drawn inside the search field, as
- * `.search-row .field::after` — because it is the one that is right on every
- * platform, and that hint is server-rendered and cannot know which platform it
- * landed on. Ctrl+K and Cmd+K work too, unadvertised, because they are what a
- * hand trained on every other developer tool tries first.
+ * Both keys are advertised, and this component is what makes that possible.
+ *
+ * The hints are drawn inside the search field by CSS (`.search-row .field`'s two
+ * pseudo-elements) and the markup is server-rendered, so it cannot know either
+ * whether JavaScript is running or which platform it landed on. It used to show
+ * `/` unconditionally and leave the chord undocumented, which was wrong in both
+ * directions: with JavaScript off it promised a key that does nothing, and on a
+ * Mac it hid the chord that hand reaches for first.
+ *
+ * So the effect below stamps `data-hotkeys` on <html>, and the hints exist only
+ * under that attribute. That is exactly the right condition — every shortcut
+ * here is bound by this effect, so if the attribute is absent, none of them
+ * works and none of them should be claimed. `data-platform` picks ⌘ or Ctrl for
+ * the chord's label; it changes no behaviour, since the handler has always
+ * accepted either modifier.
  *
  * The guard is the whole correctness surface: `/` is an ordinary character, so
  * it must reach any field a reader is typing in. The chord is not, so it works
@@ -42,6 +52,22 @@ import { useEffect } from 'react';
  */
 export function SearchHotkey() {
   const router = useRouter();
+
+  // Announce that the shortcuts exist, and which modifier to name. Separate from
+  // the binding effect below because it runs once and depends on nothing: the
+  // attributes go on and stay on for the life of the document.
+  useEffect(() => {
+    const root = document.documentElement;
+    // userAgentData is the non-deprecated source and is absent on Safari and
+    // Firefox, which is precisely where the answer matters most — hence the
+    // fallback. Either way this only decides which glyph is printed on a hint.
+    const platform =
+      (navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+      navigator.platform ??
+      '';
+    root.dataset.hotkeys = '';
+    root.dataset.platform = /mac|iphone|ipad|ipod/i.test(platform) ? 'mac' : 'other';
+  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

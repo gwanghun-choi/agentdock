@@ -10,8 +10,14 @@ artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하�
 ![AgentDock 홈 화면. indexing pipeline 다이어그램, 최근 인덱싱 artifact가 흐르는 카드 rail과 그 정지 컨트롤, 그 아래 목록](docs/images/agentdock-home.png)
 
 홈은 하나의 board입니다 — 무엇이 어떻게 index되는지 보여주는 pipeline, 최근
-인덱싱된 artifact가 천천히 흐르는 카드 rail, 그리고 그 rail이 보여주는 것을
-정지 상태로 담은 목록. rail에는 항상 보이는 정지 컨트롤이 있습니다.
+읽은 것을 요약한 tile 세 개, 최근 인덱싱된 artifact가 천천히 흐르는 카드 rail,
+그리고 그 rail이 보여주는 것을 정지 상태로 담은 목록. rail에는 항상 보이는
+정지 컨트롤이 있습니다.
+
+tile의 숫자는 전부 그 페이지가 이미 가져온 목록에서 계산한 것이고, 새 query는
+없습니다. 그래서 corpus 전체가 아니라 **그 창(window)에 대해서만** 참이며,
+총계로 오해될 수 있는 tile은 자기 label에 창을 적어 둡니다("이 18개 중").
+창을 밝히지 않은 숫자는 전부 총계로 읽히기 때문입니다.
 
 **AgentDock은 파일을 읽고 읽은 내용을 보고합니다. 실행하지 않으며, 어떤
 artifact가 안전한지 말해주지 않습니다.** 위험 점수도, 등급도, 안전 배지도
@@ -195,7 +201,14 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
   그대로 덮어씁니다. 입력란이 없는 페이지에서는 작은 launcher가 native
   `<dialog>`로 열립니다. Escape로 닫히고, 검색어를 입력하면 검색 페이지로 그대로
   제출됩니다. 별도의 검색 구현은 아닙니다 — launcher는 같은 `q` 파라미터를 같은
-  route에 GET으로 보냅니다.
+  route에 GET으로 보냅니다. launcher 안의 type chip도 마찬가지로 그냥
+  `/artifacts?type=…` 링크입니다 — 검색 폼이 만들어 내는 것과 같은 URL입니다.
+  검색 입력 안에 그려지는 단축키 표시는 **JavaScript가 실제로 실행 중일 때만**
+  나타나고, 그때 modifier도 실행 환경에 맞춰 `⌘K` 또는 `Ctrl K`로 적힙니다.
+  단축키는 전부 그 스크립트가 거는 것이라, 동작하지 않는 키를 광고하지
+  않습니다.
+- **Artifact type은 세 채널로 표시합니다.** glyph, 단어, 색. 색만으로 구분하지
+  않으며, 셋 중 어느 하나만 읽혀도 type을 알 수 있습니다.
 - **Permalink.** 모든 artifact에 고정 URL이 있고, 모든 "source on GitHub" 링크는
   AgentDock이 실제로 읽은 commit SHA를 가리킵니다. branch를 가리키지 않습니다 —
   branch는 움직이기 때문입니다.
