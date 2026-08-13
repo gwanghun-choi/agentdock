@@ -7,12 +7,17 @@ Hook — 를 모아 놓은 공개 index입니다. 자리를 잡은 공개 GitHub
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
-![AgentDock 홈 화면. indexing pipeline 다이어그램, 최근 인덱싱 artifact가 흐르는 카드 rail과 그 정지 컨트롤, 그 아래 목록](docs/images/agentdock-home.png)
+![AgentDock 홈 화면. 검색창, repository에서 artifact index까지의 가로 pipeline, 그리고 가장 최근에 읽은 artifact를 크게 보여주는 dashboard](docs/images/agentdock-home.png)
 
-홈은 하나의 board입니다 — 무엇이 어떻게 index되는지 보여주는 pipeline, 최근
-읽은 것을 요약한 tile 세 개, 최근 인덱싱된 artifact가 천천히 흐르는 카드 rail,
-그리고 그 rail이 보여주는 것을 정지 상태로 담은 목록. rail에는 항상 보이는
-정지 컨트롤이 있습니다.
+홈은 세 부분입니다.
+
+- **검색과 pipeline.** 검색창이 페이지가 여는 컨트롤이고, 그 아래로
+  repository → 선언 파일 → 읽기 → commit에 기록까지 네 단계가 가로로 흐릅니다.
+  각 단계 사이를 pulse가 지나갑니다.
+- **Recently indexed.** 가장 최근에 읽은 artifact 하나를 크게 보여주고, 그 옆에
+  그 창을 설명하는 숫자 셋, 아래로 나머지가 흐르는 카드 rail과 정지 상태의
+  목록이 이어집니다. rail에는 항상 보이는 정지 컨트롤이 있습니다.
+- **How a repository gets indexed.** discovery 조건 네 가지와 그것이 정하는 것.
 
 tile의 숫자는 전부 그 페이지가 이미 가져온 목록에서 계산한 것이고, 새 query는
 없습니다. 그래서 corpus 전체가 아니라 **그 창(window)에 대해서만** 참이며,

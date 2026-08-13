@@ -27,6 +27,10 @@
   --surface: light-dark(#ffffff, #12151a);
   --surface-2: light-dark(#f6f7f9, #171b21);
   --surface-3: light-dark(#eef1f5, #1d222a);
+  /* The ground a whole section stands on, as opposed to a card sitting on the
+     canvas. Between --bg and --surface on purpose: a band that reads as lighter
+     than the cards on it turns those cards into holes. */
+  --band: light-dark(#f4f6f9, #0e1116);
   --fg: light-dark(#16191d, #e6e8eb);
   --fg-strong: light-dark(#0a0c0f, #f6f8fa);
   --muted: light-dark(#5c636b, #9aa2ab);
@@ -119,19 +123,22 @@
      read over it. */
   --grid-dot: light-dark(rgb(22 25 29 / 13%), rgb(230 232 235 / 11%));
 
-  /* One ambient wash under the dot grid, and the alpha is the whole design.
-     The headline sits on top of it, so the cost was measured off the rendered
-     pixels rather than guessed: sampling the painted background inside the h1's
-     own box moves it from #0b0d10 to #0d1015 dark and #fcfcfd to #f9fafc light,
-     which costs 0.38:1 and 0.35:1 of headline contrast — 18.28 → 17.90 and
-     19.10 → 18.75. Both are an order of magnitude clear of the 4.5:1 floor, and
-     the lede over the same wash measures 7.53:1 and 5.93:1.
+  /* Two ambient orbs under the dot grid, and the alphas are the whole design.
+     Blue behind the headline, violet behind the far end of the pipeline, so the
+     hero has a light direction instead of an even tint.
 
-     The reason to write the number down is that it is the thing that breaks
-     quietly if someone raises the alpha: nothing here will fail, it will just
-     get worse, and the next reader deserves to know what was measured and
-     against what. */
-  --hero-wash: light-dark(rgb(26 86 184 / 5%), rgb(122 167 240 / 9%));
+     The cost is measured off rendered pixels rather than guessed — see the
+     figures recorded beside the .hero::after rule. The reason to write them down
+     is that this is what breaks quietly if someone raises an alpha: nothing
+     fails, it just gets worse, and the next reader deserves to know what was
+     measured and against what.
+
+     Violet is the second hue on this site and it is deliberately confined to
+     this one decorative layer. It never labels anything, so it never competes
+     with the six artifact-type hues, which are the only colours here that
+     carry meaning. */
+  --hero-wash-a: light-dark(rgb(26 86 184 / 8%), rgb(122 167 240 / 13%));
+  --hero-wash-b: light-dark(rgb(118 76 200 / 6%), rgb(158 132 240 / 11%));
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans:
@@ -388,22 +395,29 @@ main {
 /* ---------- hero ---------- */
 
 /*
- * One column until 64rem, two above it.
+ * One column, full width, and the pipeline runs underneath.
  *
- * The copy has always been capped at --prose inside a --wrap shell, so on every
- * desktop this page ever loaded, two fifths of the hero was blank canvas beside
- * a paragraph. The second column is what goes there, and it is not decoration:
- * it is the four steps the paragraph describes, named and drawn. Below the
- * breakpoint it stacks under the copy, in the order it is written in.
+ * It was two columns: headline on the left, the flow diagram in a bordered card
+ * on the right. That composition had two problems and they were the same
+ * problem. The page opened with two objects of roughly equal weight competing to
+ * be read first, and the diagram — the one picture that says what this product
+ * is — was the narrower of the two, framed like a sidebar note.
+ *
+ * Now the headline and the search box own the top of the page, and the pipeline
+ * is the widest thing on it. Reading order and visual order finally agree: what
+ * this is, what you can do, how it got here.
  */
 .hero {
   position: relative;
-  /* So the -1 layer below stays inside this section rather than sliding under
+  /* So the negative layers stay inside this section rather than sliding under
      the page background. */
   isolation: isolate;
   display: grid;
   gap: var(--s-6);
-  padding-block: var(--s-4) var(--s-6);
+  /* The largest vertical space on the page, by a wide margin. Section rhythm is
+     carried by these numbers rather than by rules between sections: the hero
+     breathes, the board is dense, the gate sits between them. */
+  padding-block: var(--s-6) var(--s-7);
 }
 
 /*
@@ -415,164 +429,238 @@ main {
  * upward instead, under the sticky header, which is the direction with no
  * overflow to cause.
  *
- * The mask is what keeps it from reading as a pattern: the grid is at its
- * strongest behind the headline and gone before it reaches the first card.
+ * The mask is what keeps it from reading as a pattern: strongest behind the
+ * headline, gone before it reaches the pipeline.
  */
 .hero::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: calc(var(--s-6) * -1) 0 0;
+  inset: calc(var(--s-7) * -1) 0 0;
   background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
-  background-size: 20px 20px;
-  mask-image: radial-gradient(120% 95% at 22% 34%, #000 0%, transparent 78%);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(90% 70% at 30% 22%, #000 0%, transparent 76%);
   pointer-events: none;
 }
 
 /*
- * The wash, under the grid.
+ * The ambient wash, under the grid.
  *
- * Two radials rather than one: a broad one behind the headline and a tighter,
- * cooler one behind the visual, so the section has a light direction instead of
- * an evenly lit box. Both are the accent at single-digit alpha over --bg — this
- * is depth, not colour, and at these values the page still reads as the same
- * neutral canvas with something behind it.
+ * Two blurred orbs rather than a flat tint — one cool blue behind the headline,
+ * one violet behind the pipeline's far end — so the section has a light
+ * direction. The alphas were measured against the text that sits on them rather
+ * than eyeballed; see --hero-wash-a / --hero-wash-b.
  *
- * Static. An animated gradient here would be the largest moving thing on the
- * page, permanently, behind the one paragraph that has to be read first — and
- * it would be the second ambient animation on a page that already has the
- * spine pulse and the rail. §7's rule is that motion carries information; this
- * would carry none.
- *
- * z-index -2 puts it under the dot grid at -1, both inside the isolate on
- * .hero, so neither escapes the section.
+ * The slow drift is the one ambient animation on this page that is not
+ * information. It is 48 seconds for a 3% translation, which is below the rate at
+ * which peripheral motion pulls the eye — it reads as the page being lit rather
+ * than as something moving. It is declared inside the single
+ * prefers-reduced-motion: no-preference block near the end of this file, so
+ * under the preference it does not exist at all.
  */
 .hero::after {
   content: "";
   position: absolute;
   z-index: -2;
-  inset: calc(var(--s-6) * -1) 0 0;
+  inset: calc(var(--s-7) * -1) 0 0;
   background-image:
-    radial-gradient(70% 60% at 18% 28%, var(--hero-wash), transparent 70%),
-    radial-gradient(50% 70% at 88% 42%, var(--hero-wash), transparent 72%);
+    radial-gradient(38% 58% at 22% 30%, var(--hero-wash-a), transparent 68%),
+    radial-gradient(34% 52% at 82% 62%, var(--hero-wash-b), transparent 70%);
   pointer-events: none;
 }
 
+.hero-copy {
+  max-width: 46rem;
+}
+
 .hero h1 {
-  font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem);
-  margin-bottom: var(--s-3);
+  font-size: clamp(2.25rem, 1.3rem + 3.2vw, 3.5rem);
+  margin-bottom: var(--s-4);
 }
 
-/* The flow gets a frame, in the same surface, border and radius as every card
-   on the site. Floating on the canvas it read as four stray captions in the
-   margin; framed, it reads as the one object the hero is about — and it is
-   made out of the same parts as the rest of the interface, which is what keeps
-   it from looking pasted on. The dot grid runs behind and around it. */
-.hero-visual {
-  min-width: 0;
-  padding: var(--s-5) var(--s-5) var(--s-5) var(--s-4);
-  background: var(--surface);
-  border: 1px solid var(--border);
+.hero .lede {
+  font-size: clamp(var(--t-base), 0.9rem + 0.4vw, 1.25rem);
+  max-width: 42rem;
+  margin-bottom: var(--s-5);
+}
+
+/*
+ * The search box, at hero size.
+ *
+ * It reuses `.search-row` wholesale — the same field, the same magnifier, the
+ * same key caps drawn by the same pseudo-elements — so the control a reader
+ * meets first and the one on the artifacts page are visibly one control. What
+ * changes here is scale: taller box, larger type, a real shadow, because this
+ * is the primary action on the page rather than one row inside a filter panel.
+ */
+.hero-search {
+  max-width: 38rem;
+  margin: 0 0 var(--s-4);
+}
+
+/*
+ * Written out in full rather than by adding `.hero-search` to the shared control
+ * selectors further down this file. Those sit after this block, so joining them
+ * would have made the hero depend on its own position in the stylesheet — and
+ * every one of those groups would have become a descending-specificity warning.
+ * Nine declarations is a smaller price than a cascade that has to be remembered.
+ */
+.hero-search input[type="search"] {
+  width: 100%;
+  height: 3.25rem;
+  padding: 0 var(--s-4) 0 3rem;
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: var(--t-lg);
+  box-shadow: var(--shadow-lift);
+  transition: border-color var(--dur-fast) var(--ease);
 }
 
-@media (min-width: 64rem) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 25rem);
-    align-items: center;
-    gap: var(--s-7);
-    padding-block: var(--s-6) var(--s-7);
-  }
+.hero-search input[type="search"]:hover {
+  border-color: var(--accent);
+}
 
-  /* The lede stops at the column, not at --prose, so the two columns have an
-     edge between them rather than a ragged one. */
-  .hero-copy .lede {
-    max-width: 33rem;
-  }
+.hero-search .field svg {
+  left: var(--s-4);
+  width: 20px;
+  height: 20px;
+}
+
+.hero-search button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.25rem;
+  padding-inline: var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: inherit;
+  font-size: var(--t-base);
+  font-weight: 560;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.hero-search button[type="submit"]:hover {
+  background: var(--accent-hover);
+}
+
+.hero .actions {
+  margin: 0;
+}
+
+/*
+ * The trust strip.
+ *
+ * Three facts that used to be sentences inside the diagram. No borders and no
+ * card: they are separated by space and by a leading mark, which is the point of
+ * §18 — not everything on this page needs a rectangle around it.
+ *
+ * The mark is a ::before rather than a character in the markup, and it is a
+ * dot rather than a tick. A tick reads as "this artifact passed a check", and
+ * nothing here is about an artifact.
+ */
+.trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.trust li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.trust li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  flex: none;
 }
 
 /* ---------- index flow ---------- */
 
 /*
- * The signature element: what AgentDock does, drawn the way this subject's own
- * tools draw a sequence — a spine with a node on it per step. See
- * IndexFlow.tsx for why it is HTML and CSS rather than an SVG.
+ * The pipeline: four stages, left to right, at the full width of the shell.
  *
- * Everything is measured from one x: the spine sits at 5px with a width of 2,
- * so its centre is 6px; every node, tick and pulse is centred on the same 6px,
- * and the 1.75rem left padding is what clears them.
+ * It was a vertical git graph in the hero's sidebar. A pipeline is a horizontal
+ * object in every tool that draws one, and at this width the four stages are the
+ * widest thing on the page rather than the narrowest — which is the right
+ * relative size for the picture that states what the product does.
+ *
+ * The middle stage is 1.7 tracks because it carries seven filename chips and the
+ * others carry one short line. Equal tracks would have wrapped those chips into
+ * seven rows and made the whole run as tall as its tallest column for no reason.
  */
 .flow {
   position: relative;
   display: grid;
-  gap: var(--s-4);
+  grid-template-columns: 1fr 1.7fr 1fr 1.1fr;
+  gap: var(--s-6);
   list-style: none;
   margin: 0;
-  padding: 0 0 0 1.75rem;
+  padding: 0;
+  counter-reset: stage;
 }
 
 /*
- * The spine, and the pulse on it, in one element.
+ * A stage.
  *
- * Two backgrounds on a 2px column: a short accent gradient parked above the
- * top, and the rail itself. The pulse is that gradient's vertical position
- * animating from off one end to off the other — which needs no knowledge of how
- * tall the spine is, and so survives the labels wrapping to two lines at any
- * width. A separate absolutely-positioned dot would have needed the height.
+ * No border. The stages are told apart by their own surface and by the
+ * connectors between them, which is one fewer rectangle in a page that had too
+ * many — see §18. The surface is a step above the canvas rather than a card on
+ * it, so the run reads as one object with four parts.
  */
-.flow::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 7px;
-  bottom: 7px;
-  width: 2px;
-  border-radius: 2px;
-  background:
-    linear-gradient(transparent, var(--accent), transparent) 0 -60% / 100% 42% no-repeat,
-    var(--border-strong);
-  transform-origin: top;
-}
-
 .flow > li {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* The node. A ring on the rail, in the surface colour, so the rail appears to
-   pass behind it. */
-.flow > li::before {
+/* The last stage holds the count and is where the run arrives, so it is the one
+   that is lit. */
+.flow > li:last-child {
+  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface-2) 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/*
+ * The connector, drawn in the gap to the left of every stage but the first.
+ *
+ * A 2px rule with an arrowhead, centred vertically. It is on ::after so that
+ * ::before is free to carry the stage number, and it is `pointer-events: none`
+ * because it overhangs into a neighbour's box at small widths.
+ */
+.flow > li + li::after {
   content: "";
   position: absolute;
-  left: -1.75rem;
-  top: 5px;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 2px solid var(--border-strong);
-}
-
-/* The last node is filled, the way a git graph fills the commit it is pointing
-   at. It is also the only step with a number on it. */
-.flow > li:last-child::before {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-/* And the rail stops there. The spine is one element sized from the list, so it
-   runs the full height of the last step — past the node, down the side of the
-   count. A line continuing below the last node says there is a next step. This
-   paints the surface back over that stub; it is 12px wide, the node's own
-   width, and starts where the node ends. */
-.flow > li:last-child::after {
-  content: "";
-  position: absolute;
-  left: -1.75rem;
-  top: 17px;
-  bottom: -0.5rem;
-  width: 12px;
-  background: var(--surface);
+  top: 50%;
+  right: 100%;
+  width: var(--s-6);
+  height: 2px;
+  margin-right: 1px;
+  background:
+    linear-gradient(90deg, transparent, var(--accent), transparent) -50% 0 / 50% 100% no-repeat,
+    var(--border-strong);
+  pointer-events: none;
 }
 
 .flow-title {
@@ -582,8 +670,8 @@ main {
   margin: 0;
   max-width: none;
   color: var(--fg-strong);
-  font-size: var(--t-base);
-  font-weight: 600;
+  font-size: var(--t-sm);
+  font-weight: 620;
   letter-spacing: -0.008em;
 }
 
@@ -595,22 +683,22 @@ main {
 }
 
 .flow-note {
-  margin: var(--s-1) 0 0;
-  max-width: 32rem;
+  margin: 0;
+  max-width: none;
   color: var(--muted);
   font-size: var(--t-xs);
-  line-height: 1.55;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 
 /* The declaring filenames, in the same monospace the rest of the page uses for
-   a path, because that is what they are. They wrap into whatever number of rows
-   the column gives them, which is why they are chips and not a diagram row. */
+   a path, because that is what they are. */
 .flow-files {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-1);
   list-style: none;
-  margin: var(--s-2) 0 0;
+  margin: 0;
   padding: 0;
 }
 
@@ -618,7 +706,7 @@ main {
   padding: 0.0625rem var(--s-2);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background: var(--surface);
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.6875rem;
@@ -629,11 +717,34 @@ main {
 .flow-count {
   display: flex;
   align-items: baseline;
-  gap: var(--s-2);
-  margin: var(--s-2) 0 0;
+  flex-wrap: wrap;
+  gap: 0 var(--s-2);
+  margin: auto 0 0;
   max-width: none;
   color: var(--muted);
   font-size: var(--t-xs);
+}
+
+/* Below the point where four stages stop fitting, the run turns vertical and the
+   connectors turn with it. */
+@media (max-width: 64rem) {
+  .flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5);
+  }
+
+  .flow > li + li::after {
+    top: auto;
+    right: auto;
+    bottom: 100%;
+    left: var(--s-5);
+    width: 2px;
+    height: var(--s-5);
+    margin-right: 0;
+    background:
+      linear-gradient(180deg, transparent, var(--accent), transparent) 0 -50% / 100% 50% no-repeat,
+      var(--border-strong);
+  }
 }
 
 /*
@@ -649,9 +760,9 @@ main {
  * ponytail: the drawn digits are ungrouped. CSS counters have no grouping
  * style, so 12400 cannot be spelled 12,400 here — which is why the markup
  * passes the raw number rather than a localised one, matching the "Browse all N
- * artifacts" link two sections down that has always been ungrouped. Revisit at
- * a corpus above ten thousand, where a separator starts to matter; the upgrade
- * is to delete the pseudo-element and animate nothing.
+ * artifacts" link that has always been ungrouped. Revisit at a corpus above ten
+ * thousand, where a separator starts to matter; the upgrade is to delete the
+ * pseudo-element and animate nothing.
  *
  * Without @property, --count is an unregistered property, the keyframe
  * interpolates it discretely and the reader sees 0 flip straight to the final
@@ -676,9 +787,10 @@ main {
      cover with inset: 0. */
   display: inline-block;
   color: transparent;
-  font-size: var(--t-lg);
-  font-weight: 640;
+  font-size: var(--t-metric);
+  font-weight: 660;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
@@ -1784,6 +1896,60 @@ textarea {
   border-left: 2px solid var(--border);
 }
 
+/* ---------- section rhythm & banding ---------- */
+
+/*
+ * The page was flat: every section had the same padding, the same canvas and a
+ * 1px rectangle around its content, so the eye had no reason to stop anywhere.
+ * Three things fix that, and none of them is a colour change.
+ *
+ * Rhythm. The hero gets the largest vertical space on the page (set on .hero
+ * itself), the board is dense, the gate sits between them. A reader scrolling
+ * feels the page change pace.
+ *
+ * Banding. The board sits on a band a step above the canvas, bled to the full
+ * width of the viewport rather than stopping at the shell. Sections are told
+ * apart by the ground they stand on instead of by a border around them.
+ *
+ * The bleed is a pseudo-element at inset 50% / -50vw rather than a negative
+ * margin, because a negative inline margin on a flow element is a horizontal
+ * scrollbar waiting for a narrow viewport. `100vw` would be one too when a
+ * classic scrollbar is present; this measures from the element's own centre and
+ * cannot overshoot the layout viewport.
+ */
+.board {
+  position: relative;
+  isolation: isolate;
+  padding-block: var(--s-6);
+  margin-block: var(--s-4);
+}
+
+.board::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background: var(--band);
+  border-block: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* The gate section stands on the plain canvas, which is what makes the band
+   above it read as a band. */
+.board + section {
+  padding-block: var(--s-5) var(--s-2);
+}
+
+/* One sentence under a section heading, at reading size rather than at
+   metadata size. Replaces the paragraph that used to open the big card. */
+.section-lede {
+  margin: calc(var(--s-2) * -1) 0 var(--s-4);
+  max-width: var(--prose);
+  color: var(--muted);
+}
+
 /* ---------- discovery gate ---------- */
 
 /*
@@ -2029,6 +2195,154 @@ textarea {
   margin: 0;
 }
 
+/* ---------- the board dashboard ---------- */
+
+/*
+ * The board is now the second thing on the page, not the last, and it opens with
+ * an answer rather than a heading over a strip of small tiles.
+ *
+ * Two tracks: the newest artifact at full size, and the three figures describing
+ * the window it came from stacked beside it. Below 68rem the featured card takes
+ * the width and the figures go under it, which is the same reading order.
+ */
+.board-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+  align-items: stretch;
+}
+
+@media (max-width: 68rem) {
+  .board-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * The featured artifact.
+ *
+ * The one card on this page that is allowed to be large. It carries the accent
+ * edge and the lift because it is the answer to the question the section asks;
+ * everything else on the board is context for it.
+ */
+.featured {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 100% at 0% 0%, var(--accent-soft), transparent 60%), var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow);
+}
+
+.featured-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.featured-eyebrow svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+/* The date is not an uppercase label, so it steps back out of that register. */
+.featured-eyebrow span {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.featured .badge {
+  align-self: flex-start;
+}
+
+.featured-name {
+  margin: var(--s-1) 0 0;
+  font-size: var(--t-xl);
+  font-weight: 660;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.featured-name a {
+  color: var(--fg-strong);
+  text-decoration: none;
+}
+
+.featured-name a:hover {
+  color: var(--accent);
+}
+
+.featured-repo {
+  margin: 0;
+  max-width: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+
+.featured-desc {
+  margin: var(--s-1) 0 0;
+  max-width: 44rem;
+  color: var(--fg);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  /* Three lines. The summary is a capped excerpt already; this keeps the card
+     from becoming a page when one artifact writes a long one. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.featured-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin: auto 0 0;
+  padding-top: var(--s-3);
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.featured-meta > span,
+.featured-meta > a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.featured-meta svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.featured-meta .path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- board tiles (bento) ---------- */
 
 /*
@@ -2046,19 +2360,38 @@ textarea {
  * is what keeps a dashboard from looking pasted onto a document.
  */
 /*
- * Four tracks at desktop: two figures at one each, the chart at two.
+ * The figures, stacked in the dashboard's right-hand column.
  *
- * The columns are declared here and re-declared twice below rather than left to
- * `auto-fit`, because auto-fit cannot express "the chart is worth two of the
- * others" — it would give all three equal tracks and then hand the chart the
- * same width as a five-character date. A figure tile stops being readable at
- * about 10rem, which is where each of these steps down.
+ * `.tiles` is only ever rendered inside `.board-grid`, so there is one set of
+ * rules for it rather than a default plus overrides. That matters: the previous
+ * version had a base `.tile-wide { grid-column: span 2 }` and a narrower rule
+ * fighting it, and at equal specificity source order decided — which is exactly
+ * how a one-column grid ended up opening an implicit second column and leaving a
+ * 34px tile in it.
+ *
+ * `grid-column: 1 / -1` is correct at every step here and needs no override: in
+ * one column it is the whole row, in two it spans both. Nothing has to come
+ * after anything else.
  */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-3);
-  margin: 0 0 var(--s-3);
+  margin: 0;
+  align-content: stretch;
+}
+
+.tile-wide {
+  grid-column: 1 / -1;
+}
+
+/* Beside the featured card the column is narrow, so the figures stack. Once the
+   dashboard has collapsed to one column they have the full width and sit two
+   across, until a phone takes that back to one. */
+@media (max-width: 68rem) and (min-width: 34.01rem) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .tile {
@@ -2071,30 +2404,6 @@ textarea {
   border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: var(--shadow);
-}
-
-/* The chart is worth two figures. */
-.tile-wide {
-  grid-column: span 2;
-}
-
-/* Two figures side by side, chart on its own row underneath. */
-@media (max-width: 64rem) {
-  .tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .tile-wide {
-    grid-column: 1 / -1;
-  }
-}
-
-/* One column. Two 10rem tiles do not fit beside each other on a 390px phone,
-   and a figure squeezed under its own label is not a figure. */
-@media (max-width: 34rem) {
-  .tiles {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .tile dt {
@@ -2843,7 +3152,15 @@ textarea {
      standalone link at the end of a section heading, so 2.5.8's inline-in-a-
      sentence exception does not cover it. Same treatment, same reason — the
      text does not change size, only the box around it. */
-  .section-head a {
+  .section-head a,
+  /* The featured card's meta line is the row metadata line at a larger size,
+     and it inherited the same fault: "source on GitHub" measured 110×19 at
+     390px on the sweep that added this card. Listing it here rather than
+     widening the selector above, because these are two different components
+     that happen to have the same problem — and the next one will not be found
+     by a selector that was written before it existed. */
+  .featured-meta a,
+  .featured-meta span {
     min-height: 24px;
   }
 }
@@ -2953,40 +3270,96 @@ textarea {
     animation: grid-in 900ms var(--ease) backwards;
   }
 
-  /* The spine draws itself downward, then a light travels it every seven
-     seconds. The light is the gradient layer's vertical position moving from
-     off one end to off the other, which needs no knowledge of the spine's
-     height — see the .flow::before rule. */
-  @keyframes spine-draw {
-    from {
-      transform: scaleY(0);
+  /* The hero's two orbs drift.
+     3% of their own size over 48 seconds, which is far below the rate at which
+     peripheral motion pulls the eye — it reads as the section being lit rather
+     than as something moving, and it is the only animation on this page that
+     carries no information. Kept because a completely static wash is what made
+     the previous hero read as a printed page. */
+  @keyframes wash-drift {
+    50% {
+      transform: translate3d(2%, -1.5%, 0) scale(1.03);
     }
   }
 
-  @keyframes spine-pulse {
+  .hero::after {
+    animation: wash-drift 48s var(--ease) infinite;
+    will-change: transform;
+  }
+
+  /* A pulse travels the pipeline, connector by connector.
+
+     Each connector is a 2px rule carrying a short accent gradient parked off its
+     left end; this moves that gradient across and off the right. The three fire
+     600ms apart, so one light appears to run the whole length of the flow rather
+     than three lights blinking together. The 60% hold is the gap between runs —
+     without it the beam restarts the instant it leaves, which reads as a strobe.
+
+     Sized in percentages of the connector, so it needs to know nothing about how
+     wide the gap is at this viewport. */
+  @keyframes beam {
     0% {
-      background-position-y: -60%;
+      background-position-x: -60%;
     }
 
-    55%,
+    60%,
     100% {
-      background-position-y: 160%;
+      background-position-x: 160%;
     }
   }
 
-  .flow::before {
-    animation:
-      spine-draw 700ms var(--ease-emphasized) backwards,
-      spine-pulse 7s var(--ease) 1000ms infinite;
+  .flow > li + li::after {
+    animation: beam 5.4s var(--ease) 900ms infinite;
   }
 
-  /* Each step docks onto the spine from the right, after the spine has reached
-     it. The node is the step's own ::before, so it travels with it rather than
-     needing a second animation kept in step with this one. */
+  .flow > li:nth-child(3)::after {
+    animation-delay: 1500ms;
+  }
+
+  .flow > li:nth-child(4)::after {
+    animation-delay: 2100ms;
+  }
+
+  /* Below 64rem the connectors are vertical, so the beam has to travel the other
+     axis. Same timing, same gradient, different property — a rotation would have
+     turned the stage boxes with it. */
+  @media (max-width: 64rem) {
+    @keyframes beam-down {
+      0% {
+        background-position-y: -60%;
+      }
+
+      60%,
+      100% {
+        background-position-y: 160%;
+      }
+    }
+
+    .flow > li + li::after {
+      animation-name: beam-down;
+    }
+  }
+
+  /* The stage the run arrives at breathes, once every six seconds. It is the
+     only stage with a live number on it, and this is what stops the pipeline
+     reading as a finished diagram of something that already happened. */
+  @keyframes stage-glow {
+    50% {
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+        0 0 0 4px color-mix(in srgb, var(--accent) 9%, transparent);
+    }
+  }
+
+  .flow > li:last-child {
+    animation: stage-glow 6s var(--ease) 1200ms infinite;
+  }
+
+  /* Each stage arrives from the left, in the order the run reads. */
   @keyframes flow-step-in {
     from {
       opacity: 0;
-      transform: translateX(10px);
+      transform: translateX(-10px);
     }
   }
 

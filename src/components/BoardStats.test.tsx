@@ -95,27 +95,38 @@ describe('BoardStats', () => {
 /**
  * The bento's own layout, which broke once and did so silently.
  *
- * `.tile-wide { grid-column: span 2 }` sat after the responsive blocks that
- * narrow the grid, so at equal specificity it won: a one-column grid at 390px
- * still had the chart spanning two, which made the browser open an implicit
- * second column and left a 34px-wide tile in the first. Nothing threw, nothing
- * overflowed the document, and axe had no opinion — it was only visible by
- * measuring a tile.
+ * The first version had a base `.tile-wide { grid-column: span 2 }` and a
+ * responsive rule fighting it at equal specificity, so source order decided. It
+ * lost: a one-column grid at 390px still had the chart spanning two, the browser
+ * opened an implicit second column, and a 34px-wide tile went in the first one.
+ * Nothing threw, nothing overflowed the document, and axe had no opinion — it
+ * was visible only by measuring a tile.
+ *
+ * The fix was to remove the fight rather than to win it. `.tiles` renders in
+ * exactly one place, so it has exactly one rule, and the span is written as
+ * `1 / -1`, which is already correct at every column count. These assert that
+ * property, not the source positions — a test that pins the order would have
+ * gone on passing while someone reintroduced the second rule set.
  */
 describe('the tile grid narrows with the viewport', () => {
   const css = readFileSync('src/app/globals.css', 'utf8');
 
-  it('declares a step for each of the three widths', () => {
-    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
-    expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
-    expect(css).toMatch(/@media \(max-width: 34rem\) \{\s*\.tiles/);
+  it('declares the grid exactly once', () => {
+    expect(css.match(/^\.tiles \{/gm)?.length).toBe(1);
+    expect(css.match(/^\.tile-wide \{/gm)?.length).toBe(1);
   });
 
-  it('puts the responsive override after the base rule it has to beat', () => {
-    const base = css.indexOf('.tile-wide {\n  grid-column: span 2;');
-    const override = css.indexOf('grid-column: 1 / -1;');
-    expect(base).toBeGreaterThan(-1);
-    expect(override).toBeGreaterThan(-1);
-    expect(override).toBeGreaterThan(base);
+  it('spans the chart in a way that is correct at any column count', () => {
+    // `span 2` is a claim about how many columns exist. `1 / -1` is a claim
+    // about the row, which stays true when the grid narrows.
+    expect(css).toMatch(/\.tile-wide \{\s*grid-column: 1 \/ -1;/);
+    // The comment above the rule quotes the old declaration, so match on a real
+    // one — with its semicolon — rather than on any mention of the string.
+    expect(css).not.toMatch(/grid-column: span 2;/);
+  });
+
+  it('still steps down to two columns and then to one', () => {
+    expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+    expect(css).toMatch(/@media \(max-width: 68rem\) and \(min-width: 34\.01rem\)/);
   });
 });

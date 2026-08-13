@@ -7,12 +7,20 @@ servers, slash commands and hooks — discovered from established public GitHub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
-![The AgentDock home page: an indexing pipeline diagram, a rail of recently indexed artifacts drifting past as cards with a stop control beside it, and the list underneath](docs/images/agentdock-home.png)
+![The AgentDock home page: a search field, a horizontal pipeline from repository to artifact index, and a dashboard leading with the most recently read artifact](docs/images/agentdock-home.png)
 
-The home page is one board: a pipeline showing what gets indexed and how, three
-tiles summarising what was read most recently, a rail of recently indexed
-artifacts drifting slowly past, and a list holding still everything the rail
-shows. The rail carries an always-visible stop control.
+The home page is in three parts.
+
+- **Search and the pipeline.** The search field is the control the page opens
+  with, and under it four stages run left to right: a repository, the files that
+  declare an artifact, AgentDock reading them, and the result filed against the
+  commit it read. A pulse travels the connectors between them.
+- **Recently indexed.** The most recently read artifact at full size, the three
+  figures describing the window it came from beside it, then the rest of that
+  window drifting past as cards and standing still as a list. The rail carries an
+  always-visible stop control.
+- **How a repository gets indexed.** The four discovery conditions, and what
+  they decide.
 
 Every figure on those tiles is computed from the list the page had already
 fetched — there is no second query — so each is true of that window and not of
