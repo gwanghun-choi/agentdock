@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 /**
  * AgentDock has no accounts, no sign-in and no operator review. Any endpoint
@@ -69,7 +69,16 @@ describe('the public surface accepts no repository', () => {
     const callers = files.filter((file) => readFileSync(file, 'utf8').includes('enqueueJob'));
     expect(callers).toEqual([]);
 
+    // jobs.ts imports @/db/client, which parses the environment as it loads.
+    // A syntactically valid URL is all that parse needs; postgres.js opens no
+    // socket until a query runs and this test runs none. Without it the import
+    // threw on every machine with no DATABASE_URL — which is CI. Only filled
+    // when absent, so a real one is never shadowed.
+    if (!process.env.DATABASE_URL) {
+      vi.stubEnv('DATABASE_URL', 'postgresql://placeholder:placeholder@127.0.0.1:9/placeholder');
+    }
     const { enqueueJob } = await import('@/db/queries/jobs');
+    vi.unstubAllEnvs();
     expect(typeof enqueueJob).toBe('function');
   });
 });

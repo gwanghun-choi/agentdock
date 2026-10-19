@@ -378,6 +378,30 @@ docker compose --env-file .env.production up -d agentdock
 일회성 corpus reset과 cron 등록을 포함한 전체 runbook은 [DEPLOY.md](DEPLOY.md)에
 있습니다.
 
+## Vercel Deployment
+
+무료 플랜으로 개인 프로젝트를 운영하는 두 번째 배포 경로입니다. Vercel Hobby가
+웹을, Neon Free가 PostgreSQL을, GitHub Actions(`.github/workflows/sync.yml`)가
+하루 2회 `bun run sync`를 맡습니다. 코드와 invariant는 Docker 경로와 같고,
+웹은 여전히 수집하지 않습니다. cron route도 API route도 없습니다.
+
+sync를 Vercel Cron으로 돌리지 않는 이유는 두 가지입니다. Hobby의 cron은 하루
+1회(±59분)만 가능하고 function은 300초에 멈추는데, sync는 topic sweep만으로도
+최대 약 6.5분이 걸립니다. 그리고 cron에는 route가 필요한데, 그 route는 수집을
+시작하는 공개 URL이 됩니다.
+
+| 위치 | 변수 | 값 |
+|---|---|---|
+| Vercel | `DATABASE_URL` | agentdock_app의 Neon **pooled** 연결 문자열 |
+| Vercel | `DATABASE_SCHEMA` | `agentdock` |
+| GitHub Actions secret | `DATABASE_URL` | agentdock_app의 Neon **direct** 연결 문자열 |
+| GitHub Actions secret | `AGENTDOCK_GITHUB_TOKEN` | scope 없는 token. 선택이지만 권장합니다 |
+
+Neon bootstrap, `pg_trgm`, migration, Preview DB 분리, 최초 sync, smoke test,
+롤백, 무료 플랜 제한을 담은 전체 runbook은 [VERCEL_DEPLOY.md](VERCEL_DEPLOY.md)에
+있습니다. 두 경로 중 **하나만** 운영하세요. host cron과 `sync.yml`이 함께 돌면
+GitHub budget이 두 배로 소모됩니다.
+
 ## Cron 설정
 
 하루 2회, 12시간 간격입니다. 이 간격이 12시간 staleness 기준과 맞아떨어집니다.
@@ -418,7 +442,7 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 | 명령어 | 하는 일 |
 |---|---|
 | `bun run dev` | 개발 서버. ingestion을 시작하지 않습니다. |
-| `bun run build` / `bun run start` | 프로덕션 빌드와 서빙. 빌드에는 데이터베이스가 필요 없습니다. |
+| `bun run build` / `bun run start` | 프로덕션 빌드와 서빙. 빌드는 데이터베이스에 연결하지 않지만, 형식이 맞는 `DATABASE_URL`은 있어야 합니다(값은 placeholder여도 됩니다). |
 | `bun run sync` | **scheduled job.** discovery, refresh, drain, 요약 출력. |
 | `bun run corpus:sync --source=…` | 같은 기능을 소스와 상한선을 노출한 형태로. 색인을 수동으로 채울 때 씁니다. |
 | `bun run corpus:reset --confirm` | corpus 비우기. `AGENTDOCK_ALLOW_CORPUS_RESET=1`도 함께여야 실행됩니다. 어떤 것도 DROP하지 않습니다. |

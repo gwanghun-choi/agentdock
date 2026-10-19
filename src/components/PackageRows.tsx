@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
+import { detailHref, permalink } from '@/components/hrefs';
 import { ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
-import { detailHref, type PackageListItem, permalink } from '@/db/queries/packages';
+import type { PackageListItem } from '@/db/queries/packages';
 
 /**
  * Dense bordered rows, not cards. Three lines per item so a screenful still

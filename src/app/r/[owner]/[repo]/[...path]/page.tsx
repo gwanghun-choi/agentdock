@@ -4,11 +4,12 @@ import { isBundledScript } from '@/analyze/files';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
+import { permalink, permalinkAtLine } from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SkillBody } from '@/components/SkillBody';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
-import { getPackageDetail, permalink, permalinkAtLine } from '@/db/queries/packages';
+import { getPackageDetail } from '@/db/queries/packages';
 import { SPEC_KEYS } from '@/detect/skill';
 
 // Read at request time. next build runs in CI, where there is no database.

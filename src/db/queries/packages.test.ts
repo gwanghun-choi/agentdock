@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { detailHref, sourcePathCandidates } from '@/components/hrefs';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -439,7 +440,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       const r = await repo('cmd');
       await artifact(r, '.claude/commands/build.md', [{ hash: 'cmd1' }], { type: 'command' });
       const fullName = `${PREFIX}-cmd`;
-      const href = packages.detailHref(fullName, '.claude/commands/build.md', 'command');
+      const href = detailHref(fullName, '.claude/commands/build.md', 'command');
       const detail = await packages.getPackageDetail(
         'test-owner',
         'listing-spec-cmd',
@@ -452,7 +453,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       const r = await repo('plugin-manifest');
       await artifact(r, '.claude-plugin/plugin.json', [{ hash: 'pm1' }], { type: 'plugin' });
       const fullName = `${PREFIX}-plugin-manifest`;
-      const href = packages.detailHref(fullName, '.claude-plugin/plugin.json', 'plugin');
+      const href = detailHref(fullName, '.claude-plugin/plugin.json', 'plugin');
       const detail = await packages.getPackageDetail(
         'test-owner',
         'listing-spec-plugin-manifest',
@@ -468,7 +469,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
         meta: '{"detectionConfidence":"shape-only"}',
       });
       const fullName = `${PREFIX}-plugin-shape`;
-      const href = packages.detailHref(fullName, 'cli-tool/components', 'plugin');
+      const href = detailHref(fullName, 'cli-tool/components', 'plugin');
       const detail = await packages.getPackageDetail(
         'test-owner',
         'listing-spec-plugin-shape',
@@ -481,7 +482,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       const r = await repo('hook');
       await artifact(r, '.claude/settings.json', [{ hash: 'hk1' }], { type: 'hook' });
       const fullName = `${PREFIX}-hook`;
-      const href = packages.detailHref(fullName, '.claude/settings.json', 'hook');
+      const href = detailHref(fullName, '.claude/settings.json', 'hook');
       const detail = await packages.getPackageDetail(
         'test-owner',
         'listing-spec-hook',
@@ -494,7 +495,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       const r = await repo('mcp');
       await artifact(r, '.mcp.json', [{ hash: 'mc1' }], { type: 'mcp_server' });
       const fullName = `${PREFIX}-mcp`;
-      const href = packages.detailHref(fullName, '.mcp.json', 'mcp_server');
+      const href = detailHref(fullName, '.mcp.json', 'mcp_server');
       const detail = await packages.getPackageDetail(
         'test-owner',
         'listing-spec-mcp',
@@ -507,7 +508,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       const r = await repo('skill');
       await artifact(r, 'skills/canvas-design/SKILL.md', [{ hash: 'sk1' }]);
       const fullName = `${PREFIX}-skill`;
-      const href = packages.detailHref(fullName, 'skills/canvas-design/SKILL.md', 'skill');
+      const href = detailHref(fullName, 'skills/canvas-design/SKILL.md', 'skill');
       // The pre-change function stripped the SKILL.md suffix and produced
       // exactly this string. This regression case is the proof no published
       // skill link broke.
@@ -540,7 +541,7 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
           meta: c.meta ?? '{}',
         });
         const fullName = `${PREFIX}-rt-${i}`;
-        const href = packages.detailHref(fullName, c.sourcePath, c.type);
+        const href = detailHref(fullName, c.sourcePath, c.type);
         const detail = await packages.getPackageDetail(
           'test-owner',
           `listing-spec-rt-${i}`,
@@ -566,12 +567,12 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
     });
 
     it('sourcePathCandidates: an empty join and the literal SKILL.md both resolve to [SKILL.md]', () => {
-      expect(packages.sourcePathCandidates(['SKILL.md'])).toEqual(['SKILL.md']);
-      expect(packages.sourcePathCandidates([])).toEqual(['SKILL.md']);
+      expect(sourcePathCandidates(['SKILL.md'])).toEqual(['SKILL.md']);
+      expect(sourcePathCandidates([])).toEqual(['SKILL.md']);
     });
 
     it('sourcePathCandidates: the literal join comes first, the SKILL.md reconstruction second', () => {
-      expect(packages.sourcePathCandidates(['.claude', 'commands', 'build.md'])).toEqual([
+      expect(sourcePathCandidates(['.claude', 'commands', 'build.md'])).toEqual([
         '.claude/commands/build.md',
         '.claude/commands/build.md/SKILL.md',
       ]);

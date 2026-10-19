@@ -19,8 +19,19 @@ jobs:
       # Before the checks, not after. `next build` regenerates next-env.d.ts,
       # which the linter and the type-checker then read — so a runner that lints
       # first can fail on a file the build was about to write. The build needs no
-      # database: every page that reads one is marked request-time.
+      # database — every page that reads one is marked request-time — but it does
+      # evaluate each route module to read its segment config, and src/db/client.ts
+      # validates DATABASE_URL as it loads. Without a value this step failed on
+      # every push from ffded2e on. The placeholder does what the Dockerfile's
+      # does: it only has to parse. Port 9 has nothing listening, so a
+      # connection attempt would fail loudly rather than reach anything.
+      #
+      # Step-scoped on purpose. Set for the job, it would also un-skip every
+      # database-backed suite in `bun run ci` below, which would then fail
+      # against a database that is not there.
       - run: bun run build
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:9/build
 
       # The migration boundary scan, lint, type-check, and tests — the same
       # single command a developer runs locally, so the two cannot drift.

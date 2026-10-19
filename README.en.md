@@ -386,6 +386,31 @@ another service on the host wants.
 See [DEPLOY.md](DEPLOY.md) for the full runbook, including the one-time corpus
 reset and cron registration.
 
+## Vercel Deployment
+
+A second deployment path, for a personal project on free plans: Vercel Hobby
+serves the web, Neon Free holds PostgreSQL, and GitHub Actions
+(`.github/workflows/sync.yml`) runs `bun run sync` twice a day. Same code, same
+invariants as the Docker path. The web still ingests nothing, and there is no
+cron route and no API route.
+
+Two reasons sync does not run on Vercel Cron. A Hobby cron fires at most once a
+day (±59 min) and a function stops at 300 s, while one sync's topic sweep alone
+takes up to about 6.5 minutes. And a cron needs a route — a public URL that
+starts ingestion.
+
+| Where | Variable | Value |
+|---|---|---|
+| Vercel | `DATABASE_URL` | the agentdock_app Neon **pooled** connection string |
+| Vercel | `DATABASE_SCHEMA` | `agentdock` |
+| GitHub Actions secret | `DATABASE_URL` | the agentdock_app Neon **direct** connection string |
+| GitHub Actions secret | `AGENTDOCK_GITHUB_TOKEN` | a scopeless token; optional, recommended |
+
+The full runbook — Neon bootstrap, `pg_trgm`, migrations, the Preview database
+policy, the first sync, smoke test, rollback and free-plan limits — is
+[VERCEL_DEPLOY.md](VERCEL_DEPLOY.md). Run **one** of the two paths: a host cron
+and `sync.yml` together spend the GitHub budget twice.
+
 ## Cron Setup
 
 Twice a day, twelve hours apart — which is what makes the schedule and the
@@ -427,7 +452,7 @@ database-backed suite keys its rows on a sentinel no other suite can produce.
 | Command | What it does |
 |---|---|
 | `bun run dev` | Development server. Starts no ingestion. |
-| `bun run build` / `bun run start` | Production build and serve. The build needs no database. |
+| `bun run build` / `bun run start` | Production build and serve. The build connects to no database, but needs a well-formed `DATABASE_URL` (a placeholder is enough). |
 | `bun run sync` | **The scheduled job.** Discover, refresh, drain, summarize. |
 | `bun run corpus:sync --source=…` | The same machinery with sources and caps exposed, for filling an index by hand |
 | `bun run corpus:reset --confirm` | Empty the corpus. Refuses unless `AGENTDOCK_ALLOW_CORPUS_RESET=1` as well. Drops nothing. |

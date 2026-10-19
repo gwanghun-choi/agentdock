@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
+import { detailHref, permalink } from '@/components/hrefs';
 import { ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
 import { compactStars } from '@/components/PackageRows';
-import { detailHref, type PackageListItem, permalink } from '@/db/queries/packages';
+import type { PackageListItem } from '@/db/queries/packages';
 
 /**
  * The newest thing in the window, at the size of an answer.

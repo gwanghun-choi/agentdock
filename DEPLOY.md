@@ -12,6 +12,11 @@ your server
 └── PostgreSQL                        may be shared; AgentDock owns one schema
 ```
 
+This is the Docker deployment. For Vercel + Neon + GitHub Actions on free
+plans — the same code and invariants, with the schedule moved to a workflow —
+see [VERCEL_DEPLOY.md](VERCEL_DEPLOY.md). Run one or the other: two schedulers
+running the same sync spend the GitHub budget twice.
+
 The web container and the corpus have **separate lifecycles**, and that is the
 central fact of this document. `docker compose up`, a restart, a crash recovery
 and a rollback all issue **zero** GitHub requests and read **zero**
@@ -170,9 +175,11 @@ docker compose --env-file .env.production up -d agentdock
 `docker container prune` or `docker volume prune` on a shared host. Other
 projects live there.
 
-The build needs outbound HTTPS to the npm registry. It uses no `DATABASE_URL`
-and no credential — every route is `force-dynamic`, so nothing connects at build
-time.
+The build needs outbound HTTPS to the npm registry. It uses no credential: the
+Dockerfile's build stage sets a placeholder `DATABASE_URL` that only has to
+parse, because `next build` evaluates each route module and `src/db/client.ts`
+validates the variable as it loads. Every route is `force-dynamic`, so nothing
+connects at build time.
 
 ## Step 8 — smoke the deployment
 

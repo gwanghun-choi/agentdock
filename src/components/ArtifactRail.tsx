@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
+import { detailHref } from '@/components/hrefs';
 import { ClockIcon, StarIcon } from '@/components/Icon';
 import { compactStars } from '@/components/PackageRows';
-import { detailHref, type PackageListItem } from '@/db/queries/packages';
+import type { PackageListItem } from '@/db/queries/packages';
 
 /**
  * The activity rail: the same feed the list below reads, drifting past as

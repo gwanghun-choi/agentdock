@@ -1,11 +1,13 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
-  // Docker deployment (NCP, single server). 'standalone' emits .next/standalone
+  // Docker deployment (single server). 'standalone' emits .next/standalone
   // with only the traced runtime dependencies, so the production image ships
-  // neither bun nor the full node_modules tree. Every route in this app is
-  // `export const dynamic = 'force-dynamic'`, so `next build` opens no database
-  // connection — which is what lets the image be built with no DATABASE_URL and
+  // neither bun nor the full node_modules tree. A Vercel build uses its own
+  // output path and does not run this image; see VERCEL_DEPLOY.md. Every route
+  // in this app is `export const dynamic = 'force-dynamic'`, so `next build`
+  // opens no database connection — which is what lets the image be built with a
+  // placeholder DATABASE_URL (it only has to parse; see the Dockerfile) and
   // therefore no credential baked into a layer.
   output: 'standalone',
   // Headers that are the same on every request. The policy is not among them:

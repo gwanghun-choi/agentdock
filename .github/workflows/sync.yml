@@ -1,0 +1,67 @@
+name: Sync
+
+# The scheduled ingest for a deployment whose web tier is serverless (Vercel).
+# It is `bun run sync`, unchanged — the same one-shot the Docker deployment's
+# cron runs — on a runner instead of a server. The web tier still starts no
+# ingestion; nothing here is reachable over HTTP.
+#
+# Why not a Vercel Cron: on Hobby a cron may fire at most once a day, and a
+# function stops at 300 s, while one sync's topic sweep alone is up to 60
+# search requests at 6.5 s spacing. And a cron needs a route, which would be a
+# public URL that starts ingestion.
+#
+# Docker deployments keep their host cron and must not also enable this: two
+# schedulers running the same one-shot spend the GitHub budget twice.
+
+on:
+  # 06:00 and 18:00 UTC are 15:00 and 03:00 KST — the twelve-hour spacing that
+  # the sync's 12 h staleness cutoff assumes. GitHub may start a scheduled run
+  # late under load, and disables schedules on a public repository after 60
+  # days with no commit.
+  schedule:
+    - cron: '0 6,18 * * *'
+  workflow_dispatch:
+
+# Checkout only. The sync reads public GitHub data with its own token, below.
+permissions:
+  contents: read
+
+# One sync at a time. Not cancel-in-progress: killing a run mid-ingest leaves a
+# claimed job for the next run's reapAbandoned to return, which costs a run's
+# worth of delay for no gain. A new trigger waits instead.
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # A typical run is minutes; the bound is 25 drained jobs, each capped at
+    # 120 s of file reads (src/github/scan.ts) plus a sweep of ~6.5 min. A run
+    # stopped here is recovered by the next one, as above.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run sync
+        env:
+          # The DIRECT (non-pooled) connection string. One batch process has
+          # nothing to pool, and Neon's docs route migrations and long-running
+          # work to the direct endpoint. The web tier uses the pooled one.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SCHEMA: agentdock
+          NODE_ENV: production
+          # Optional and scopeless (.env.example says why). Unset, the sync runs
+          # at the unauthenticated 60 an hour — but on a hosted runner that
+          # budget belongs to a shared IP address, so set it. Secret names may
+          # not start with GITHUB_, hence the prefix; an unset secret arrives as
+          # an empty string, which src/env.ts reads as absent.
+          GITHUB_TOKEN: ${{ secrets.AGENTDOCK_GITHUB_TOKEN }}
