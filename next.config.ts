@@ -3,13 +3,19 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   // Docker deployment (single server). 'standalone' emits .next/standalone
   // with only the traced runtime dependencies, so the production image ships
-  // neither bun nor the full node_modules tree. A Vercel build uses its own
-  // output path and does not run this image; see VERCEL_DEPLOY.md. Every route
+  // neither bun nor the full node_modules tree. Every route
   // in this app is `export const dynamic = 'force-dynamic'`, so `next build`
   // opens no database connection — which is what lets the image be built with a
   // placeholder DATABASE_URL (it only has to parse; see the Dockerfile) and
   // therefore no credential baked into a layer.
-  output: 'standalone',
+  //
+  // Not on Vercel, which sets VERCEL=1 at build time. Vercel builds through a
+  // deployment adapter, and on Next 16.3 with Turbopack an adapter build emits
+  // no .next/next-server.js.nft.json — yet the standalone step, which runs
+  // after the adapter's onBuildComplete, opens that file. The first production
+  // build of de79558 failed exactly there (ENOENT), and a no-op local adapter
+  // (NEXT_ADAPTER_PATH) reproduces it. Vercel does not run the image anyway.
+  output: process.env.VERCEL ? undefined : 'standalone',
   // Headers that are the same on every request. The policy is not among them:
   // it carries a per-request nonce and therefore lives in the proxy.
   async headers() {

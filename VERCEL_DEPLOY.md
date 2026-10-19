@@ -136,9 +136,11 @@ committed.
 
 - **Settings → Functions → Function Region:** the region nearest your Neon
   region (Vercel's default is `iad1`, Washington, D.C.).
-- `output: 'standalone'` in `next.config.ts` is the Docker path. Vercel builds
-  its own output and does not run that image. **PENDING:** confirm on the first
-  preview build.
+- `output: 'standalone'` in `next.config.ts` is the Docker path, and it is off
+  when `VERCEL` is set. With it on, the first production build failed after
+  `Running onBuildComplete from Vercel` with `ENOENT … next-server.js.nft.json`:
+  an adapter build on Next 16.3 emits no server trace, and the standalone step
+  needs one. `next.config.ts` has the detail.
 
 ### Environment variables
 
@@ -275,5 +277,5 @@ checked by doing the step that names it:
 4. Prepared statements through the pooler. Neon's docs say PgBouncer supports
    protocol-level ones; confirm with any page load.
 5. A Vercel build of this repository: bun install from `bun.lock`, with
-   `output: 'standalone'` present (step 5).
+   `output` unset because `VERCEL` is (step 5).
 6. Real CU-hour use after a week, against the 100-hour allowance.
