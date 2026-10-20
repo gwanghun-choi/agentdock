@@ -649,6 +649,88 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     expect(repo.n).toBe(0);
   });
 
+  /**
+   * A repository AgentDock has read, whose artifacts are then all removed
+   * upstream. Before this, the run returned `no_artifacts` before persistScan:
+   * nothing was delisted and scanned_at never moved, so the repository sat at
+   * the head of refreshStaleRepositories' `scanned_at asc` order on every run.
+   */
+  describe('a known repository that no longer holds any artifact', () => {
+    const EMPTIED = 'd'.repeat(40);
+
+    async function repoRow() {
+      const [row] = await sql<{ scanned_at: string | Date; last_ingested_sha: string }[]>`
+        SELECT scanned_at, last_ingested_sha FROM repository WHERE github_node_id = ${NODE_ID}
+      `;
+      return row;
+    }
+
+    async function liveCount(): Promise<number> {
+      const [row] = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM package p
+        JOIN repository r ON r.id = p.repository_id
+        WHERE r.github_node_id = ${NODE_ID} AND p.delisted_at IS NULL
+      `;
+      return row.n;
+    }
+
+    it('delists what it held and records the read, in one job transition', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+      await sql`UPDATE repository SET scanned_at = now() - interval '30 days'
+                WHERE github_node_id = ${NODE_ID}`;
+      const before = await repoRow();
+
+      const [job] = await sql<{ id: number }[]>`
+        INSERT INTO ingest_job (target, status, attempts, started_at, worker_id)
+        VALUES (${JOB_TARGET}, 'running', 1, now(), 'pipeline-spec')
+        RETURNING id
+      `;
+      stubGitHub({ tree: JSON.stringify({ sha: EMPTIED, truncated: false, tree: [] }) });
+      const result = await ingestRepository(FULL_NAME, {
+        id: job.id,
+        attemptNo: 1,
+        startedAt: new Date(),
+      });
+
+      expect(result).toMatchObject({ ok: true, outcome: 'ok', found: 0, commitSha: EMPTIED });
+      if (!result.ok) throw new Error('unreachable');
+      expect(result.counters.removed).toBe(18);
+      expect(await liveCount()).toBe(0);
+      // Delisted, not deleted: the rows and their versions are still there.
+      expect(await storedPackages()).toHaveLength(18);
+      expect(await versionsOf(ONE)).toBe(1);
+
+      const after = await repoRow();
+      expect(after.last_ingested_sha).toBe(EMPTIED);
+      expect(new Date(after.scanned_at).getTime()).toBeGreaterThan(
+        new Date(before.scanned_at).getTime(),
+      );
+
+      const attempts = await sql`SELECT 1 FROM ingest_attempt WHERE job_id = ${job.id}`;
+      expect(attempts).toHaveLength(1);
+      const [row] = await sql<{ status: string }[]>`
+        SELECT status FROM ingest_job WHERE id = ${job.id}
+      `;
+      expect(row.status).toBe('succeeded');
+    });
+
+    it('delists nothing when the empty listing came from a truncated tree', async () => {
+      stubGitHub();
+      await ingestRepository(FULL_NAME);
+
+      stubGitHub({ tree: JSON.stringify({ sha: EMPTIED, truncated: true, tree: [] }) });
+      const result = await ingestRepository(FULL_NAME);
+
+      expect(result).toMatchObject({ ok: true, found: 0, truncated: true });
+      expect(await liveCount()).toBe(18);
+      const [repo] = await sql<{ tree_truncated: boolean }[]>`
+        SELECT tree_truncated FROM repository WHERE github_node_id = ${NODE_ID}
+      `;
+      expect(repo.tree_truncated).toBe(true);
+    });
+  });
+
   it('refuses a denylisted repository before any request is made', async () => {
     await sql`INSERT INTO repository_denylist (full_name, reason) VALUES (${FULL_NAME}, 'test')`;
     stubGitHub();

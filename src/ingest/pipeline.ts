@@ -395,7 +395,13 @@ export async function ingestRepository(
 
     // A repository whose only artifact is a catalog found something. Reporting
     // it as empty would also discard the seeds it found.
-    if (packages.length === 0 && seeds.length === 0) {
+    //
+    // Only for a repository nobody has read. A known one that now holds nothing
+    // goes through persistScan with an empty listing, which is what delists the
+    // artifacts it used to hold (unless the read was partial) and moves
+    // scanned_at. Returning here instead left both untouched, so the repository
+    // kept the oldest scanned_at in the corpus and headed every refresh.
+    if (packages.length === 0 && seeds.length === 0 && known === null) {
       // Still carried: a marketplace whose every entry was unreachable produces
       // no package and no seed, and that is exactly the run whose count matters.
       emit({
