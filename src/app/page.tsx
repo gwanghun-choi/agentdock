@@ -17,6 +17,7 @@ import { IndexFlow } from '@/components/IndexFlow';
 import { PackageRows } from '@/components/PackageRows';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { countPackages, listPackages } from '@/db/queries/packages';
+import { lastSyncSucceededAt } from '@/db/queries/syncState';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
 // CI, where there is no database.
@@ -35,7 +36,11 @@ const RAIL_ITEMS = 18;
 const LIST_ROWS = 10;
 
 export default async function HomePage() {
-  const [recent, total] = await Promise.all([listPackages({ limit: RAIL_ITEMS }), countPackages()]);
+  const [recent, total, lastSync] = await Promise.all([
+    listPackages({ limit: RAIL_ITEMS }),
+    countPackages(),
+    lastSyncSucceededAt(),
+  ]);
   // Exact rather than approximate: the repository this artifact came from was
   // read on this date. Not "the corpus was read on" — that is a different claim
   // and this page does not have the number for it.
@@ -128,6 +133,14 @@ export default async function HomePage() {
             <p className="board-meta">
               {recent.length} most recent
               {newestRead ? ` · newest read ${newestRead}` : ''}
+              {/* When a scheduled sync last reached its end with every stage
+                  intact (corpus-sync.mjs). Absent until one has: a green job
+                  that stopped half way does not write it. "Without errors",
+                  not "complete": every run stops at its caps and leaves work
+                  queued (AGENTS.md: every cap says what it dropped). */}
+              {lastSync
+                ? ` · last sync without errors ${lastSync.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+                : ''}
             </p>
           ) : null}
           {recent.length > 0 ? (

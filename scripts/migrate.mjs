@@ -25,6 +25,7 @@
 
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import postgres from 'postgres';
+import { assertTestDatabaseUrl } from '../src/db/testDatabase.ts';
 
 // Allowlisted, so the identifier interpolated below can only ever be one of two
 // literals AgentDock owns.
@@ -36,7 +37,23 @@ if (schema !== 'agentdock' && schema !== 'agentdock_test') {
   process.exit(1);
 }
 
-const url = process.env.DATABASE_URL;
+// The test schema is migrated only inside the disposable local database, and
+// only from TEST_DATABASE_URL. Bun loads .env into this process before the first
+// line runs, so `DATABASE_SCHEMA=agentdock_test bun scripts/migrate.mjs` used to
+// migrate agentdock_test wherever .env's DATABASE_URL pointed — the deployment's
+// database included. The message names the rule and never the URL.
+// --test-database applies the reviewed drizzle/ migrations to `agentdock`
+// inside that same local database (`bun run db:test:migrations`), so CI runs
+// the files a deployment runs, not only DDL regenerated from schema.ts.
+let url = process.env.DATABASE_URL;
+if (schema === 'agentdock_test' || process.argv.includes('--test-database')) {
+  try {
+    url = assertTestDatabaseUrl(process.env.TEST_DATABASE_URL, 'TEST_DATABASE_URL');
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+}
 if (!url) {
   console.error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
   process.exit(1);

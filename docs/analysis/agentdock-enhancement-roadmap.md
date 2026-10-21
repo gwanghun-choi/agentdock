@@ -3,6 +3,37 @@
 > 기준: `develop` @ `28639ec` (2026-10-20) · 이 문서는 **제안**이다. 구현·commit·배포는 하지 않았다.
 > 근거 ID(I·D·S·U·O·T·H)는 다음 문서의 항목을 가리킨다: [ingestion](agentdock-ingestion-analysis.md) · [search/data](agentdock-search-and-data-analysis.md) · [quality/ops](agentdock-quality-and-operations.md). 수정 진입점의 세부는 [Implementation Map](agentdock-implementation-map.md) 에 있다.
 
+## 0. 과제 상태 (2026-10-20 갱신)
+
+> 2026-10-21: R1 잔여, R26, R27과 sync 재시도 보강은 [Phase 3 기록](agentdock-phase3-operations-and-test-safety.md)에 있다(미커밋).
+> 1차 R1 수정은 `77e7184`에 있다. 2차 작업은 작업 트리에만 있고 commit되지 않았다. 상세 내용은 [Phase 2 개선 기록](agentdock-phase2-improvements.md)에 있다.
+> 상태 정의: DONE(구현과 회귀 테스트 완료) · PARTIALLY DONE · PENDING(미착수) · BLOCKED(결정 필요) · NOT VERIFIED(운영 환경에서 확인하지 않음)
+
+| ID | 상태 | 비고 |
+|---|---|---|
+| R1 | DONE · NOT VERIFIED | 이미 저장된 저장소가 비면 delist하고 `scanned_at`을 갱신한다(`77e7184`). 404·`too_large`·409·재시도 소진은 Phase 3에서 `checked_at`·`check_failures` additive migration(0008)과 backoff 정렬로 처리했다(미커밋, [Phase 3](agentdock-phase3-operations-and-test-safety.md)). 운영 DB에는 0008이 아직 적용되지 않았다 |
+| R2 | DONE | 타입별 inventory 범위: plugin은 `containerRoot`(루트 plugin이면 전체 tree), skill은 디렉터리, 나머지 타입은 파일 자체. 200개 cap에 도달하면 화면에 표시 |
+| R3 | DONE | absence 필터는 최신 version의 `analyzed_at IS NOT NULL`이고 타입이 skill 또는 command일 때만 적용. analyzer 예외가 나면 `analyzed_at`을 null로 둔다 |
+| R4 | DONE | queued는 60초, running은 2초 간격. 탭이 숨겨지면 멈추고, 돌아올 때 1회 즉시 갱신. "Check now" 링크 추가 |
+| R5 | DONE | `match()` 예외가 난 타입은 delist에서 제외(`RepoScan.undetectedTypes`) |
+| R6 | DONE | 같은 sha라도 저장 상태가 부분 읽기이고 tree에 결정적 절단 원인이 없으면 다시 읽는다. 512KB 초과 파일은 `ponytail:` 한계로 남김 |
+| R7 | DONE · NOT VERIFIED | 토큰이 있으면 enqueue 100, refresh 100, drain 200, search 150요청/2.5초 간격. drain은 시작 35분 뒤 중단. 운영 처리 시간은 측정하지 않았다 |
+| R8 | DONE | topic별 몫은 남은 예산 ÷ 남은 topic. topic 단위로 오류를 격리하고, shard stack을 `schema_meta`(`corpus_sweep:topic-search`)에 저장해 다음 실행에서 이어감 |
+| R9 | DONE | `fanOutBySource`: seeds → search → links → backlog 순으로 몫을 나누고, 쓰지 않은 몫은 다음 소스로 넘긴다 |
+| R10 | DONE | `x-ratelimit-resource`가 core이거나 없을 때만 core 슬롯을 갱신. secondary limit은 `retry-after` 기준으로 대기 |
+| R11 | DONE | discovery 단계별로 try/catch. 실패한 단계가 있어도 나머지는 실행하고, 종료 코드는 1 |
+| R12 | DONE | 소스별 discovery·enqueue, `/rate_limit` 기반 실사용 core 수, queue 잔량, `::notice/::warning/::error::`, `schema_meta.sync:last_success` 기록과 홈 화면 표시. Step Summary 파일은 디스크 쓰기 금지 원칙 때문에 쓰지 않음 |
+| R13 | PENDING | |
+| R14 | PENDING | |
+| R15 | DONE | U1 frontmatter를 yaml 블록으로, U2 본문 heading을 두 단계 강등, U3 필터가 있을 때만 Clear filters 표시, U4 queued 문구 수정 |
+| R16 | DONE | fuzzy fallback은 `offset === 0`일 때만 |
+| R17 | PARTIALLY DONE | SC(짧은 질의는 repo ILIKE 제외), SD(prefix), SE(경로), SF(모든 단어 매칭이 0건이면 any 모드로 완화하고 화면에 표시) 완료. SG(trigram 임계값 측정) PENDING |
+| R18 | PENDING | migration(보조 tsvector)이 필요해 이번 범위에서 제외 |
+| R19–R23 | PENDING | |
+| R24 | DONE | revert(A→B→A)가 되면 기존 version의 `ingested_at`을 now()로 옮긴다. migration 없음 |
+| R25–R30 | PENDING | |
+| R31 | PARTIALLY DONE | 이번 변경과 어긋나는 README(en/ko)와 DEPLOY 서술만 수정 |
+
 ## 목차
 
 1. [기존 계획과의 관계](#1-기존-계획과의-관계)
@@ -74,8 +105,8 @@
 | R23 | denylist 를 노출에 반영 | ingest 시점에만 검사 | denylist 에 올린 저장소가 계속 노출 (S3) | `NOT_LISTED_BECAUSE` 에 branch 추가 | `packages.ts:128-150` | L | S | 없음 | 노출 의미 변경 → 결정 | packages 테스트 | P2 (Phase 8 연계) |
 | R24 | revert 시 최신 version | `ingested_at DESC` | 잘못된 body/permalink (I10) | `last_seen_at`(또는 sha) 컬럼으로 최신 판정 | `persist.ts:161-177`, `packages.ts`, `search.ts` | M | M | additive | 정렬 기준 변경 | A→B→A 테스트 | P2 |
 | R25 | 성능: 인덱스·캐시 | content_hash 인덱스 없음, 전 페이지 force-dynamic | 규모가 커지면 목록·count 지연, Neon compute 소모 | SH 인덱스, SI 캐싱 | `schema.ts`, `jobs.ts:239`, pages | M | S–M | additive | Next 16 캐시 API 확인 | EXPLAIN/timing | P2 |
-| R26 | CI DB 테스트 | DB suite 0개 실행 | 핵심 회귀가 CI 밖에 있음 (T1) | Postgres service + bootstrap SQL + pg_trgm, 순수 URL 테스트 분리 | `ci.yml`, `packages.test.ts` | M | M | 없음 | CI 시간 증가(약 50초) | CI 실행 | P1 |
-| R27 | 로컬 테스트 DB 격리 | `.env` 자동 로드 | 로컬 테스트가 운영 Neon 에 쓸 수 있음 (T2) | 테스트 전용 env 파일 또는 `TEST_DATABASE_URL` 만 읽기 | `vitest.config.ts:13` | L | S | 없음 | 낮음 | 수동 | P1 |
+| R26 (Phase 3 DONE) | CI DB 테스트 | DB suite 0개 실행 | 핵심 회귀가 CI 밖에 있음 (T1) | Postgres service + bootstrap SQL + pg_trgm, 순수 URL 테스트 분리 | `ci.yml`, `packages.test.ts` | M | M | 없음 | CI 시간 증가(약 50초) | CI 실행 | P1 |
+| R27 (Phase 3 DONE) | 로컬 테스트 DB 격리 | `.env` 자동 로드 | 로컬 테스트가 운영 Neon 에 쓸 수 있음 (T2) | 테스트 전용 env 파일 또는 `TEST_DATABASE_URL` 만 읽기 | `vitest.config.ts:13` | L | S | 없음 | 낮음 | 수동 | P1 |
 | R28 | analyzer 정확도 | substring 동사, shell/install 미탐, hidden codepoint 미탐, 2,000자 무보고 | 관찰 품질 | 패턴 보강 + precision 행 갱신 + cap finding | `src/analyze/*` | M | M | 없음 | precision 절차 준수 | precision/redos 테스트 | P2 |
 | R29 | 비밀값 저장 최소화 | MCP args/url, server.json, catalog hint 원문 저장 | 저자가 실수로 넣은 토큰 보존 (I11) | env 키만 저장하는 규칙을 args/url/hint 에도 적용 | `mcp.ts:59-60, 143`, `catalog.ts:44, 60` | L | S | 없음 | 표시 정보 감소 | detector 테스트 | P1 |
 | R30 | SEO 기본 | robots/sitemap/icon/OG 없음 | 검색 유입·공유 품질 | Next 파일 규칙 사용, 검색 결과와 jobs 는 noindex | `src/app/robots.ts` 등 | L | S | 없음 | 낮음 | 사이트 확인 | P2 |

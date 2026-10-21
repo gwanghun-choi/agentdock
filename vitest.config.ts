@@ -1,16 +1,23 @@
-import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { isolateTestEnvironment } from './src/db/testDatabase.ts';
 
-// Bun loads .env only for processes running on the Bun runtime; vitest runs on
-// Node, so it would otherwise see no DATABASE_URL and silently skip every
-// database-backed test on a machine that has a database. Node 22's stdlib
-// loader closes that gap with no dependency. CI has no .env, so the guarded
-// suites still skip there — visibly, in the test output.
-// CI is set by GitHub Actions, so `CI=1 bun run test` locally reproduces exactly
-// what the runner does — which is how the "skips visibly without a database"
-// claim stays checkable instead of assumed.
-if (!process.env.CI && existsSync('.env')) process.loadEnvFile('.env');
+// The suites never read a connection string from .env, from the shell's
+// DATABASE_URL, or from anything Bun loaded on the way here. This file used to
+// load .env itself (process.loadEnvFile) so a developer's machine would run the
+// database suites; on 2026-10-21 that is how a review agent's plain
+// `bunx vitest run` connected a suite to the deployment's database.
+//
+// Now DATABASE_URL is cleared and taken only from TEST_DATABASE_URL, which must
+// name the disposable local PostgreSQL or this throws before a single test file
+// loads (src/db/testDatabase.ts). Here it runs in vitest's main process, so a
+// bad TEST_DATABASE_URL stops the run before any worker starts.
+//
+// And again in every worker, via setupFiles, before its test file is imported:
+// under `bunx --bun vitest` each worker is a Bun process, and Bun loads .env on
+// startup — measured 2026-10-21, a worker saw .env's DATABASE_URL although the
+// main process had deleted it, and one suite reached that host.
+isolateTestEnvironment(process.env);
 
 export default defineConfig({
   test: {
@@ -32,6 +39,7 @@ export default defineConfig({
     // .tsx is here because the injection suite renders components. Without it
     // the whole suite would pass by never running.
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.ts'],
+    setupFiles: ['./src/db/testPreload.ts'],
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

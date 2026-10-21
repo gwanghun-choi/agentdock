@@ -53,6 +53,8 @@ export async function fetchRepoScanInputs(
   repo: string,
   selectPaths: (tree: RepoTree, metadata: RepoMetadata) => string[],
   knownSha?: string | null,
+  /** The stored read of knownSha was partial (repository.tree_truncated). */
+  knownPartial = false,
 ): Promise<ScanInputs> {
   const deadline = Date.now() + CAPS.wallClockMs;
 
@@ -76,15 +78,41 @@ export async function fetchRepoScanInputs(
   // Placed after the tree is bounded and before any path is selected, so the
   // tree handed back is the same shape the full path would have produced and no
   // caller has to know which branch ran.
+  //
+  // Except a stored PARTIAL read of this same commit, when the tree shows no
+  // reason it has to be partial again: GitHub did not truncate the tree and
+  // the wanted paths fit under maxFiles. Then what cut the last read was a
+  // raw read that failed or the wall clock, both transient, and short-
+  // circuiting here kept that partial listing until the next upstream commit
+  // (R6). A deterministic cut — a truncated tree, more wanted paths than
+  // maxFiles — still short-circuits, or davila7/claude-code-templates (896
+  // skill paths) would re-read 400 files on every refresh for nothing.
+  // A wanted file over maxFileBytes is a deterministic cut too, and the tree
+  // shows it: a blob entry's size is its byte length, the same bytes
+  // readCapped counts. ponytail: a 404 on one raw path is not visible here, so
+  // such a repository still re-reads its (at most maxFiles) files each refresh
+  // until its next commit. Raw reads cost no core quota; store the skip reason
+  // (additive column) if that shows up in run durations.
+  let wanted: string[] | undefined;
   if (knownSha && bounded.commitSha === knownSha) {
-    return {
-      metadata,
-      tree: bounded,
-      files: new Map(),
-      skipped: [],
-      artifactsTruncated: false,
-      unchanged: true,
-    };
+    if (knownPartial && !tree.truncated) wanted = selectPaths(bounded, metadata);
+    const oversized = new Set(
+      bounded.entries.filter((e) => (e.size ?? 0) > CAPS.maxFileBytes).map((e) => e.path),
+    );
+    if (
+      wanted === undefined ||
+      wanted.length > CAPS.maxFiles ||
+      wanted.some((path) => oversized.has(path))
+    ) {
+      return {
+        metadata,
+        tree: bounded,
+        files: new Map(),
+        skipped: [],
+        artifactsTruncated: false,
+        unchanged: true,
+      };
+    }
   }
 
   // The metadata is handed to the selector as well as the tree, because the
@@ -95,7 +123,7 @@ export async function fetchRepoScanInputs(
   // parameter keeps every policy out of this module: this function still knows
   // only "the caller asked for these paths", and an empty list costs zero raw
   // reads by construction rather than by a second branch.
-  const wanted = selectPaths(bounded, metadata);
+  wanted ??= selectPaths(bounded, metadata);
   const taken = wanted.slice(0, CAPS.maxFiles);
   const skipped = wanted.slice(CAPS.maxFiles);
 

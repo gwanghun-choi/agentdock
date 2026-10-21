@@ -109,4 +109,52 @@ export const CORPUS_CAPS = {
    * rate_limited error mid-sweep.
    */
   searchRequestSpacingMs: 6_500,
+  /**
+   * The same four numbers when a GITHUB_TOKEN is set (src/corpus/budget.ts
+   * picks between the two sets). Core is 5,000 an hour authenticated, so the
+   * 25s above spent about 1% of it; search is 30 a minute against 10.
+   *
+   * 100 + 100 repositories x 2 core requests = 400 of 5,000 (8%), leaving the
+   * rest of the hour for retries and a by-hand run. Drain defaults to their sum
+   * so a run can consume what it queued instead of growing the queue by one
+   * run's refresh offer every time (25 enqueued + 25 refreshed against 25
+   * drained grew it by 25 a run until MAX_QUEUED). These are NOT measured
+   * against production timings — drainDeadlineMs is what bounds the run's wall
+   * clock, and the run prints how much of the cap it left unspent.
+   *
+   * Search: 2,500 ms spacing is 24 a minute, under the authenticated 30 with
+   * the same margin 6,500 ms keeps under 10; 150 requests at that spacing is
+   * 6.25 minutes, the same wall clock as 60 unauthenticated requests.
+   */
+  authenticated: {
+    maxEnqueuePerSync: 100,
+    maxRefreshPerSync: 100,
+    maxSearchRequests: 150,
+    searchRequestSpacingMs: 2_500,
+  },
+  /**
+   * How long after the sync started the drain stops claiming new jobs.
+   * sync.yml's timeout-minutes is 60, and one repository can hold the loop for
+   * scan.ts's CAPS.wallClockMs (120 s) plus two 10 s API timeouts, so 35
+   * minutes leaves room for the last claim, the summary and a slow Neon wake
+   * well inside the kill. Applies with or without a token; unauthenticated, the
+   * core budget stops the drain first.
+   */
+  drainDeadlineMs: 35 * 60_000,
+  /**
+   * How far a stored repository's failed checks push its next one out: the
+   * staleness window doubles per consecutive failure, up to 2^4 = 16 times
+   * (8 days at the scheduled 12 h). A 404 or a too_large is usually still that
+   * tomorrow, so re-asking every run spent two core requests and a refresh slot
+   * per run on each; capped, because a repository that comes back (made public
+   * again, trimmed under the cap) must still be found within days. Never a
+   * removal: the artifacts stay listed throughout (src/corpus/refresh.ts).
+   */
+  maxCheckBackoffDoublings: 4,
+  /**
+   * A topic-sweep shard whose query fails this many runs in a row is dropped
+   * from the resume stack (and printed), so one bad query no longer parks its
+   * topic for good. The next full pass of that topic asks for it again.
+   */
+  maxShardFailures: 3,
 } as const;

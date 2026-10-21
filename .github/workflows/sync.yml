@@ -36,9 +36,10 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    # A typical run is minutes; the bound is 25 drained jobs, each capped at
-    # 120 s of file reads (src/github/scan.ts) plus a sweep of ~6.5 min. A run
-    # stopped here is recovered by the next one, as above.
+    # With a token the drain claims no new job 35 min after the run started
+    # (CORPUS_CAPS.drainDeadlineMs), and the job in hand is capped at 120 s of
+    # file reads (src/github/scan.ts), so a run ends near 40 min. A run stopped
+    # here is recovered by the next one, as above.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

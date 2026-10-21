@@ -52,7 +52,7 @@ export function JobPanel({ job, retry }: { job: JobView; retry?: ReactNode }) {
         <p className="lede">
           {waiting
             ? `Waiting until ${job.nextAttemptAt.toISOString().slice(11, 16)} UTC before trying again.`
-            : 'Queued. AgentDock will start reading it shortly.'}
+            : 'Queued. The next scheduled sync reads it, which can be several hours away.'}
         </p>
       ) : null}
       {job.status === 'running' ? <p className="lede">Reading it now.</p> : null}

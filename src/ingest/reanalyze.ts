@@ -116,10 +116,13 @@ export async function analyzePackageVersion(packageVersionId: number): Promise<n
 
     // Set even when zero findings exist — "analyzed, nothing found" is a
     // stored state distinct from "never analyzed" (CAP-11), the same
-    // discipline persist.ts already applies on the ingest path.
+    // discipline persist.ts already applies on the ingest path. Cleared, not
+    // set, when an analyzer threw: the findings above are then missing that
+    // analyzer's share, and the old ones were just deleted.
+    const complete = Object.keys(pass.errors).length === 0;
     await tx
       .update(packageVersion)
-      .set({ analyzedAt: sql`now()` })
+      .set({ analyzedAt: complete ? sql`now()` : null })
       .where(eq(packageVersion.id, packageVersionId));
 
     // The count of rows actually written, not analyzeArtifact's raw output

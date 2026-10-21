@@ -26,6 +26,8 @@
     "db:test:generate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun --bun drizzle-kit generate",
     "db:test:migrate": "DATABASE_SCHEMA=agentdock_test MIGRATIONS_OUT=.drizzle-test bun scripts/migrate.mjs",
     "db:test:setup": "bun run db:test:generate && bun run db:test:migrate",
+    "db:test:bootstrap": "psql postgres://postgres@127.0.0.1:55432/agentdock_test -q -f scripts/sql/bootstrap-test-database.sql",
+    "db:test:migrations": "DATABASE_SCHEMA=agentdock bun scripts/migrate.mjs --test-database",
     "db:test:reset": "bun scripts/test-reset.mjs"
   },
   "dependencies": {

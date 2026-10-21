@@ -16,7 +16,7 @@ import { type AttemptOutcome, type IngestOutcome, messageFor, toIngestOutcome } 
 import {
   type DiffCounters,
   type JobContext,
-  lastIngestedSha,
+  lastIngestedState,
   persistScan,
   touchRepository,
 } from './persist';
@@ -89,10 +89,11 @@ function runAnalysis(
   detectorErrors: string[],
 ) {
   const pass = analyzeArtifact(ANALYZERS, { sourcePath, body, frontmatter, meta, files: [] });
-  for (const [id, message] of Object.entries(pass.errors)) {
+  const errors = Object.entries(pass.errors);
+  for (const [id, message] of errors) {
     detectorErrors.push(`analyze:${id}: ${message}`);
   }
-  return pass.findings;
+  return { findings: pass.findings, analysisIncomplete: errors.length > 0 };
 }
 
 export async function ingestRepository(
@@ -173,7 +174,8 @@ export async function ingestRepository(
     // this codebase matches. A renamed repository misses and takes the full
     // path, which is correct: a rename is exactly when the stored row and the
     // fetched one need reconciling.
-    const known = await lastIngestedSha(fullName);
+    const stored = await lastIngestedState(fullName);
+    const known = stored.sha;
 
     // The needs callback captures the pass and the candidate loop below reuses
     // it, instead of calling match() a second time over the same bounded tree.
@@ -217,6 +219,7 @@ export async function ingestRepository(
         return orderedNeeds(passes);
       },
       known,
+      stored.partial,
     );
 
     // Read back after the fetch rather than thrown from inside the callback: a
@@ -318,7 +321,7 @@ export async function ingestRepository(
         // Free: the tree is already fully in memory, and this is a filter
         // over it, not a fetch. Written on every scan, not gated on a new
         // version — see ScannedPackage.files's own doc for why.
-        const files = fileInventory(inputs.tree.entries, candidate.sourcePath);
+        const files = fileInventory(inputs.tree.entries, candidate);
 
         // Not an artifact and not a package — path-only match() could not know.
         if (result.status === 'none') continue;
@@ -358,7 +361,7 @@ export async function ingestRepository(
             parseStatus: 'failed',
             parseErrors: result.errors,
             parentPath: candidate.parentPath ?? null,
-            findings: runAnalysis(candidate.sourcePath, body, {}, {}, detectorErrors),
+            ...runAnalysis(candidate.sourcePath, body, {}, {}, detectorErrors),
             files,
           });
           continue;
@@ -381,7 +384,7 @@ export async function ingestRepository(
           parseStatus: result.status,
           parseErrors: result.warnings,
           parentPath: candidate.parentPath ?? null,
-          findings: runAnalysis(
+          ...runAnalysis(
             candidate.sourcePath,
             body,
             result.artifact.frontmatter,
@@ -420,6 +423,7 @@ export async function ingestRepository(
       // Either the tree itself was cut short, or a cap stopped some files being
       // read. Both mean the same thing to a reader: this listing is incomplete.
       treeTruncated: inputs.tree.truncated || inputs.artifactsTruncated,
+      undetectedTypes: passes.filter((p) => p.error).map((p) => p.detector.type),
       packages,
       seeds,
     };

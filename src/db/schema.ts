@@ -92,6 +92,15 @@ export const repository = agentdock.table(
     topics: text('topics').array().notNull().default(sql`'{}'::text[]`),
     pushedAt: timestamp('pushed_at', { withTimezone: true }), // upstream changed
     scannedAt: timestamp('scanned_at', { withTimezone: true }), // AgentDock looked
+    // When AgentDock last ASKED, whether or not it could read. scanned_at stays
+    // "read on" (the UI prints it as such); a stored repository that turns 404,
+    // too_large or keeps failing used to keep its old scanned_at and head every
+    // refresh forever. Null on rows written before 0008 — the refresh falls
+    // back to scanned_at, so no backfill.
+    checkedAt: timestamp('checked_at', { withTimezone: true }),
+    // Consecutive checks that ended without a read. Zero after any read. Spaces
+    // the next re-check out (src/corpus/refresh.ts); never hides or delists.
+    checkFailures: integer('check_failures').notNull().default(0),
     etag: text('etag'),
     lastIngestedSha: text('last_ingested_sha'),
     treeTruncated: boolean('tree_truncated').notNull().default(false),
@@ -144,7 +153,8 @@ export const packageTable = agentdock.table(
     parentPath: text('parent_path'),
     delistedAt: timestamp('delisted_at', { withTimezone: true }),
     /**
-     * The file inventory: every blob under this artifact's directory prefix,
+     * The file inventory: every blob this artifact owns — a skill's or a
+     * plugin's directory, or a command's, hook's or MCP config's one file —
      * from the tree AgentDock already fetched (src/analyze/files.ts). On
      * `package`, deliberately NOT on `package_version` — a version is minted
      * by contentHash over the manifest's own bytes, so adding a script beside
@@ -153,7 +163,7 @@ export const packageTable = agentdock.table(
      * by the same upsert that already runs on every scan (persist.ts), so a
      * commit where the tree moved but the manifest did not still refreshes
      * this column. Capped at ANALYZE_CAPS.maxInventoryEntries; the largest
-     * real inventory measured is 83 entries.
+     * skill inventory measured is 83 entries, a root plugin's 184.
      */
     files: jsonb('files').$type<FileEntry[]>().notNull().default(sql`'[]'::jsonb`),
     /**

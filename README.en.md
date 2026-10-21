@@ -171,7 +171,21 @@ AgentDock scheduled sync
   Other failures                 0
 
   GitHub core requests left      0 of 60
+  GitHub core requests spent    24
+  Budget                        unauthenticated
   Duration                      94s
+
+  Discovered this run
+    registry                    40 seed(s) written
+    seeds                       15 seed(s) written
+    links                       0 seed(s) written
+    search                      12 seed(s) written
+  Enqueued this run             25
+    new from seeds              0
+    new from search             7
+    new from links              0
+    new from backlog            8
+    re-checks of stored repos   10
 ```
 
 Every cap prints what it dropped. A run that stops on an exhausted budget says
@@ -307,7 +321,9 @@ Nothing is indexed yet, and the dev server will not index anything. To fill it:
 bun run db:seed
 bun run db:seed baoyu-skills
 
-# Or the real thing, bounded. ~25 repositories and 50 of 60 core requests.
+# Or the real thing, bounded. Unauthenticated: ~25 repositories and 50 of 60 core
+# requests. With GITHUB_TOKEN: up to 100 new + 100 re-checks, stopped 35 minutes
+# after the start (src/corpus/caps.ts, `authenticated` and `drainDeadlineMs`).
 bun run sync
 ```
 
@@ -435,14 +451,32 @@ bun run ci     # boundary scan, lint, type-check, tests — exactly what CI runs
 real repositories pinned to a commit SHA, plus hand-written hostile inputs
 (`adversarial/`, `xss/`), and the whole suite runs against those bytes.
 
-Database-backed suites use the `agentdock_test` schema and skip visibly when
-there is no `DATABASE_URL`, so CI stays green without a database while a local
-run exercises the real queries.
+Database-backed suites run **only against a disposable local PostgreSQL**. No
+test reads a connection string from `.env` or from the shell's `DATABASE_URL`:
+`vitest.config.ts`, every worker, and `bun test`'s preload clear `DATABASE_URL`
+and take one only from `TEST_DATABASE_URL`, and only when it is exactly a
+loopback host (`127.0.0.1`, `localhost`, `[::1]`), port `55432`, database
+`agentdock_test`, no query string — otherwise nothing starts
+(`src/db/testDatabase.ts`). A Neon host is refused by name, and no message
+quotes the URL. Without `TEST_DATABASE_URL` the database suites skip visibly.
 
 ```bash
-bun run db:test:setup     # build agentdock_test (DDL only — deletes nothing)
-bun run db:test:reset     # empty it (the schema name is a literal in the script)
+# The disposable test database (trust auth — no password anywhere, loopback only)
+docker run -d --name agentdock-testdb -e POSTGRES_DB=agentdock_test \
+  -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 postgres:17
+export TEST_DATABASE_URL=postgres://agentdock_app@127.0.0.1:55432/agentdock_test
+
+bun run db:test:bootstrap   # role, both schemas, pg_trgm (a deployment's superuser step)
+bun run db:test:setup       # build agentdock_test from schema.ts (DDL only — deletes nothing)
+bun run db:test:migrations  # the reviewed drizzle/ files, into agentdock in the same database
+bun run test                # with the DB suites; src/db/migrations.test.ts compares the two
+bun run db:test:reset       # empty it (the schema name is a literal in the script)
 ```
+
+`db:test:*` and `db:test:migrations` read `TEST_DATABASE_URL`, never
+`DATABASE_URL`: Bun loads `.env` on its own, so they used to reach whatever
+database `.env` named. CI's `database` job runs the same container and the same
+commands (`.github/workflows/ci.yml`).
 
 Vitest runs test **files in parallel** against that one schema, so a
 database-backed suite keys its rows on a sentinel no other suite can produce.
@@ -457,7 +491,7 @@ database-backed suite keys its rows on a sentinel no other suite can produce.
 | `bun run corpus:sync --source=…` | The same machinery with sources and caps exposed, for filling an index by hand |
 | `bun run corpus:reset --confirm` | Empty the corpus. Refuses unless `AGENTDOCK_ALLOW_CORPUS_RESET=1` as well. Drops nothing. |
 | `bun run ci` | Boundary scan, lint, type-check, tests |
-| `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which hangs on these files. |
+| `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which also executes these files and loads `.env`, so `bunfig.toml`'s preload applies the same test-database isolation. |
 | `bun run lint` / `bun run format` | Biome, check and write |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run check:boundaries` | The migration and source boundary scan |
@@ -465,7 +499,9 @@ database-backed suite keys its rows on a sentinel no other suite can produce.
 | `bun run db:migrate` | Apply the reviewed migrations in `drizzle/` |
 | `bun run db:seed [fixture]` | Ingest a frozen fixture through the real pipeline |
 | `bun run db:reset --confirm` | Drop every table in `agentdock` (development only) |
-| `bun run db:test:setup` / `db:test:reset` | Build / empty the test schema |
+| `bun run db:test:bootstrap` | Role, schemas and pg_trgm in the disposable test database |
+| `bun run db:test:setup` / `db:test:reset` | Build / empty the test schema (reads `TEST_DATABASE_URL` only) |
+| `bun run db:test:migrations` | Apply the reviewed `drizzle/` migrations to the test database's `agentdock` |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
 | `bun run analyze:backfill [limit]` | Re-run the capability analyzers over stored bytes. Issues no GitHub request. |
 
@@ -475,7 +511,8 @@ application's data; `bun run check:boundaries` fails the build if such a script
 ever appears.
 
 CI runs `bun run build` and then `bun run ci` — the same commands you run, so the
-two cannot drift. The build comes first because it regenerates a type
+two cannot drift — and, in a second job, the database suites against a
+PostgreSQL 17 service container. The build comes first because it regenerates a type
 declaration the linter then reads.
 
 ## Security Considerations
@@ -491,7 +528,9 @@ observation rather than judgement:
 - *No bundled script files*
 
 Each of those describes what AgentDock looked at, not everything an artifact can
-do. The interface says so on every page that shows one. Null and empty are kept
+do. The network and Bash filters list only skills and commands whose latest
+version was analyzed to the end — the other types carry no text those analyzers
+read, and an unanalyzed version is not evidence of absence. The script filter lists only skills and plugins, whose file list is a directory, and only when that list was not cut at its 200-entry cap. The interface says so on every page that shows one. Null and empty are kept
 distinct throughout: an artifact analysed and found to declare nothing reads
 differently from one nothing has analysed.
 

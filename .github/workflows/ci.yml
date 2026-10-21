@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# Checkout only. Neither job needs a secret: the database job's PostgreSQL is a
+# service container on the runner, and no step reaches GitHub's API.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -37,3 +42,50 @@ jobs:
       # single command a developer runs locally, so the two cannot drift.
       # No database and no secret are involved: every check reads files.
       - run: bun run ci
+
+  # The database-backed suites, which the job above skips by having no URL.
+  # The same disposable PostgreSQL a developer runs locally (README, Testing):
+  # postgres:17, trust auth, port 55432, database agentdock_test — the only
+  # shape src/db/testDatabase.ts lets a test connect to. Nothing here can name
+  # the deployment's database: no secret is read, and the URL is the literal
+  # below. The service container is removed when the job ends.
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: agentdock_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d agentdock_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgresql://agentdock_app@127.0.0.1:55432/agentdock_test
+      # A missing URL fails the run instead of skipping every suite green.
+      REQUIRE_TEST_DATABASE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      # Role, both schemas and pg_trgm, as a deployment's superuser would.
+      - run: bun run db:test:bootstrap
+
+      # agentdock_test from schema.ts, which every suite writes to; then the
+      # reviewed drizzle/ files into agentdock, which src/db/migrations.test.ts
+      # compares against it.
+      - run: bun run db:test:setup
+      - run: bun run db:test:migrations
+
+      - run: bun run test

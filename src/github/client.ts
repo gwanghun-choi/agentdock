@@ -30,7 +30,17 @@ export class GitHubError extends Error {
   }
 }
 
-/** The most recent rate-limit headers seen, for the UI to surface honestly. */
+/**
+ * The most recent CORE rate-limit headers seen. Only core: every caller of
+ * rateLimitState() — the drain gate in corpus-sync.mjs, the attempt record —
+ * is asking whether another two core requests can be spent. A search response
+ * carries `x-ratelimit-resource: search` and the search bucket's numbers (30 a
+ * minute with a token, against core's 5,000 an hour), and recording it here
+ * made a fresh search page read as "29 left" or, at the bucket's end, "0 left"
+ * about core — which paused the drain on a core budget that was nearly full.
+ * A response with no resource header is counted as core, which is what GitHub
+ * documents for the REST endpoints this module calls.
+ */
 let lastRateLimit: RateLimit | null = null;
 export function rateLimitState(): RateLimit | null {
   return lastRateLimit;
@@ -151,17 +161,52 @@ function readRateLimit(res: Response): RateLimit | undefined {
   const reset = Number(res.headers.get('x-ratelimit-reset'));
   if (!Number.isFinite(limit) || !Number.isFinite(remaining)) return undefined;
   const state: RateLimit = { limit, remaining, reset: Number.isFinite(reset) ? reset : 0 };
-  lastRateLimit = state;
+  const resource = res.headers.get('x-ratelimit-resource');
+  if (resource === null || resource === 'core') lastRateLimit = state;
   return state;
 }
 
 /**
+ * GitHub's secondary limits answer 403/429 with `retry-after` while the primary
+ * bucket still has quota, so the primary reset — up to an hour away — is the
+ * wrong time to come back. The header is delta-seconds or an HTTP-date (RFC
+ * 9110 allows both; a date used to parse to NaN and fall back to the primary
+ * reset). A secondary limit that sends no header at all is, per GitHub's docs,
+ * "wait at least one minute". Anything unparseable falls back to the primary
+ * reset, and rateLimitedUntil (src/ingest/retry.ts) clamps whatever this
+ * returns.
+ */
+function retryAfterReset(res: Response, rl: RateLimit | undefined): RateLimit | undefined {
+  const header = res.headers.get('retry-after')?.trim();
+  const now = Date.now() / 1000;
+  let seconds: number;
+  if (header === undefined) {
+    if (rl === undefined || rl.remaining === 0) return rl;
+    seconds = 60;
+  } else if (/^\d+$/.test(header)) {
+    seconds = Number(header);
+  } else {
+    seconds = Date.parse(header) / 1000 - now;
+    if (!Number.isFinite(seconds)) return rl;
+  }
+  return {
+    limit: rl?.limit ?? 0,
+    remaining: rl?.remaining ?? 0,
+    reset: Math.ceil(now + Math.max(seconds, 0)),
+  };
+}
+
+/**
  * Exhaustion is a header fact, not a status fact. GitHub documents both 403 and
- * 429 for it, and a 403 with quota left is a permissions response. Branching on
- * the status alone mislabels both directions.
+ * 429 for it, and a 403 with quota left is a permissions response. A 429 is
+ * Too Many Requests whatever its headers say — GitHub sends secondary limits
+ * as 429 without retry-after too — and reading one as `unavailable` used to
+ * spend its job's retries, then count a failed check against a repository
+ * that had done nothing wrong.
  */
 function isRateLimited(res: Response, rl: RateLimit | undefined): boolean {
-  if (res.status !== 403 && res.status !== 429) return false;
+  if (res.status === 429) return true;
+  if (res.status !== 403) return false;
   return res.headers.has('retry-after') || rl?.remaining === 0;
 }
 
@@ -218,12 +263,48 @@ export async function githubFetch(
     }
 
     if (isRateLimited(res, rateLimit)) {
-      throw new GitHubError('rate_limited', 'GitHub rate limit reached.', rateLimit);
+      throw new GitHubError(
+        'rate_limited',
+        'GitHub rate limit reached.',
+        retryAfterReset(res, rateLimit),
+      );
     }
     return { response: res, rateLimit };
   }
 
   throw new GitHubError('unavailable', 'GitHub redirected too many times.');
+}
+
+/**
+ * The core bucket as GitHub reports it, read from GET /rate_limit, which
+ * GitHub documents as not counting against any bucket. The sync calls it
+ * before and after its drain, so the summary prints requests actually spent
+ * rather than a per-repository estimate. Null on any failure: the number is
+ * reporting, never a gate, and must not fail a run.
+ */
+export async function fetchCoreRateLimit(): Promise<RateLimit | null> {
+  try {
+    const { response } = await githubFetch('https://api.github.com/rate_limit', {
+      headers: { accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok) return null;
+    const body = JSON.parse(await readCapped(response, 64 * 1024)) as {
+      resources?: { core?: { limit?: unknown; remaining?: unknown; reset?: unknown } };
+    };
+    const core = body.resources?.core;
+    if (
+      typeof core?.limit !== 'number' ||
+      typeof core.remaining !== 'number' ||
+      typeof core.reset !== 'number'
+    ) {
+      return null;
+    }
+    const state: RateLimit = { limit: core.limit, remaining: core.remaining, reset: core.reset };
+    lastRateLimit = state;
+    return state;
+  } catch {
+    return null;
+  }
 }
 
 /**

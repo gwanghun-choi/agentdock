@@ -1,7 +1,8 @@
-import { and, asc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, eq, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { enqueueJob } from '@/db/queries/jobs';
 import { repository } from '@/db/schema';
+import { CORPUS_CAPS } from './caps';
 
 export type RefreshResult = {
   considered: number;
@@ -21,6 +22,12 @@ export type RefreshResult = {
    * prints nothing reads as "we covered everything".
    */
   notReached: number;
+  /**
+   * Stored repositories whose last check read nothing (404 or private, too
+   * large, retries spent), across the corpus. Their artifacts stay listed; the
+   * number is here so a growing one is visible in the summary.
+   */
+  failingChecks: number;
 };
 
 /**
@@ -57,21 +64,41 @@ export async function refreshStaleRepositories(options: {
 }): Promise<RefreshResult> {
   const cutoff = new Date(Date.now() - options.staleAfterMs);
 
-  // NULLS FIRST is not decoration. A repository row with no scanned_at was
-  // written by a path that never completed a scan, so it is the most stale
-  // thing there is; default DESC-style null ordering would park it at the back
-  // forever.
+  // When AgentDock last asked, read or not. scanned_at alone used to be the
+  // key, and it only moves on a read — so a stored repository that turned 404
+  // or too_large kept the oldest scanned_at in the corpus and took a slot at
+  // the head of every refresh, forever (R1). checked_at moves on every check;
+  // null on rows from before migration 0008, hence the fallback.
+  const lastAsked = sql`coalesce(${repository.checkedAt}, ${repository.scannedAt})`;
+
+  // Due when the last check is older than the window, doubled per consecutive
+  // failed check (CORPUS_CAPS.maxCheckBackoffDoublings). A repository that
+  // reads normally has check_failures = 0, so for it this is exactly the old
+  // `scanned_at < cutoff`. ISO string and an explicit cast, because postgres.js
+  // cannot infer a type for a Date inside a raw fragment.
+  const due = sql`${lastAsked} < ${cutoff.toISOString()}::timestamptz - ${options.staleAfterMs}
+    * (power(2, least(${repository.checkFailures}, ${CORPUS_CAPS.maxCheckBackoffDoublings})) - 1)
+    * interval '1 millisecond'`;
+
+  // NULLS FIRST is not decoration. A repository row never read and never
+  // checked was written by a path that never completed a scan, so it is the
+  // most stale thing there is; default DESC-style null ordering would park it
+  // at the back forever.
+  //
+  // ponytail: a sequential scan over repository per sync, which at the corpus's
+  // thousands of rows is milliseconds. The upgrade is one expression index on
+  // coalesce(checked_at, scanned_at), additive, when the table reaches 10^5.
   const stale = and(
     eq(repository.isFork, false),
     eq(repository.isArchived, false),
-    or(isNull(repository.scannedAt), lt(repository.scannedAt, cutoff)),
+    or(sql`${lastAsked} is null`, due),
   );
 
   const targets = await db
     .select({ fullName: repository.fullName })
     .from(repository)
     .where(stale)
-    .orderBy(sql`${repository.scannedAt} asc nulls first`, asc(repository.id))
+    .orderBy(sql`${lastAsked} asc nulls first`, asc(repository.id))
     .limit(options.limit);
 
   let enqueued = 0;
@@ -100,7 +127,12 @@ export async function refreshStaleRepositories(options: {
   // and "how many did this run offer" are the same definition of stale. The
   // rows this run enqueued are still stale by it — scanned_at only moves when
   // the job actually runs — so they are subtracted rather than counted twice.
-  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(repository).where(stale);
+  const [row] = await db
+    .select({
+      n: sql<number>`count(*) filter (where ${stale})::int`,
+      failing: sql<number>`count(*) filter (where ${repository.checkFailures} > 0)::int`,
+    })
+    .from(repository);
 
   return {
     considered: targets.length,
@@ -108,5 +140,6 @@ export async function refreshStaleRepositories(options: {
     denylisted,
     flooded,
     notReached: Math.max(0, (row?.n ?? 0) - targets.length),
+    failingChecks: row?.failing ?? 0,
   };
 }

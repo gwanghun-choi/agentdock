@@ -155,8 +155,10 @@ describe('SkillBody — ordinary Markdown still works', () => {
 
   it('renders headings, lists, extended tables, fenced code and emphasis', () => {
     const html = render(source);
-    expect(html).toContain('<h1>Heading one</h1>');
-    expect(html).toContain('<h2>Heading two</h2>');
+    // Two levels down: the body sits under the page's h1 and its <h2>File</h2>
+    // (U2 — a body `#` used to be a second h1 on the page).
+    expect(html).toContain('<h3>Heading one</h3>');
+    expect(html).toContain('<h4>Heading two</h4>');
     expect(html).toContain('<li>first</li>');
     // remark-gfm: tables and strikethrough are the extended syntax.
     expect(html).toContain('<table>');
@@ -204,5 +206,41 @@ describe('SkillBody — ordinary Markdown still works', () => {
     const big = `# Big\n\n${'word '.repeat(20_000)}`;
     expect(big.length).toBeGreaterThan(100_000);
     expect(() => render(big)).not.toThrow();
+  });
+});
+
+describe('SkillBody — document structure (U1, U2)', () => {
+  it('shows leading frontmatter as a yaml block, not as a rule and a setext heading', () => {
+    const html = render('---\nname: pdf\ndescription: Extract text\n---\n\n# PDF\n\nBody.');
+    expect(html).not.toContain('<hr');
+    expect(html).not.toMatch(/<h2>[^<]*description/);
+    expect(html).toContain('language-yaml');
+    expect(html).toContain('description: Extract text');
+  });
+
+  it('a frontmatter value holding a fence cannot close the block early', () => {
+    const html = render('---\nnote: "```"\n---\n\nAfter.');
+    expect(html).toContain('note: &quot;```&quot;');
+    expect(html).toMatch(/<\/pre>\s*<p>After\.<\/p>/);
+  });
+
+  it("renders the body headings below the page's own h1 and h2", () => {
+    const html = render('# Title\n\n## Section\n\n### Sub\n\n###### Deep');
+    expect(html).not.toContain('<h1');
+    expect(html).not.toContain('<h2');
+    expect(html).toContain('<h3>Title</h3>');
+    expect(html).toContain('<h4>Section</h4>');
+    expect(html).toContain('<h5>Sub</h5>');
+    expect(html).toContain('<h6>Deep</h6>');
+  });
+
+  it('leaves a body with no frontmatter as it was', () => {
+    expect(render('Plain --- text\n\n---\n\nafter')).toContain('<hr');
+  });
+
+  it('a body that opens on a rule is not frontmatter', () => {
+    const html = render('---\n\n# Title\n\nIntro\n\n---\n\nMore');
+    expect(html).not.toContain('language-yaml');
+    expect(html).toContain('<h3>Title</h3>');
   });
 });

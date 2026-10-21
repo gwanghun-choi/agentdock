@@ -277,7 +277,10 @@ Read the summary it prints. Unauthenticated, one run reads about 25
 repositories and then stops with `fewer than two GitHub core requests remain`,
 which is correct and not an error — whatever is still queued is read by the next
 run. Rebuilding a corpus of *n* repositories therefore takes roughly *n*/25
-runs, or *n*/30 hours.
+runs, or *n*/30 hours. With `GITHUB_TOKEN` set the scheduled run offers up to 100
+new repositories and 100 re-checks and drains up to 200, stopping 35 minutes
+after it started so it ends well inside a 60-minute job timeout
+(`src/corpus/caps.ts`); the summary prints how much of the cap it left unspent.
 
 Run it a second time and check that repositories read by the first run are **not
 re-read**: the refresh pass only offers repositories whose last read is older

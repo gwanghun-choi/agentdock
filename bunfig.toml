@@ -1,0 +1,5 @@
+# Bun's own runner (`bun test`) also executes these vitest suites, and Bun
+# loads .env into process.env before anything else runs. The preload applies
+# the same isolation vitest.config.ts does, before the first test file loads.
+[test]
+preload = ["./src/db/testPreload.ts"]

@@ -68,6 +68,9 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
         topics: scan.topics,
         pushedAt: scan.pushedAt,
         scannedAt: scan.scannedAt,
+        // A read is also a check, and ends any run of failed ones (refresh.ts).
+        checkedAt: scan.scannedAt,
+        checkFailures: 0,
         etag: scan.etag,
         lastIngestedSha: scan.commitSha,
         treeTruncated: scan.treeTruncated,
@@ -89,6 +92,9 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
           topics: scan.topics,
           pushedAt: scan.pushedAt,
           scannedAt: scan.scannedAt,
+          // A read is also a check, and ends any run of failed ones (refresh.ts).
+          checkedAt: scan.scannedAt,
+          checkFailures: 0,
           etag: scan.etag,
           lastIngestedSha: scan.commitSha,
           treeTruncated: scan.treeTruncated,
@@ -178,16 +184,45 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
 
       newVersions += inserted.length;
 
+      // A→B→A: the content went back to a version this package already holds,
+      // so the insert conflicted and minted nothing — and "latest" (ingested_at
+      // DESC, packages.ts and search.ts) kept pointing at B, showing a body and
+      // findings the repository no longer has. Moving A's ingested_at to now
+      // makes it latest again with no new column; ingested_at is read only as
+      // that ordering, never rendered. Guarded by "not already latest", so the
+      // ordinary unchanged artifact costs this one indexed no-op UPDATE.
+      let reverted = false;
+      if (inserted.length === 0) {
+        const bumped = await tx
+          .update(packageVersion)
+          .set({ ingestedAt: sql`now()` })
+          .where(
+            and(
+              eq(packageVersion.packageId, pkg.id),
+              eq(packageVersion.contentHash, found.contentHash),
+              sql`${packageVersion.id} <> (
+                select z.id from ${packageVersion} z
+                where z.package_id = ${pkg.id}
+                order by z.ingested_at desc limit 1
+              )`,
+            ),
+          )
+          .returning({ id: packageVersion.id });
+        reverted = bumped.length > 0;
+      }
+
       // Analysis findings exist for exactly one reason: a new version row was
       // created. On the conflict branch there is no id to key them on, and the
       // findings for that content are already stored from when it was new —
       // which is how Phase 2's (package_id, content_hash) unique constraint
       // makes CAP-13's idempotency free rather than a code path that can race.
       if (inserted.length > 0) {
-        await tx
-          .update(packageVersion)
-          .set({ analyzedAt: sql`now()` })
-          .where(eq(packageVersion.id, inserted[0].id));
+        if (!found.analysisIncomplete) {
+          await tx
+            .update(packageVersion)
+            .set({ analyzedAt: sql`now()` })
+            .where(eq(packageVersion.id, inserted[0].id));
+        }
 
         if (found.findings.length > 0) {
           await tx
@@ -230,7 +265,7 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
       const wasDelisted = seenBefore && prior.get(k) !== null;
 
       if (!seenBefore) newCount += 1;
-      else if (inserted.length > 0 || wasDelisted) updatedCount += 1;
+      else if (inserted.length > 0 || wasDelisted || reverted) updatedCount += 1;
       else unchangedCount += 1;
     }
 
@@ -251,6 +286,9 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
               eq(packageTable.repositoryId, repo.id),
               isNull(packageTable.delistedAt),
               packageIds.length > 0 ? not(inArray(packageTable.id, packageIds)) : sql`true`,
+              scan.undetectedTypes?.length
+                ? not(inArray(packageTable.type, scan.undetectedTypes))
+                : undefined,
             ),
           )
           .returning({ id: packageTable.id });
@@ -348,12 +386,19 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
 
 /** The commit sha of the last ingest of this repository, matched the way the pages match. */
 export async function lastIngestedSha(fullName: string): Promise<string | null> {
+  return (await lastIngestedState(fullName)).sha;
+}
+
+/** The stored sha and whether the read of it was partial, in one lookup. */
+export async function lastIngestedState(
+  fullName: string,
+): Promise<{ sha: string | null; partial: boolean }> {
   const [row] = await db
-    .select({ sha: repository.lastIngestedSha })
+    .select({ sha: repository.lastIngestedSha, partial: repository.treeTruncated })
     .from(repository)
     .where(sql`lower(${repository.fullName}) = ${fullName.toLowerCase()}`)
     .limit(1);
-  return row?.sha ?? null;
+  return { sha: row?.sha ?? null, partial: row?.partial ?? false };
 }
 
 export type TouchResult = {
@@ -403,6 +448,9 @@ export async function touchRepository(
         topics: metadata.topics,
         pushedAt: metadata.pushedAt,
         scannedAt,
+        // A read is also a check, and ends any run of failed ones (refresh.ts).
+        checkedAt: scannedAt,
+        checkFailures: 0,
         etag: metadata.etag,
         lastIngestedSha: commitSha,
       })
@@ -421,6 +469,9 @@ export async function touchRepository(
           topics: metadata.topics,
           pushedAt: metadata.pushedAt,
           scannedAt,
+          // A read is also a check, and ends any run of failed ones (refresh.ts).
+          checkedAt: scannedAt,
+          checkFailures: 0,
           etag: metadata.etag,
           lastIngestedSha: commitSha,
           updatedAt: sql`now()`,

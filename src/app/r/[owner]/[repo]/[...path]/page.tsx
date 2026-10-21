@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isBundledScript } from '@/analyze/files';
+import { ANALYZE_CAPS } from '@/analyze/types';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
@@ -218,8 +219,9 @@ export default async function PackagePage({ params }: Props) {
         <>
           <h2>Files</h2>
           <p className="muted">
-            Every file AgentDock found alongside this artifact&apos;s manifest, from the tree it
-            already read — no additional GitHub request. A bundled script is named and never opened.
+            The files this artifact owns in the tree AgentDock already read — a skill&apos;s or a
+            plugin&apos;s directory, or the single file a command, hook or MCP configuration is. No
+            additional GitHub request. A bundled script is named and never opened.
           </p>
           <table className="files">
             <thead>
@@ -246,6 +248,12 @@ export default async function PackagePage({ params }: Props) {
               ))}
             </tbody>
           </table>
+          {detail.files.length >= ANALYZE_CAPS.maxInventoryEntries ? (
+            <p className="muted">
+              Only the first {ANALYZE_CAPS.maxInventoryEntries} files are listed; the rest were not
+              recorded.
+            </p>
+          ) : null}
         </>
       ) : null}
 

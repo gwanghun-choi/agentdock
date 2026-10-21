@@ -165,7 +165,21 @@ AgentDock scheduled sync
   Other failures                 0
 
   GitHub core requests left      0 of 60
+  GitHub core requests spent    24
+  Budget                        unauthenticated
   Duration                      94s
+
+  Discovered this run
+    registry                    40 seed(s) written
+    seeds                       15 seed(s) written
+    links                       0 seed(s) written
+    search                      12 seed(s) written
+  Enqueued this run             25
+    new from seeds              0
+    new from search             7
+    new from links              0
+    new from backlog            8
+    re-checks of stored repos   10
 ```
 
 모든 상한선은 자기가 무엇을 버렸는지 출력합니다. budget이 떨어져 멈춘 실행은
@@ -298,7 +312,9 @@ bun run dev               # http://localhost:3000
 bun run db:seed
 bun run db:seed baoyu-skills
 
-# 또는 실제 수집. 상한 있음 — repository 약 25개, core request 60건 중 50건.
+# 또는 실제 수집. 상한 있음 — 토큰 없이 repository 약 25개, core request 60건 중 50건.
+# GITHUB_TOKEN이 있으면 신규 100 + 재확인 100까지, 시작 35분 뒤 drain 중단
+# (src/corpus/caps.ts의 `authenticated`, `drainDeadlineMs`).
 bun run sync
 ```
 
@@ -424,14 +440,33 @@ bun run ci     # 경계 검사, lint, type check, test — CI가 돌리는 것�
 응답이 commit SHA로 고정되어 있고, 직접 작성한 악의적 입력(`adversarial/`,
 `xss/`)도 함께 들어 있습니다. 전체 suite가 이 바이트들만 가지고 돌아갑니다.
 
-데이터베이스가 필요한 suite는 `agentdock_test` schema를 쓰고, `DATABASE_URL`이
-없으면 눈에 보이게 skip합니다. 덕분에 CI는 데이터베이스 없이도 통과하고, 로컬
-실행은 실제 query를 검증합니다.
+데이터베이스가 필요한 suite는 **로컬의 일회용 PostgreSQL에서만** 돕니다.
+테스트는 `.env`나 셸의 `DATABASE_URL`을 읽지 않습니다. `vitest.config.ts`와
+각 worker(그리고 `bun test`의 preload)가 시작할 때 `DATABASE_URL`을 지우고,
+`TEST_DATABASE_URL`이 아래 형태와 정확히 일치할 때만 그 값을 씁니다. 일치하지
+않으면 테스트를 시작하지 않습니다(`src/db/testDatabase.ts`). 허용 형태는
+loopback 호스트(`127.0.0.1`·`localhost`·`[::1]`), 포트 `55432`, 데이터베이스
+`agentdock_test`, query string 없음입니다. Neon 호스트는 이름을 짚어 거부하고,
+오류 메시지에는 URL을 싣지 않습니다. `TEST_DATABASE_URL`이 없으면 DB suite는
+눈에 보이게 skip합니다.
 
 ```bash
-bun run db:test:setup     # agentdock_test 구성 (DDL만 — 행은 지우지 않음)
-bun run db:test:reset     # 비우기 (schema 이름이 스크립트 안에 리터럴로 박혀 있음)
+# 일회용 테스트 DB (trust 인증 — 비밀번호가 어디에도 없음, loopback 전용)
+docker run -d --name agentdock-testdb -e POSTGRES_DB=agentdock_test \
+  -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55432:5432 postgres:17
+export TEST_DATABASE_URL=postgres://agentdock_app@127.0.0.1:55432/agentdock_test
+
+bun run db:test:bootstrap   # role, schema 2개, pg_trgm (배포의 superuser 단계와 같음)
+bun run db:test:setup       # agentdock_test 구성 (schema.ts에서 DDL 생성 — 행은 지우지 않음)
+bun run db:test:migrations  # 검토된 drizzle/ migration을 같은 DB의 agentdock에 적용
+bun run test                # DB suite 포함. src/db/migrations.test.ts가 두 schema를 비교
+bun run db:test:reset       # 비우기 (schema 이름이 스크립트 안에 리터럴로 박혀 있음)
 ```
+
+`db:test:*`와 `db:test:migrations`는 `DATABASE_URL`이 아니라 `TEST_DATABASE_URL`만
+읽습니다. Bun은 `.env`를 스스로 읽으므로, 예전에는 `.env`가 가리키는
+데이터베이스의 `agentdock_test`가 대상이 될 수 있었습니다. CI의 `database` job도
+같은 컨테이너, 같은 명령으로 돕니다(`.github/workflows/ci.yml`).
 
 Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실행합니다. 따라서
 데이터베이스를 쓰는 suite는 다른 suite가 만들 수 없는 sentinel 값으로 자기 행을
@@ -447,7 +482,7 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 | `bun run corpus:sync --source=…` | 같은 기능을 소스와 상한선을 노출한 형태로. 색인을 수동으로 채울 때 씁니다. |
 | `bun run corpus:reset --confirm` | corpus 비우기. `AGENTDOCK_ALLOW_CORPUS_RESET=1`도 함께여야 실행됩니다. 어떤 것도 DROP하지 않습니다. |
 | `bun run ci` | 경계 검사, lint, type check, test |
-| `bun run test` | Vitest. `run`이 붙어 있는 데 유의 — 맨 `bun test`는 Bun 자체 러너를 부르고, 이 파일들에서 멈춥니다. |
+| `bun run test` | Vitest. `run`이 붙어 있는 데 유의 — 맨 `bun test`는 Bun 자체 러너를 부릅니다. 그 러너도 이 파일들을 실행하고 `.env`를 읽으므로, `bunfig.toml`의 preload가 같은 테스트 DB 격리를 적용합니다. |
 | `bun run lint` / `bun run format` | Biome, 검사와 자동 수정 |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run check:boundaries` | migration과 소스 경계 검사 |
@@ -455,7 +490,9 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 | `bun run db:migrate` | `drizzle/`의 검토된 migration 적용 |
 | `bun run db:seed [fixture]` | 고정 fixture를 실제 pipeline으로 ingest |
 | `bun run db:reset --confirm` | `agentdock`의 모든 테이블 DROP (개발 전용) |
-| `bun run db:test:setup` / `db:test:reset` | 테스트 schema 구성 / 비우기 |
+| `bun run db:test:bootstrap` | 일회용 테스트 DB에 role·schema·pg_trgm 구성 (`TEST_DATABASE_URL`의 컨테이너) |
+| `bun run db:test:setup` / `db:test:reset` | 테스트 schema 구성 / 비우기 (`TEST_DATABASE_URL`만 읽음) |
+| `bun run db:test:migrations` | 검토된 `drizzle/` migration을 테스트 DB의 `agentdock`에 적용 |
 | `bun run fixtures:capture` | GitHub에서 fixture corpus 다시 고정 |
 | `bun run analyze:backfill [limit]` | 저장된 바이트에 대해 capability analyzer 재실행. GitHub request를 발생시키지 않습니다. |
 
@@ -466,7 +503,8 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 
 CI는 `bun run build` 다음에 `bun run ci`를 실행합니다. 직접 돌리는 것과 같은
 명령이라 서로 어긋날 수 없습니다. 빌드가 먼저인 이유는 linter가 읽는 타입 선언을
-빌드가 다시 만들어내기 때문입니다.
+빌드가 다시 만들어내기 때문입니다. 두 번째 job은 PostgreSQL 17 service
+container에서 데이터베이스 suite를 돌립니다.
 
 ## Security Considerations
 
@@ -481,7 +519,9 @@ CI는 `bun run build` 다음에 `bun run ci`를 실행합니다. 직접 돌리�
 - *No bundled script files* (동봉된 script 파일이 없음)
 
 각각은 AgentDock이 **무엇을 들여다봤는지**를 서술할 뿐, artifact가 할 수 있는
-모든 것을 서술하지 않습니다. 이 문구를 보여주는 모든 페이지가 그 사실을 함께
+모든 것을 서술하지 않습니다. network·Bash 필터는 최신 version의 분석이 끝까지
+완료된 skill과 command만 보여줍니다. 다른 타입에는 그 분석기가 읽는 텍스트가
+없고, 분석되지 않은 version은 부재의 근거가 아니기 때문입니다. script 필터는 파일 목록이 디렉터리인 skill과 plugin만, 그 목록이 200개 상한에서 잘리지 않은 경우에만 보여줍니다. 이 문구를 보여주는 모든 페이지가 그 사실을 함께
 적습니다. null과 empty는 끝까지 구분됩니다 — 분석했더니 아무것도 선언하지 않은
 artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다.
 

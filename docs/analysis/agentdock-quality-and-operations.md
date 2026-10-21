@@ -4,6 +4,8 @@
 > 배포 사이트(https://agentdock-delta.vercel.app/)는 GET 13회로만 확인했다(부하 테스트 없음).
 > 표기: **[확인]** 소스/사이트 직접 확인 · **[추정]** 추론 · **[미확인]** 근거 부족
 
+> **2026-10-20 갱신**: U1–U4(R15), PollUntilDone(R4), sync 관측성(R12)은 작업 트리에서 수정됐다(미커밋). R26/R27(CI DB 테스트, `.env` 격리)은 2026-10-21 Phase 3에서 구현했다([Phase 3 기록](agentdock-phase3-operations-and-test-safety.md), 미커밋). [Phase 2 개선 기록](agentdock-phase2-improvements.md) 참고. 아래 본문은 `28639ec` 기준 분석이다.
+
 ## 목차
 
 1. [검증 Baseline (이번 분석에서 실행)](#1-검증-baseline-이번-분석에서-실행)

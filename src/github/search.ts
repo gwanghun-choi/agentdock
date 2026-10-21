@@ -5,19 +5,16 @@ import { GitHubError, githubFetch, normalizeRepo } from './client';
  * this directory: 10 requests a minute unauthenticated, against core's 60 an
  * hour. That is why a topic sweep can run while the core budget is at zero.
  *
- * HAZARD, recorded rather than engineered around. githubFetch records whatever
- * `x-ratelimit-*` headers came back into one module-level slot (client.ts:34),
- * and a search response carries the SEARCH bucket's numbers. The home page reads
- * that slot (rateLimitState()) beside copy describing the 60-an-hour core budget,
- * so a search response reaching it would make the page say "10 of 10 remaining"
- * about a budget that is not the one it is describing. It never happens today
- * because the only caller is scripts/corpus-sync.mjs, a separate Bun process
- * whose module state the Next server never sees.
+ * githubFetch keeps one module-level rate slot (client.ts) and records only
+ * core responses into it — a search response carries
+ * `x-ratelimit-resource: search` and is returned to its caller without
+ * touching the slot, so neither the drain gate nor the home page can read the
+ * search bucket's numbers as core's.
  *
- * That is the reason this module must never be imported from src/app/ or
- * src/components/. Nothing mechanical enforces it — the import would typecheck,
- * lint and pass check:boundaries — so it is written here where a reader adding
- * the import will be.
+ * This module is still never imported from src/app/ or src/components/: the
+ * web tier issues no GitHub request at all (AGENTS.md). Nothing mechanical
+ * enforces that import rule — it would typecheck, lint and pass
+ * check:boundaries — so it is written here where a reader adding it will be.
  */
 
 /** 100 per page x 10 pages. Asking for page 11 is an error, not more data. */

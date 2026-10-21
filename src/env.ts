@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { testDatabaseRejection } from './db/testDatabase';
 
 const postgresUrl = z
   .string()
@@ -29,19 +30,35 @@ export function normalizeGithubToken(raw: string | undefined): string | undefine
   return githubToken.parse(raw);
 }
 
-const envSchema = z.object({
-  DATABASE_URL: postgresUrl,
-  // The only two schemas AgentDock owns. Anything else is a boundary escape, so
-  // it is rejected here rather than discovered when a statement lands elsewhere.
-  DATABASE_SCHEMA: z.enum(['agentdock', 'agentdock_test']).default('agentdock'),
-  GITHUB_TOKEN: githubToken,
-  // INGEST_WORKER is gone, not defaulted. It switched an in-process poll loop
-  // that `register()` started at web boot, which made every deploy and restart
-  // an ingest trigger; the loop was deleted rather than defaulted off, because a
-  // flag would have left the coupling one environment variable away from
-  // returning. Ingestion is `bun run sync`, from cron.
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-});
+const envSchema = z
+  .object({
+    DATABASE_URL: postgresUrl,
+    // The only two schemas AgentDock owns. Anything else is a boundary escape, so
+    // it is rejected here rather than discovered when a statement lands elsewhere.
+    DATABASE_SCHEMA: z.enum(['agentdock', 'agentdock_test']).default('agentdock'),
+    GITHUB_TOKEN: githubToken,
+    // INGEST_WORKER is gone, not defaulted. It switched an in-process poll loop
+    // that `register()` started at web boot, which made every deploy and restart
+    // an ingest trigger; the loop was deleted rather than defaulted off, because a
+    // flag would have left the coupling one environment variable away from
+    // returning. Ingestion is `bun run sync`, from cron.
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  })
+  // The test schema is written by suites that TRUNCATE and seed, so it may
+  // only live in the disposable local database (src/db/testDatabase.ts). Here
+  // rather than in each caller, because every process that opens a connection —
+  // vitest's suites, `bun test`, a script — reaches it through this parse.
+  .superRefine((env, ctx) => {
+    if (env.DATABASE_SCHEMA !== 'agentdock_test') return;
+    const reason = testDatabaseRejection(env.DATABASE_URL);
+    if (reason !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message: `agentdock_test is only reachable on the local test database: ${reason}`,
+      });
+    }
+  });
 
 export type Env = z.infer<typeof envSchema>;
 

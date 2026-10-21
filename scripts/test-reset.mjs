@@ -35,13 +35,18 @@
 // foreign keys need, seeded by migrate.mjs and never written by a test.
 
 import postgres from 'postgres';
+import { assertTestDatabaseUrl } from '../src/db/testDatabase.ts';
 
 const SCHEMA = 'agentdock_test';
 const KEEP = ['artifact_type', '__drizzle_migrations'];
 
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
+// TEST_DATABASE_URL only, and only the disposable local database: this
+// TRUNCATEs, and Bun hands the process .env's DATABASE_URL before it starts.
+let url;
+try {
+  url = assertTestDatabaseUrl(process.env.TEST_DATABASE_URL, 'TEST_DATABASE_URL');
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
 

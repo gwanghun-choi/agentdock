@@ -1,4 +1,5 @@
 import type { Schema } from 'hast-util-sanitize';
+import type { ComponentProps } from 'react';
 import Markdown from 'react-markdown';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
@@ -29,6 +30,35 @@ const schema: Schema = {
     a: [...(defaultSchema.attributes?.a ?? []), 'rel', 'target'],
   },
 };
+
+/**
+ * A leading YAML frontmatter block, shown as what it is. The stored body keeps
+ * it — finding line numbers count from the file's first line — but Markdown
+ * reads `---`, the keys, then `---` as a rule followed by one giant setext
+ * heading (U1). As a fenced `yaml` block it stays visible and stays text. The
+ * fence is one backtick longer than any run inside, so a frontmatter value
+ * holding ``` cannot close it early.
+ */
+function fenceFrontmatter(markdown: string): string {
+  // The first line must be a `key:`. Without it a body opening on a `---` rule
+  // had everything up to its next rule — title and all — fenced as yaml.
+  const match = /^---\r?\n([A-Za-z_][\w-]*:[\s\S]*?)\r?\n---[ \t]*(\r?\n|$)/.exec(markdown);
+  if (!match) return markdown;
+  const longestRun = Math.max(0, ...(match[1].match(/`+/g) ?? []).map((run) => run.length));
+  const fence = '`'.repeat(Math.max(3, longestRun + 1));
+  return `${fence}yaml\n${match[1]}\n${fence}\n${markdown.slice(match[0].length)}`;
+}
+
+/**
+ * The body sits under the page's own `<h2>File</h2>`, so its headings start
+ * two levels down: an author's `# Title` was a second `<h1>` on the page, and
+ * the outline read as two documents (U2). h5 and h6 both land on h6, the
+ * last level there is.
+ */
+const demote = (Tag: 'h3' | 'h4' | 'h5' | 'h6') =>
+  function Demoted({ node: _node, ...props }: { node?: unknown } & ComponentProps<'h3'>) {
+    return <Tag {...props} />;
+  };
 
 /**
  * A Server Component. Nothing untrusted crosses into a Client Component, and no
@@ -70,9 +100,14 @@ export function SkillBody({ markdown }: { markdown: string }) {
         // again, which is a measured WCAG failure traded for a lint heuristic.
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core.
         pre: ({ node: _node, ...props }) => <pre {...props} tabIndex={0} />,
+        h1: demote('h3'),
+        h2: demote('h4'),
+        h3: demote('h5'),
+        h4: demote('h6'),
+        h5: demote('h6'),
       }}
     >
-      {markdown}
+      {fenceFrontmatter(markdown)}
     </Markdown>
   );
 }

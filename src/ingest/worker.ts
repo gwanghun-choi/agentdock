@@ -33,7 +33,20 @@ export const WORKER_ID = `${process.pid}-${randomUUID().slice(0, 8)}`;
  * Deleting the loop rather than gating it is what makes that a structural fact
  * instead of a default.
  */
-export async function runJob(job: ClaimedJob): Promise<AttemptOutcome> {
+/**
+ * What one job ended as, for the sync's summary. Counted here, from the values
+ * in hand, rather than queried back out of ingest_attempt by time — two
+ * overlapping runs would each report the other's work (corpus-sync.mjs).
+ */
+export type JobRun = {
+  outcome: AttemptOutcome;
+  /** Artifacts this read delisted (0 on every path that read nothing). */
+  removed: number;
+  /** A failure put back in the queue for another attempt (not rate_limited). */
+  retryScheduled: boolean;
+};
+
+export async function runJob(job: ClaimedJob): Promise<JobRun> {
   const startedAt = job.startedAt ?? new Date();
   const result = await ingestRepository(job.target, {
     id: job.id,
@@ -45,7 +58,14 @@ export async function runJob(job: ClaimedJob): Promise<AttemptOutcome> {
   // job inside the transaction that wrote its artifacts. Every other outcome
   // never opened that transaction, so it terminates below. Two writes to one job
   // is exactly what this guard prevents.
-  if (result.ok) return result.outcome;
+  if (result.ok) {
+    return { outcome: result.outcome, removed: result.counters.removed, retryScheduled: false };
+  }
+  const ended = (retryScheduled: boolean): JobRun => ({
+    outcome: result.outcome,
+    removed: 0,
+    retryScheduled,
+  });
 
   const rate = rateLimitState();
   const record: AttemptRecord = {
@@ -71,12 +91,12 @@ export async function runJob(job: ClaimedJob): Promise<AttemptOutcome> {
   switch (dispositionFor(result.outcome)) {
     case 'succeeded':
       await finishJob(record, 'succeeded');
-      return result.outcome;
+      return ended(false);
 
     case 'rate_limited': {
       const until = rateLimitedUntil(result.resetAt ?? rate?.reset ?? null);
       await scheduleRetry(record, { nextAttemptAt: until, refundAttempt: true });
-      return result.outcome;
+      return ended(false);
     }
 
     case 'retryable':
@@ -85,13 +105,13 @@ export async function runJob(job: ClaimedJob): Promise<AttemptOutcome> {
           nextAttemptAt: new Date(Date.now() + backoffMs(job.attempts)),
           refundAttempt: false,
         });
-        return result.outcome;
+        return ended(true);
       }
       await finishJob(record, 'failed');
-      return result.outcome;
+      return ended(false);
 
     case 'terminal':
       await finishJob(record, 'failed');
-      return result.outcome;
+      return ended(false);
   }
 }

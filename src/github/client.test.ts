@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  fetchCoreRateLimit,
   GitHubError,
   githubFetch,
   githubRepoFromUrl,
@@ -287,6 +288,108 @@ describe('githubFetch — rate limiting is read from headers', () => {
     );
     await githubFetch(API);
     expect(rateLimitState()).toEqual({ limit: 60, remaining: 37, reset: 1786351066 });
+  });
+});
+
+describe('rate-limit buckets (R10)', () => {
+  const core = {
+    'x-ratelimit-limit': '5000',
+    'x-ratelimit-remaining': '4321',
+    'x-ratelimit-reset': '1786351066',
+  };
+
+  it('a search response does not overwrite the core budget the drain gate reads', async () => {
+    fetchStub.mockResolvedValueOnce(res(200, { ...core, 'x-ratelimit-resource': 'core' }));
+    await githubFetch(API);
+    fetchStub.mockResolvedValueOnce(
+      res(200, {
+        'x-ratelimit-limit': '30',
+        'x-ratelimit-remaining': '0',
+        'x-ratelimit-reset': '1786350000',
+        'x-ratelimit-resource': 'search',
+      }),
+    );
+    const { rateLimit } = await githubFetch('https://api.github.com/search/repositories?q=x');
+    // The response still carries its own bucket's numbers to its caller...
+    expect(rateLimit).toEqual({ limit: 30, remaining: 0, reset: 1786350000 });
+    // ...but the shared slot still describes core.
+    expect(rateLimitState()).toEqual({ limit: 5000, remaining: 4321, reset: 1786351066 });
+  });
+
+  it('a response with no resource header is counted as core', async () => {
+    fetchStub.mockResolvedValueOnce(res(200, { ...core, 'x-ratelimit-remaining': '12' }));
+    await githubFetch(API);
+    expect(rateLimitState()?.remaining).toBe(12);
+  });
+
+  it('a secondary limit comes back after retry-after, not at the primary reset', async () => {
+    const before = Math.floor(Date.now() / 1000);
+    fetchStub.mockResolvedValueOnce(
+      res(403, { ...core, 'x-ratelimit-resource': 'core', 'retry-after': '30' }),
+    );
+    const error = (await githubFetch(API).catch((e: GitHubError) => e)) as GitHubError;
+    expect(error.failure).toBe('rate_limited');
+    expect(error.rateLimit?.reset).toBeGreaterThanOrEqual(before + 30);
+    expect(error.rateLimit?.reset).toBeLessThanOrEqual(before + 32);
+    expect(error.rateLimit?.remaining).toBe(4321);
+  });
+
+  it('reads an HTTP-date retry-after instead of falling back to the primary reset', async () => {
+    const at = new Date(Math.ceil(Date.now() / 1000) * 1000 + 90_000);
+    fetchStub.mockResolvedValueOnce(
+      res(403, { ...core, 'x-ratelimit-resource': 'core', 'retry-after': at.toUTCString() }),
+    );
+    const error = (await githubFetch(API).catch((e: GitHubError) => e)) as GitHubError;
+    expect(error.failure).toBe('rate_limited');
+    expect(Math.abs((error.rateLimit?.reset ?? 0) - at.getTime() / 1000)).toBeLessThanOrEqual(1);
+  });
+
+  it('a 429 with quota left and no retry-after is a secondary limit: one minute', async () => {
+    const before = Math.floor(Date.now() / 1000);
+    fetchStub.mockResolvedValueOnce(res(429, { ...core, 'x-ratelimit-resource': 'core' }));
+    const error = (await githubFetch(API).catch((e: GitHubError) => e)) as GitHubError;
+    expect(error.failure).toBe('rate_limited');
+    expect(error.rateLimit?.reset).toBeGreaterThanOrEqual(before + 60);
+    expect(error.rateLimit?.reset).toBeLessThanOrEqual(before + 62);
+  });
+
+  it('a bare 429 with no header at all is still rate limited, not unavailable', async () => {
+    fetchStub.mockResolvedValueOnce(res(429, {}));
+    const error = (await githubFetch(API).catch((e: GitHubError) => e)) as GitHubError;
+    expect(error.failure).toBe('rate_limited');
+  });
+
+  it('a primary exhaustion with no retry-after keeps the header reset', async () => {
+    fetchStub.mockResolvedValueOnce(res(403, { ...core, 'x-ratelimit-remaining': '0' }));
+    const error = (await githubFetch(API).catch((e: GitHubError) => e)) as GitHubError;
+    expect(error.rateLimit?.reset).toBe(1786351066);
+  });
+});
+
+describe('fetchCoreRateLimit', () => {
+  it('reads the core bucket from /rate_limit and records it', async () => {
+    fetchStub.mockResolvedValueOnce(
+      res(
+        200,
+        {},
+        JSON.stringify({
+          resources: {
+            core: { limit: 5000, remaining: 4990, reset: 1786351066 },
+            search: { limit: 30, remaining: 30, reset: 1786350000 },
+          },
+        }),
+      ),
+    );
+    expect(await fetchCoreRateLimit()).toEqual({ limit: 5000, remaining: 4990, reset: 1786351066 });
+    expect(String(fetchStub.mock.calls[0][0])).toBe('https://api.github.com/rate_limit');
+    expect(rateLimitState()?.remaining).toBe(4990);
+  });
+
+  it('is null, never a throw, when GitHub cannot be reached or answers oddly', async () => {
+    fetchStub.mockRejectedValueOnce(new Error('down'));
+    expect(await fetchCoreRateLimit()).toBeNull();
+    fetchStub.mockResolvedValueOnce(res(200, {}, '{"resources":{}}'));
+    expect(await fetchCoreRateLimit()).toBeNull();
   });
 });
 

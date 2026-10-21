@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
+import { ANALYZE_CAPS } from '@/analyze/types';
 import { db } from '@/db/client';
 import { capabilityFinding, packageTable, packageVersion, repository } from '@/db/schema';
 import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
@@ -139,17 +140,42 @@ const LATEST_PACKAGE_VERSION_ID = sql`(
 )`;
 
 /**
+ * The types whose stored text the analyzers actually read for what
+ * `no_network` and `no_shell` ask about. observedNetwork scans the body; a
+ * plugin, hook or MCP server is stored with body '' (it is a JSON manifest),
+ * so "no network request observed" on one is a scan of nothing. `no_shell`
+ * asks about an `allowed-tools` Bash grant, which only a skill's or a
+ * command's frontmatter can carry — a hook whose whole job is a shell command
+ * declares no grant, and listing it under "No Bash grant declared" read as
+ * the opposite of what it is. Measured on fixtures/: every non-skill,
+ * non-command package_version has body ''.
+ */
+const ABSENCE_OBSERVABLE_TYPES = ['skill', 'command'] as const;
+
+/**
  * One `capability_finding` absence test on the latest version, shared by
  * `no_network` and `no_shell` — the only difference between the two is which
  * category (and, for `no_shell`, which signal prefix) is being asked about.
+ *
+ * Absence is claimed only for a version that was analyzed: analyzed_at is
+ * null on a version no analysis pass has finished (a pre-analysis row, or one
+ * where an analyzer threw — persist.ts), and "not analyzed" must never read
+ * the same as "analyzed, nothing found" (AGENTS.md: null and empty are
+ * different facts).
  */
 function capabilityAbsence(category: string, signalPrefix?: string) {
-  return sql`not exists (
-    select 1 from ${capabilityFinding} cf
-    where cf.package_version_id = ${LATEST_PACKAGE_VERSION_ID}
-      and cf.category = ${category}
-      ${signalPrefix ? sql`and cf.signal ilike ${`${signalPrefix}%`}` : sql``}
-  )`;
+  return sql`(${inArray(packageTable.type, [...ABSENCE_OBSERVABLE_TYPES])}
+    and (
+      select z.analyzed_at from ${packageVersion} z
+      where z.package_id = ${packageTable.id}
+      order by z.ingested_at desc limit 1
+    ) is not null
+    and not exists (
+      select 1 from ${capabilityFinding} cf
+      where cf.package_version_id = ${LATEST_PACKAGE_VERSION_ID}
+        and cf.category = ${category}
+        ${signalPrefix ? sql`and cf.signal ilike ${`${signalPrefix}%`}` : sql``}
+    ))`;
 }
 
 /**
@@ -159,6 +185,16 @@ function capabilityAbsence(category: string, signalPrefix?: string) {
  * script is, invisibly, until someone compared two pages.
  */
 const SCRIPT_PATH_PATTERN = `\\.(${SCRIPT_EXTENSIONS.map((ext) => ext.slice(1)).join('|')})$`;
+
+/**
+ * The types whose inventory is a directory, so a script beside them would be
+ * in it (fileInventory, src/analyze/files.ts). A command, hook or MCP server
+ * owns one file: "no bundled script" on one is a look at nothing, and a
+ * hooks.json whose job is running hooks/guard.py read as the opposite of what
+ * it is. An inventory at maxInventoryEntries was cut, so whatever came after
+ * the cut was not looked at either.
+ */
+const INVENTORY_OBSERVABLE_TYPES = ['skill', 'plugin'] as const;
 
 /**
  * The three filter predicates, each built once and referenced by id — never
@@ -173,11 +209,64 @@ const SCRIPT_PATH_PATTERN = `\\.(${SCRIPT_EXTENSIONS.map((ext) => ext.slice(1)).
 const CAPABILITY_PREDICATES = {
   no_network: capabilityAbsence('network_request'),
   no_shell: capabilityAbsence('declared', 'Bash'),
-  no_scripts: sql`not exists (
-    select 1 from jsonb_array_elements(${packageTable.files}) f
-    where (f->>'path') ~ ${SCRIPT_PATH_PATTERN}
-  )`,
+  no_scripts: sql`(${inArray(packageTable.type, [...INVENTORY_OBSERVABLE_TYPES])}
+    and jsonb_array_length(${packageTable.files}) < ${ANALYZE_CAPS.maxInventoryEntries}
+    and not exists (
+      select 1 from jsonb_array_elements(${packageTable.files}) f
+      where (f->>'path') ~ ${SCRIPT_PATH_PATTERN}
+    ))`,
 } satisfies Record<(typeof CAPABILITY_FILTER_IDS)[number], ReturnType<typeof sql>>;
+
+/**
+ * Whether a query is plain words, or uses websearch syntax a reader typed on
+ * purpose — a quoted phrase, a `-` exclusion, an `or`. Plain words get the
+ * prefix and any-word treatment below; syntax is left to
+ * `websearch_to_tsquery` exactly as before, because widening `pdf -convert`
+ * to a prefix match would quietly undo the exclusion.
+ */
+function plainWords(q: string): string[] | null {
+  if (q === '' || q.includes('"') || /(^|\s)-\S/.test(q) || /\sor\s/i.test(q)) return null;
+  // Letters and digits only, so nothing reaching to_tsquery below can be an
+  // operator: `&`, `|`, `!`, `(`, `:` and `*` are all split away here.
+  const words = q.toLowerCase().match(/[\p{L}\p{N}]+/gu);
+  return words && words.length > 0 ? words : null;
+}
+
+/**
+ * A query worth relaxing to "any word" when "every word" finds nothing: plain,
+ * and more than one word.
+ */
+function relaxable(q: string): boolean {
+  return (plainWords(q)?.length ?? 0) > 1;
+}
+
+/** Below this, a trailing `:*` matches too much (`ai:*` is aid, aim, air…)
+ * and a repository-name substring matches nearly every repository. */
+const MIN_PREFIX_CHARS = 3;
+
+export type SearchMode = 'all' | 'any';
+
+/**
+ * The tsquery a search runs, built once and used by the predicate and the rank
+ * alike.
+ *
+ * Plain words become `w1 & w2 & wN:*` — every word, the last one also as a
+ * prefix, so `playw` finds `playwright` and a reader still typing gets
+ * results. The words are split on anything that is not a letter or digit, so
+ * a path (`skills/pdf/SKILL.md`) becomes the same lexemes the search_vector's
+ * C-weight path column holds; `websearch_to_tsquery` read it as one file token
+ * and matched nothing. Mode `any` joins with `|` instead.
+ *
+ * The text reaches PostgreSQL as a bound parameter either way; to_tsquery sees
+ * only letter/digit runs joined by operators this function wrote.
+ */
+function tsQuery(q: string, mode: SearchMode) {
+  const words = plainWords(q);
+  if (!words) return sql`websearch_to_tsquery('english', ${q})`;
+  const last = words.length - 1;
+  const terms = words.map((w, i) => (i === last && w.length >= MIN_PREFIX_CHARS ? `${w}:*` : w));
+  return sql`to_tsquery('english', ${terms.join(mode === 'any' ? ' | ' : ' & ')})`;
+}
 
 /**
  * The WHERE both query functions below share, built once and called from
@@ -202,15 +291,21 @@ const CAPABILITY_PREDICATES = {
  * by construction (decision 5, 06-03 plan): a concurrent ingest cannot
  * commit between the network test and the scripts test.
  */
-function searchWhere(q: string, filters: SearchFilters = NO_FILTERS) {
+function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: SearchMode = 'all') {
   const types = validTypes(filters.types);
   const capabilities = validCapabilities(filters.capabilities);
   return and(
     isNull(packageTable.delistedAt),
     q === ''
       ? undefined
-      : sql`(${packageTable.searchVector} @@ websearch_to_tsquery('english', ${q})
-             OR ${repository.fullName} ilike ${`%${escapeLikeOperand(q)}%`})`,
+      : // The repository-name substring only from three characters up: "ai"
+        // as a substring is in most repository names on GitHub, and measured
+        // on the fixed corpus in search.test.ts it turned a one-row answer
+        // into every row the six repositories held.
+        q.length >= MIN_PREFIX_CHARS
+        ? sql`(${packageTable.searchVector} @@ ${tsQuery(q, mode)}
+             OR ${repository.fullName} ilike ${`%${escapeLikeOperand(q)}%`})`
+        : sql`${packageTable.searchVector} @@ ${tsQuery(q, mode)}`,
     // The same fragment object as searchPackages' projection — see
     // packages.ts:203-208 for why referencing it twice is safe and
     // computing it in SELECT only is a measured performance trap.
@@ -234,7 +329,7 @@ function searchWhere(q: string, filters: SearchFilters = NO_FILTERS) {
  * the literal `0` — every row ties, so the browse branch's ORDER BY reduces
  * to its own recency/id tie-break with no separate ordering logic needed.
  */
-function rankExpr(q: string) {
+function rankExpr(q: string, mode: SearchMode) {
   if (q === '') return sql<number>`0::real`;
   const qEsc = escapeLikeOperand(q);
   return sql<number>`
@@ -242,7 +337,7 @@ function rankExpr(q: string) {
         then ${SEARCH_CAPS.exactNameBonus}::real else 0::real end
     + case when lower(${packageTable.name}) like lower(${qEsc}) || '%'
         then ${SEARCH_CAPS.prefixNameBonus}::real else 0::real end
-    + ts_rank(${packageTable.searchVector}, websearch_to_tsquery('english', ${q}))
+    + ts_rank(${packageTable.searchVector}, ${tsQuery(q, mode)})
     + case when ${repository.fullName} ilike '%' || ${qEsc} || '%'
         then ${SEARCH_CAPS.repoNameBonus}::real else 0::real end
   `;
@@ -383,6 +478,35 @@ async function fuzzySearch(
 }
 
 /**
+ * `all` unless a plain multi-word query matches nothing with every word, then
+ * `any`. The page calls this once and hands the result to searchPackages and
+ * countSearchResults, so the rows, the total and the sentence saying which kind
+ * of match this is cannot disagree. react `cache` cannot do that here: it keys
+ * an object argument by identity, and each caller builds its own `{ q,
+ * filters }`, so three calls were three EXISTS that an ingest committing
+ * between them could split. One indexed EXISTS, and only for a query that
+ * could be relaxed at all.
+ */
+export const searchMode = cache(
+  async ({
+    q,
+    filters = NO_FILTERS,
+  }: {
+    q: string;
+    filters?: SearchFilters;
+  }): Promise<SearchMode> => {
+    if (!relaxable(q)) return 'all';
+    const [row] = await db
+      .select({ hit: sql<number>`1` })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(searchWhere(q, filters, 'all'))
+      .limit(1);
+    return row ? 'all' : 'any';
+  },
+);
+
+/**
  * Ranked full-text search over the listing-visible corpus, browsable with
  * no query at all (D-17/D-18), narrowable by artifact type and declared
  * capability (DIS-05/DIS-06). The generated `search_vector` column cannot
@@ -406,18 +530,22 @@ export const searchPackages = cache(
     filters = NO_FILTERS,
     limit = SEARCH_CAPS.pageSize,
     offset = 0,
+    mode: decided,
   }: {
     q: string;
     filters?: SearchFilters;
     limit?: number;
     offset?: number;
+    /** The page's own searchMode result, so rows, total and notice share one. */
+    mode?: SearchMode;
   }): Promise<SearchResultItem[]> => {
     // Drizzle does not emit a SQL-level `AS` alias for a computed sql<T>
     // projection field (confirmed against this pinned version's raw query
     // output), so ORDER BY cannot refer to a "rank" output-column name.
     // Reusing this one fragment object in both SELECT and ORDER BY keeps a
     // single rank definition instead of a second, hand-copied one.
-    const rank = rankExpr(q);
+    const mode = decided ?? (await searchMode({ q, filters }));
+    const rank = rankExpr(q, mode);
 
     const results = await db
       .select({
@@ -442,7 +570,7 @@ export const searchPackages = cache(
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-      .where(searchWhere(q, filters))
+      .where(searchWhere(q, filters, mode))
       // D-15/D-16's deterministic total order: rank, then recency, then id.
       // On the browse branch rank is a constant 0 for every row, so this
       // reduces to updated_at DESC, id ASC — matching listPackages' own
@@ -457,7 +585,12 @@ export const searchPackages = cache(
     // fuzzySearch has (T-06-28's statement-count assertion is about this
     // branch: a query with full-text results returns here and never reaches
     // fuzzySearch at all).
-    if (q !== '' && results.length === 0) {
+    //
+    // First page only. A page past the end of a real result set is also
+    // empty, and running the trigram branch at that offset rendered its rows
+    // under the full-text total — "Showing 26–30 of 1" (R16). The page's own
+    // "There is no page N" branch is what a page past the end should show.
+    if (q !== '' && results.length === 0 && offset === 0) {
       return fuzzySearch(q, filters, limit, offset);
     }
     return results;
@@ -476,12 +609,21 @@ export const searchPackages = cache(
  * no page N" branch's job to absorb, not this function's.
  */
 export const countSearchResults = cache(
-  async ({ q, filters = NO_FILTERS }: { q: string; filters?: SearchFilters }): Promise<number> => {
+  async ({
+    q,
+    filters = NO_FILTERS,
+    mode: decided,
+  }: {
+    q: string;
+    filters?: SearchFilters;
+    mode?: SearchMode;
+  }): Promise<number> => {
+    const mode = decided ?? (await searchMode({ q, filters }));
     const [row] = await db
       .select({ n: sql<number>`count(*)::int` })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-      .where(searchWhere(q, filters));
+      .where(searchWhere(q, filters, mode));
     return row?.n ?? 0;
   },
 );

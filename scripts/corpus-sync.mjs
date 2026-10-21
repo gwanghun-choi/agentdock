@@ -56,6 +56,14 @@ function count(name, fallback) {
 }
 
 const { CORPUS_CAPS } = await import('../src/corpus/caps.ts');
+const { syncBudget, drainStop } = await import('../src/corpus/budget.ts');
+const { normalizeGithubToken } = await import('../src/env.ts');
+
+// Picked once, from whether a token is set: unauthenticated it is exactly the
+// 25/25/25 this script always ran with; authenticated, the caps follow the
+// 5,000-an-hour core budget (src/corpus/caps.ts, `authenticated`). Every flag
+// below still overrides it.
+const budget = syncBudget(normalizeGithubToken(process.env.GITHUB_TOKEN));
 
 /**
  * `bun run sync` — the whole schedule, in one flag.
@@ -77,20 +85,20 @@ if (!SOURCES.has(source)) {
 }
 
 const noEnqueue = flag('no-enqueue') !== undefined;
-const enqueueLimit = count('enqueue', CORPUS_CAPS.maxEnqueuePerSync);
-const drainLimit = count('drain', scheduled ? CORPUS_CAPS.maxEnqueuePerSync : 0);
+const enqueueLimit = count('enqueue', scheduled ? budget.enqueue : CORPUS_CAPS.maxEnqueuePerSync);
+const drainLimit = count('drain', scheduled ? budget.drain : 0);
 
 // Re-checking already-stored repositories is opt-in for the same reason
 // draining is: both spend the core budget, and an operator filling an empty
 // index by hand wants every request going to repositories nobody has read yet.
 const noRefresh = flag('no-refresh') !== undefined;
-const refreshLimit = count('refresh', scheduled ? CORPUS_CAPS.maxRefreshPerSync : 0);
+const refreshLimit = count('refresh', scheduled ? budget.refresh : 0);
 // Twelve hours, matching the 03:00/15:00 schedule: a repository read by the
 // morning run is not re-read by the afternoon one. Below this, two syncs a day
 // would spend the whole budget re-reading the same repositories.
 const staleHours = count('stale-hours', 12);
 
-const searchRequests = count('search-requests', CORPUS_CAPS.maxSearchRequests);
+const searchRequests = count('search-requests', budget.searchRequests);
 const searchMinStars = count('search-min-stars', CORPUS_CAPS.searchMinStars);
 
 const { syncRegistry } = await import('../src/registry/sync.ts');
@@ -101,15 +109,78 @@ const { MIN_REPOSITORY_STARS } = await import('../src/corpus/policy.ts');
 const { loadSeedList, seedListRows } = await import('../src/corpus/seedList.ts');
 const { expandLinkLists } = await import('../src/corpus/links.ts');
 const { upsertSeeds } = await import('../src/db/queries/seeds.ts');
+const { fanOutBySource } = await import('../src/corpus/fanout.ts');
+const { readSweepState, writeSweepState, recordSyncSucceeded, recordSyncAttempt } = await import(
+  '../src/db/queries/syncState.ts'
+);
 const { countPackages } = await import('../src/db/queries/packages.ts');
-const { claimJob, reapAbandoned } = await import('../src/db/queries/jobs.ts');
+const { claimJob, reapAbandoned, queuedJobCount } = await import('../src/db/queries/jobs.ts');
 const { runJob, REAP_AFTER_MS, WORKER_ID } = await import('../src/ingest/worker.ts');
-const { pauseUntilFor } = await import('../src/ingest/retry.ts');
-const { rateLimitState } = await import('../src/github/client.ts');
+const { rateLimitState, fetchCoreRateLimit } = await import('../src/github/client.ts');
 const { sql } = await import('../src/db/client.ts');
 
 const startedAt = Date.now();
 let failed = false;
+
+/**
+ * GitHub Actions reads `::notice::` / `::warning::` lines off stdout and pins
+ * them to the run's summary page — no workflow edit, and no file written (a
+ * $GITHUB_STEP_SUMMARY append would be this process's first disk write, which
+ * AGENTS.md keeps at zero). Printed only on a runner; a cron mail gets the
+ * plain lines below.
+ */
+const onActions = process.env.GITHUB_ACTIONS === 'true';
+/**
+ * Workflow-command escaping (actions/toolkit's escapeData / escapeProperty).
+ * An error message carrying a newline would otherwise end the annotation and
+ * start a line the runner parses as a command of its own.
+ */
+const escapeData = (v) =>
+  String(v).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+const escapeProperty = (v) => escapeData(v).replace(/:/g, '%3A').replace(/,/g, '%2C');
+function annotate(level, title, message) {
+  if (onActions) console.log(`::${level} title=${escapeProperty(title)}::${escapeData(message)}`);
+}
+
+/** Stages that threw. Each is isolated, so the rest of the run still happens;
+ * the process still exits 1 at the end, so a broken source is never green. */
+const stageFailures = [];
+
+/**
+ * One acquisition stage, isolated. Before this a single try/catch wrapped the
+ * whole run, so a registry outage or one unreadable list stopped the seed
+ * list, the topic sweep, the refresh and the drain with it.
+ */
+async function stage(name, run) {
+  try {
+    await run();
+  } catch (error) {
+    // The message only. A cause can carry request headers or statement text.
+    const message = (error instanceof Error ? error.message : 'failed').replace(/\.$/, '');
+    stageFailures.push(name);
+    console.error(`corpus-sync: stage=${name} FAILED — ${message}. The other stages still ran.`);
+    annotate('error', `AgentDock sync: ${name} failed`, message);
+  }
+}
+
+/** What each discovery source wrote this run, for the summary and the fan-out. */
+const discovered = new Map();
+/** Fan-out per source, for the summary. */
+let fanOut = [];
+/** Core bucket from /rate_limit around the drain; null when not measured. */
+let coreBefore = null;
+let coreAfter = null;
+let drainStoppedBy = null;
+let drainedCount = 0;
+let refreshedCount = 0;
+/** Stored repositories whose last check read nothing; null when refresh did not run. */
+let failingChecks = null;
+/** Jobs left queued after the drain; null when the drain did not run. */
+let backlog = null;
+/** Failures put back in the queue for another attempt this run (not rate limits). */
+let retriesScheduled = 0;
+/** Artifacts the reads this run delisted. */
+let delisted = 0;
 
 /**
  * What each job this run drained actually ended as, keyed by the same outcome
@@ -183,12 +254,44 @@ function summarize() {
   line('Could not be read', outcomeCount('unreadable'));
   line('Rate limited, deferred', outcomeCount('rate_limited'));
   line('Other failures', otherFailures);
+  line('  of which retry next run', retriesScheduled);
+  line('Artifacts delisted', delisted);
+  // Corpus-wide, not this run: stored repositories whose last check read
+  // nothing. Their artifacts stay listed; a number that keeps growing is the
+  // signal (src/corpus/refresh.ts).
+  line(
+    'Stored repos failing checks',
+    failingChecks === null ? 'not measured (no refresh)' : `${failingChecks} (before this drain)`,
+  );
+  line('Jobs still queued', backlog ?? 'not measured (no drain)');
+  line(
+    'Drain stopped by',
+    drainStoppedBy ?? (drainedCount > 0 ? 'its cap or an empty queue' : 'n/a'),
+  );
   console.log('');
   line(
     'GitHub core requests left',
     rate ? `${rate.remaining} of ${rate.limit}` : 'no call made this run',
   );
+  // Measured from /rate_limit before and after the drain, never estimated. A
+  // window that reset mid-run makes the difference meaningless, so it says so.
+  line(
+    'GitHub core requests spent',
+    coreBefore && coreAfter
+      ? coreBefore.reset === coreAfter.reset
+        ? coreBefore.remaining - coreAfter.remaining
+        : 'not measurable (the hourly window reset during the run)'
+      : 'not measured',
+  );
+  line('Budget', budget.authenticated ? 'authenticated (token set)' : 'unauthenticated');
   line('Duration', `${Math.round((Date.now() - startedAt) / 1000)}s`);
+  console.log('');
+  line('Discovered this run', '');
+  for (const [name, written] of discovered) line(`  ${name}`, `${written} seed(s) written`);
+  for (const name of stageFailures) line(`  ${name}`, 'FAILED, see above');
+  line('Enqueued this run', fanOut.reduce((n, r) => n + r.enqueued, 0) + refreshedCount);
+  for (const r of fanOut) line(`  new from ${r.source}`, r.enqueued);
+  line('  re-checks of stored repos', refreshedCount);
   console.log('');
 }
 
@@ -200,10 +303,13 @@ function summarize() {
  * so a repository two sources both name carries only the later one — measured on
  * 2026-08-11, expanding the curated link lists re-tagged 253 registry seeds and 4
  * of the 15 operator seeds. A source knows the names it just produced; it cannot
- * rely on the column still agreeing. Left null by --source=all, which is not
- * singling any source out and keeps the global FIFO.
+ * rely on the column still agreeing. Read only by a single-source run;
+ * --source=all fans out per source instead (fanOutBySource, below).
  */
 let scope = null;
+
+/** The names each source wrote this run, for the scheduled run's per-source fan-out. */
+const sourceNames = new Map();
 
 /** @param {string[]} names */
 function widenScope(names) {
@@ -212,6 +318,7 @@ function widenScope(names) {
 
 async function runRegistry() {
   const sync = await syncRegistry();
+  discovered.set('registry', sync.seedsUpserted);
   console.log(
     `corpus-sync: source=registry pages=${sync.pagesRead} sanitized=${sync.pagesSanitized} ` +
       `rows=${sync.rowsSeen} invalid=${sync.rowsInvalid} no-github-repo=${sync.rowsNoGithubRepo} ` +
@@ -258,6 +365,11 @@ async function runSeedList() {
   const kept = rows.slice(0, CORPUS_CAPS.maxSeedsPerSource);
   const upserted = await upsertSeeds(kept);
   widenScope(kept.map((r) => r.fullName));
+  sourceNames.set(
+    'seeds',
+    kept.map((r) => r.fullName),
+  );
+  discovered.set('seeds', upserted);
   console.log(
     `corpus-sync: source=seeds in-file=${rows.length} written=${upserted} ` +
       `dropped-by-cap=${rows.length - kept.length} (cap ${CORPUS_CAPS.maxSeedsPerSource}) ` +
@@ -283,6 +395,11 @@ async function runLinkLists() {
   const kept = expansion.rows.slice(0, CORPUS_CAPS.maxSeedsPerSource);
   const written = await upsertSeeds(kept);
   widenScope(kept.map((r) => r.fullName));
+  sourceNames.set(
+    'links',
+    kept.map((r) => r.fullName),
+  );
+  discovered.set('links', written);
   console.log(
     `corpus-sync: source=links lists=${file.linkLists.length} read=${expansion.listsRead} ` +
       `unreadable=${expansion.listsFailed} extracted=${expansion.rows.length} ` +
@@ -309,11 +426,37 @@ async function runTopicSearch() {
   // Zero GitHub CORE requests. The Search API is a separate bucket — 10 a minute
   // unauthenticated against core's 60 an hour — which is why this source runs
   // while core is at zero. --drain below is the only thing here that spends core.
+  // Where each topic stopped last run, so a big topic continues down its star
+  // ladder instead of re-walking the top every time. The cursor is the
+  // per-topic shard stacks as JSON; sweepTopics validates what it reads back.
+  const state = await readSweepState('topic-search');
+  let resume = {};
+  try {
+    resume = state.cursor ? JSON.parse(state.cursor) : {};
+  } catch {
+    resume = {};
+  }
   const sweep = await sweepTopics({
     minStars: searchMinStars,
     maxRequests: searchRequests,
+    spacingMs: budget.searchSpacingMs,
+    resume,
+  });
+  // With each stack, how many runs in a row its top shard failed: the third
+  // drops it (CORPUS_CAPS.maxShardFailures). A bare stack from before still reads.
+  const pending = Object.fromEntries(
+    sweep.topics
+      .filter((t) => t.pending !== null)
+      .map((t) => [t.topic, { stack: t.pending, failures: t.failures }]),
+  );
+  await writeSweepState('topic-search', {
+    cursor: Object.keys(pending).length > 0 ? JSON.stringify(pending) : null,
+    watermark: null,
+    passStartedAt: null,
   });
   widenScope(sweep.seedNames);
+  sourceNames.set('search', sweep.seedNames);
+  discovered.set('search', sweep.seedsUpserted);
   console.log(
     `corpus-sync: source=search topics=${sweep.requestsSpent > 0 ? 'swept' : 'none'} ` +
       `requests=${sweep.requestsSpent} (search bucket) core-cost=0 ` +
@@ -337,11 +480,48 @@ async function runTopicSearch() {
       console.log(`corpus-sync:   ${shard.query} — ${shard.repositories} repositories`);
     }
   }
+  // Per topic, so a topic that got nothing is named rather than averaged into a
+  // total that looks healthy.
+  for (const t of sweep.topics) {
+    console.log(
+      `corpus-sync:   topic:${t.topic} requests=${t.requests} new-repos=${t.found} ` +
+        `stopped=${t.stoppedBecause}` +
+        (t.pending ? ` resumes-next-run-at=${t.pending.length} shard(s)` : '') +
+        (t.failures > 0 ? ` consecutive-failures=${t.failures}` : ''),
+    );
+    if (t.dropped) {
+      console.log(
+        `corpus-sync: INCOMPLETE — topic:${t.topic} dropped the shard "${t.dropped}" after ` +
+          `${CORPUS_CAPS.maxShardFailures} failed runs in a row, so the topic can move on. Its ` +
+          'repositories are not swept until the next full pass of the topic asks for it again.',
+      );
+    }
+  }
+  if (sweep.unmeasuredFloors.length > 0) {
+    console.log(
+      `corpus-sync: INCOMPLETE — the below-floor count could not be measured for ` +
+        `${sweep.unmeasuredFloors.join(', ')}; how much of those topics sits below the floor is ` +
+        'not known from this run.',
+    );
+  }
+  // A failed topic is a failed source, like a failed registry read: the run
+  // exits 1 and writes no last-success. Its shard stays on the stack, so a
+  // shard that fails every time keeps the run red rather than a topic silently
+  // stuck in a log line.
+  const failedTopics = sweep.topics.filter((t) => t.stoppedBecause === 'failed');
+  if (failedTopics.length > 0) {
+    const names = failedTopics.map((t) => t.topic).join(',');
+    stageFailures.push(`search(${names})`);
+    const dropped = failedTopics.filter((t) => t.dropped).map((t) => t.dropped);
+    const droppedNote = dropped.length > 0 ? `; dropped ${dropped.join('; ')}` : '';
+    annotate('error', 'AgentDock sync: search failed', `topic(s) ${names} failed${droppedNote}`);
+  }
   if (sweep.stoppedBecause !== 'exhausted') {
     console.log(
       `corpus-sync: INCOMPLETE — the sweep stopped on ${sweep.stoppedBecause} after ` +
-        `${sweep.requestsSpent} request(s). The shards it had not reached are not known from ` +
-        'this run, and neither is how many repositories they hold.',
+        `${sweep.requestsSpent} request(s). Topics that stopped short keep their place, and the ` +
+        'next run continues from it; how many repositories the unwalked shards hold is not ' +
+        'known from this run.',
     );
   }
   // The floor's cost, measured rather than described. At the default it is most
@@ -364,100 +544,179 @@ async function runTopicSearch() {
 try {
   // Registry first when several run: it costs no GitHub quota, so it can never
   // be the thing that starves the sources that do. Links is next for the same
-  // reason — it too costs nothing.
-  if (source === 'registry' || source === 'all') await runRegistry();
-  if (source === 'seeds' || source === 'all') await runSeedList();
-  if (source === 'links' || source === 'all') await runLinkLists();
+  // reason — it too costs nothing. Each is its own stage: one failing no longer
+  // stops the others.
+  if (source === 'registry' || source === 'all') await stage('registry', runRegistry);
+  if (source === 'seeds' || source === 'all') await stage('seeds', runSeedList);
+  if (source === 'links' || source === 'all') await stage('links', runLinkLists);
   // Search is next for the same reason: a separate rate-limit bucket, so it
   // spends none of the core budget the drain below needs.
-  if (source === 'search' || source === 'all') await runTopicSearch();
-  // --source=all singles out no source, so its fan-out stays the global FIFO.
-  if (source === 'all') scope = null;
+  if (source === 'search' || source === 'all') await stage('search', runTopicSearch);
 
-  if (noEnqueue) {
-    console.log('corpus-sync: --no-enqueue, so no job was created');
-  } else {
-    // A single-source run fans out the names THAT source just wrote. The offer
-    // is ordered by global arrival, so an unscoped fan-out after --source=seeds
-    // hands back whichever source wrote first — measured on 2026-08-11, the seed
-    // list's densest repository sat 7,971 registry rows and eleven days of quota
-    // behind the front of the queue.
-    const fan = await fanOutSeeds({ limit: enqueueLimit, only: scope ?? undefined });
-    console.log(
-      `corpus-sync: fan-out scope=${scope === null ? 'every seed' : `${scope.length} name(s) this run wrote`} ` +
-        `considered=${fan.considered} enqueued=${fan.enqueued} denylisted=${fan.denylisted} ` +
-        `flooded=${fan.flooded} still-pending=${fan.remaining} across every source ` +
-        `(cap ${enqueueLimit})`,
-    );
-  }
+  // Fan-out, refresh and drain are stages too: a database error in one of them
+  // used to throw past the summary and print nothing of what the run had done.
+  await stage('fan-out', async () => {
+    if (noEnqueue) {
+      console.log('corpus-sync: --no-enqueue, so no job was created');
+    } else if (source === 'all') {
+      // --source=all used to fan out the global FIFO alone, where the registry's
+      // bulk arrival held every slot. Now the cap is shared across the sources
+      // that wrote names this run, densest first — the operator's seed list, the
+      // star-ordered topic sweep, the curated lists — and what they leave goes to
+      // the backlog, which is where the registry's names (and every earlier
+      // run's leftovers) wait.
+      fanOut = await fanOutBySource(
+        enqueueLimit,
+        ['seeds', 'search', 'links']
+          .filter((name) => sourceNames.has(name))
+          .map((name) => ({ source: name, names: sourceNames.get(name) })),
+      );
+      for (const r of fanOut) {
+        console.log(
+          `corpus-sync: fan-out source=${r.source} considered=${r.considered} ` +
+            `enqueued=${r.enqueued} denylisted=${r.denylisted} flooded=${r.flooded}`,
+        );
+      }
+      const last = fanOut.at(-1);
+      console.log(
+        `corpus-sync: fan-out enqueued=${fanOut.reduce((n, r) => n + r.enqueued, 0)} ` +
+          `still-pending=${last?.remaining ?? 'unknown'} across every source (cap ${enqueueLimit})`,
+      );
+    } else {
+      // A single-source run fans out the names THAT source just wrote. The offer
+      // is ordered by global arrival, so an unscoped fan-out after --source=seeds
+      // hands back whichever source wrote first — measured on 2026-08-11, the seed
+      // list's densest repository sat 7,971 registry rows and eleven days of quota
+      // behind the front of the queue.
+      const fan = await fanOutSeeds({ limit: enqueueLimit, only: scope ?? undefined });
+      fanOut = [{ source, ...fan }];
+      console.log(
+        `corpus-sync: fan-out scope=${scope === null ? 'every seed' : `${scope.length} name(s) this run wrote`} ` +
+          `considered=${fan.considered} enqueued=${fan.enqueued} denylisted=${fan.denylisted} ` +
+          `flooded=${fan.flooded} still-pending=${fan.remaining} across every source ` +
+          `(cap ${enqueueLimit})`,
+      );
+    }
+  });
 
   // Re-offers repositories AgentDock has already read, so an upstream commit
   // after the first read is not invisible forever. Fan-out cannot do this: it
   // joins against ANY job row, terminal ones included, on purpose. Runs after
   // fan-out so a brand-new repository is still ahead of a re-check in the queue.
   if (refreshLimit > 0 && !noRefresh) {
-    const refreshed = await refreshStaleRepositories({
-      limit: refreshLimit,
-      staleAfterMs: staleHours * 60 * 60 * 1000,
-    });
-    console.log(
-      `corpus-sync: refresh stale-after=${staleHours}h considered=${refreshed.considered} ` +
-        `enqueued=${refreshed.enqueued} denylisted=${refreshed.denylisted} ` +
-        `flooded=${refreshed.flooded} not-reached=${refreshed.notReached} (cap ${refreshLimit})`,
-    );
-    if (refreshed.notReached > 0) {
+    await stage('refresh', async () => {
+      const refreshed = await refreshStaleRepositories({
+        limit: refreshLimit,
+        staleAfterMs: staleHours * 60 * 60 * 1000,
+      });
+      refreshedCount = refreshed.enqueued;
+      failingChecks = refreshed.failingChecks;
       console.log(
-        `corpus-sync: INCOMPLETE — ${refreshed.notReached} stored repositories are past the ` +
-          `${staleHours}h staleness cutoff and were not re-checked by this run. They are next in ` +
-          'line: the offer is ordered by least-recently-read, so repeated runs rotate through ' +
-          'the whole corpus rather than starving the tail.',
+        `corpus-sync: refresh stale-after=${staleHours}h considered=${refreshed.considered} ` +
+          `enqueued=${refreshed.enqueued} denylisted=${refreshed.denylisted} ` +
+          `flooded=${refreshed.flooded} not-reached=${refreshed.notReached} (cap ${refreshLimit}) ` +
+          `failing-checks=${refreshed.failingChecks}`,
       );
-    }
+      if (refreshed.notReached > 0) {
+        console.log(
+          `corpus-sync: INCOMPLETE — ${refreshed.notReached} stored repositories are past the ` +
+            `${staleHours}h staleness cutoff and were not re-checked by this run. They are next in ` +
+            'line: the offer is ordered by least-recently-read, so repeated runs rotate through ' +
+            'the whole corpus rather than starving the tail.',
+        );
+      }
+    });
   }
 
   if (drainLimit > 0) {
-    // Bounded and rate-aware, and deliberately not a resident worker: claimJob
-    // and runJob are exported, so this is those two calls with the loop bounded
-    // instead of endless. There is no sleep and no signal handling — a
-    // scheduled process that has run out of budget should exit and let cron
-    // start the next one, not hold a connection open waiting for a clock.
-    //
-    // A job whose process died mid-read is returned to the queue first. That
-    // sweep used to run on the poll loop's own timer; with no resident loop
-    // left, the scheduled run is the only thing that can do it, and doing it
-    // before the drain is what lets this run pick the reclaimed job up.
-    const reaped = await reapAbandoned(REAP_AFTER_MS);
-    if (reaped.length > 0) {
-      console.log(`corpus-sync: returned ${reaped.length} abandoned job(s) to the queue`);
-    }
-
-    let drained = 0;
-    let stoppedOnBudget = false;
-    for (let i = 0; i < drainLimit; i += 1) {
-      // Checked BEFORE the claim rather than after the failure. An ingest costs
-      // two core requests, so with fewer than two left the next claim spends
-      // one only to hit the wall — and every remaining job would then spend one
-      // more to rediscover the same fact. Stopping turns an empty budget into
-      // one line instead of a queue's worth of failed attempts.
-      if (pauseUntilFor(rateLimitState(), 0) > Date.now()) {
-        stoppedOnBudget = true;
-        break;
+    await stage('drain', async () => {
+      // Bounded and rate-aware, and deliberately not a resident worker: claimJob
+      // and runJob are exported, so this is those two calls with the loop bounded
+      // instead of endless. There is no sleep and no signal handling — a
+      // scheduled process that has run out of budget should exit and let cron
+      // start the next one, not hold a connection open waiting for a clock.
+      //
+      // A job whose process died mid-read is returned to the queue first. That
+      // sweep used to run on the poll loop's own timer; with no resident loop
+      // left, the scheduled run is the only thing that can do it, and doing it
+      // before the drain is what lets this run pick the reclaimed job up.
+      const reaped = await reapAbandoned(REAP_AFTER_MS);
+      if (reaped.length > 0) {
+        console.log(`corpus-sync: returned ${reaped.length} abandoned job(s) to the queue`);
       }
-      const job = await claimJob(WORKER_ID);
-      if (!job) break;
-      const outcome = await runJob(job);
-      drained += 1;
-      outcomes.set(outcome, (outcomes.get(outcome) ?? 0) + 1);
-    }
-    console.log(`corpus-sync: drained ${drained} job(s) of at most ${drainLimit}`);
-    if (stoppedOnBudget) {
-      const rate = rateLimitState();
-      console.log(
-        `corpus-sync: INCOMPLETE — stopped with ${drainLimit - drained} of the cap unspent ` +
-          `because fewer than two GitHub core requests remain (${rate?.remaining ?? 0} of ` +
-          `${rate?.limit ?? 60}). Whatever is still queued is read by the next scheduled run.`,
-      );
-    }
+
+      // Free (GitHub does not count /rate_limit), and it seeds the budget check
+      // below with the real number instead of nothing.
+      coreBefore = await fetchCoreRateLimit();
+
+      let drained = 0;
+      for (let i = 0; i < drainLimit; i += 1) {
+        // Checked BEFORE the claim rather than after the failure. An ingest costs
+        // two core requests, so with fewer than two left the next claim spends
+        // one only to hit the wall — and every remaining job would then spend one
+        // more to rediscover the same fact. The deadline is the other half: a
+        // larger authenticated cap must never carry the run past the Actions
+        // timeout with a transaction open.
+        drainStoppedBy = drainStop(rateLimitState(), Date.now() - startedAt);
+        if (drainStoppedBy) break;
+        const job = await claimJob(WORKER_ID);
+        if (!job) break;
+        const run = await runJob(job);
+        drained += 1;
+        outcomes.set(run.outcome, (outcomes.get(run.outcome) ?? 0) + 1);
+        delisted += run.removed;
+        if (run.retryScheduled) retriesScheduled += 1;
+        // A secondary limit leaves the core count high, so the check above
+        // cannot see it, and every later claim would spend a request to hit the
+        // same wall and defer its job. The job in hand is already deferred with
+        // its attempt refunded; the queue waits for the next run.
+        if (run.outcome === 'rate_limited') {
+          drainStoppedBy = 'rate_limited';
+          break;
+        }
+      }
+      drainedCount = drained;
+      coreAfter = await fetchCoreRateLimit();
+      console.log(`corpus-sync: drained ${drained} job(s) of at most ${drainLimit}`);
+      if (drainStoppedBy === 'core_budget') {
+        const rate = rateLimitState();
+        console.log(
+          `corpus-sync: INCOMPLETE — stopped with ${drainLimit - drained} of the cap unspent ` +
+            `because fewer than two GitHub core requests remain (${rate?.remaining ?? 0} of ` +
+            `${rate?.limit ?? 60}). Whatever is still queued is read by the next scheduled run.`,
+        );
+      }
+      if (drainStoppedBy === 'rate_limited') {
+        console.log(
+          `corpus-sync: INCOMPLETE — stopped with ${drainLimit - drained} of the cap unspent ` +
+            'because GitHub answered with a rate limit (a secondary limit leaves the core count ' +
+            'high). That job is deferred with its attempt refunded; whatever is still queued is ' +
+            'read by the next scheduled run.',
+        );
+      }
+      if (drainStoppedBy === 'deadline') {
+        console.log(
+          `corpus-sync: INCOMPLETE — stopped with ${drainLimit - drained} of the cap unspent ` +
+            `because ${Math.round(CORPUS_CAPS.drainDeadlineMs / 60_000)} minutes had passed since ` +
+            'the sync started. Whatever is still queued is read by the next scheduled run.',
+        );
+      }
+      backlog = await queuedJobCount();
+      console.log(`corpus-sync: ${backlog} job(s) still queued after the drain`);
+      if (drainStoppedBy) {
+        annotate(
+          'warning',
+          'AgentDock sync: drain stopped early',
+          `${drainStoppedBy}; ${drained} drained, ${backlog} still queued`,
+        );
+      } else if (drained === 0 && backlog > 0) {
+        annotate(
+          'warning',
+          'AgentDock sync: nothing drained',
+          `${backlog} job(s) queued, none claimable`,
+        );
+      }
+    });
   }
 
   // COR-06's acceptance number, taken from the function the home page calls and
@@ -474,10 +733,55 @@ try {
   );
 
   summarize();
+
+  if (stageFailures.length > 0) failed = true;
+  annotate(
+    'notice',
+    'AgentDock sync',
+    `processed=${drainedCount} ingested=${outcomeCount('ok')} unchanged=${outcomeCount('unchanged')} ` +
+      `failed-stages=${stageFailures.length === 0 ? 'none' : stageFailures.join(',')} ` +
+      `duration=${Math.round((Date.now() - startedAt) / 1000)}s`,
+  );
+  // Only a run that reached here with every stage intact. The job's exit code
+  // says the process finished; this says the sync did.
+  if (!failed && scheduled) await recordSyncSucceeded(new Date());
 } catch (error) {
   // The message only. A cause can carry request headers or statement text.
   console.error(`corpus-sync: ${error instanceof Error ? error.message : 'failed'}`);
   failed = true;
+}
+
+// Every scheduled run, green or red, beside sync:last_success — which a red run
+// never writes, so on its own it cannot say whether runs are failing or not
+// happening. Counted values only; no message text, so nothing a cause carried.
+if (scheduled) {
+  try {
+    await recordSyncAttempt({
+      startedAt: new Date(startedAt).toISOString(),
+      ok: !failed,
+      failedStages: stageFailures,
+      durationSeconds: Math.round((Date.now() - startedAt) / 1000),
+      processed: drainedCount,
+      ingested: outcomeCount('ok'),
+      unchanged: outcomeCount('unchanged'),
+      unreadable: outcomeCount('unreadable'),
+      rateLimited: outcomeCount('rate_limited'),
+      retriesScheduled,
+      delisted,
+      enqueued: fanOut.reduce((n, r) => n + r.enqueued, 0) + refreshedCount,
+      failingChecks,
+      queued: backlog,
+      drainStoppedBy,
+      coreSpent:
+        coreBefore && coreAfter && coreBefore.reset === coreAfter.reset
+          ? coreBefore.remaining - coreAfter.remaining
+          : null,
+      authenticated: budget.authenticated,
+    });
+  } catch {
+    // Reporting, not a gate: the run's own exit code already says what happened.
+    console.error('corpus-sync: could not record sync:last_attempt');
+  }
 }
 
 await sql.end();

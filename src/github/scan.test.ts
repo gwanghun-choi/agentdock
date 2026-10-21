@@ -210,6 +210,39 @@ describe('fetchRepoScanInputs', () => {
       expect(scan.tree.entries.map((e) => e.path)).toEqual(paths);
     });
 
+    describe('after a partial read of the same commit (R6)', () => {
+      it('reads again when the tree shows nothing that forces a partial read', async () => {
+        stubGitHub({ tree: () => Response.json(treeJson(paths)) });
+        const scan = await fetchRepoScanInputs('a', 'b', selectSkills, COMMIT, true);
+        expect(scan.unchanged).toBe(false);
+        expect([...scan.files.keys()]).toEqual(['a/SKILL.md', 'b/SKILL.md']);
+      });
+
+      it('still short-circuits when GitHub truncated the tree', async () => {
+        stubGitHub({ tree: () => Response.json(treeJson(paths, { truncated: true })) });
+        const scan = await fetchRepoScanInputs('a', 'b', selectSkills, COMMIT, true);
+        expect(scan.unchanged).toBe(true);
+        expect(hosts.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(0);
+      });
+
+      it('still short-circuits when more paths are wanted than maxFiles allows', async () => {
+        const many = Array.from({ length: CAPS.maxFiles + 1 }, (_, i) => `s${i}/SKILL.md`);
+        stubGitHub({ tree: () => Response.json(treeJson(many)) });
+        const scan = await fetchRepoScanInputs('a', 'b', selectSkills, COMMIT, true);
+        expect(scan.unchanged).toBe(true);
+        expect(hosts.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(0);
+      });
+
+      it('still short-circuits when a wanted file is over maxFileBytes', async () => {
+        const json = treeJson(paths);
+        json.tree[0].size = CAPS.maxFileBytes + 1;
+        stubGitHub({ tree: () => Response.json(json) });
+        const scan = await fetchRepoScanInputs('a', 'b', selectSkills, COMMIT, true);
+        expect(scan.unchanged).toBe(true);
+        expect(hosts.filter((h) => h === 'raw.githubusercontent.com')).toHaveLength(0);
+      });
+    });
+
     it.each([
       ['a sha that does not match', 'b'.repeat(40)],
       ['no stored sha at all', null],

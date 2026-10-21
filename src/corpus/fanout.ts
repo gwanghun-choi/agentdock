@@ -70,3 +70,38 @@ export async function fanOutSeeds(options: {
 
   return { considered, enqueued, denylisted, flooded, remaining };
 }
+
+export type SourceFanOut = FanOutResult & { source: string };
+
+/**
+ * One enqueue cap shared across the sources that wrote names this run, then
+ * whatever is left offered to the global FIFO — the backlog, which is where
+ * every name a source wrote in an earlier run waits, the registry's included.
+ *
+ * Before this, `--source=all` fanned out the global FIFO alone, so the source
+ * that arrived first in bulk took every slot: measured 2026-08-11, 7,971
+ * registry seeds sat ahead of all fifteen operator seeds. Each group now gets
+ * what is left divided by the groups left (the backlog counts as one), so a
+ * group with nothing new hands its share on instead of wasting it. Order is
+ * the caller's, and the caller lists the densest source first.
+ *
+ * Not a scheduler: the same fanOutSeeds, called once per group with the scope
+ * it already takes.
+ */
+export async function fanOutBySource(
+  limit: number,
+  groups: { source: string; names: string[] }[],
+): Promise<SourceFanOut[]> {
+  const slots: { source: string; names?: string[] }[] = [...groups, { source: 'backlog' }];
+  const results: SourceFanOut[] = [];
+  let left = limit;
+  for (const [i, slot] of slots.entries()) {
+    if (left <= 0) break;
+    const share = slot.names ? Math.ceil(left / (slots.length - i)) : left;
+    const result = await fanOutSeeds({ limit: share, only: slot.names });
+    results.push({ source: slot.source, ...result });
+    left -= result.enqueued;
+    if (result.flooded) break;
+  }
+  return results;
+}

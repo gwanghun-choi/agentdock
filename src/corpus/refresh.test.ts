@@ -24,20 +24,29 @@ describe.skipIf(!DB_URL)('refreshStaleRepositories', () => {
    */
   async function seed(
     name: string,
-    fields: { scannedAt: Date | null; isFork?: boolean; isArchived?: boolean; stars?: number },
+    fields: {
+      scannedAt: Date | null;
+      isFork?: boolean;
+      isArchived?: boolean;
+      stars?: number;
+      checkedAt?: Date | null;
+      checkFailures?: number;
+    },
   ) {
     // ISO string, not a Date. postgres.js infers a parameter's type from the
     // value, and `Date | null` gives it nothing to infer from on the null
     // branch, so it falls through to its byte encoder and throws on the Date.
     // The column is timestamptz and parses the string.
     const scannedAt = fields.scannedAt?.toISOString() ?? null;
+    const checkedAt = fields.checkedAt?.toISOString() ?? null;
     await sql`
       INSERT INTO repository
-        (github_node_id, full_name, owner, default_branch, stars, is_fork, is_archived, scanned_at)
+        (github_node_id, full_name, owner, default_branch, stars, is_fork, is_archived, scanned_at,
+         checked_at, check_failures)
       VALUES (
         ${`${NODE}-${name}`}, ${`${PREFIX}-${name}`}, 'test-owner', 'main',
         ${fields.stars ?? 500}, ${fields.isFork ?? false}, ${fields.isArchived ?? false},
-        ${scannedAt}
+        ${scannedAt}, ${checkedAt}, ${fields.checkFailures ?? 0}
       )
     `;
   }
@@ -185,5 +194,85 @@ describe.skipIf(!DB_URL)('refreshStaleRepositories', () => {
     } finally {
       await sql`DELETE FROM repository_denylist WHERE full_name = ${`${PREFIX}-blocked`}`;
     }
+  });
+
+  /**
+   * R1's remainder. A stored repository that turned 404 or too_large never
+   * moves scanned_at (nothing was read, and the UI prints scanned_at as "read
+   * on"), so before checked_at it held the oldest scanned_at in the corpus and
+   * a refresh slot every run, forever.
+   */
+  describe('stored repositories whose checks fail', () => {
+    const ago = (hours: number) => new Date(Date.now() - hours * HOUR);
+
+    it('orders by the last check, so a failed one goes behind the rest', async () => {
+      // Read 100 h ago, failed a check an hour ago → not due, not first.
+      await seed('just-failed', { scannedAt: ago(100), checkedAt: ago(1), checkFailures: 1 });
+      await seed('plain', { scannedAt: ago(20) });
+
+      const result = await refreshStaleRepositories({ limit: 10, staleAfterMs: 12 * HOUR });
+
+      expect(await queued()).toEqual([`${PREFIX}-plain`]);
+      expect(result.failingChecks).toBeGreaterThanOrEqual(1);
+    });
+
+    it('doubles the wait per consecutive failure', async () => {
+      // One failure: due after 24 h. Two: after 48 h.
+      await seed('f1-early', { scannedAt: ago(200), checkedAt: ago(20), checkFailures: 1 });
+      await seed('f1-due', { scannedAt: ago(200), checkedAt: ago(30), checkFailures: 1 });
+      await seed('f2-early', { scannedAt: ago(200), checkedAt: ago(40), checkFailures: 2 });
+      await seed('f2-due', { scannedAt: ago(200), checkedAt: ago(50), checkFailures: 2 });
+
+      await refreshStaleRepositories({ limit: 10, staleAfterMs: 12 * HOUR });
+
+      // Oldest check first among the due ones.
+      expect(await queued()).toEqual([`${PREFIX}-f2-due`, `${PREFIX}-f1-due`]);
+    });
+
+    it('caps the wait, so a repository that comes back is found within days', async () => {
+      const { CORPUS_CAPS } = await import('./caps');
+      const capHours = 12 * 2 ** CORPUS_CAPS.maxCheckBackoffDoublings;
+      await seed('long-gone', {
+        scannedAt: ago(5000),
+        checkedAt: ago(capHours + 1),
+        checkFailures: 40,
+      });
+      await seed('not-yet', {
+        scannedAt: ago(5000),
+        checkedAt: ago(capHours - 1),
+        checkFailures: 40,
+      });
+
+      await refreshStaleRepositories({ limit: 10, staleAfterMs: 12 * HOUR });
+
+      expect(await queued()).toEqual([`${PREFIX}-long-gone`]);
+    });
+
+    it('keeps treating a row from before checked_at existed by its scanned_at', async () => {
+      await seed('legacy', { scannedAt: ago(30), checkedAt: null });
+
+      await refreshStaleRepositories({ limit: 10, staleAfterMs: 12 * HOUR });
+
+      expect(await queued()).toEqual([`${PREFIX}-legacy`]);
+    });
+
+    it('a pile of failing repositories no longer holds every slot', async () => {
+      // Thirty, past the unauthenticated cap of 25, each read long ago and each
+      // failing — the shape that used to fill the whole refresh every run.
+      for (let i = 0; i < 30; i += 1) {
+        await seed(`dead-${String(i).padStart(2, '0')}`, {
+          scannedAt: ago(500 + i),
+          checkedAt: ago(2),
+          checkFailures: 1,
+        });
+      }
+      await seed('alive', { scannedAt: ago(13) });
+
+      const result = await refreshStaleRepositories({ limit: 25, staleAfterMs: 12 * HOUR });
+
+      expect(await queued()).toEqual([`${PREFIX}-alive`]);
+      expect(result.notReached).toBe(0);
+      expect(result.failingChecks).toBeGreaterThanOrEqual(30);
+    });
   });
 });

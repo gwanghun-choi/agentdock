@@ -57,6 +57,13 @@
       "when": 1786511031974,
       "tag": "0007_green_jasper_sitwell",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792545594506,
+      "tag": "0008_overjoyed_talos",
+      "breakpoints": true
     }
   ]
 }

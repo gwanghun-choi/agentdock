@@ -116,7 +116,11 @@ export default async function RepositoryPage({ params }: Props) {
         {job && job.status !== 'succeeded' ? (
           <span>
             <Link href={`/jobs/${job.id}`}>
-              {job.status === 'failed' ? 'The last read failed' : 'AgentDock is reading it now'}
+              {job.status === 'failed'
+                ? 'The last read failed'
+                : job.status === 'running'
+                  ? 'AgentDock is reading it now'
+                  : 'Queued for the next scheduled sync'}
             </Link>
           </span>
         ) : null}

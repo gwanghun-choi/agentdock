@@ -187,6 +187,25 @@ describe.skipIf(!DB_URL)('persistScan', () => {
     expect(second.newVersions).toBe(1);
   });
 
+  it('makes a reverted content (A→B→A) the latest version again, without minting a third', async () => {
+    await persistScan(scan({ packages: [pkg({ contentHash: 'hash-a', body: 'A' })] }));
+    await persistScan(scan({ packages: [pkg({ contentHash: 'hash-b', body: 'B' })] }));
+    const back = await persistScan(scan({ packages: [pkg({ contentHash: 'hash-a', body: 'A' })] }));
+
+    expect(back.counters.updated).toBe(1);
+    const versions = await sql<{ content_hash: string }[]>`
+      SELECT pv.content_hash FROM package_version pv
+      WHERE pv.package_id = ${back.packageIds[0]} ORDER BY pv.ingested_at DESC
+    `;
+    expect(versions.map((v) => v.content_hash)).toEqual(['hash-a', 'hash-b']);
+
+    // And the unchanged case after it stays unchanged, with nothing reordered.
+    const again = await persistScan(
+      scan({ packages: [pkg({ contentHash: 'hash-a', body: 'A' })] }),
+    );
+    expect(again.counters.unchanged).toBe(1);
+  });
+
   it('round-trips parent_path through both the insert and the conflict path', async () => {
     const first = await persistScan(scan({ packages: [pkg({ parentPath: 'plugins/foo' })] }));
     const [inserted] = await sql<{ parent_path: string | null }[]>`
@@ -243,6 +262,29 @@ describe.skipIf(!DB_URL)('persistScan', () => {
       SELECT delisted_at FROM package WHERE id = ${relisted.packageIds[0]}
     `;
     expect(row.delisted_at).toBeNull();
+  });
+
+  it('keeps the artifacts of a type whose detector threw, and still delists the others (R5)', async () => {
+    const command = pkg({
+      type: 'command',
+      sourcePath: '.claude/commands/x.md',
+      name: 'x',
+      slug: 'x',
+      contentHash: 'hash-cmd',
+    });
+    await persistScan(scan({ packages: [pkg(), command] }));
+    // The skill detector threw: no skill candidate this time. The command
+    // detector ran and found nothing, so the command really is gone.
+    const result = await persistScan(scan({ packages: [], undetectedTypes: ['skill'] }));
+    expect(result.delisted).toBe(1);
+    const rows = await sql<{ type: string; delisted_at: Date | null }[]>`
+      SELECT p.type, p.delisted_at FROM package p JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} ORDER BY p.type
+    `;
+    expect(rows.map((r) => [r.type, r.delisted_at === null])).toEqual([
+      ['command', false],
+      ['skill', true],
+    ]);
   });
 
   describe('capability findings', () => {
@@ -302,6 +344,16 @@ describe.skipIf(!DB_URL)('persistScan', () => {
 
       expect(await findingRows(versionId)).toHaveLength(0);
       expect(await analyzedAtOf(versionId)).not.toBeNull();
+    });
+
+    it('keeps what a partial analysis found but leaves analyzed_at null, so no absence filter vouches for it', async () => {
+      const result = await persistScan(
+        scan({ packages: [pkg({ findings: [finding()], analysisIncomplete: true })] }),
+      );
+      const versionId = await versionIdOf(result.packageIds[0]);
+
+      expect(await findingRows(versionId)).toHaveLength(1);
+      expect(await analyzedAtOf(versionId)).toBeNull();
     });
 
     it('does not duplicate findings when the same scan is persisted twice', async () => {
@@ -785,6 +837,28 @@ describe.skipIf(!DB_URL)('persistScan', () => {
       expect(at(row.scanned_at)).toBe(scannedAt.toISOString());
       expect(row.last_ingested_sha).toBe(COMMIT);
     });
+
+    // A read — full or short-circuited — is also a check, and ends a failure
+    // streak, so a repository that comes back rejoins the ordinary rotation.
+    it.each(['a full read', 'the no-change write'])(
+      'ends a run of failed checks on %s',
+      async (path) => {
+        await persistScan(scan({ packages: all }));
+        await sql`UPDATE repository SET check_failures = 3, checked_at = now() - interval '9 days'
+                   WHERE github_node_id = ${NODE_ID}`;
+        const readAt = new Date('2026-08-10T12:00:00.000Z');
+
+        if (path === 'a full read') await persistScan(scan({ packages: all, scannedAt: readAt }));
+        else await touchRepository(metadata(), COMMIT, readAt);
+
+        const [row] = await sql<{ checked_at: Date; scanned_at: Date; check_failures: number }[]>`
+          SELECT checked_at, scanned_at, check_failures FROM repository
+           WHERE github_node_id = ${NODE_ID}`;
+        expect(row.check_failures).toBe(0);
+        expect(at(row.checked_at)).toBe(readAt.toISOString());
+        expect(at(row.scanned_at)).toBe(readAt.toISOString());
+      },
+    );
 
     it('leaves every package timestamp exactly as it was', async () => {
       await persistScan(scan({ packages: all }));

@@ -45,10 +45,30 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...valid, DATABASE_SCHEMA: 'public' })).toThrowError(/DATABASE_SCHEMA/);
   });
 
-  it('accepts the test schema', () => {
-    expect(parseEnv({ ...valid, DATABASE_SCHEMA: 'agentdock_test' }).DATABASE_SCHEMA).toBe(
-      'agentdock_test',
-    );
+  // Changed on 2026-10-21: the test schema used to be accepted on any URL,
+  // which is how a suite reached a deployment's agentdock_test.
+  it('accepts the test schema only on the local test database', () => {
+    const local = `postgres://agentdock_app:${SENTINEL}@127.0.0.1:55432/agentdock_test`;
+    expect(
+      parseEnv({ DATABASE_URL: local, DATABASE_SCHEMA: 'agentdock_test' }).DATABASE_SCHEMA,
+    ).toBe('agentdock_test');
+  });
+
+  it('refuses the test schema on any other database, without echoing it', () => {
+    for (const url of [
+      valid.DATABASE_URL,
+      `postgres://agentdock_app:${SENTINEL}@ep-x-pooler.us-east-2.aws.neon.tech/neondb`,
+    ]) {
+      let message = '';
+      try {
+        parseEnv({ DATABASE_URL: url, DATABASE_SCHEMA: 'agentdock_test' });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toMatch(/DATABASE_URL: agentdock_test is only reachable/);
+      expect(message).not.toContain(SENTINEL);
+      expect(message).not.toContain('ep-x');
+    }
   });
 
   it('reads a whitespace-only GITHUB_TOKEN as absent', () => {

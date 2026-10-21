@@ -11,6 +11,7 @@ import {
   normalizeQuery,
   SEARCH_CAPS,
   type SearchFilters,
+  searchMode,
   searchPackages,
 } from '@/db/queries/search';
 import { log } from '@/log';
@@ -164,9 +165,10 @@ export default async function ArtifactsPage({
   // emit either zero or two lines depending on cache behaviour, and the
   // route is the one place that knows the request happened exactly once.
   const start = Date.now();
+  const mode = await searchMode({ q, filters });
   const [items, total] = await Promise.all([
-    searchPackages({ q, filters, limit: SEARCH_CAPS.pageSize, offset }),
-    countSearchResults({ q, filters }),
+    searchPackages({ q, filters, limit: SEARCH_CAPS.pageSize, offset, mode }),
+    countSearchResults({ q, filters, mode }),
   ]);
   const durationMs = Date.now() - start;
 
@@ -261,7 +263,9 @@ export default async function ArtifactsPage({
         <InfoIcon />
         <span>
           These filters describe what AgentDock observed while reading the files, not everything an
-          artifact can do.
+          artifact can do. The network and Bash filters list only skills and commands whose text
+          AgentDock has analyzed; the script filter lists only skills and plugins, whose file list
+          is a directory.
         </span>
       </p>
     </>
@@ -269,9 +273,13 @@ export default async function ArtifactsPage({
 
   const nextSteps = (
     <p className="actions">
-      <Link className="btn btn-quiet" href={hrefFor(q, 1, NO_FILTERS)}>
-        Clear filters
-      </Link>
+      {/* Only with a filter to clear. Without one it linked to the page the
+          reader was already on (U3). */}
+      {hasFilters ? (
+        <Link className="btn btn-quiet" href={hrefFor(q, 1, NO_FILTERS)}>
+          Clear filters
+        </Link>
+      ) : null}
       <Link className="btn btn-quiet" href="/artifacts">
         Browse all artifacts
       </Link>
@@ -405,6 +413,11 @@ export default async function ArtifactsPage({
         <p className="muted">
           Showing {offset + 1}–{offset + items.length}
         </p>
+        {/* searchMode relaxed the query, and the reader is told: these match
+            some of the words, not all of them. */}
+        {mode === 'any' ? (
+          <p className="muted">No artifact matched every word; these match at least one.</p>
+        ) : null}
       </div>
       <PackageRows items={items} />
       <nav className="pager" aria-label="Pagination">

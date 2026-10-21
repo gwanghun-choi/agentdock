@@ -34,25 +34,55 @@ function directoryOf(sourcePath: string): string {
   return idx === -1 ? '' : sourcePath.slice(0, idx);
 }
 
+/** What an artifact's inventory is taken from — the fields every Candidate carries. */
+export type InventoryOwner = { type: string; sourcePath: string; containerRoot?: string };
+
 /**
- * The file inventory: every blob under one artifact's directory prefix, from
- * the tree AgentDock already fetched — path-only, no regex, the same
- * filter+map shape as hook.ts's match() and plugin.ts's own stated idiom
- * ("One linear pass over blob paths, no regex.").
+ * Which blobs belong to one artifact. Three shapes, because the artifact types
+ * own their files three ways:
  *
- * `manifestSourcePath` is the artifact's own manifest path (e.g.
- * 'skills/canvas-design/SKILL.md'); its directory is the prefix. Sliced to
- * ANALYZE_CAPS.maxInventoryEntries — the largest real inventory measured is
- * 83 entries, so this is defence-in-depth, not a control real data ever hits.
+ * - A container (a plugin — the only detector that sets containerRoot) owns
+ *   everything under the root it declares, not under its manifest's directory:
+ *   `.claude-plugin/plugin.json`'s directory is `.claude-plugin/`, which holds
+ *   the manifest and nothing else. A root of '' is a plugin that IS the
+ *   repository (addyosmani-agent-skills, obra-superpowers in fixtures/), so it
+ *   owns the whole tree, still sliced to maxInventoryEntries.
+ * - A skill owns its SKILL.md's directory — scripts/, references/, assets/.
+ * - Every other type is one file: a command is one .md among its siblings, a
+ *   hooks.json or settings.json sits in a directory it does not own, and an
+ *   .mcp.json / server.json names a server that lives elsewhere. Taking their
+ *   directory listed the sibling commands and a plugin root's every file, and
+ *   fed those into the no_scripts filter as this artifact's own.
+ */
+function ownedBy(owner: InventoryOwner): (path: string) => boolean {
+  const root = owner.containerRoot;
+  if (root !== undefined) return root === '' ? () => true : (path) => path.startsWith(`${root}/`);
+  if (owner.type === 'skill') {
+    const prefix = directoryOf(owner.sourcePath);
+    return (path) => underPrefix(path, prefix);
+  }
+  return (path) => path === owner.sourcePath;
+}
+
+/**
+ * The file inventory: every blob one artifact owns (see ownedBy), from the
+ * tree AgentDock already fetched — path-only, no regex, the same filter+map
+ * shape as hook.ts's match() and plugin.ts's own stated idiom ("One linear
+ * pass over blob paths, no regex.").
+ *
+ * Sliced to ANALYZE_CAPS.maxInventoryEntries — the largest skill inventory
+ * measured is 83 entries; a root plugin owns its whole tree (180 and 184
+ * blobs in the two fixtures that have one), so the page says when the cap
+ * was reached.
  *
  * Executable is the exact string '100755' and nothing looser: a symlink's
  * mode is '120000', so an inequality or a prefix test would fold the two
  * real symlinks in the corpora into the executable count.
  */
-export function fileInventory(tree: TreeEntry[], manifestSourcePath: string): FileEntry[] {
-  const prefix = directoryOf(manifestSourcePath);
+export function fileInventory(tree: TreeEntry[], owner: InventoryOwner): FileEntry[] {
+  const owns = ownedBy(owner);
   return tree
-    .filter((e) => e.type === 'blob' && underPrefix(e.path, prefix))
+    .filter((e) => e.type === 'blob' && owns(e.path))
     .slice(0, ANALYZE_CAPS.maxInventoryEntries)
     .map((e) => ({
       path: e.path,

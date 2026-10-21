@@ -34,8 +34,16 @@ export type ScannedPackage = {
    */
   findings: Finding[];
   /**
-   * Every blob under this artifact's directory prefix, from the tree already
-   * in memory (src/analyze/files.ts). Written by the package upsert, which
+   * Set when an analyzer threw on this body: `findings` then holds only what
+   * the others produced, so persist leaves analyzed_at null rather than
+   * stamping "analyzed" over a gap — the absence filters (search.ts) read
+   * analyzed_at, and a "no network request observed" over an analyzer that
+   * never finished is the claim CAP-11 forbids. reanalyze.ts retries nulls.
+   */
+  analysisIncomplete?: boolean;
+  /**
+   * Every blob this artifact owns (src/analyze/files.ts's ownedBy), from the
+   * tree already in memory. Written by the package upsert, which
    * already runs on every scan (src/ingest/persist.ts) — NOT gated on a new
    * version, unlike findings: a version is minted by the manifest's own
    * bytes, so a script appearing beside an unchanged SKILL.md mints no
@@ -81,6 +89,14 @@ export type RepoScan = {
   etag: string | null;
   commitSha: string;
   treeTruncated: boolean;
+  /**
+   * Artifact types whose detector threw in match() this scan, so it proposed
+   * no candidate at all: their stored packages are neither delisted nor
+   * counted removed. A detector bug is not evidence that an artifact left the
+   * repository — without this, one throw delisted every artifact of its type
+   * (R5). Absent means none.
+   */
+  undetectedTypes?: string[];
   packages: ScannedPackage[];
   seeds: ScannedSeed[];
 };

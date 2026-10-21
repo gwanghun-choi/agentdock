@@ -26,7 +26,7 @@ const countUnenqueuedSeeds = vi.hoisted(() => vi.fn());
 vi.mock('@/db/queries/jobs', () => ({ enqueueJob }));
 vi.mock('@/db/queries/seeds', () => ({ unenqueuedSeeds, countUnenqueuedSeeds }));
 
-const { fanOutSeeds } = await import('./fanout');
+const { fanOutBySource, fanOutSeeds } = await import('./fanout');
 
 const A = 'test-owner/corpus-fan-a';
 const B = 'test-owner/corpus-fan-b';
@@ -140,6 +140,62 @@ const SPEC = 'test-owner/corpus-spec';
 const NODE_ID = 'TEST_NODE_ID_corpus_spec';
 const SEED_OK = 'corpus-spec-seed-owner/corpus-spec-reachable';
 const SEED_BLOCKED = 'corpus-spec-seed-owner/corpus-spec-denylisted';
+
+describe('fanOutBySource (R9)', () => {
+  /** Hands back `n` distinct names for a scoped offer, and the backlog's for an unscoped one. */
+  function offers(bySource: Record<string, number>, backlog: number) {
+    unenqueuedSeeds.mockImplementation(async (limit: number, only?: string[]) => {
+      const key = only ? only[0] : 'backlog';
+      const n = only ? (bySource[key] ?? 0) : backlog;
+      return Array.from({ length: Math.min(limit, n) }, (_, i) => `${key}/r${i}`);
+    });
+    enqueueJob.mockResolvedValue({ kind: 'queued', id: 1 });
+  }
+
+  it('gives every source a share before the backlog, instead of the backlog taking every slot', async () => {
+    offers({ seeds: 100, search: 100, links: 100 }, 10_000);
+    const results = await fanOutBySource(100, [
+      { source: 'seeds', names: ['seeds'] },
+      { source: 'search', names: ['search'] },
+      { source: 'links', names: ['links'] },
+    ]);
+    expect(results.map((r) => [r.source, r.enqueued])).toEqual([
+      ['seeds', 25],
+      ['search', 25],
+      ['links', 25],
+      ['backlog', 25],
+    ]);
+  });
+
+  it('a source with nothing new hands its share on', async () => {
+    offers({ seeds: 0, search: 100 }, 10_000);
+    const results = await fanOutBySource(30, [
+      { source: 'seeds', names: ['seeds'] },
+      { source: 'search', names: ['search'] },
+    ]);
+    expect(results.map((r) => [r.source, r.enqueued])).toEqual([
+      ['seeds', 0],
+      ['search', 15],
+      ['backlog', 15],
+    ]);
+    expect(results.reduce((n, r) => n + r.enqueued, 0)).toBe(30);
+  });
+
+  it('stops every later source on a full queue rather than asking again', async () => {
+    offers({ seeds: 5 }, 10_000);
+    enqueueJob.mockResolvedValue({ kind: 'flooded' });
+    const results = await fanOutBySource(30, [{ source: 'seeds', names: ['seeds'] }]);
+    expect(results).toHaveLength(1);
+    expect(results[0].flooded).toBe(true);
+  });
+
+  it('with no source names this run, is the global FIFO it always was', async () => {
+    offers({}, 10_000);
+    const results = await fanOutBySource(25, []);
+    expect(results.map((r) => [r.source, r.enqueued])).toEqual([['backlog', 25]]);
+    expect(unenqueuedSeeds).toHaveBeenCalledWith(25, undefined);
+  });
+});
 
 describe.skipIf(!DB_URL)('fanOutSeeds against the database', () => {
   let sql: typeof import('@/db/client').sql;

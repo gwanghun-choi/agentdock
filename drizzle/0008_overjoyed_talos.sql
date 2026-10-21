@@ -1,0 +1,22 @@
+-- Additive only: two columns on repository, both safe on a live table.
+--
+-- checked_at is nullable with no default, so ADD COLUMN is a catalog-only change
+-- (no table rewrite). check_failures carries a constant DEFAULT, which
+-- PostgreSQL 11+ also stores in the catalog instead of rewriting rows. No
+-- backfill: src/corpus/refresh.ts reads coalesce(checked_at, scanned_at), so an
+-- existing row keeps exactly the refresh position it had.
+--
+-- drizzle-kit also emitted a DROP INDEX / CREATE INDEX of package_fuzzy_trgm_idx
+-- here. That was 0007's snapshot, not the database: 0007's SQL was hand-written
+-- with public.gin_trgm_ops but its snapshot kept agentdock.gin_trgm_ops, so
+-- every later generate saw a change. The deployed index already uses
+-- public.gin_trgm_ops (src/db/migrations.test.ts compares drizzle/ applied
+-- against schema.ts), so both statements were removed and 0008's snapshot
+-- carries the corrected expression — the next generate emits nothing for it.
+--
+-- Rollback (manual, only if 0008 must be undone; drops what it added):
+--   ALTER TABLE "agentdock"."repository" DROP COLUMN "check_failures";
+--   ALTER TABLE "agentdock"."repository" DROP COLUMN "checked_at";
+--   DELETE FROM "agentdock"."__drizzle_migrations" WHERE created_at = <0008's "when" in meta/_journal.json>;
+ALTER TABLE "agentdock"."repository" ADD COLUMN "checked_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "agentdock"."repository" ADD COLUMN "check_failures" integer DEFAULT 0 NOT NULL;

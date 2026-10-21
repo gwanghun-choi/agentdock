@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { ANALYZE_CAPS } from '@/analyze/types';
 import type { RepoScan, ScannedPackage } from './types';
 
 // Database-backed tests write to the test schema — see persist.test.ts's own
@@ -194,6 +195,19 @@ describe.skipIf(!DB_URL)('analyzePackageVersion / unanalyzedVersionIds', () => {
     expect(count).toBe(0);
     expect(await findingRows(versionId)).toHaveLength(0);
     expect(await analyzedAtOf(versionId)).not.toBeNull();
+  });
+
+  it('clears analyzed_at when an analyzer could not finish, rather than stamping a gap as analyzed', async () => {
+    // A body over ANALYZE_CAPS.maxBodyChars is the one analyzer failure
+    // reachable without a stub: analyzeArtifact refuses it as `_input`.
+    const result = await persistScan(
+      scan({ packages: [pkg({ body: 'x'.repeat(ANALYZE_CAPS.maxBodyChars + 1), findings: [] })] }),
+    );
+    const versionId = await versionIdOf(result.packageIds[0]);
+    expect(await analyzedAtOf(versionId)).not.toBeNull();
+
+    await analyzePackageVersion(versionId);
+    expect(await analyzedAtOf(versionId)).toBeNull();
   });
 
   it('completes and produces no findings when body is null', async () => {

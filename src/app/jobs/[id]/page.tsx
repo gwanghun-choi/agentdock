@@ -33,7 +33,15 @@ export default async function JobPage({ params }: Props) {
   return (
     <>
       <JobPanel job={job} />
-      <PollUntilDone done={done} />
+      {/* A plain link to this same page: works with JavaScript off and in a
+          background tab, where PollUntilDone deliberately stops asking. */}
+      {done ? null : (
+        <p className="muted">
+          This page checks again {job.status === 'running' ? 'every few seconds' : 'once a minute'}{' '}
+          while it is open. <a href={`/jobs/${job.id}`}>Check now</a>
+        </p>
+      )}
+      <PollUntilDone status={job.status} />
     </>
   );
 }

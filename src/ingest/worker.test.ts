@@ -105,8 +105,14 @@ describe.skipIf(!DB_URL)('what the loop does with each outcome', () => {
     const job = await claimed(1);
     ingestRepository.mockResolvedValue(failure());
 
-    await worker.runJob({ id: job.id, target: TARGET, attempts: 1, startedAt: new Date() });
+    const run = await worker.runJob({
+      id: job.id,
+      target: TARGET,
+      attempts: 1,
+      startedAt: new Date(),
+    });
 
+    expect(run).toEqual({ outcome: 'unavailable', removed: 0, retryScheduled: true });
     const row = await jobRow(job.id);
     expect(row).toMatchObject({ status: 'queued', attempts: 1, worker_id: null });
     expect(row.started_at).toBeNull();
@@ -119,8 +125,14 @@ describe.skipIf(!DB_URL)('what the loop does with each outcome', () => {
       failure({ outcome: 'storage_failed', message: 'stored no' }),
     );
 
-    await worker.runJob({ id: job.id, target: TARGET, attempts: 3, startedAt: new Date() });
+    const run = await worker.runJob({
+      id: job.id,
+      target: TARGET,
+      attempts: 3,
+      startedAt: new Date(),
+    });
 
+    expect(run.retryScheduled).toBe(false);
     const row = await jobRow(job.id);
     expect(row.status).toBe('failed');
     expect(scheduledInMs(row)).toBeLessThanOrEqual(0);
@@ -209,13 +221,90 @@ describe.skipIf(!DB_URL)('what the loop does with each outcome', () => {
 
   it('writes nothing when the ingest succeeded, because it terminated itself', async () => {
     const job = await claimed(1);
-    ingestRepository.mockResolvedValue({ ok: true, outcome: 'ok' } as IngestResult);
+    ingestRepository.mockResolvedValue({
+      ok: true,
+      outcome: 'ok',
+      counters: { removed: 2 },
+    } as IngestResult);
 
-    await worker.runJob({ id: job.id, target: TARGET, attempts: 1, startedAt: new Date() });
+    const run = await worker.runJob({
+      id: job.id,
+      target: TARGET,
+      attempts: 1,
+      startedAt: new Date(),
+    });
 
+    // What the sync's summary adds up: the read's delistings, carried out.
+    expect(run).toEqual({ outcome: 'ok', removed: 2, retryScheduled: false });
     expect(await attemptsOf(job.id)).toHaveLength(0);
     // Untouched: the pipeline's own transaction owns this row on the ok path.
     expect((await jobRow(job.id)).status).toBe('running');
+  });
+
+  /**
+   * R1's remainder: a failed job about a STORED repository is a check that
+   * read nothing. checked_at moves and the streak grows, so the refresh stops
+   * putting it first (src/corpus/refresh.ts); scanned_at — "read on" — and the
+   * artifacts stay exactly as they were.
+   */
+  describe('a stored repository whose job fails', () => {
+    const NODE = 'worker-spec-stored-node';
+    const READ_AT = '2026-01-02T03:04:05.000Z';
+
+    async function stored() {
+      await sql`DELETE FROM repository WHERE github_node_id = ${NODE}`;
+      // Upper case on purpose: the job's target and the stored name are matched
+      // case-insensitively, as the unique index on lower(full_name) is.
+      await sql`
+        INSERT INTO repository (github_node_id, full_name, owner, default_branch, scanned_at)
+        VALUES (${NODE}, ${TARGET.toUpperCase()}, 'test-owner', 'main', ${READ_AT})`;
+    }
+
+    async function checkState() {
+      const [row] = await sql<
+        { scanned_at: Date; checked_at: Date | null; check_failures: number }[]
+      >`SELECT scanned_at, checked_at, check_failures FROM repository WHERE github_node_id = ${NODE}`;
+      return row;
+    }
+
+    afterAll(async () => {
+      await sql`DELETE FROM repository WHERE github_node_id = ${NODE}`;
+    });
+
+    it.each([
+      ['unreadable', 1],
+      ['too_large', 1],
+      ['unavailable', 3],
+      ['storage_failed', 3],
+    ] as const)('records a %s that ended the job as a failed check', async (outcome, attempts) => {
+      await stored();
+      for (const round of [1, 2]) {
+        await clean();
+        const job = await claimed(attempts);
+        ingestRepository.mockResolvedValue(failure({ outcome, message: `${outcome} message` }));
+
+        await worker.runJob({ id: job.id, target: TARGET, attempts, startedAt: new Date() });
+
+        const row = await checkState();
+        expect(row.check_failures).toBe(round);
+        expect(Date.now() - new Date(row.checked_at as Date).getTime()).toBeLessThan(60_000);
+        expect(new Date(row.scanned_at).toISOString()).toBe(READ_AT);
+      }
+    });
+
+    it.each([
+      ['a retry still to come', 'unavailable'],
+      ['an exhausted budget', 'rate_limited'],
+    ] as const)('leaves the check alone for %s', async (_label, outcome) => {
+      await stored();
+      const job = await claimed(1);
+      ingestRepository.mockResolvedValue(failure({ outcome, message: `${outcome} message` }));
+
+      await worker.runJob({ id: job.id, target: TARGET, attempts: 1, startedAt: new Date() });
+
+      // Neither says anything about the repository: the job is still queued.
+      expect(await checkState()).toMatchObject({ checked_at: null, check_failures: 0 });
+    });
   });
 
   it('joins a submission that arrives while the job is waiting, raising no conflict', async () => {

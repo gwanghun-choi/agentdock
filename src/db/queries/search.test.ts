@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
+import { ANALYZE_CAPS } from '@/analyze/types';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -68,7 +69,10 @@ describe.skipIf(!DB_URL)('the search query', () => {
   async function artifact(
     repositoryId: number,
     sourcePath: string,
-    versions: { hash: string; status?: string }[],
+    // analyzed defaults to true because persistScan stamps analyzed_at in the
+    // same statement group that inserts a version; only a pre-analysis row or
+    // one an analyzer threw on stays null (R3).
+    versions: { hash: string; status?: string; analyzed?: boolean }[],
     {
       type = 'skill',
       name = sourcePath,
@@ -93,9 +97,10 @@ describe.skipIf(!DB_URL)('the search query', () => {
     for (const version of versions) {
       tick += 1;
       await sql`
-        INSERT INTO package_version (package_id, commit_sha, content_hash, parse_status, ingested_at)
+        INSERT INTO package_version (package_id, commit_sha, content_hash, parse_status, ingested_at, analyzed_at)
         VALUES (${id}, ${'c'.repeat(40)}, ${version.hash}, ${version.status ?? 'ok'},
-                now() - make_interval(secs => ${100 - tick}))`;
+                now() - make_interval(secs => ${100 - tick}),
+                ${version.analyzed === false ? null : sql`now()`})`;
     }
     return id;
   }
@@ -701,6 +706,111 @@ describe.skipIf(!DB_URL)('the search query', () => {
       });
     });
 
+    describe('absence is claimed only where AgentDock looked (R3)', () => {
+      const ids = async (q: string, capabilities: string[], types: string[] = []) =>
+        (await search.searchPackages({ q, filters: { types, capabilities } })).map((x) => x.id);
+
+      it('keeps an analyzed skill with nothing found, and drops one whose latest version was never analyzed', async () => {
+        const analyzed = await artifact(
+          await repo('r3-analyzed'),
+          'a/SKILL.md',
+          [{ hash: 'r3a' }],
+          {
+            name: 'rthreeanalyzedword item',
+          },
+        );
+        const unanalyzed = await artifact(
+          await repo('r3-unanalyzed'),
+          'b/SKILL.md',
+          [{ hash: 'r3u', analyzed: false }],
+          { name: 'rthreeunanalyzedword item' },
+        );
+        for (const cap of ['no_network', 'no_shell']) {
+          expect(await ids('rthreeanalyzedword', [cap])).toContain(analyzed);
+          expect(await ids('rthreeunanalyzedword', [cap])).not.toContain(unanalyzed);
+        }
+        // Without the filter both are listed — the filter is what moved.
+        expect(await ids('rthreeunanalyzedword', [])).toContain(unanalyzed);
+      });
+
+      it('an analyzed older version does not vouch for an unanalyzed latest one', async () => {
+        const id = await artifact(
+          await repo('r3-stale-analysis'),
+          'a/SKILL.md',
+          [{ hash: 'r3s1' }, { hash: 'r3s2', analyzed: false }],
+          { name: 'rthreestalewordx item' },
+        );
+        expect(await ids('rthreestalewordx', ['no_network'])).not.toContain(id);
+      });
+
+      it('a body-less type is in neither absence filter; only the plugin, which owns a directory, is in no_scripts', async () => {
+        const repoId = await repo('r3-bodyless');
+        const hook = await artifact(repoId, '.claude/settings.json', [{ hash: 'r3h' }], {
+          type: 'hook',
+          name: 'rthreebodylessword hook',
+        });
+        const mcp = await artifact(repoId, '.mcp.json', [{ hash: 'r3m' }], {
+          type: 'mcp_server',
+          name: 'rthreebodylessword mcp',
+        });
+        const plugin = await artifact(repoId, '.claude-plugin/plugin.json', [{ hash: 'r3p' }], {
+          type: 'plugin',
+          name: 'rthreebodylessword plugin',
+        });
+        for (const cap of ['no_network', 'no_shell']) {
+          const got = await ids('rthreebodylessword', [cap]);
+          expect(got).not.toContain(hook);
+          expect(got).not.toContain(mcp);
+          expect(got).not.toContain(plugin);
+        }
+        const noScripts = await ids('rthreebodylessword', ['no_scripts']);
+        expect(noScripts).toContain(plugin);
+        expect(noScripts).not.toContain(hook);
+        expect(noScripts).not.toContain(mcp);
+      });
+
+      it('no_scripts claims nothing for an inventory the cap cut', async () => {
+        const files = JSON.stringify(
+          Array.from({ length: ANALYZE_CAPS.maxInventoryEntries }, (_, i) => ({
+            path: `p/ref${i}.md`,
+            size: 1,
+            kind: 'file',
+            executable: false,
+          })),
+        );
+        const cut = await artifact(await repo('r3-cut'), 'p/SKILL.md', [{ hash: 'r3cut' }], {
+          name: 'rthreecutword item',
+          files,
+        });
+        expect(await ids('rthreecutword', [])).toContain(cut);
+        expect(await ids('rthreecutword', ['no_scripts'])).not.toContain(cut);
+      });
+
+      it('a command is observable: type + absence filters compose, and count agrees with rows', async () => {
+        const repoId = await repo('r3-command');
+        const clean = await artifact(repoId, '.claude/commands/a.md', [{ hash: 'r3c1' }], {
+          type: 'command',
+          name: 'rthreecommandword a',
+        });
+        const net = await artifact(repoId, '.claude/commands/b.md', [{ hash: 'r3c2' }], {
+          type: 'command',
+          name: 'rthreecommandword b',
+        });
+        await finding((await versionIds(net))[0], 'network_request', 'fetch');
+        const skillSameWord = await artifact(repoId, 's/SKILL.md', [{ hash: 'r3c3' }], {
+          name: 'rthreecommandword skill',
+        });
+
+        const filters = { types: ['command'], capabilities: ['no_network', 'no_shell'] };
+        const rows = await search.searchPackages({ q: 'rthreecommandword', filters });
+        expect(rows.map((x) => x.id)).toEqual([clean]);
+        expect(await search.countSearchResults({ q: 'rthreecommandword', filters })).toBe(1);
+        expect(await ids('rthreecommandword', ['no_network'])).toEqual(
+          expect.arrayContaining([clean, skillSameWord]),
+        );
+      });
+    });
+
     it('applying all three capability filters returns a subset of applying any two', async () => {
       const cleanRepo = await repo('triple-clean');
       const cleanId = await artifact(cleanRepo, 'a/SKILL.md', [{ hash: 'trc1' }], {
@@ -1026,6 +1136,197 @@ describe.skipIf(!DB_URL)('the search query', () => {
       await expect(search.searchPackages({ q: 'zzzznocorrespondingfixturezzzz' })).resolves.toEqual(
         [],
       );
+    });
+  });
+  /**
+   * R17/R16: one fixed corpus and the queries a reader actually types. Every
+   * word is made unique (an xq prefix) so another suite's rows in the shared
+   * test schema cannot reorder these; the shapes — names, hyphens, paths,
+   * repository names — are the real ones.
+   */
+  describe('search quality on a fixed corpus (R17, R16)', () => {
+    const ids: Record<string, number> = {};
+    async function corpus() {
+      const skills = await repo('xqskills');
+      const tools = await repo('xqpdftools');
+      const browser = await repo('xqbrowser');
+      const devops = await repo('xqdevops');
+      const helpers = await repo('xqai');
+      const filler = await repo('xqfiller');
+      const add = async (
+        key: string,
+        repoId: number,
+        sourcePath: string,
+        name: string,
+        summary: string,
+        type = 'skill',
+      ) => {
+        ids[key] = await artifact(repoId, sourcePath, [{ hash: `q17-${key}` }], {
+          name,
+          summary,
+          type,
+        });
+      };
+      await add(
+        'pdf',
+        skills,
+        'skills/xqpdf/SKILL.md',
+        'xqpdf',
+        'Extract text and tables from xqpdf files',
+      );
+      await add(
+        'form',
+        tools,
+        'skills/xqpdf-form-filler/SKILL.md',
+        'xqpdf-form-filler',
+        'Fill xqpdf forms',
+      );
+      await add(
+        'pw',
+        browser,
+        'skills/xqplaywright-testing/SKILL.md',
+        'xqplaywright-testing',
+        'Browser automation',
+      );
+      await add(
+        'pwmcp',
+        browser,
+        '.mcp.json',
+        'xqplaywright',
+        'MCP server for browsers',
+        'mcp_server',
+      );
+      await add(
+        'canvas',
+        skills,
+        'skills/xqcanvas-design/SKILL.md',
+        'xqcanvas-design',
+        'Visual art in png',
+      );
+      await add(
+        'deploy',
+        devops,
+        '.claude/commands/xqdeploy.md',
+        'xqdeploy',
+        'Ship the app',
+        'command',
+      );
+      await add('ai', helpers, 'skills/xq-ai-kit/SKILL.md', 'xq-ai-kit', 'General helper');
+      for (let i = 1; i <= 30; i += 1) {
+        await add(
+          `f${i}`,
+          filler,
+          `skills/xqfiller-${i}/SKILL.md`,
+          `xqfiller-${i}`,
+          `xqgeneric xqutility number ${i}`,
+        );
+      }
+    }
+    const names = async (
+      q: string,
+      opts: { offset?: number; types?: string[]; capabilities?: string[] } = {},
+    ) =>
+      (
+        await search.searchPackages({
+          q,
+          offset: opts.offset ?? 0,
+          filters: { types: opts.types ?? [], capabilities: opts.capabilities ?? [] },
+        })
+      ).map((x) => x.name);
+    const count = (q: string, types: string[] = []) =>
+      search.countSearchResults({ q, filters: { types, capabilities: [] } });
+
+    beforeEach(corpus);
+
+    it('an exact name ranks first, ahead of a longer name that contains it', async () => {
+      expect((await names('xqpdf'))[0]).toBe('xqpdf');
+    });
+
+    it('a name prefix finds the artifact, and count agrees with the rows', async () => {
+      expect(await names('xqplay')).toEqual(
+        expect.arrayContaining(['xqplaywright', 'xqplaywright-testing']),
+      );
+      expect(await count('xqplay')).toBe(2);
+    });
+
+    it('several words that all match narrow the result', async () => {
+      expect(await names('xqpdf form')).toEqual(['xqpdf-form-filler']);
+    });
+
+    it('several words where one matches nothing fall back to any word, and say so', async () => {
+      expect(await names('xqpdf nonexistentword')).toEqual(
+        expect.arrayContaining(['xqpdf', 'xqpdf-form-filler']),
+      );
+      expect(await count('xqpdf nonexistentword')).toBe(2);
+      expect(
+        await search.searchMode({
+          q: 'xqpdf nonexistentword',
+          filters: { types: [], capabilities: [] },
+        }),
+      ).toBe('any');
+      expect(
+        await search.searchMode({ q: 'xqpdf form', filters: { types: [], capabilities: [] } }),
+      ).toBe('all');
+    });
+
+    it('a file path finds the artifact at that path', async () => {
+      expect((await names('skills/xqcanvas-design/SKILL.md'))[0]).toBe('xqcanvas-design');
+    });
+
+    it('a repository name finds what that repository holds', async () => {
+      expect(await names('search-spec-xqdevops')).toEqual(['xqdeploy']);
+    });
+
+    it('a two-letter query does not match every repository whose name contains it', async () => {
+      // Before: "xq" matched all six repositories by ILIKE '%xq%' and returned
+      // all thirty-seven rows. A short query matches words, not substrings.
+      const rows = await names('ai');
+      expect(rows.filter((n) => n.startsWith('xq'))).toEqual(['xq-ai-kit']);
+      // "xq" is a word only in xq-ai-kit's hyphenated name, so one row, not 37.
+      expect(await count('xq')).toBe(1);
+    });
+
+    it('a typo still reaches the close-match fallback on the first page', async () => {
+      expect(await count('xqplaywrigth')).toBe(0);
+      expect(await names('xqplaywrigth')).toEqual(expect.arrayContaining(['xqplaywright']));
+    });
+
+    it('nothing at all is an empty page', async () => {
+      expect(await names('xqzzznotthere')).toEqual([]);
+      expect(await count('xqzzznotthere')).toBe(0);
+    });
+
+    it('a page past the end is empty, never the close-match rows at that offset (R16)', async () => {
+      // "xqutility number 1" matches xqfiller-1 exactly once, while the fuzzy
+      // fallback would match all thirty fillers.
+      expect(await count('xqutility number 1')).toBe(1);
+      expect(await names('xqutility number 1', { offset: 25 })).toEqual([]);
+    });
+
+    it('pages are stable and add up to the count', async () => {
+      const total = await count('xqgeneric');
+      const first = await names('xqgeneric');
+      const second = await names('xqgeneric', { offset: 25 });
+      expect(total).toBe(30);
+      expect(first).toHaveLength(25);
+      expect(second).toHaveLength(5);
+      expect(new Set([...first, ...second]).size).toBe(30);
+      expect(await names('xqgeneric')).toEqual(first);
+    });
+
+    it('type and capability filters still compose with a prefix query', async () => {
+      expect(await names('xqplay', { types: ['mcp_server'] })).toEqual(['xqplaywright']);
+      expect(await names('xqplay', { types: ['skill'], capabilities: ['no_scripts'] })).toEqual([
+        'xqplaywright-testing',
+      ]);
+      expect(await count('xqplay', ['mcp_server'])).toBe(1);
+    });
+
+    it('treats tsquery syntax in the input as text, never as an operator', async () => {
+      for (const q of ['xqpdf:*', 'xqpdf & !x', 'xqpdf | (', "x'); drop table package; --"]) {
+        await expect(names(q)).resolves.toBeInstanceOf(Array);
+        await expect(count(q)).resolves.toBeTypeOf('number');
+      }
     });
   });
 });

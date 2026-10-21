@@ -74,3 +74,63 @@ export async function writeSweepState(source: string, state: SweepState): Promis
       set: { value, updatedAt: new Date() },
     });
 }
+
+const LAST_SUCCESS_KEY = 'sync:last_success';
+
+/**
+ * When a scheduled sync last finished with every stage intact. A row in
+ * schema_meta rather than a table: one timestamp per deployment, no migration.
+ * Written only by a run that exits 0, so "the job was green" and "the sync
+ * reached the end" can no longer be told apart only by reading the log.
+ */
+export async function recordSyncSucceeded(at: Date): Promise<void> {
+  const value = at.toISOString();
+  await db
+    .insert(schemaMeta)
+    .values({ key: LAST_SUCCESS_KEY, value })
+    .onConflictDoUpdate({ target: schemaMeta.key, set: { value, updatedAt: new Date() } });
+}
+
+export async function lastSyncSucceededAt(): Promise<Date | null> {
+  const [row] = await db
+    .select({ value: schemaMeta.value })
+    .from(schemaMeta)
+    .where(eq(schemaMeta.key, LAST_SUCCESS_KEY))
+    .limit(1);
+  const at = row ? new Date(row.value) : null;
+  return at && !Number.isNaN(at.getTime()) ? at : null;
+}
+
+const LAST_ATTEMPT_KEY = 'sync:last_attempt';
+
+/**
+ * Every scheduled run's outcome, success or not, beside sync:last_success.
+ * last_success alone cannot tell "the last three runs failed" from "no run
+ * since then", and the Actions log that would say so expires; this row is the
+ * one place both the time and the reason survive. A flat object of counted
+ * values, so `SELECT value FROM schema_meta WHERE key = 'sync:last_attempt'`
+ * reads it whole. No migration: schema_meta is a key/value table.
+ */
+export type SyncAttempt = Record<string, string | number | boolean | null | string[]>;
+
+export async function recordSyncAttempt(attempt: SyncAttempt): Promise<void> {
+  const value = JSON.stringify(attempt);
+  await db
+    .insert(schemaMeta)
+    .values({ key: LAST_ATTEMPT_KEY, value })
+    .onConflictDoUpdate({ target: schemaMeta.key, set: { value, updatedAt: new Date() } });
+}
+
+export async function lastSyncAttempt(): Promise<SyncAttempt | null> {
+  const [row] = await db
+    .select({ value: schemaMeta.value })
+    .from(schemaMeta)
+    .where(eq(schemaMeta.key, LAST_ATTEMPT_KEY))
+    .limit(1);
+  if (!row) return null;
+  try {
+    return JSON.parse(row.value) as SyncAttempt;
+  } catch {
+    return null;
+  }
+}

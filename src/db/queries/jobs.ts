@@ -1,6 +1,6 @@
 import { and, desc, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { ingestAttempt, ingestJob, repositoryDenylist } from '@/db/schema';
+import { ingestAttempt, ingestJob, repository, repositoryDenylist } from '@/db/schema';
 
 /**
  * Submit is unauthenticated and now writes a durable row that consumes a shared
@@ -43,6 +43,16 @@ export type ClaimedJob = {
  * this: repo_seed.full_name is lowercased at write, and the anti-join in
  * src/db/queries/seeds.ts is a plain equality only because both sides are.
  */
+/** Jobs waiting to be claimed — the ceiling enqueueJob enforces, and the
+ * backlog the sync summary prints after its drain. */
+export async function queuedJobCount(): Promise<number> {
+  const [depth] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(ingestJob)
+    .where(eq(ingestJob.status, 'queued'));
+  return depth?.n ?? 0;
+}
+
 export async function enqueueJob(fullName: string): Promise<EnqueueResult> {
   const target = fullName.toLowerCase();
 
@@ -53,11 +63,7 @@ export async function enqueueJob(fullName: string): Promise<EnqueueResult> {
     .limit(1);
   if (blocked) return { kind: 'denylisted' };
 
-  const [depth] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(ingestJob)
-    .where(eq(ingestJob.status, 'queued'));
-  if ((depth?.n ?? 0) >= MAX_QUEUED) return { kind: 'flooded' };
+  if ((await queuedJobCount()) >= MAX_QUEUED) return { kind: 'flooded' };
 
   const [row] = await db
     .insert(ingestJob)
@@ -172,6 +178,24 @@ export async function finishJob(record: AttemptRecord, status: JobStatus): Promi
       .update(ingestJob)
       .set({ status, finishedAt: sql`now()`, startedAt: null, workerId: null })
       .where(eq(ingestJob.id, record.jobId));
+    // A failed job about a STORED repository is a check that read nothing: 404
+    // or private, too large, or retries spent. scanned_at must not move — it is
+    // "read on" — so checked_at does, and the failure streak spaces out the next
+    // re-check (src/corpus/refresh.ts). Artifacts are untouched: one 404 is not
+    // a deletion. A repository nobody stored has no row, so this matches none.
+    // `succeeded` here (no_artifacts on an unknown repository, a gate decline,
+    // denylisted) never reaches a stored row's refresh at all.
+    if (status === 'failed') {
+      await tx
+        .update(repository)
+        .set({
+          checkedAt: sql`now()`,
+          checkFailures: sql`${repository.checkFailures} + 1`,
+        })
+        .where(
+          sql`lower(${repository.fullName}) = (select lower(${ingestJob.target}) from ${ingestJob} where ${ingestJob.id} = ${record.jobId})`,
+        );
+    }
   });
 }
 

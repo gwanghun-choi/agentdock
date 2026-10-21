@@ -68,7 +68,7 @@ const RETRY = (
 describe('a job that has not finished', () => {
   it('says it is queued', () => {
     const html = render(job());
-    expect(html).toContain('Queued. AgentDock will start reading it shortly.');
+    expect(html).toContain('Queued. The next scheduled sync reads it');
     expect(html).toContain('Attempt 1');
   });
 
@@ -76,7 +76,7 @@ describe('a job that has not finished', () => {
     const html = render(job({ nextAttemptAt: FUTURE, attempts: 2 }));
     expect(html).toContain('before trying again');
     expect(html).toContain(FUTURE.toISOString().slice(11, 16));
-    expect(html).not.toContain('will start reading it shortly');
+    expect(html).not.toContain('The next scheduled sync reads it');
     // Rendered without a ceiling, because the ceiling lives in the retry policy.
     expect(html).toContain('Attempt 2');
     expect(html).not.toMatch(/Attempt 2 of/);
