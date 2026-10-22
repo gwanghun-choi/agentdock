@@ -1,5 +1,5 @@
 {
-  "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee12",
   "truncated": false,
   "tree": [
     {
@@ -7,7 +7,7 @@
       "mode": "100644",
       "type": "blob",
       "sha": "ffffffffffffffffffffffffffffffffffffffff",
-      "size": 300
+      "size": 512
     },
     {
       "path": ".claude/agents/code-reviewer.md",
@@ -50,6 +50,20 @@
       "type": "blob",
       "sha": "ffffffffffffffffffffffffffffffffffffffff",
       "size": 1245
+    },
+    {
+      "path": ".claude/settings.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 437
+    },
+    {
+      "path": ".claude/commands/c#-review.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 161
     }
   ]
 }

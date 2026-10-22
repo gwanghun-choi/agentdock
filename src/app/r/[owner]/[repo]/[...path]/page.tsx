@@ -6,9 +6,10 @@ import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { CopyButton } from '@/components/CopyButton';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
-import { detailHref, permalink, permalinkAtLine } from '@/components/hrefs';
+import { detailHref, historyHref, permalink, permalinkAtLine, treeHref } from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
+import { SetupPanel } from '@/components/SetupPanel';
 import { SkillBody } from '@/components/SkillBody';
 import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
@@ -17,6 +18,7 @@ import {
   getPackageDetail,
   getRelatedPackages,
   getVersionHistory,
+  pluginRoot,
   VERSION_HISTORY_LIMIT,
 } from '@/db/queries/packages';
 import { AGENT_SPEC_KEYS } from '@/detect/agent';
@@ -117,6 +119,25 @@ export default async function PackagePage({ params }: Props) {
   const extras = keys.filter((k) => !specKeys.includes(k));
   const guide = USAGE_GUIDES[detail.type];
   const typeListing = TYPE_FILTER_LABELS[detail.type as keyof typeof TYPE_FILTER_LABELS];
+  // The directory a skill or plugin is, which is what gets copied or installed.
+  const directory =
+    detail.type === 'skill'
+      ? detail.sourcePath.replace(/(^|\/)SKILL\.md$/, '')
+      : detail.type === 'plugin'
+        ? pluginRoot(detail.sourcePath, detail.meta)
+        : null;
+  const setup = (
+    <SetupPanel
+      type={detail.type}
+      meta={detail.meta}
+      slug={detail.slug}
+      argumentHint={detail.argumentHint}
+      sourcePath={detail.sourcePath}
+      directoryHref={
+        directory === null ? null : treeHref(detail.fullName, detail.commitSha, directory)
+      }
+    />
+  );
 
   // The page is long — nine sections on a skill, the file itself last — so its
   // sections are named once at the top, as plain fragment links.
@@ -125,6 +146,8 @@ export default async function PackagePage({ params }: Props) {
     detail.files.length > 0 ? ['files', 'Files'] : null,
     ['observed', 'Capabilities'],
     related.container || related.components.length > 0 ? ['related', 'Related'] : null,
+    // The six types with a usage guide are the six SetupPanel renders for.
+    guide ? ['setup', 'Setup'] : null,
     guide ? ['usage', 'Using it'] : null,
     ['versions', 'Versions'],
     ['file', 'File'],
@@ -374,6 +397,8 @@ export default async function PackagePage({ params }: Props) {
         </>
       ) : null}
 
+      {guide ? setup : null}
+
       {guide ? (
         <>
           <h2 id="usage">Using this kind of artifact</h2>
@@ -410,12 +435,21 @@ export default async function PackagePage({ params }: Props) {
       <p className="muted">
         One row per distinct content AgentDock stored for this file, latest first. Content that
         returns to an earlier version moves that row back to the top, so this is what the file has
-        been, not every commit that touched it.
+        been, not every commit that touched it. GitHub keeps that list:{' '}
+        <a
+          href={historyHref(detail.fullName, detail.commitSha, detail.sourcePath)}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <ExternalIcon /> commits to this file, up to the one shown
+        </a>
+        .
       </p>
       <table className="files">
         <thead>
           <tr>
             <th>Commit</th>
+            <th>Content</th>
             <th>Recorded</th>
             <th>Declared version</th>
             <th>Read</th>
@@ -434,6 +468,10 @@ export default async function PackagePage({ params }: Props) {
                   {v.commitSha.slice(0, 7)}
                 </a>
                 {v.id === detail.packageVersionId ? <span className="muted"> — shown</span> : null}
+              </td>
+              {/* The value that makes this row distinct, shortened as a commit is. */}
+              <td className="path" title={v.contentHash}>
+                {v.contentHash.slice(0, 12)}
               </td>
               <td>{utc(v.ingestedAt)}</td>
               <td>{v.declaredVersion ?? 'not declared'}</td>

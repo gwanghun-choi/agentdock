@@ -199,6 +199,91 @@ test('subagent detail: breadcrumb, section links and the plugin relation both wa
   );
 });
 
+test('setup: an MCP file shows its servers, blanks a credential, and copies JSON by keyboard', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/r/fixture/ui-edge-cases/.mcp.json');
+  await expect(page.locator('.toc a[href="#setup"]')).toHaveCount(1);
+  // One block per server, each opening with its name; the JSON block follows them.
+  const server = (name: string) =>
+    page.locator('#setup ~ dl.install').filter({ hasText: `Server${name}Transport` });
+  await expect(server('fixture-search')).toContainText('uvx fixture-search --api-key <redacted>');
+  await expect(server('fixture-docs')).toContainText('DOCS_TOKEN — names only');
+  // Nowhere on the page, not only in the setup block.
+  expect(await page.content()).not.toContain('FIXTURE-FAKE');
+  const copy = page.getByRole('button', { name: 'Copy JSON' });
+  await copy.focus();
+  await page.keyboard.press('Enter');
+  await expect(copy.locator('xpath=following-sibling::*[@role="status"]')).toHaveText('Copied');
+  const json = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
+  expect(Object.keys(json.mcpServers).sort()).toEqual([
+    'fixture-db',
+    'fixture-docs',
+    'fixture-search',
+  ]);
+  expect(json.mcpServers['fixture-db']).toEqual({
+    type: 'http',
+    url: 'https://example.invalid/mcp',
+  });
+  expect(json.mcpServers['fixture-docs'].env).toBeUndefined();
+});
+
+test('setup: a hook lists each handler as inert text, a credential blanked', async ({ page }) => {
+  let dialog = false;
+  page.on('dialog', async (d) => {
+    dialog = true;
+    await d.dismiss();
+  });
+  await page.goto('/r/fixture/ui-edge-cases/.claude/settings.json');
+  const rows = page.locator('#setup ~ dl.handler');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText('PreToolUse');
+  await expect(rows.nth(0)).toContainText('--token=<redacted>');
+  await expect(rows.nth(1)).toContainText('echo "<script>alert(1)</script>"');
+  expect(await page.content()).not.toContain('FIXTURE-FAKE');
+  expect(dialog).toBe(false);
+});
+
+test('a file name holding # opens from its repository, and its links keep the #', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases');
+  await page.click('a:has-text("c#-review")');
+  await page.waitForURL(/c%23-review\.md$/);
+  await expect(page.locator('h1')).toHaveText('c#-review');
+  expect(await page.locator('.detail-actions a').first().getAttribute('href')).toMatch(
+    /\/blob\/[0-9a-f]{40}\/\.claude\/commands\/c%23-review\.md$/,
+  );
+  await expect(page.locator('#setup ~ dl.install').first()).toContainText('/c#-review [file]');
+});
+
+test('setup: a plugin shows no install command, a skill links its directory at the commit', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/.claude-plugin/plugin.json');
+  await expect(page.locator('#setup ~ dl.install').first()).toContainText('Install command');
+  await expect(page.locator('main')).not.toContainText('/plugin install');
+  await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/skills/review-checklist');
+  expect(
+    await page.locator('a:has-text("Browse the directory at this commit")').getAttribute('href'),
+  ).toMatch(/\/tree\/[0-9a-f]{40}\/plugins\/review-kit\/skills\/review-checklist$/);
+});
+
+test('versions: each row names its content, and GitHub history is one link away', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases/.claude/agents/code-reviewer.md');
+  const row = page.locator('#versions ~ table.files tbody tr').first();
+  await expect(row.locator('td').nth(1)).toHaveText(/^[0-9a-f]{12}$/);
+  expect(
+    await page
+      .locator('a:has-text("commits to this file, up to the one shown")')
+      .getAttribute('href'),
+  ).toMatch(/\/commits\/[0-9a-f]{40}\/\.claude\/agents\/code-reviewer\.md$/);
+});
+
 test('keyboard: / focuses search, Tab reaches a sort link and a result, focus is visible', async ({
   page,
 }) => {
@@ -267,5 +352,14 @@ test.describe('on a phone', () => {
     await page.locator('.rows .row-title a').first().tap();
     await page.waitForURL(/\/r\//);
     await noHorizontalOverflow(page);
+  });
+
+  test('setup blocks wrap on 320px: a JSON configuration and a hook command', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const path of ['.mcp.json', '.claude/settings.json']) {
+      await page.goto(`/r/fixture/ui-edge-cases/${path}`);
+      await page.locator('#setup').scrollIntoViewIfNeeded();
+      await noHorizontalOverflow(page);
+    }
   });
 });

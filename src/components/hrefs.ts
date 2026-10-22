@@ -11,9 +11,30 @@
  * functions only: no predicate, no query.
  */
 
+/**
+ * A repository path as URL segments, each percent-encoded and rejoined. A
+ * file named `c#-review.md` is a legal path and an `#` in a raw URL ends it:
+ * unencoded, the permalink pointed at `c`.
+ */
+const encodePath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
+
 /** github.com/{full_name}/blob/{commit sha}/{path} — never the tree sha. */
 export function permalink(fullName: string, commitSha: string, sourcePath: string): string {
-  return `https://github.com/${fullName}/blob/${commitSha}/${sourcePath}`;
+  return `https://github.com/${fullName}/blob/${commitSha}/${encodePath(sourcePath)}`;
+}
+
+/** A directory at the commit read; '' is the repository root. */
+export function treeHref(fullName: string, commitSha: string, dir: string): string {
+  return `https://github.com/${fullName}/tree/${commitSha}${dir ? `/${encodePath(dir)}` : ''}`;
+}
+
+/**
+ * GitHub's commit list for one path, starting at the commit read. Every commit
+ * that touched the file up to that one, which AgentDock's own history is not:
+ * that keeps one row per distinct content (getVersionHistory).
+ */
+export function historyHref(fullName: string, commitSha: string, sourcePath: string): string {
+  return `https://github.com/${fullName}/commits/${commitSha}/${encodePath(sourcePath)}`;
 }
 
 /**
@@ -46,7 +67,19 @@ export function permalinkAtLine(
  * so 404'd every command, plugin, hook and mcp_server detail link.
  */
 export function sourcePathCandidates(segments: string[]): string[] {
-  const joined = segments.join('/');
+  // The route hands catch-all segments over still percent-encoded, as
+  // detailHref wrote them: `c%23-review.md` 404'd against the stored
+  // `c#-review.md` (measured on the ui-edge-cases fixture, 2026-10-22). A
+  // malformed escape is kept as typed, and simply matches nothing.
+  const joined = segments
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join('/');
   // A manifest at the repository root has no directory, so the URL carries
   // the filename itself and there is nothing to reconstruct.
   if (joined === '' || joined === 'SKILL.md') return ['SKILL.md'];
@@ -75,9 +108,5 @@ export function detailHref(fullName: string, sourcePath: string, type: string): 
           return dir === '' ? 'SKILL.md' : dir;
         })()
       : sourcePath;
-  const encoded = tail
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
-  return `/r/${fullName}/${encoded}`;
+  return `/r/${fullName}/${encodePath(tail)}`;
 }

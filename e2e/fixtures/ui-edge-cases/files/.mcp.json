@@ -13,6 +13,17 @@
     "fixture-db": {
       "type": "http",
       "url": "https://example.invalid/mcp"
+    },
+    "fixture-search": {
+      "command": "uvx",
+      "args": [
+        "fixture-search",
+        "--api-key",
+        "FIXTURE-FAKE-KEY-0001"
+      ],
+      "env": {
+        "SEARCH_REGION": "eu"
+      }
     }
   }
 }

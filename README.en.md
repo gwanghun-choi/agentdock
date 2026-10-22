@@ -283,7 +283,7 @@ plain CSS with custom properties — no UI kit, no CSS framework, no animation
 library and no icon package. Four components carry `'use client'`, none of
 them holds data or fetches anything: a polling effect on the job page, a
 keyboard shortcut that puts the cursor in the search field (`/`, or Ctrl/Cmd+K),
-a copy button for paths and links on the detail page, and the error boundary,
+a copy button for paths, links and setup text on the detail page, and the error boundary,
 which the framework requires to be a client component. Search is a GET form;
 the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
@@ -523,7 +523,8 @@ database-backed suite keys its rows on a sentinel no other suite can produce.
 **Browser journeys** (`e2e/journeys.spec.ts`, Playwright, Chromium) run against
 the production build and the same disposable database, seeded offline from the
 committed fixtures plus `e2e/fixtures/ui-edge-cases` (subagents, an MCP
-declaration, a very long name):
+declaration and a hook carrying invented credentials, a command whose file name
+holds `#`, a very long name):
 
 ```bash
 bun run db:test:migrations && bun run e2e:seed   # TEST_DATABASE_URL as above
@@ -608,6 +609,16 @@ request budget and buys no assurance about anything it admits.
 Every artifact body is stored as a capped excerpt with attribution, never as a
 mirror, and every rendered body goes through a sanitizing Markdown pipeline.
 
+The detail page's **Setup** section shows what the file itself declares — an MCP
+server's command, arguments and URL, a hook's event, matcher and command, a
+command's slash name — as text with a copy button, never a run button. Values
+that look like credentials (a value after a key-, token- or password-named flag
+or parameter, a bearer header, a URL password, a well-known token prefix) are
+shown as `<redacted>` there and in declared-capability lines; the permalink is
+the unredacted original. It is a pattern match, so it can miss an unlabelled
+secret. The rendered file excerpt below it is shown as published. No install
+command is composed: a plugin's marketplace is not recorded, so none is shown.
+
 ## Limitations
 
 - **The corpus is small and deliberately bounded.** Every acquisition source has
@@ -626,6 +637,9 @@ mirror, and every rendered body goes through a sanitizing Markdown pipeline.
 - **Ordering is by relevance, recency or name, never quality.** There is no "most
   starred" sort, and adding one would need a deliberate decision about what it
   means.
+- **Setup guidance is what the file says, not a tested install.** AgentDock does
+  not run what it lists, so it cannot say whether a configuration works in a
+  given client.
 
 ## Development Workflow
 

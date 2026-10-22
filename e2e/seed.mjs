@@ -3,8 +3,9 @@
 // The browser journeys' database: the seven committed fixtures the search
 // evaluation also reads, plus e2e/fixtures/ui-edge-cases, a synthetic
 // repository holding what no captured fixture does — subagents, an MCP
-// declaration, a plugin that contains a subagent and a skill, and an
-// 87-character name. All of it through the real ingestion pipeline, offline:
+// declaration and a hook settings file whose credentials are invented (for the
+// redaction journeys), a command named `c#-review.md`, a plugin that contains a
+// subagent and a skill, and an 87-character name. All of it through the real ingestion pipeline, offline:
 // `fetch` is replaced before the pipeline is imported, the same way
 // scripts/seed-fixture.mjs does it, and any other host throws.
 //

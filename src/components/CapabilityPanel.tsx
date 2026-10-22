@@ -1,3 +1,4 @@
+import { redactSecrets } from '@/components/redact';
 import type { CapabilityFindingView } from '@/db/queries/capabilities';
 
 /**
@@ -62,8 +63,11 @@ function SectionBody({
           // frontmatter field (or a coarse Bash(*) grant) has no single
           // useful line to point at — inventing one would produce a
           // permalink that points at the right file and the wrong claim.
+          // A declared hook or MCP command is quoted into its summary, and on
+          // those pages it is the one place the command appears; blanked by the
+          // same rule as SetupPanel. The file at the page's permalink has it as written.
           <li key={f.id}>
-            <code>{f.signal}</code> — {f.summary}
+            <code>{f.signal}</code> — {redactSecrets(f.summary)}
           </li>
         ) : (
           <li key={f.id}>

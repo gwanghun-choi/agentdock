@@ -9,7 +9,7 @@
   "owner": {
     "login": "fixture"
   },
-  "description": "Synthetic repository for the browser journeys: subagents, an MCP declaration, a plugin holding a subagent and a skill, and a very long name. Never in production.",
+  "description": "Synthetic repository for the browser journeys: subagents, an MCP declaration and a hook with invented credentials, a command named c#-review, a plugin holding a subagent and a skill, and a very long name. Never in production.",
   "default_branch": "main",
   "stargazers_count": 1234,
   "pushed_at": "2026-10-01T00:00:00Z",

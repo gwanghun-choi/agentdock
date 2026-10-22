@@ -352,6 +352,8 @@ export type PackageDetail = {
   repositoryId: number;
   /** The containing plugin's root directory, from the nesting pass. Null when none. */
   parentPath: string | null;
+  /** A command's `argument-hint` frontmatter value, as YAML parsed it. */
+  argumentHint: unknown;
 };
 
 export const getPackageDetail = cache(
@@ -386,6 +388,8 @@ export const getPackageDetail = cache(
         parseErrors: packageVersion.parseErrors,
         ingestedAt: packageVersion.ingestedAt,
         analyzedAt: packageVersion.analyzedAt,
+        // One key, not the frontmatter column: that is the whole parsed header.
+        argumentHint: sql<unknown>`${packageVersion.frontmatter}->'argument-hint'`,
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
@@ -503,6 +507,8 @@ export type VersionHistoryItem = {
   declaredVersion: string | null;
   parseStatus: string;
   analyzedAt: Date | null;
+  /** What makes a row distinct: sha-256 of what was read (pipeline.ts, contentHash). */
+  contentHash: string;
 };
 
 /** The history list's length. A package with more says how many it left out. */
@@ -527,6 +533,7 @@ export const getVersionHistory = cache(
         declaredVersion: packageVersion.declaredVersion,
         parseStatus: packageVersion.parseStatus,
         analyzedAt: packageVersion.analyzedAt,
+        contentHash: packageVersion.contentHash,
       })
       .from(packageVersion)
       .where(eq(packageVersion.packageId, packageId))

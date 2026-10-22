@@ -274,7 +274,7 @@ custom property를 쓰는 순수 CSS입니다 — UI kit도, CSS framework도, a
 library도, icon package도 없습니다. `'use client'`를 가진 component는 4개뿐이며
 어느 것도 데이터를 갖거나 fetch하지 않습니다: job 페이지의 polling effect,
 검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 상세 페이지의
-경로·링크 복사 버튼, 그리고 framework가 client component이기를 요구하는 error
+경로·링크·설정 텍스트 복사 버튼, 그리고 framework가 client component이기를 요구하는 error
 boundary입니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
@@ -506,7 +506,8 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 
 **브라우저 여정 테스트**(`e2e/journeys.spec.ts`, Playwright, Chromium)는 프로덕션
 빌드와 같은 일회용 DB로 돕니다. DB는 커밋된 fixture와
-`e2e/fixtures/ui-edge-cases`(subagent, MCP 선언, 매우 긴 이름)로 offline seed합니다.
+`e2e/fixtures/ui-edge-cases`(subagent, 가짜 자격 증명을 담은 MCP 선언과 hook, 파일명에
+`#`이 든 command, 매우 긴 이름)로 offline seed합니다.
 
 ```bash
 bun run db:test:migrations && bun run e2e:seed   # TEST_DATABASE_URL은 위와 같음
@@ -591,6 +592,15 @@ artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다
 모든 artifact 본문은 출처를 붙인 상한 있는 발췌로 저장되며 미러가 아닙니다.
 렌더링되는 모든 본문은 sanitize하는 Markdown pipeline을 거칩니다.
 
+상세 페이지의 **Setup** 섹션은 파일이 직접 선언한 내용만 보여 줍니다 — MCP
+server의 command·args·URL, hook의 event·matcher·command, command의 slash 이름.
+모두 텍스트와 복사 버튼으로만 제공하고 실행 버튼은 없습니다. 자격 증명처럼 보이는
+값(key·token·password 계열 이름의 flag나 parameter 뒤 값, bearer header, URL의
+비밀번호, 잘 알려진 token prefix)은 여기와 선언된 capability 줄에서 `<redacted>`로
+표시되며, permalink가 원본입니다. pattern 기반이라 이름표 없는 secret은 놓칠 수
+있습니다. 그 아래 파일 발췌는 공개된 그대로 렌더링합니다. 설치 명령은 만들지
+않습니다: plugin의 marketplace를 기록하지 않으므로 표시하지 않습니다.
+
 ## 한계
 
 - **corpus는 작고, 의도적으로 상한이 걸려 있습니다.** 모든 수집 소스에 상한이
@@ -608,6 +618,9 @@ artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다
   텍스트 관련도 외의 ranking도 없습니다.
 - **정렬은 관련도·최근 색인·이름순이며 품질순이 아닙니다.** "most starred" 정렬은 없고, 추가하려면
   그것이 무엇을 의미하는지에 대한 명시적 결정이 필요합니다.
+- **Setup 안내는 파일에 적힌 내용이지, 검증된 설치가 아닙니다.** AgentDock는
+  나열한 것을 실행하지 않으므로, 어떤 설정이 특정 client에서 동작하는지 말할 수
+  없습니다.
 
 ## Development Workflow
 
