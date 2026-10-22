@@ -72,8 +72,17 @@ jobs:
         env:
           POSTGRES_DB: agentdock_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        # Loopback only. 55432 sits inside Linux's default ephemeral range
+        # (32768–60999), and on CI run 39748062131 the e2e job's 0.0.0.0:55432
+        # failed "address already in use" before any step ran. The likely
+        # holder, by elimination (no container and no step had started), is an
+        # outgoing connection using that local port on the runner's own address.
+        # Bound to 127.0.0.1, such a socket no longer conflicts (reproduced
+        # locally 2026-10-22, Docker 29.9). The port stays 55432 because
+        # src/db/testDatabase.ts admits no other — a dynamic host port would mean
+        # loosening that allowlist.
         ports:
-          - 55432:5432
+          - 127.0.0.1:55432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d agentdock_test"
           --health-interval 2s
@@ -126,8 +135,9 @@ jobs:
         env:
           POSTGRES_DB: agentdock_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        # Loopback only, for the reason in the database job above.
         ports:
-          - 55432:5432
+          - 127.0.0.1:55432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d agentdock_test"
           --health-interval 2s
