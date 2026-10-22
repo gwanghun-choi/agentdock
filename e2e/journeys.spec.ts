@@ -1,0 +1,271 @@
+import { expect, type Page, test } from '@playwright/test';
+
+// The reader's journeys through search and detail, in a real browser against
+// the production build, under the real Content-Security-Policy. The data is
+// e2e/seed.mjs's: seven committed fixtures and one synthetic repository, so
+// every count below is a fact of that corpus, not of production.
+
+const total = async (page: Page) =>
+  Number(((await page.locator('.result-count strong').textContent()) ?? '').replace(/,/g, ''));
+
+async function noHorizontalOverflow(page: Page) {
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+}
+
+/** Every console error on a page, for the CSP and hydration check. */
+function collectErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  page.on('pageerror', (e) => errors.push(e.message));
+  return errors;
+}
+
+test('search: Enter shows results for the query and keeps it in the field', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  await page.fill('#q', 'review');
+  await page.press('#q', 'Enter');
+  await page.waitForURL(/\/artifacts\?q=review$/);
+  expect(await total(page)).toBeGreaterThan(0);
+  await expect(page.locator('#q')).toHaveValue('review');
+  expect(errors).toEqual([]);
+});
+
+test('type filter: one click applies it, keeps the query, and its removal restores the search', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=review');
+  await page.click('.facet .chip:has-text("Subagents")');
+  await page.waitForURL(/q=review&type=agent$/);
+  const badges = await page.locator('.rows .badge').allTextContents();
+  expect(badges.length).toBeGreaterThan(0);
+  expect(badges.every((b) => b.includes('Subagent'))).toBe(true);
+  await page.click('.applied a:has-text("Subagents")');
+  await page.waitForURL(/\/artifacts\?q=review$/);
+  await expect(page.locator('.applied')).toHaveCount(0);
+});
+
+test('capability filter: toggles on and off, composes with a type, and Clear all removes both', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=review');
+  await page.click('.facet .chip:has-text("Agent Skills")');
+  await page.click('.facet .chip:has-text("No Bash grant declared")');
+  await page.waitForURL(/type=skill&cap=no_shell/);
+  await expect(page.locator('.applied a')).toHaveCount(3);
+  await page.click('.applied a:has-text("Clear all")');
+  await page.waitForURL(/\/artifacts\?q=review$/);
+});
+
+test('a new query keeps the applied filters and the chosen sort', async ({ page }) => {
+  await page.goto('/artifacts?type=command&sort=name');
+  await page.fill('#q', 'commit');
+  await page.press('#q', 'Enter');
+  await page.waitForURL(/q=commit&type=command&sort=name$/);
+});
+
+test('sort: links reorder the same set, reset the page, and survive filters and paging', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=skill');
+  const relevanceTotal = await total(page);
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Relevance');
+  await page.click('.sort .chip:has-text("Name")');
+  await page.waitForURL(/\/artifacts\?q=skill&sort=name$/);
+  expect(await total(page)).toBe(relevanceTotal);
+  const names = (await page.locator('.rows .row-title a').allTextContents()).map((n) =>
+    n.toLowerCase(),
+  );
+  expect(names.length).toBeGreaterThan(1);
+  // Ordered by the database's collation, so compared loosely: the first name
+  // sorts no later than the last on this page.
+  expect(names[0].localeCompare(names.at(-1) ?? '')).toBeLessThanOrEqual(0);
+  await page.click('.pager a[rel="next"]');
+  await page.waitForURL(/q=skill&sort=name&page=2$/);
+  await page.click('.facet .chip:has-text("Agent Skills")');
+  await page.waitForURL(/q=skill&type=skill&sort=name$/);
+  await page.goBack();
+  await page.waitForURL(/q=skill&sort=name&page=2$/);
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Name');
+  // Browsing offers no Relevance: with no query every row would tie.
+  await page.goto('/artifacts');
+  await expect(page.locator('.sort .chip')).toHaveText(['Recently indexed', 'Name']);
+});
+
+test('highlight and reason: query words are marked as text, and the row says where they matched', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=debugging');
+  const marks = await page.locator('.rows mark').allTextContents();
+  expect(marks.length).toBeGreaterThan(0);
+  expect(marks.every((m) => m.toLowerCase().startsWith('debug'))).toBe(true);
+  await expect(page.locator('.row-why').first()).toContainText('Matched in');
+  // A path query marks the path where the substring test matched.
+  await page.goto('/artifacts?q=.claude/agents');
+  await expect(page.locator('.row-meta .path mark').first()).toHaveText('.claude/agents');
+});
+
+test('a query holding markup is shown as text and runs nothing', async ({ page }) => {
+  let dialog = false;
+  page.on('dialog', async (d) => {
+    dialog = true;
+    await d.dismiss();
+  });
+  const q = '<script>alert(1)</script>';
+  await page.goto(`/artifacts?q=${encodeURIComponent(q)}`);
+  await expect(page.locator('#q')).toHaveValue(q);
+  expect(await page.locator('main script:not([src])').count()).toBe(0);
+  expect(dialog).toBe(false);
+});
+
+test('empty state: a query of stop words says nothing matched and offers a way out', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=the&type=agent');
+  await expect(page.locator('.empty')).toContainText('No artifacts matched "the"');
+  await page.click('.empty a:has-text("Clear search")');
+  await page.waitForURL(/\/artifacts\?type=agent$/);
+  expect(await total(page)).toBeGreaterThan(0);
+});
+
+test('pagination: numbered pages, next, last page and a page past the end', async ({ page }) => {
+  await page.goto('/artifacts');
+  const n = await total(page);
+  const last = Math.ceil(n / 25);
+  await expect(page.locator('.pager [aria-current="page"]')).toHaveText('1');
+  await page.click('.pager a[rel="next"]');
+  await page.waitForURL(/page=2$/);
+  await expect(page.locator('.result-bar')).toContainText('Showing 26–50');
+  await page.click(`.pager a[aria-label="Page ${last}"]`);
+  await page.waitForURL(new RegExp(`page=${last}$`));
+  await expect(page.locator('.rows > li')).toHaveCount(n - (last - 1) * 25);
+  await expect(page.locator('.pager a[rel="next"]')).toHaveCount(0);
+  await page.goto(`/artifacts?page=${last + 1}`);
+  await expect(page.locator('.empty')).toContainText(`There is no page ${last + 1}`);
+});
+
+test('detail, Back and a shared URL', async ({ page, browser }) => {
+  await page.goto('/artifacts?q=code-reviewer&type=agent');
+  const name = ((await page.locator('.rows .row-title a').first().textContent()) ?? '').trim();
+  await page.locator('.rows .row-title a').first().click();
+  await page.waitForURL(/\/r\//);
+  await expect(page.locator('h1')).toHaveText(name);
+  const source = page.locator('.detail-actions a').first();
+  expect(await source.getAttribute('href')).toMatch(
+    /^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/[0-9a-f]{40}\//,
+  );
+  await page.goBack();
+  await page.waitForURL(/q=code-reviewer&type=agent$/);
+  await expect(page.locator('#q')).toHaveValue('code-reviewer');
+
+  // A fresh context, as a link pasted into another browser would be.
+  const other = await (await browser.newContext()).newPage();
+  await other.goto('/artifacts?q=skill&type=skill&cap=no_scripts&sort=name&page=2');
+  await expect(other.locator('#q')).toHaveValue('skill');
+  await expect(other.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText([
+    'Agent Skills',
+    'No bundled script files',
+  ]);
+  await expect(other.locator('.sort .chip[aria-current]')).toHaveText('Name');
+  await expect(other.locator('.pager [aria-current="page"]')).toHaveText('2');
+});
+
+test('subagent detail: breadcrumb, section links and the plugin relation both ways', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases/.claude/agents/code-reviewer.md');
+  await expect(page.locator('.crumbs li')).toHaveText([
+    'Artifacts',
+    'Subagents',
+    'fixture/ui-edge-cases',
+    'code-reviewer',
+  ]);
+  for (const id of await page
+    .locator('.toc a')
+    .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))) {
+    await expect(page.locator(id)).toHaveCount(1);
+  }
+  await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/.claude-plugin/plugin.json');
+  await page.click('#related ~ ul.notes a:has-text("security-reviewer")');
+  await page.waitForURL(/security-reviewer\.md$/);
+  await expect(page.locator('#related ~ ul.notes').first()).toContainText(
+    'Inside the plugin review-kit',
+  );
+});
+
+test('keyboard: / focuses search, Tab reaches a sort link and a result, focus is visible', async ({
+  page,
+}) => {
+  await page.goto('/');
+  // SearchHotkey binds the key on hydration and marks <html> when it has.
+  await page.waitForSelector('html[data-hotkeys]');
+  await page.keyboard.press('/');
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe('q');
+  await page.keyboard.type('review');
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/q=review$/);
+  const tabTo = async (expr: string, limit = 80) => {
+    for (let i = 0; i < limit; i++) {
+      if (await page.evaluate(expr)) return;
+      await page.keyboard.press('Tab');
+    }
+    throw new Error(`Tab never reached ${expr}`);
+  };
+  await tabTo(`!!document.activeElement?.closest('.sort')`);
+  expect(
+    await page.evaluate(() => {
+      const el = document.activeElement as Element;
+      return el.matches(':focus-visible') && getComputedStyle(el).outlineStyle !== 'none';
+    }),
+  ).toBe(true);
+  await tabTo(`!!document.activeElement?.closest('.row-title')`);
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/\/r\//);
+});
+
+test('bad parameters fall back to defaults, and parameterised listings are noindex', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?page=abc&type=bogus&cap=nope&sort=stars');
+  await expect(page.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText(['All types']);
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Recently indexed');
+  expect(await page.locator('meta[name=robots]').getAttribute('content')).toContain('noindex');
+  await page.goto('/artifacts?type=agent');
+  await expect(page.locator('meta[name=robots]')).toHaveCount(0);
+});
+
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('search, filter and sort without horizontal overflow', async ({ page }) => {
+    await page.goto('/artifacts');
+    await noHorizontalOverflow(page);
+    await page.fill('#q', 'mcp');
+    await page.press('#q', 'Enter');
+    await page.waitForURL(/q=mcp$/);
+    await noHorizontalOverflow(page);
+    const chip = page.locator('.facet .chip:has-text("Subagents")');
+    await chip.scrollIntoViewIfNeeded();
+    await chip.tap();
+    await page.waitForURL(/q=mcp&type=agent$/);
+    await page.goto('/artifacts?q=review');
+    await page.locator('.sort .chip:has-text("Name")').tap();
+    await page.waitForURL(/sort=name/);
+    await noHorizontalOverflow(page);
+  });
+
+  test('a very long name wraps on 320px, in the list and on its page', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/artifacts?q=extremely');
+    await noHorizontalOverflow(page);
+    await page.locator('.rows .row-title a').first().tap();
+    await page.waitForURL(/\/r\//);
+    await noHorizontalOverflow(page);
+  });
+});

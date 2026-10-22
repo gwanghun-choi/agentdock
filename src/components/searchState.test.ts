@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { pageWindow, searchHref, toggleCapability, withType } from '@/components/searchState';
+import {
+  pageWindow,
+  searchHref,
+  toggleCapability,
+  withSort,
+  withType,
+} from '@/components/searchState';
 
 const base = { q: '', types: [] as string[], capabilities: [] as string[], page: 1 };
 
@@ -18,6 +24,31 @@ describe('searchHref', () => {
 
   it('omits page 1 and encodes what a query can carry', () => {
     expect(searchHref({ ...base, q: 'a&b=c#d', page: 1 })).toBe('/artifacts?q=a%26b%3Dc%23d');
+  });
+});
+
+describe('sort', () => {
+  it('is left out of the URL when it is the default for the query', () => {
+    expect(searchHref({ ...base, q: 'pdf', sort: 'relevance' })).toBe('/artifacts?q=pdf');
+    expect(searchHref({ ...base, sort: 'recent' })).toBe('/artifacts');
+    expect(searchHref({ ...base, q: 'pdf', sort: 'recent' })).toBe('/artifacts?q=pdf&sort=recent');
+    expect(searchHref({ ...base, sort: 'name' })).toBe('/artifacts?sort=name');
+  });
+
+  it('a sort link keeps the query and filters and goes back to the first page', () => {
+    const state = { q: 'review', types: ['agent'], capabilities: ['no_shell'], page: 3 };
+    expect(searchHref(withSort(state, 'name'))).toBe(
+      '/artifacts?q=review&type=agent&cap=no_shell&sort=name',
+    );
+  });
+
+  it('survives a filter change and a page change', () => {
+    const sorted = { ...base, q: 'review', sort: 'name', page: 2 };
+    expect(searchHref(withType(sorted, 'skill'))).toBe('/artifacts?q=review&type=skill&sort=name');
+    expect(searchHref(toggleCapability(sorted, 'no_shell'))).toBe(
+      '/artifacts?q=review&cap=no_shell&sort=name',
+    );
+    expect(searchHref(sorted)).toBe('/artifacts?q=review&sort=name&page=2');
   });
 });
 

@@ -264,14 +264,14 @@ Then open the project's **Logs** within the hour Hobby keeps them:
 ## Automated deploys
 
 ```
-push to develop ─▶ CI (check, database) ─success─▶ deploy.yml
-                                                    gate      this sha's own push CI passed; sha is develop's tip;
-                                                              production does not already serve it
-                                                    plan      target pin, history vs drizzle/, risk rule   (read-only)
-                                                    migrate   same checks under an advisory lock, apply, verify, commit
-                                                    verify    nothing pending                               (read-only)
-                                                    vercel    vercel deploy --prod: Vercel builds; the domain moves when ready
-                                                    smoke     pages render from the database; X-AgentDock-Commit = sha
+push to develop ─▶ CI (check, database, e2e) ─success─▶ deploy.yml
+                                                         gate      this sha's own push CI passed; sha is develop's tip;
+                                                                   production does not already serve it
+                                                         plan      target pin, history vs drizzle/, risk rule   (read-only)
+                                                         migrate   same checks under an advisory lock, apply, verify, commit
+                                                         verify    nothing pending                               (read-only)
+                                                         vercel    vercel deploy --prod: Vercel builds; the domain moves when ready
+                                                         smoke     pages render from the database; X-AgentDock-Commit = sha
 ```
 
 **The invariant: production never serves a build whose migrations have not

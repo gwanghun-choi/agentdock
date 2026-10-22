@@ -1,0 +1,55 @@
+{
+  "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "truncated": false,
+  "tree": [
+    {
+      "path": ".mcp.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 300
+    },
+    {
+      "path": ".claude/agents/code-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 213
+    },
+    {
+      "path": ".claude/agents/test-runner.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 126
+    },
+    {
+      "path": "plugins/review-kit/.claude-plugin/plugin.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 128
+    },
+    {
+      "path": "plugins/review-kit/agents/security-reviewer.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 146
+    },
+    {
+      "path": "plugins/review-kit/skills/review-checklist/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 131
+    },
+    {
+      "path": "skills/an-extremely-long-skill-name-that-keeps-going-to-test-wrapping-and-truncation-behaviour/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 1245
+    }
+  ]
+}

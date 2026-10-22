@@ -2,7 +2,14 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
-import { pageWindow, searchHref, toggleCapability, withType } from '@/components/searchState';
+import {
+  defaultSort,
+  pageWindow,
+  searchHref,
+  toggleCapability,
+  withSort,
+  withType,
+} from '@/components/searchState';
 import { TYPE_FILTER_LABELS as SHARED_TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import {
@@ -11,7 +18,9 @@ import {
   countSearchResults,
   normalizeQuery,
   SEARCH_CAPS,
+  SEARCH_SORTS,
   type SearchFilters,
+  type SearchSort,
   searchMode,
   searchPackages,
 } from '@/db/queries/search';
@@ -35,7 +44,8 @@ export async function generateMetadata({
   const sp = await searchParams;
   const q = normalizeQuery(sp.q);
   const [type] = parseTypeFilter(sp.type);
-  const varied = q !== '' || sp.cap !== undefined || pageParam.parse(sp.page) > 1;
+  const varied =
+    q !== '' || sp.cap !== undefined || sp.sort !== undefined || pageParam.parse(sp.page) > 1;
   const subject = type ? TYPE_FILTER_LABELS[type] : 'Artifacts';
   return {
     title: q ? `“${q}” in ${subject} — AgentDock` : `${subject} — AgentDock`,
@@ -113,6 +123,23 @@ function parseTypeFilter(raw: string | string[] | undefined): (typeof ARTIFACT_T
     : [];
 }
 
+/**
+ * One of SEARCH_SORTS, or the default for the query. `relevance` without a query
+ * is the default instead: every row would rank 0, so it would be `recent` under
+ * another name, and the page offers it only beside a query.
+ */
+function parseSort(raw: string | string[] | undefined, q: string): SearchSort {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const known = SEARCH_SORTS.find((s) => s === value);
+  return known && !(known === 'relevance' && !q) ? known : defaultSort(q);
+}
+
+const SORT_LABELS: Record<SearchSort, string> = {
+  relevance: 'Relevance',
+  recent: 'Recently indexed',
+  name: 'Name',
+};
+
 /** Repeated `cap` parameters arrive as an array; a single one arrives as a
  * bare string. Unmatched values are dropped. */
 function parseCapabilityFilter(
@@ -125,14 +152,18 @@ function parseCapabilityFilter(
 }
 
 /** Every link on this page goes through searchHref (see searchState.ts), so
- * pagination and filtering cannot silently lose each other (D-35/D-36). */
-function hrefFor(q: string, page: number, filters: SearchFilters): string {
-  return searchHref({ q, types: filters.types, capabilities: filters.capabilities, page });
+ * pagination, sorting and filtering cannot silently lose each other (D-35/D-36). */
+function hrefFor(q: string, page: number, filters: SearchFilters, sort?: SearchSort): string {
+  return searchHref({ q, types: filters.types, capabilities: filters.capabilities, sort, page });
 }
 
 /** Each applied filter with the URL of the same search without it. */
-function appliedFilters(q: string, filters: SearchFilters): { label: string; href: string }[] {
-  const state = { q, types: filters.types, capabilities: filters.capabilities, page: 1 };
+function appliedFilters(
+  q: string,
+  filters: SearchFilters,
+  sort?: SearchSort,
+): { label: string; href: string }[] {
+  const state = { q, types: filters.types, capabilities: filters.capabilities, sort, page: 1 };
   const out: { label: string; href: string }[] = [];
   for (const t of filters.types) {
     const label = TYPE_FILTER_LABELS[t as (typeof ARTIFACT_TYPE_IDS)[number]];
@@ -150,8 +181,16 @@ function appliedFilters(q: string, filters: SearchFilters): { label: string; hre
  * count it narrows. The chips above say the same thing, but on a phone they
  * are a scrolled row the reader may not be looking at.
  */
-function AppliedFilters({ q, filters }: { q: string; filters: SearchFilters }) {
-  const applied = appliedFilters(q, filters);
+function AppliedFilters({
+  q,
+  filters,
+  sort,
+}: {
+  q: string;
+  filters: SearchFilters;
+  sort?: SearchSort;
+}) {
+  const applied = appliedFilters(q, filters, sort);
   if (applied.length === 0) return null;
   return (
     <ul aria-label="Applied filters" className="applied">
@@ -165,12 +204,36 @@ function AppliedFilters({ q, filters }: { q: string; filters: SearchFilters }) {
       ))}
       {applied.length > 1 ? (
         <li>
-          <Link className="applied-clear" href={hrefFor(q, 1, NO_FILTERS)}>
+          <Link className="applied-clear" href={hrefFor(q, 1, NO_FILTERS, sort)}>
             Clear all
           </Link>
         </li>
       ) : null}
     </ul>
+  );
+}
+
+/**
+ * The orders this result set can be read in, as links like the filter chips:
+ * the URL is the state, Back undoes it, and it works without JavaScript.
+ * Relevance is offered only beside a query (see parseSort).
+ */
+function SortLinks({ q, filters, sort }: { q: string; filters: SearchFilters; sort: SearchSort }) {
+  const state = { q, types: filters.types, capabilities: filters.capabilities, sort, page: 1 };
+  return (
+    <nav aria-label="Sort results" className="facet sort">
+      <span className="facet-legend">Sort</span>
+      {SEARCH_SORTS.filter((s) => q || s !== 'relevance').map((s) => (
+        <Link
+          aria-current={s === sort ? 'true' : undefined}
+          className="chip"
+          href={searchHref(withSort(state, s))}
+          key={s}
+        >
+          {SORT_LABELS[s]}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
@@ -184,17 +247,19 @@ function Pager({
   page,
   last,
   filters,
+  sort,
 }: {
   q: string;
   page: number;
   last: number;
   filters: SearchFilters;
+  sort: SearchSort;
 }) {
   if (last <= 1) return null;
   return (
     <nav aria-label="Pagination" className="pager">
       {page > 1 ? (
-        <Link href={hrefFor(q, page - 1, filters)} rel="prev">
+        <Link href={hrefFor(q, page - 1, filters, sort)} rel="prev">
           <ArrowLeftIcon /> <span className="pager-word">Previous</span>
         </Link>
       ) : null}
@@ -210,7 +275,7 @@ function Pager({
               <Link
                 aria-current={p === page ? 'page' : undefined}
                 aria-label={`Page ${p}`}
-                href={hrefFor(q, p, filters)}
+                href={hrefFor(q, p, filters, sort)}
               >
                 {p}
               </Link>
@@ -219,7 +284,7 @@ function Pager({
         )}
       </ol>
       {page < last ? (
-        <Link href={hrefFor(q, page + 1, filters)} rel="next">
+        <Link href={hrefFor(q, page + 1, filters, sort)} rel="next">
           <span className="pager-word">Next</span> <ArrowRightIcon />
         </Link>
       ) : null}
@@ -260,6 +325,7 @@ export default async function ArtifactsPage({
   const filters: SearchFilters = { types: selectedTypes, capabilities: selectedCapabilities };
   const hasQuery = q !== '';
   const hasFilters = selectedTypes.length > 0 || selectedCapabilities.length > 0;
+  const sort = parseSort(sp.sort, q);
 
   // The route emits exactly one log line per request, wrapping BOTH queries
   // — searchPackages is react.cache-wrapped, so a call from inside it would
@@ -268,7 +334,7 @@ export default async function ArtifactsPage({
   const start = Date.now();
   const mode = await searchMode({ q, filters });
   const [items, total] = await Promise.all([
-    searchPackages({ q, filters, limit: SEARCH_CAPS.pageSize, offset, mode }),
+    searchPackages({ q, filters, limit: SEARCH_CAPS.pageSize, offset, mode, sort }),
     countSearchResults({ q, filters, mode }),
   ]);
   const durationMs = Date.now() - start;
@@ -323,6 +389,9 @@ export default async function ArtifactsPage({
       {selectedCapabilities.map((c) => (
         <input key={c} name="cap" type="hidden" value={c} />
       ))}
+      {/* A chosen order rides along too; the default for the query does not,
+          so a new query gets the default for itself. */}
+      {sort !== defaultSort(q) ? <input name="sort" type="hidden" value={sort} /> : null}
     </form>
   );
 
@@ -344,7 +413,7 @@ export default async function ArtifactsPage({
    * its own removal. `aria-current` names the applied ones to a screen reader;
    * the look is the same six channels the checked chips used.
    */
-  const state = { q, types: selectedTypes, capabilities: selectedCapabilities, page: 1 };
+  const state = { q, types: selectedTypes, capabilities: selectedCapabilities, sort, page: 1 };
   const facets = (
     <div className="facets">
       <fieldset className="facet">
@@ -411,8 +480,15 @@ export default async function ArtifactsPage({
       {/* Only with a filter to clear. Without one it linked to the page the
           reader was already on (U3). */}
       {hasFilters ? (
-        <Link className="btn btn-quiet" href={hrefFor(q, 1, NO_FILTERS)}>
+        <Link className="btn btn-quiet" href={hrefFor(q, 1, NO_FILTERS, sort)}>
           Clear filters
+        </Link>
+      ) : null}
+      {/* The same filters without the words — with no filter this is the
+          "Browse all" link beside it, so it is offered only with one. */}
+      {hasQuery && hasFilters ? (
+        <Link className="btn btn-quiet" href={hrefFor('', 1, filters)}>
+          Clear search
         </Link>
       ) : null}
       <Link className="btn btn-quiet" href="/artifacts">
@@ -466,7 +542,7 @@ export default async function ArtifactsPage({
             There is no page {page}. This result set has {total} artifacts.
           </p>
           <p className="actions">
-            <Link className="btn btn-quiet" href={hrefFor(q, 1, filters)}>
+            <Link className="btn btn-quiet" href={hrefFor(q, 1, filters, sort)}>
               <ArrowLeftIcon /> Back to the first page
             </Link>
           </p>
@@ -493,7 +569,7 @@ export default async function ArtifactsPage({
           <p className="muted">
             AgentDock has not indexed a match. That is not the same as the artifact not existing.
           </p>
-          <AppliedFilters filters={filters} q={q} />
+          <AppliedFilters filters={filters} q={q} sort={sort} />
           {nextSteps}
         </div>
       </>
@@ -527,6 +603,10 @@ export default async function ArtifactsPage({
     );
   }
 
+  // A query with '/' in it is also tested as a path substring (search.ts), so
+  // the rows can mark where in the path it matched.
+  const pathQuery = q.includes('/') ? q : undefined;
+
   return (
     <>
       {pageHead}
@@ -554,10 +634,11 @@ export default async function ArtifactsPage({
         {mode === 'any' ? (
           <p className="muted">No artifact matched every word; these match at least one.</p>
         ) : null}
-        <AppliedFilters filters={filters} q={q} />
+        <AppliedFilters filters={filters} q={q} sort={sort} />
+        <SortLinks filters={filters} q={q} sort={sort} />
       </div>
-      <PackageRows items={items} />
-      <Pager filters={filters} last={last} page={page} q={q} />
+      <PackageRows items={items} pathQuery={pathQuery} />
+      <Pager filters={filters} last={last} page={page} q={q} sort={sort} />
     </>
   );
 }

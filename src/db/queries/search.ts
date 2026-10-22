@@ -2,11 +2,19 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
+import { MARK_CLOSE, MARK_OPEN } from '@/components/Marked';
 import { db } from '@/db/client';
 import { capabilityFinding, packageTable, packageVersion, repository } from '@/db/schema';
 import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
 
-export type SearchResultItem = PackageListItem & { rank: number };
+export type SearchResultItem = PackageListItem & {
+  rank: number;
+  /** Which stored fields hold a query word, in no order — see `matchedIn`. */
+  matchedIn?: MatchField[];
+  /** `name` / `summary` with every query word delimited (src/components/Marked.tsx). */
+  nameMarked?: string | null;
+  summaryMarked?: string | null;
+};
 
 /**
  * Every number here carries the reason it has that value, following the
@@ -44,6 +52,20 @@ export const SEARCH_CAPS = {
    * other twenty evaluation cases are byte-identical with and without it.
    */
   pathBonus: 1.0,
+  /**
+   * A query word in the artifact's name, as a whole lexeme (or the typed
+   * prefix of the last word), not only as the whole name. Phase 11, measured
+   * on the evaluation set: `image generation` ranked baoyu-danger-gemini-web
+   * above baoyu-image-gen, because ts_rank counts the summary's repeated
+   * "images … image generation" past a single A-weight hit in the name.
+   * Swept on the 50-query set (2026-10-22): 0.2, 0.3 and 0.5 give the same
+   * MRR 0.924 / NDCG@10 0.903; 0.8 and 0.99 fall back to 0.913 / 0.898,
+   * because a name word then overtakes pathBonus — `.claude/commands` put the
+   * "Command Development" skill above every file in that directory. Held at
+   * 0.5: half of pathBonus and prefixNameBonus, and above the gap between two
+   * rows that both match (ts_rank 0.99 vs 0.98 in the case above).
+   */
+  nameWordBonus: 0.5,
   /**
    * pg_trgm's own default for `<%` (the session GUC
    * `pg_trgm.word_similarity_threshold`), which the fuzzy branch reads; this
@@ -96,6 +118,22 @@ export const ARTIFACT_TYPE_IDS = [
  * observed (decision 2, 06-03 plan).
  */
 export const CAPABILITY_FILTER_IDS = ['no_network', 'no_shell', 'no_scripts'] as const;
+
+/**
+ * The orders a result list can take. `relevance` is the ranking below and is
+ * the default for a query; with no query every row ranks 0, so the route
+ * offers it only beside a query and browsing defaults to `recent`.
+ *
+ * `recent` is package.updated_at — the last time a scan wrote this artifact's
+ * row, which is every scan that read its repository at a new commit. It is
+ * the order browsing has always used. Stars are deliberately not an order:
+ * AGENTS.md, popularity never ranks artifacts.
+ */
+export const SEARCH_SORTS = ['relevance', 'recent', 'name'] as const;
+export type SearchSort = (typeof SEARCH_SORTS)[number];
+
+/** Where a query word was found on a row; see `matchedIn`. */
+export type MatchField = 'name' | 'path' | 'summary' | 'type' | 'repository';
 
 export type SearchFilters = {
   types: string[];
@@ -279,6 +317,85 @@ function tsQuery(q: string, mode: SearchMode) {
 }
 
 /**
+ * The query the explanation and the highlight run: the search's own query with
+ * every word made optional, so a field is credited with each word it holds even
+ * when a row matched by spreading `code & review` across two fields. Websearch
+ * syntax stays as typed — an exclusion is part of what "matched" means.
+ */
+function matchQuery(q: string, mode: SearchMode) {
+  return plainWords(q) ? tsQuery(q, 'any') : tsQuery(q, mode);
+}
+
+/** A query word in the name — the same test the nameWordBonus and the "name"
+ * reason both read, written once. */
+function nameWordHit(q: string, mode: SearchMode) {
+  return sql`ts_filter(${packageTable.searchVector}, '{a}') @@ ${matchQuery(q, mode)}`;
+}
+
+/**
+ * Which fields of a row hold a query word, read from the same stored
+ * search_vector the WHERE matched, by weight: A name, B summary, C path, D
+ * type (schema.ts). Plus the two LIKE tests the ranking and the WHERE use —
+ * a name prefix, a path substring for a query with '/', and the repository
+ * name, claimed only when the WHERE itself tested it (three characters up).
+ * So every reason the page prints is a condition PostgreSQL evaluated true on
+ * that row, not a guess made from the text afterwards.
+ */
+function matchedIn(q: string, mode: SearchMode) {
+  const mq = matchQuery(q, mode);
+  const qEsc = escapeLikeOperand(q);
+  const sv = packageTable.searchVector;
+  return sql<MatchField[]>`array_remove(array[
+    case when ${nameWordHit(q, mode)}
+           or lower(${packageTable.name}) like lower(${qEsc}) || '%' then 'name' end,
+    case when ts_filter(${sv}, '{c}') @@ ${mq}
+      ${q.includes('/') ? sql`or lower(${packageTable.sourcePath}) like '%' || lower(${qEsc}) || '%'` : sql``}
+      then 'path' end,
+    case when ts_filter(${sv}, '{b}') @@ ${mq} then 'summary' end,
+    case when ts_filter(${sv}, '{d}') @@ ${mq} then 'type' end,
+    ${
+      q.length >= MIN_PREFIX_CHARS
+        ? sql`case when ${repository.fullName} ilike ${`%${qEsc}%`} then 'repository' end`
+        : sql`null`
+    }
+  ]::text[], null)`;
+}
+
+/**
+ * `column` with each query word wrapped in MARK_OPEN…MARK_CLOSE, by
+ * ts_headline — the same parser and stemmer as the search, so `debuging`
+ * marks "Debugging" and `image` marks "images", which a substring match in
+ * the page could not. HighlightAll returns the whole text, whitespace and
+ * all (verified 2026-10-22: tabs, newlines and double spaces survive; `<b>`
+ * comes back as the four characters it was).
+ *
+ * Projected only; PostgreSQL evaluates it after the Sort/Limit, for the page's
+ * rows alone (ts_headline's procost is 100 — see the Phase 11 plan in
+ * docs/analysis), never for every match.
+ */
+function marked(
+  column: typeof packageTable.name | typeof packageTable.summary,
+  q: string,
+  mode: SearchMode,
+) {
+  return sql<string | null>`ts_headline('english',
+    translate(${column}, ${MARK_OPEN + MARK_CLOSE}, ''),
+    ${matchQuery(q, mode)},
+    ${`StartSel=${MARK_OPEN}, StopSel=${MARK_CLOSE}, HighlightAll=true`})`;
+}
+
+/**
+ * The ORDER BY for each sort. Every one ends in `id`, the primary key, so two
+ * rows never tie and a page boundary falls in the same place on every
+ * request — no row on two pages, none on neither.
+ */
+function orderFor(sort: SearchSort, rank: ReturnType<typeof sql<number>>) {
+  if (sort === 'name') return [sql`lower(${packageTable.name})`, packageTable.id];
+  if (sort === 'recent') return [desc(packageTable.updatedAt), packageTable.id];
+  return [desc(rank), desc(packageTable.updatedAt), packageTable.id];
+}
+
+/**
  * The WHERE both query functions below share, built once and called from
  * both — never a second, hand-copied predicate. Two independent copies of
  * this predicate is the bug shape packages.ts:203-208 already warns about,
@@ -331,6 +448,7 @@ function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: Searc
  *
  *   1. exact name match       — SEARCH_CAPS.exactNameBonus
  *   2. name prefix/similarity — SEARCH_CAPS.prefixNameBonus
+ *      and a query word in the name — SEARCH_CAPS.nameWordBonus (Phase 11)
  *   3. description/text relevance — ts_rank over the weighted search_vector
  *   4. repository name match  — SEARCH_CAPS.repoNameBonus
  *   5. path substring, only for a query containing '/' — SEARCH_CAPS.pathBonus
@@ -352,6 +470,8 @@ function rankExpr(q: string, mode: SearchMode) {
         then ${SEARCH_CAPS.exactNameBonus}::real else 0::real end
     + case when lower(${packageTable.name}) like lower(${qEsc}) || '%'
         then ${SEARCH_CAPS.prefixNameBonus}::real else 0::real end
+    + case when ${nameWordHit(q, mode)}
+        then ${SEARCH_CAPS.nameWordBonus}::real else 0::real end
     + ts_rank(${packageTable.searchVector}, ${tsQuery(q, mode)})
     + case when ${repository.fullName} ilike '%' || ${qEsc} || '%'
         then ${SEARCH_CAPS.repoNameBonus}::real else 0::real end
@@ -419,6 +539,7 @@ async function fuzzySearch(
   filters: SearchFilters,
   limit: number,
   offset: number,
+  sort: SearchSort,
 ): Promise<SearchResultItem[]> {
   const matchExpr = fuzzyMatchExpr();
   // Reused in both SELECT and ORDER BY, same reason rankExpr's `rank` is
@@ -461,10 +582,21 @@ async function fuzzySearch(
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
-      .where(and(searchWhere('', filters), sql`${q} OPERATOR(public.<%) ${matchExpr}`))
-      // Same two tie-break keys as the full-text branch, so a repeated
-      // fuzzy query returns identical ids in identical order (D-15/D-16).
-      .orderBy(desc(similarity), desc(packageTable.updatedAt), packageTable.id)
+      .where(
+        and(
+          searchWhere('', filters),
+          // A query of stop words only ("the", "and") reduces to an empty
+          // tsquery and matches nothing above — not a typo, so not a reason to
+          // offer near matches. Phase 11 measured `the` returning 50 "close
+          // matches" (every summary with the word in it) in 423 ms on 16,400
+          // rows. A constant, evaluated once per statement.
+          sql`numnode(${tsQuery(q, 'all')}) > 0`,
+          sql`${q} OPERATOR(public.<%) ${matchExpr}`,
+        ),
+      )
+      // Same tie-break keys as the full-text branch, so a repeated fuzzy
+      // query returns identical ids in identical order (D-15/D-16).
+      .orderBy(...orderFor(sort, similarity))
       .limit(limit)
       .offset(offset);
   } catch (err) {
@@ -547,6 +679,7 @@ export const searchPackages = cache(
     limit = SEARCH_CAPS.pageSize,
     offset = 0,
     mode: decided,
+    sort = 'relevance',
   }: {
     q: string;
     filters?: SearchFilters;
@@ -554,6 +687,7 @@ export const searchPackages = cache(
     offset?: number;
     /** The page's own searchMode result, so rows, total and notice share one. */
     mode?: SearchMode;
+    sort?: SearchSort;
   }): Promise<SearchResultItem[]> => {
     // Drizzle does not emit a SQL-level `AS` alias for a computed sql<T>
     // projection field (confirmed against this pinned version's raw query
@@ -583,6 +717,15 @@ export const searchPackages = cache(
         )`,
         notListedBecause: NOT_LISTED_BECAUSE,
         rank,
+        // Browsing matched nothing in particular, so it explains and marks
+        // nothing; these three exist only beside a query.
+        ...(q === ''
+          ? {}
+          : {
+              matchedIn: matchedIn(q, mode),
+              nameMarked: marked(packageTable.name, q, mode),
+              summaryMarked: marked(packageTable.summary, q, mode),
+            }),
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
@@ -591,7 +734,7 @@ export const searchPackages = cache(
       // On the browse branch rank is a constant 0 for every row, so this
       // reduces to updated_at DESC, id ASC — matching listPackages' own
       // order (packages.ts:211) with the id tie-break D-15 adds.
-      .orderBy(desc(rank), desc(packageTable.updatedAt), packageTable.id)
+      .orderBy(...orderFor(sort, rank))
       .limit(limit)
       .offset(offset);
 
@@ -607,7 +750,7 @@ export const searchPackages = cache(
     // under the full-text total — "Showing 26–30 of 1" (R16). The page's own
     // "There is no page N" branch is what a page past the end should show.
     if (q !== '' && results.length === 0 && offset === 0) {
-      return fuzzySearch(q, filters, limit, offset);
+      return fuzzySearch(q, filters, limit, offset, sort);
     }
     return results;
   },

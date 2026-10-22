@@ -1,0 +1,21 @@
+{
+  "id": 999001,
+  "node_id": "R_fixture_ui_edge",
+  "name": "ui-edge-cases",
+  "full_name": "fixture/ui-edge-cases",
+  "private": false,
+  "fork": false,
+  "archived": false,
+  "owner": {
+    "login": "fixture"
+  },
+  "description": "Synthetic repository for the browser journeys: subagents, an MCP declaration, a plugin holding a subagent and a skill, and a very long name. Never in production.",
+  "default_branch": "main",
+  "stargazers_count": 1234,
+  "pushed_at": "2026-10-01T00:00:00Z",
+  "topics": [],
+  "license": {
+    "spdx_id": "MIT"
+  },
+  "homepage": ""
+}

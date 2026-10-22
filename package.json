@@ -14,6 +14,9 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "fixtures:capture": "bun scripts/capture-fixtures.mjs",
     "precision": "bun scripts/capability-precision.mjs",
+    "search:eval": "SEARCH_EVAL_REPORT=1 vitest run src/db/queries/search.eval.test.ts",
+    "e2e:seed": "bun --no-env-file e2e/seed.mjs",
+    "test:e2e": "playwright test",
     "db:seed": "bun scripts/seed-fixture.mjs",
     "analyze:backfill": "bun scripts/analyze-backfill.mjs",
     "sync": "bun scripts/corpus-sync.mjs --scheduled",
@@ -44,6 +47,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",
+    "@playwright/test": "1.64.1",
     "@types/js-yaml": "4.0.9",
     "@types/node": "26.2.0",
     "@types/react": "19.2.7",

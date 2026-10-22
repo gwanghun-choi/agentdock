@@ -1,7 +1,7 @@
 /**
- * The artifacts route's URL state — query, type, capabilities, page — and the
- * one builder every link on that page goes through: the filter chips, the
- * applied-filter removals, the pager and the empty-state exits.
+ * The artifacts route's URL state — query, type, capabilities, sort, page — and
+ * the one builder every link on that page goes through: the filter chips, the
+ * sort links, the applied-filter removals, the pager and the empty-state exits.
  *
  * Moved out of `src/app/artifacts/page.tsx` so it can be tested without a
  * database: that route imports `@/db/queries/search`, which opens the client at
@@ -12,15 +12,31 @@ export type SearchState = {
   q: string;
   types: readonly string[];
   capabilities: readonly string[];
+  /** Absent means the default for `q` — see defaultSort. */
+  sort?: string;
   page: number;
 };
 
-/** Parameter order is fixed (q, type, cap, page) so one state has one URL. */
-export function searchHref({ q, types, capabilities, page }: SearchState): string {
+/**
+ * The order a result list takes when the URL names none: relevance beside a
+ * query, and with no query — where every row ranks the same — the recency
+ * order browsing has always had.
+ */
+export function defaultSort(q: string): 'relevance' | 'recent' {
+  return q ? 'relevance' : 'recent';
+}
+
+/**
+ * Parameter order is fixed (q, type, cap, sort, page) so one state has one URL,
+ * and the default sort is left out, so a URL from before sorting existed is
+ * still the URL of the same state.
+ */
+export function searchHref({ q, types, capabilities, sort, page }: SearchState): string {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   for (const t of types) params.set('type', t);
   for (const c of capabilities) params.append('cap', c);
+  if (sort && sort !== defaultSort(q)) params.set('sort', sort);
   if (page > 1) params.set('page', String(page));
   const qs = params.toString();
   return qs ? `/artifacts?${qs}` : '/artifacts';
@@ -33,6 +49,11 @@ export function searchHref({ q, types, capabilities, page }: SearchState): strin
  */
 export function withType(state: SearchState, type: string | null): SearchState {
   return { ...state, types: type === null || state.types.includes(type) ? [] : [type], page: 1 };
+}
+
+/** A sort link reorders the same set, from its first page. */
+export function withSort(state: SearchState, sort: string): SearchState {
+  return { ...state, sort, page: 1 };
 }
 
 /** A capability chip toggles its own id and leaves the others alone. */

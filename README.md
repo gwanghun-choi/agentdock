@@ -234,6 +234,19 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
   branch는 움직이기 때문입니다.
 - **경로 검색.** `/`가 들어간 검색어는 경로로 보고, source path에 그 문자열이 든
   artifact를 위로 올립니다. 다른 검색어의 순위는 바뀌지 않습니다.
+- **정렬.** 관련도(검색어가 있을 때), 최근 색인순, 이름순. 링크로 바꾸며 URL에
+  `sort=`로 남고, 필터와 페이지 이동 뒤에도 유지되며, 바꾸면 1페이지로 돌아갑니다.
+  검색어가 없으면 기본은 최근 색인순이고 관련도는 보이지 않습니다(모든 행이 같은
+  점수이기 때문입니다).
+- **일치 이유.** 각 결과가 검색어 단어가 어느 필드에 있었는지(이름, 경로, 설명,
+  유형, 저장소) 보여줍니다. 검색이 일치시킨 저장된 search vector에서 같은
+  조건으로 계산하므로 추측이 아닙니다. 이름과 설명의 일치 단어는 `ts_headline`
+  (검색과 같은 parser·stemmer)으로, `/` 검색어는 경로에서 강조합니다. 강조는
+  React 텍스트와 `<mark>` 노드로 나눠 그리며 마크업 문자열을 만들지 않습니다.
+- **검색 품질을 측정합니다.** `bun run search:eval`이 고정된 50개 질의로
+  Precision@5/10, Recall@10, MRR, NDCG@10, Top-1, 결과 없음 비율, latency를
+  출력합니다. 질의별 첫 정답 순위와 평균 MRR·NDCG를 테스트가 고정하므로, 하나라도
+  나빠지는 ranking 변경은 CI에서 실패합니다.
 - **상세 화면.** plugin 디렉터리 아래에 있는 artifact는 소속 plugin을, plugin은
   자기 디렉터리 아래의 구성요소를 보여줍니다. 경로 기준 관계이며 plugin.json의
   경로 override는 따라가지 않습니다. 저장된 version 목록(내용별 1행, commit 링크)과
@@ -491,6 +504,20 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 데이터베이스를 쓰는 suite는 다른 suite가 만들 수 없는 sentinel 값으로 자기 행을
 구분합니다.
 
+**브라우저 여정 테스트**(`e2e/journeys.spec.ts`, Playwright, Chromium)는 프로덕션
+빌드와 같은 일회용 DB로 돕니다. DB는 커밋된 fixture와
+`e2e/fixtures/ui-edge-cases`(subagent, MCP 선언, 매우 긴 이름)로 offline seed합니다.
+
+```bash
+bun run db:test:migrations && bun run e2e:seed   # TEST_DATABASE_URL은 위와 같음
+bun run build                                    # DATABASE_URL은 placeholder면 충분
+bunx playwright install --only-shell chromium    # 한 번만
+bun run test:e2e
+```
+
+`playwright.config.ts`는 `TEST_DATABASE_URL`로 standalone 서버를 띄우며, 테스트
+허용 목록이 거부하는 URL은 똑같이 거부합니다. CI의 `e2e` job이 같은 단계를 돕니다.
+
 ## 명령어
 
 | 명령어 | 하는 일 |
@@ -512,6 +539,8 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 | `bun run db:test:bootstrap` | 일회용 테스트 DB에 role·schema·pg_trgm 구성 (`TEST_DATABASE_URL`의 컨테이너) |
 | `bun run db:test:setup` / `db:test:reset` | 테스트 schema 구성 / 비우기 (`TEST_DATABASE_URL`만 읽음) |
 | `bun run db:test:migrations` | 검토된 `drizzle/` migration을 테스트 DB의 `agentdock`에 적용 |
+| `bun run search:eval` | 고정 검색 평가셋 실행과 품질·latency 보고 (테스트 DB) |
+| `bun run e2e:seed` / `bun run test:e2e` | 브라우저 여정 테스트용 테스트 DB seed / 실행 |
 | `bun run fixtures:capture` | GitHub에서 fixture corpus 다시 고정 |
 | `bun run analyze:backfill [limit]` | 저장된 바이트에 대해 capability analyzer 재실행. GitHub request를 발생시키지 않습니다. |
 
@@ -523,7 +552,7 @@ Vitest는 그 하나의 schema에 대해 테스트 **파일을 병렬로** 실�
 CI는 `bun run build` 다음에 `bun run ci`를 실행합니다. 직접 돌리는 것과 같은
 명령이라 서로 어긋날 수 없습니다. 빌드가 먼저인 이유는 linter가 읽는 타입 선언을
 빌드가 다시 만들어내기 때문입니다. 두 번째 job은 PostgreSQL 17 service
-container에서 데이터베이스 suite를 돌립니다.
+container에서 데이터베이스 suite를, 세 번째 job은 브라우저 여정 테스트를 돌립니다.
 
 ## Security Considerations
 
@@ -577,7 +606,7 @@ artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다
   읽을 뿐, import를 해석하거나 참조를 따라가거나 무언가를 실행하지 않습니다.
 - **검색은 PostgreSQL 전문 검색과 trigram입니다.** embedding도, 의미 검색도,
   텍스트 관련도 외의 ranking도 없습니다.
-- **정렬은 최신순이며 품질순이 아닙니다.** "most starred" 정렬은 없고, 추가하려면
+- **정렬은 관련도·최근 색인·이름순이며 품질순이 아닙니다.** "most starred" 정렬은 없고, 추가하려면
   그것이 무엇을 의미하는지에 대한 명시적 결정이 필요합니다.
 
 ## Development Workflow

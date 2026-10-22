@@ -46,3 +46,7 @@ tmp/
 # Vercel CLI link state (project and org ids); deploy.yml reads them from GitHub variables.
 .vercel
 .env*
+
+# Playwright (bun run test:e2e)
+test-results/
+playwright-report/

@@ -2,7 +2,7 @@ name: Deploy
 
 # The only path by which a commit reaches Vercel production:
 #
-#   push to develop → CI (check + database) → this workflow:
+#   push to develop → CI (check + database + e2e) → this workflow:
 #     gate → migration plan → migrate → verify → vercel deploy --prod → smoke
 #
 # Vercel's own Git deployments of develop are off (vercel.json), so nothing

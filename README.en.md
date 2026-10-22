@@ -241,6 +241,20 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
   which would drift.
 - **Path queries.** A query containing `/` is read as a path, and artifacts whose
   source path contains it rank first. No other query's order changes.
+- **Sort.** Relevance (beside a query), recently indexed, or name — links, in the
+  URL as `sort=`, kept across filters and paging and reset to page 1 when changed.
+  With no query the default is recently indexed, and relevance is not offered:
+  every row would tie.
+- **Why a row matched.** Each result says which fields held a query word — name,
+  path, description, type, repository — read from the same stored search vector
+  the query matched, so the sentence is a condition PostgreSQL evaluated, not a
+  guess. Query words are marked in the name and description by `ts_headline`
+  (same parser and stemmer as the search) and in a path for a `/` query; the
+  marks are split into React text and `<mark>` nodes, never markup strings.
+- **Search quality is measured.** `bun run search:eval` runs a fixed 50-query set
+  and prints Precision@5/10, Recall@10, MRR, NDCG@10, Top-1, zero-result rate and
+  latency; the test pins each query's first relevant rank and the mean MRR and
+  NDCG, so a ranking change that worsens any of them fails CI.
 - **Artifact pages.** An artifact under a plugin's directory names its plugin, and
   a plugin lists the components under its directory — by path; a plugin.json path
   override is not followed. The page also lists every stored version (one row per
@@ -506,6 +520,21 @@ commands (`.github/workflows/ci.yml`).
 Vitest runs test **files in parallel** against that one schema, so a
 database-backed suite keys its rows on a sentinel no other suite can produce.
 
+**Browser journeys** (`e2e/journeys.spec.ts`, Playwright, Chromium) run against
+the production build and the same disposable database, seeded offline from the
+committed fixtures plus `e2e/fixtures/ui-edge-cases` (subagents, an MCP
+declaration, a very long name):
+
+```bash
+bun run db:test:migrations && bun run e2e:seed   # TEST_DATABASE_URL as above
+bun run build                                    # placeholder DATABASE_URL is enough
+bunx playwright install --only-shell chromium    # once
+bun run test:e2e
+```
+
+`playwright.config.ts` starts the standalone server with `TEST_DATABASE_URL` and
+refuses any URL the test allowlist refuses. CI's `e2e` job runs the same steps.
+
 ## Commands
 
 | Command | What it does |
@@ -527,6 +556,8 @@ database-backed suite keys its rows on a sentinel no other suite can produce.
 | `bun run db:test:bootstrap` | Role, schemas and pg_trgm in the disposable test database |
 | `bun run db:test:setup` / `db:test:reset` | Build / empty the test schema (reads `TEST_DATABASE_URL` only) |
 | `bun run db:test:migrations` | Apply the reviewed `drizzle/` migrations to the test database's `agentdock` |
+| `bun run search:eval` | The fixed search evaluation set, with the quality and latency report (test database) |
+| `bun run e2e:seed` / `bun run test:e2e` | Seed the test database for, and run, the browser journeys |
 | `bun run fixtures:capture` | Re-pin the fixture corpus from GitHub |
 | `bun run analyze:backfill [limit]` | Re-run the capability analyzers over stored bytes. Issues no GitHub request. |
 
@@ -537,7 +568,7 @@ ever appears.
 
 CI runs `bun run build` and then `bun run ci` — the same commands you run, so the
 two cannot drift — and, in a second job, the database suites against a
-PostgreSQL 17 service container. The build comes first because it regenerates a type
+PostgreSQL 17 service container, and, in a third, the browser journeys. The build comes first because it regenerates a type
 declaration the linter then reads.
 
 ## Security Considerations
@@ -592,8 +623,9 @@ mirror, and every rendered body goes through a sanitizing Markdown pipeline.
   execute anything.
 - **Search is PostgreSQL full text plus trigrams.** No embeddings, no semantic
   search, no ranking by anything but text relevance.
-- **Ordering is by recency, not quality.** There is no "most starred" sort, and
-  adding one would need a deliberate decision about what it means.
+- **Ordering is by relevance, recency or name, never quality.** There is no "most
+  starred" sort, and adding one would need a deliberate decision about what it
+  means.
 
 ## Development Workflow
 

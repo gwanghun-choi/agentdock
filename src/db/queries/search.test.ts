@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
+import { MARK_CLOSE, MARK_OPEN } from '@/components/Marked';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -1290,17 +1291,23 @@ describe.skipIf(!DB_URL)('the search query', () => {
         );
       }
     }
-    const names = async (
+    const rows = (
       q: string,
-      opts: { offset?: number; types?: string[]; capabilities?: string[] } = {},
+      opts: {
+        offset?: number;
+        types?: string[];
+        capabilities?: string[];
+        sort?: 'relevance' | 'recent' | 'name';
+      } = {},
     ) =>
-      (
-        await search.searchPackages({
-          q,
-          offset: opts.offset ?? 0,
-          filters: { types: opts.types ?? [], capabilities: opts.capabilities ?? [] },
-        })
-      ).map((x) => x.name);
+      search.searchPackages({
+        q,
+        offset: opts.offset ?? 0,
+        filters: { types: opts.types ?? [], capabilities: opts.capabilities ?? [] },
+        sort: opts.sort,
+      });
+    const names = async (q: string, opts: Parameters<typeof rows>[1] = {}) =>
+      (await rows(q, opts)).map((x) => x.name);
     const count = (q: string, types: string[] = []) =>
       search.countSearchResults({ q, filters: { types, capabilities: [] } });
 
@@ -1388,6 +1395,61 @@ describe.skipIf(!DB_URL)('the search query', () => {
         'xqplaywright-testing',
       ]);
       expect(await count('xqplay', ['mcp_server'])).toBe(1);
+    });
+
+    it('sorts by name or by indexing time on request, and every sort pages without a gap or a repeat', async () => {
+      expect(await names('xqplay', { sort: 'name' })).toEqual([
+        'xqplaywright',
+        'xqplaywright-testing',
+      ]);
+      // The most recently written row leads `recent`, whatever its rank.
+      await sql`UPDATE package SET updated_at = now() + interval '1 hour' WHERE id = ${ids.f7}`;
+      expect((await names('xqgeneric', { sort: 'recent' }))[0]).toBe('xqfiller-7');
+      for (const sort of ['relevance', 'recent', 'name'] as const) {
+        const first = await names('xqgeneric', { sort });
+        const second = await names('xqgeneric', { sort, offset: 25 });
+        expect(new Set([...first, ...second]).size).toBe(30);
+        expect(await names('xqgeneric', { sort })).toEqual(first);
+      }
+      // A sort changes the order, never the set: the count has no sort.
+      expect(await count('xqgeneric')).toBe(30);
+    });
+
+    it('names, as reasons, only the fields where PostgreSQL found a query word', async () => {
+      const [pdf] = await rows('xqpdf');
+      expect(pdf.name).toBe('xqpdf');
+      expect(new Set(pdf.matchedIn)).toEqual(new Set(['name', 'summary', 'path']));
+      const [deploy] = await rows('search-spec-xqdevops');
+      expect(deploy.matchedIn).toEqual(['repository']);
+      // Two words split across fields: each field is credited with its own.
+      // "forms" is only in the summary, "xqpdf" in all three.
+      const [filled] = await rows('xqpdf forms');
+      expect(filled.name).toBe('xqpdf-form-filler');
+      expect(new Set(filled.matchedIn)).toEqual(new Set(['name', 'summary', 'path']));
+      const [onlySummary] = await rows('tables');
+      expect(onlySummary.matchedIn).toEqual(['summary']);
+      // Browsing matched nothing, so it explains nothing.
+      const [browse] = await rows('');
+      expect(browse.matchedIn).toBeUndefined();
+    });
+
+    it('marks stemmed query words, and no delimiter it did not put there', async () => {
+      const r = await repo('xqmarks');
+      await artifact(r, 'skills/xqmark/SKILL.md', [{ hash: 'q17-mark' }], {
+        name: 'xqmark',
+        summary: `Marks ${MARK_OPEN}forged${MARK_CLOSE} <b>tags</b> and xqmarking words`,
+      });
+      const [row] = await rows('xqmark');
+      const o = MARK_OPEN;
+      const c = MARK_CLOSE;
+      expect(row.nameMarked).toBe(`${o}xqmark${c}`);
+      expect(row.summaryMarked).toBe(`Marks forged <b>tags</b> and ${o}xqmarking${c} words`);
+    });
+
+    it('offers no close matches for a query of stop words only', async () => {
+      expect(await names('the')).toEqual([]);
+      expect(await names('and the')).toEqual([]);
+      expect(await count('the')).toBe(0);
     });
 
     it('treats tsquery syntax in the input as text, never as an operator', async () => {

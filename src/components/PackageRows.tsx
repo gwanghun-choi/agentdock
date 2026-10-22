@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
 import { detailHref, permalink } from '@/components/hrefs';
 import { ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
+import { Marked, markSubstring } from '@/components/Marked';
 import type { PackageListItem } from '@/db/queries/packages';
+import type { MatchField, SearchResultItem } from '@/db/queries/search';
 
 /**
  * Dense bordered rows, not cards. Three lines per item so a screenful still
@@ -45,12 +47,39 @@ export function compactStars(stars: number): string {
     : `${Math.floor(thousands)}k`;
 }
 
+/**
+ * The words for SearchResultItem.matchedIn, in the order they are read out:
+ * the name first, then where the file is, then what it says it does. The
+ * summary is called the description because that is what the row shows it as.
+ */
+const MATCH_LABELS: [MatchField, string][] = [
+  ['name', 'name'],
+  ['path', 'path'],
+  ['summary', 'description'],
+  ['type', 'type'],
+  ['repository', 'repository'],
+];
+
+/** "Matched in name, description" — each field search.ts found a query word in. */
+export function matchSentence(fields: readonly MatchField[] | undefined): string | null {
+  const words = MATCH_LABELS.filter(([f]) => fields?.includes(f)).map(([, w]) => w);
+  return words.length > 0 ? `Matched in ${words.join(', ')}` : null;
+}
+
+function MatchWhy({ fields }: { fields?: readonly MatchField[] }) {
+  const sentence = matchSentence(fields);
+  return sentence ? <span className="row-why">{sentence}</span> : null;
+}
+
 export function PackageRows({
   items,
   showRepo = true,
+  pathQuery,
 }: {
-  items: PackageListItem[];
+  items: (PackageListItem & Partial<SearchResultItem>)[];
   showRepo?: boolean;
+  /** A search query that was also tested as a path substring; marks it in the path. */
+  pathQuery?: string;
 }) {
   return (
     <ul className="rows">
@@ -61,13 +90,28 @@ export function PackageRows({
           </div>
           <div className="row-main">
             <p className="row-title">
-              <Link href={detailHref(p.fullName, p.sourcePath, p.type)}>{p.name}</Link>
+              <Link href={detailHref(p.fullName, p.sourcePath, p.type)}>
+                <Marked plain={p.name} value={p.nameMarked} />
+              </Link>
               {showRepo ? <span className="repo">{p.fullName}</span> : null}
             </p>
-            {p.summary ? <p className="row-desc">{p.summary}</p> : null}
+            {p.summary ? (
+              <p className="row-desc">
+                <Marked plain={p.summary} value={p.summaryMarked} />
+              </p>
+            ) : null}
             <p className="row-meta">
+              <MatchWhy fields={p.matchedIn} />
               <span className="path">
-                <FileIcon /> {p.sourcePath}
+                <FileIcon />{' '}
+                <Marked
+                  plain={p.sourcePath}
+                  value={
+                    pathQuery && p.matchedIn?.includes('path')
+                      ? markSubstring(p.sourcePath, pathQuery)
+                      : null
+                  }
+                />
               </span>
               {/* The repository's star count, in the metadata line beside the
                   path and the read date — the register of "facts about where

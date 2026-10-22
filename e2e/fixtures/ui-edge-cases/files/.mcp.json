@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "fixture-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "fixture-docs-server"
+      ],
+      "env": {
+        "DOCS_TOKEN": "${DOCS_TOKEN}"
+      }
+    },
+    "fixture-db": {
+      "type": "http",
+      "url": "https://example.invalid/mcp"
+    }
+  }
+}

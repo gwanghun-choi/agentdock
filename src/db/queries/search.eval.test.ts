@@ -32,7 +32,7 @@ type Case = {
   relevant: string[];
 };
 
-export const EVAL_CASES: Case[] = [
+const EVAL_CASES: Case[] = [
   { id: 'exact-name', q: 'pdf', relevant: ['skills/pdf/SKILL.md'] },
   { id: 'exact-hyphen', q: 'canvas-design', relevant: ['skills/canvas-design/SKILL.md'] },
   { id: 'prefix', q: 'brainstorm', relevant: ['skills/brainstorming/SKILL.md'] },
@@ -80,7 +80,17 @@ export const EVAL_CASES: Case[] = [
     types: ['command'],
     relevant: ['commands/review-pr.md', 'commands/code-review.md'],
   },
-  { id: 'mcp', q: 'mcp', relevant: ['skills/mcp-builder/SKILL.md', 'mcp-integration/SKILL.md'] },
+  // plugins/github/.mcp.json joined the corpus in Phase 11; an MCP server is
+  // what a reader typing "mcp" is most plainly after, so it is relevant too.
+  {
+    id: 'mcp',
+    q: 'mcp',
+    relevant: [
+      'skills/mcp-builder/SKILL.md',
+      'mcp-integration/SKILL.md',
+      'plugins/github/.mcp.json',
+    ],
+  },
   { id: 'agent-name', q: 'code-reviewer', types: ['agent'], relevant: ['agents/code-reviewer.md'] },
   {
     id: 'agent-description',
@@ -88,19 +98,166 @@ export const EVAL_CASES: Case[] = [
     types: ['agent'],
     relevant: ['agents/security-auditor.md'],
   },
+  // Phase 11 additions, judged the same way on 2026-10-22. Grouped by what a
+  // reader typed, not by what search currently does with it.
+  { id: 'agent-exact', q: 'backend-reviewer', relevant: ['.claude/agents/backend-reviewer.md'] },
+  {
+    id: 'agent-path',
+    q: '.claude/agents/backend-reviewer.md',
+    relevant: ['.claude/agents/backend-reviewer.md'],
+  },
+  {
+    id: 'plugin-agent-path',
+    q: 'plugins/security/agents/auditor.md',
+    relevant: ['plugins/security/agents/auditor.md'],
+  },
+  {
+    id: 'path-directory',
+    q: '.claude/commands',
+    relevant: ['hooks-mastery/.claude/commands/', 'claude-code/.claude/commands/'],
+  },
+  {
+    id: 'plugin-name',
+    q: 'hookify',
+    relevant: ['plugins/hookify/.claude-plugin/plugin.json', 'plugins/hookify/commands/hookify.md'],
+  },
+  {
+    id: 'plugin-name-2',
+    q: 'pr-review-toolkit',
+    relevant: ['plugins/pr-review-toolkit/.claude-plugin/plugin.json'],
+  },
+  { id: 'mcp-name', q: 'github', relevant: ['plugins/github/.mcp.json'] },
+  {
+    id: 'mcp-type',
+    q: 'mcp server',
+    relevant: [
+      'plugins/github/.mcp.json',
+      'skills/mcp-builder/SKILL.md',
+      'mcp-integration/SKILL.md',
+    ],
+  },
+  { id: 'uppercase', q: 'PDF', relevant: ['skills/pdf/SKILL.md'] },
+  { id: 'mixed-case', q: 'Canvas-Design', relevant: ['skills/canvas-design/SKILL.md'] },
+  { id: 'underscore-for-hyphen', q: 'canvas_design', relevant: ['skills/canvas-design/SKILL.md'] },
+  { id: 'hyphen-for-underscore', q: 'git-status', relevant: ['.claude/commands/git_status.md'] },
+  { id: 'underscore-name', q: 'clean_gone', relevant: ['commands/clean_gone.md'] },
+  {
+    id: 'space-for-hyphen',
+    q: 'systematic debugging',
+    relevant: ['skills/systematic-debugging/SKILL.md'],
+  },
+  {
+    id: 'space-for-hyphen-2',
+    q: 'frontend design',
+    relevant: [
+      'anthropics--skills/skills/frontend-design/SKILL.md',
+      'plugins/frontend-design/skills/frontend-design/SKILL.md',
+      'plugins/frontend-design/.claude-plugin/plugin.json',
+    ],
+  },
+  {
+    id: 'space-for-hyphen-3',
+    q: 'test driven development',
+    relevant: ['skills/test-driven-development/SKILL.md'],
+  },
+  {
+    id: 'natural-language',
+    q: 'write the tests before the code',
+    relevant: ['skills/test-driven-development/SKILL.md'],
+  },
+  {
+    id: 'natural-language-2',
+    q: 'convert tweets to markdown',
+    relevant: ['baoyu-danger-x-to-markdown/SKILL.md'],
+  },
+  {
+    id: 'multi-word',
+    q: 'git commit push',
+    relevant: ['commands/commit-push-pr.md', 'plugins/commit-commands/.claude-plugin/plugin.json'],
+  },
+  {
+    id: 'long-query',
+    q: 'Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes to the code',
+    relevant: ['skills/systematic-debugging/SKILL.md'],
+  },
+  { id: 'special-chars', q: '@pdf!', relevant: ['skills/pdf/SKILL.md'] },
+  { id: 'markup', q: '<script>alert(1)</script>', relevant: [] },
+  { id: 'stopword-only', q: 'the', relevant: [] },
+  { id: 'no-result', q: 'kubernetes operator', relevant: [] },
+  {
+    id: 'same-name',
+    q: 'frontend-design',
+    relevant: [
+      'anthropics--skills/skills/frontend-design/SKILL.md',
+      'plugins/frontend-design/skills/frontend-design/SKILL.md',
+      'plugins/frontend-design/.claude-plugin/plugin.json',
+    ],
+  },
+  { id: 'same-name-2', q: 'help', relevant: ['commands/help.md'] },
+  { id: 'cjk-2', q: '微博', relevant: ['baoyu-post-to-weibo/SKILL.md'] },
+  { id: 'repo-name-hyphen', q: 'baoyu-skills', relevant: ['JimLiu--baoyu-skills/'] },
+  {
+    id: 'agent-type-description',
+    q: 'architecture',
+    types: ['agent'],
+    relevant: ['agents/code-architect.md'],
+  },
 ];
 
-const AGENTS = [
-  ['addyosmani/agent-skills', 'agents/code-reviewer.md', 'Reviews a change for correctness'],
-  ['addyosmani/agent-skills', 'agents/security-auditor.md', 'Audits code for security issues'],
-  ['addyosmani/agent-skills', 'agents/test-engineer.md', 'Writes and runs tests'],
-  ['disler/claude-code-hooks-mastery', '.claude/agents/meta-agent.md', 'Generates new agents'],
+/**
+ * Rows no fixture captured a body for, written here: subagents (no agent body
+ * was ever captured) and one MCP server, whose stored summary is empty as it is
+ * in production (a manifest has no prose). [repository, type, path, summary];
+ * the name is the file name, or the plugin directory for a `.mcp.json`.
+ */
+const SYNTHETIC = [
+  [
+    'addyosmani/agent-skills',
+    'agent',
+    'agents/code-reviewer.md',
+    'Reviews a change for correctness',
+  ],
+  [
+    'addyosmani/agent-skills',
+    'agent',
+    'agents/security-auditor.md',
+    'Audits code for security issues',
+  ],
+  ['addyosmani/agent-skills', 'agent', 'agents/test-engineer.md', 'Writes and runs tests'],
+  [
+    'disler/claude-code-hooks-mastery',
+    'agent',
+    '.claude/agents/meta-agent.md',
+    'Generates new agents',
+  ],
   [
     'anthropics/claude-code',
+    'agent',
     'plugins/feature-dev/agents/code-architect.md',
     'Designs feature architecture',
   ],
-  ['disler/claude-code-hooks-mastery', '.claude/agents/hello-world-agent.md', 'Greets the user'],
+  [
+    'disler/claude-code-hooks-mastery',
+    'agent',
+    '.claude/agents/hello-world-agent.md',
+    'Greets the user',
+  ],
+  // Phase 11. backend-reviewer shares both of its words with other rows'
+  // paths and summaries (plugins/backend-development/…, "Reviews a change"),
+  // which is what makes its exact-name case a test.
+  [
+    'wshobson/agents',
+    'agent',
+    '.claude/agents/backend-reviewer.md',
+    'Reviews backend services for API, database and concurrency problems',
+  ],
+  [
+    'wshobson/agents',
+    'agent',
+    'plugins/security/agents/auditor.md',
+    'Reviews dependency manifests and configuration for exposed secrets',
+  ],
+  ['anthropics/claude-code', 'mcp_server', 'plugins/github/.mcp.json', null],
 ] as const;
 
 type Row = {
@@ -143,27 +300,74 @@ async function corpus(): Promise<Row[]> {
       }
     }
   }
-  for (const [repo, path, summary] of AGENTS) {
+  for (const [repo, type, path, summary] of SYNTHETIC) {
     const base = rows.find((r) => r.repo === repo);
+    const file = path.split('/').at(-1) ?? path;
     rows.push({
       repo,
       description: base?.description ?? null,
       topics: base?.topics ?? [],
-      type: 'agent',
+      type,
       path,
-      name: path.split('/').at(-1)?.replace(/\.md$/, '') ?? path,
+      name: file === '.mcp.json' ? (path.split('/').at(-2) ?? file) : file.replace(/\.md$/, ''),
       summary,
     });
   }
   return rows;
 }
 
-export type CaseResult = { id: string; total: number; firstRelevant: number | null };
+/**
+ * Binary-relevance retrieval metrics for one ranked list. `hits[i]` says
+ * whether the row at rank i+1 is relevant; `relevant` is how many rows of the
+ * corpus are, so recall and NDCG are measured against the whole answer, not
+ * against whatever search happened to return.
+ */
+function caseMetrics(hits: boolean[], relevant: number) {
+  const within = (k: number) => hits.slice(0, k).filter(Boolean).length;
+  const first = hits.indexOf(true);
+  const gain = (i: number) => 1 / Math.log2(i + 2);
+  const dcg = hits.slice(0, 10).reduce((sum, hit, i) => sum + (hit ? gain(i) : 0), 0);
+  let ideal = 0;
+  for (let i = 0; i < Math.min(relevant, 10); i++) ideal += gain(i);
+  return {
+    p5: within(5) / 5,
+    p10: within(10) / 10,
+    recall10: relevant > 0 ? within(10) / relevant : 0,
+    rr: first === -1 ? 0 : 1 / (first + 1),
+    ndcg10: ideal > 0 ? dcg / ideal : 0,
+    top1: hits[0] === true,
+  };
+}
+
+describe('caseMetrics', () => {
+  it('scores a ranked list against the whole answer', () => {
+    expect(caseMetrics([true], 1)).toEqual({
+      p5: 0.2,
+      p10: 0.1,
+      recall10: 1,
+      rr: 1,
+      ndcg10: 1,
+      top1: true,
+    });
+    const m = caseMetrics([false, true, false, true], 3);
+    expect(m.rr).toBe(0.5);
+    expect(m.recall10).toBeCloseTo(2 / 3);
+    expect(m.ndcg10).toBeCloseTo(
+      (1 / Math.log2(3) + 1 / Math.log2(5)) / (1 + 1 / Math.log2(3) + 0.5),
+    );
+    expect(caseMetrics([], 2)).toMatchObject({ rr: 0, ndcg10: 0, top1: false });
+  });
+});
+
+type CaseResult = { id: string; total: number; firstRelevant: number | null };
 
 describe.skipIf(!DB_URL)('search evaluation set', () => {
   let search: typeof import('./search');
   let sql: typeof import('@/db/client').sql;
-  const results: CaseResult[] = [];
+  const results: (CaseResult &
+    ReturnType<typeof caseMetrics> & { judged: boolean; top: string[] })[] = [];
+  /** `<repository>/<source_path>` of every row this suite stored. */
+  const stored: string[] = [];
 
   async function clean() {
     await sql`DELETE FROM repository WHERE full_name LIKE ${`${PREFIX}/%`}`;
@@ -174,15 +378,15 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
     ({ sql } = await import('@/db/client'));
     await clean();
     const rows = await corpus();
-    expect(rows.length).toBe(161);
+    expect(rows.length).toBe(164);
     const repoIds = new Map<string, number>();
     for (const row of rows) {
+      const fullName = `${PREFIX}/${row.repo.replace('/', '--')}`;
       let id = repoIds.get(row.repo);
       if (id === undefined) {
         const [r] = await sql<{ id: number }[]>`
           INSERT INTO repository (github_node_id, full_name, owner, default_branch, description, topics)
-          VALUES (${`eval-${row.repo}`}, ${`${PREFIX}/${row.repo.replace('/', '--')}`},
-                  ${PREFIX}, 'main', ${row.description}, ${row.topics})
+          VALUES (${`eval-${row.repo}`}, ${fullName}, ${PREFIX}, 'main', ${row.description}, ${row.topics})
           RETURNING id`;
         id = Number(r.id);
         repoIds.set(row.repo, id);
@@ -193,6 +397,7 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
         ON CONFLICT DO NOTHING
         RETURNING id`;
       if (!p) continue;
+      stored.push(`${fullName}/${row.path}`);
       await sql`
         INSERT INTO package_version (package_id, commit_sha, content_hash, analyzed_at)
         VALUES (${p.id}, ${'e'.repeat(40)}, ${`eval-${row.repo}-${row.path}`}, now())`;
@@ -203,32 +408,106 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
     // SEARCH_EVAL_KEEP leaves the corpus in the local test schema for an
     // EXPLAIN or a threshold measurement by hand; the next run cleans it.
     if (!process.env.SEARCH_EVAL_KEEP) await clean();
-    if (process.env.SEARCH_EVAL_REPORT) {
-      process.stdout.write(`SEARCH_EVAL ${JSON.stringify(results)}\n`);
-    }
+    if (process.env.SEARCH_EVAL_REPORT) await report();
     await sql.end();
   });
 
-  async function run(c: Case): Promise<CaseResult> {
+  const isRelevant = (c: Case, key: string) => c.relevant.some((s) => key.includes(s));
+
+  /** Rows, total and order exactly as /artifacts gets them: searchMode once,
+   * then the rows. The whole list, scoped to this suite's repositories — other
+   * suites share the schema, and their rows are not part of this corpus. */
+  async function ranked(c: Case) {
     const filters = { types: c.types ?? [], capabilities: [] };
-    const mode = await search.searchMode({ q: c.q, filters });
-    // The whole result list, scoped to this suite's repositories — other suites
-    // share the schema, and their rows are not part of this corpus.
-    const rows = (await search.searchPackages({ q: c.q, filters, mode, limit: 1000 })).filter((r) =>
+    const q = search.normalizeQuery(c.q);
+    const mode = await search.searchMode({ q, filters });
+    return (await search.searchPackages({ q, filters, mode, limit: 1000 })).filter((r) =>
       r.fullName.startsWith(`${PREFIX}/`),
     );
-    const index = rows.findIndex((r) =>
-      c.relevant.some((s) => `${r.fullName}/${r.sourcePath}`.includes(s)),
-    );
-    return { id: c.id, total: rows.length, firstRelevant: index === -1 ? null : index + 1 };
   }
 
-  // Pinned to what search returned on 2026-10-21 after Phase 6's one ranking
-  // change (pathBonus, which moved `path` from 3 to 1 and nothing else).
-  // firstRelevant is the 1-based rank of the first relevant row; null is a
-  // known miss, written down in docs/analysis/agentdock-phase6-search-and-ux.md
-  // rather than hidden. A change may improve any of these, never worsen one,
-  // and a total may not more than double — the flood a looser predicate causes.
+  async function run(c: Case) {
+    const rows = await ranked(c);
+    const hits = rows.map((r) => isRelevant(c, `${r.fullName}/${r.sourcePath}`));
+    const index = hits.indexOf(true);
+    return {
+      id: c.id,
+      total: rows.length,
+      firstRelevant: index === -1 ? null : index + 1,
+      judged: c.relevant.length > 0,
+      top: rows.slice(0, 3).map((r) => `${r.type}:${r.name}`),
+      ...caseMetrics(hits, stored.filter((k) => isRelevant(c, k)).length),
+    };
+  }
+
+  /**
+   * `bun run search:eval`. The quality numbers are deterministic; the latency
+   * ones are wall clock on whatever database TEST_DATABASE_URL names, so they
+   * are printed and never asserted. Latency is the route's own three
+   * statements per request — searchMode, then the page's rows and the count in
+   * parallel — repeated, over every case.
+   */
+  function summarize() {
+    const judged = results.filter((r) => r.judged);
+    const mean = (f: (r: (typeof results)[number]) => number) =>
+      judged.reduce((s, r) => s + f(r), 0) / judged.length;
+    return {
+      queries: results.length,
+      judged: judged.length,
+      p5: mean((r) => r.p5),
+      p10: mean((r) => r.p10),
+      recall10: mean((r) => r.recall10),
+      mrr: mean((r) => r.rr),
+      ndcg10: mean((r) => r.ndcg10),
+      top1: mean((r) => (r.top1 ? 1 : 0)),
+      zeroResult: mean((r) => (r.total === 0 ? 1 : 0)),
+      negativesWithRows: results.filter((r) => !r.judged && r.total > 0).map((r) => r.id),
+    };
+  }
+
+  async function report() {
+    const times: number[] = [];
+    const runs = Number(process.env.SEARCH_EVAL_RUNS ?? 10);
+    for (let i = 0; i < runs; i++) {
+      for (const c of EVAL_CASES) {
+        const filters = { types: c.types ?? [], capabilities: [] };
+        const q = search.normalizeQuery(c.q);
+        const t0 = performance.now();
+        const mode = await search.searchMode({ q, filters });
+        await Promise.all([
+          search.searchPackages({ q, filters, mode }),
+          search.countSearchResults({ q, filters, mode }),
+        ]);
+        times.push(performance.now() - t0);
+      }
+    }
+    times.sort((a, b) => a - b);
+    const pct = (p: number) => times[Math.min(times.length - 1, Math.floor(p * times.length))];
+    const summary = {
+      ...summarize(),
+      latencyMs: { runs: times.length, p50: pct(0.5), p95: pct(0.95) },
+    };
+    const f = (n: number) => n.toFixed(3);
+    for (const r of results) {
+      process.stdout.write(
+        `SEARCH_EVAL_CASE ${r.id.padEnd(24)} total=${String(r.total).padStart(3)} first=${String(r.firstRelevant ?? '-').padStart(2)} ` +
+          `p5=${f(r.p5)} ndcg=${f(r.ndcg10)} rr=${f(r.rr)} top=${r.top.join(' | ')}\n`,
+      );
+    }
+    process.stdout.write(`SEARCH_EVAL_SUMMARY ${JSON.stringify(summary)}\n`);
+    process.stdout.write(
+      `SEARCH_EVAL ${JSON.stringify(results.map(({ id, total, firstRelevant }) => ({ id, total, firstRelevant })))}\n`,
+    );
+  }
+
+  // Pinned to what search returned on 2026-10-22 after Phase 11's ranking
+  // change (nameWordBonus, which moved `description-phrase` from 2 to 1) and
+  // fuzzy guard (`stopword-only` from 50 rows to 0); the other 48 are what the
+  // Phase 6 ranking returned for them. firstRelevant is the 1-based rank of the
+  // first relevant row; null is a known miss, written down in
+  // docs/analysis/agentdock-phase11-search-quality-and-discovery.md rather than
+  // hidden. A change may improve any of these, never worsen one, and a total
+  // may not more than double — the flood a looser predicate causes.
   const BASELINE: Record<string, Omit<CaseResult, 'id'>> = {
     'exact-name': { total: 3, firstRelevant: 1 },
     'exact-hyphen': { total: 1, firstRelevant: 1 },
@@ -236,7 +515,7 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
     partial: { total: 14, firstRelevant: 1 },
     compound: { total: 11, firstRelevant: 1 },
     'description-word': { total: 1, firstRelevant: 1 },
-    'description-phrase': { total: 8, firstRelevant: 2 },
+    'description-phrase': { total: 8, firstRelevant: 1 },
     'description-synonym': { total: 2, firstRelevant: 1 },
     path: { total: 3, firstRelevant: 1 },
     typo: { total: 14, firstRelevant: 1 },
@@ -248,10 +527,42 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
     korean: { total: 0, firstRelevant: null },
     cjk: { total: 3, firstRelevant: 2 },
     'type-filter': { total: 2, firstRelevant: 1 },
-    mcp: { total: 4, firstRelevant: 1 },
+    mcp: { total: 5, firstRelevant: 1 },
     'agent-name': { total: 1, firstRelevant: 1 },
-    'agent-description': { total: 1, firstRelevant: 1 },
+    'agent-description': { total: 2, firstRelevant: 1 },
+    'agent-exact': { total: 2, firstRelevant: 1 },
+    'agent-path': { total: 1, firstRelevant: 1 },
+    'plugin-agent-path': { total: 1, firstRelevant: 1 },
+    'path-directory': { total: 17, firstRelevant: 1 },
+    'plugin-name': { total: 7, firstRelevant: 1 },
+    'plugin-name-2': { total: 2, firstRelevant: 1 },
+    'mcp-name': { total: 5, firstRelevant: 1 },
+    'mcp-type': { total: 4, firstRelevant: 1 },
+    uppercase: { total: 3, firstRelevant: 1 },
+    'mixed-case': { total: 1, firstRelevant: 1 },
+    'underscore-for-hyphen': { total: 1, firstRelevant: 1 },
+    'hyphen-for-underscore': { total: 1, firstRelevant: 1 },
+    'underscore-name': { total: 1, firstRelevant: 1 },
+    'space-for-hyphen': { total: 2, firstRelevant: 1 },
+    'space-for-hyphen-2': { total: 4, firstRelevant: 1 },
+    'space-for-hyphen-3': { total: 2, firstRelevant: 1 },
+    'natural-language': { total: 1, firstRelevant: 1 },
+    'natural-language-2': { total: 1, firstRelevant: 1 },
+    'multi-word': { total: 1, firstRelevant: 1 },
+    'long-query': { total: 1, firstRelevant: 1 },
+    'special-chars': { total: 3, firstRelevant: 1 },
+    markup: { total: 6, firstRelevant: null },
+    'stopword-only': { total: 0, firstRelevant: null },
+    'no-result': { total: 1, firstRelevant: null },
+    'same-name': { total: 4, firstRelevant: 1 },
+    'same-name-2': { total: 6, firstRelevant: 1 },
+    'cjk-2': { total: 1, firstRelevant: 1 },
+    'repo-name-hyphen': { total: 22, firstRelevant: 1 },
+    'agent-type-description': { total: 1, firstRelevant: 1 },
   };
+
+  /** The means over the judged cases on that date; a change may not lower either. */
+  const PINNED = { mrr: 0.924, ndcg10: 0.902 };
 
   it.each(EVAL_CASES)('$id: $q', async (c) => {
     const result = await run(c);
@@ -263,5 +574,13 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
       expect(result.firstRelevant).not.toBeNull();
       expect(result.firstRelevant ?? Infinity).toBeLessThanOrEqual(pinned.firstRelevant);
     }
+  });
+
+  // Runs after every case above: vitest runs a file's tests in order.
+  it('holds the pinned mean MRR and NDCG@10', () => {
+    expect(results).toHaveLength(EVAL_CASES.length);
+    const { mrr, ndcg10 } = summarize();
+    expect(mrr).toBeGreaterThanOrEqual(PINNED.mrr);
+    expect(ndcg10).toBeGreaterThanOrEqual(PINNED.ndcg10);
   });
 });

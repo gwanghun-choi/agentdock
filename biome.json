@@ -11,7 +11,8 @@
       "!.gstack",
       "!next-env.d.ts",
       "!fixtures/mcp-registry/list-control-byte.json",
-      "!fixtures/*/files"
+      "!fixtures/*/files",
+      "!e2e/fixtures/*/files"
     ]
   },
   "formatter": {

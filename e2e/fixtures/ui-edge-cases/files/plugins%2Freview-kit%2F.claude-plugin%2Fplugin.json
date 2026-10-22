@@ -1,0 +1,5 @@
+{
+  "name": "review-kit",
+  "description": "A plugin bundling a review subagent and a checklist skill.",
+  "version": "1.2.0"
+}
