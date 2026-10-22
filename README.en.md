@@ -254,7 +254,7 @@ stars, downloads, or anything else about a repository's popularity.
 ## Architecture
 
 ```
-Next.js 16 (App Router, all routes force-dynamic, three client components)
+Next.js 16 (App Router, all routes force-dynamic, four client components)
         │
         └── PostgreSQL 16          the only datastore. No cache, no queue
              ├── search: tsvector + GIN, pg_trgm for typo tolerance
@@ -266,12 +266,14 @@ queue is a table, the scheduler is cron, and the lock manager is PostgreSQL.
 
 The front end is the same shape. Every page is a Server Component rendering
 plain CSS with custom properties — no UI kit, no CSS framework, no animation
-library and no icon package. Three components carry `'use client'`, none of
+library and no icon package. Four components carry `'use client'`, none of
 them holds data or fetches anything: a polling effect on the job page, a
 keyboard shortcut that puts the cursor in the search field (`/`, or Ctrl/Cmd+K),
-and the error boundary, which the framework requires to be a client component.
-Search, filtering and pagination are a GET form with native controls, so they
-work with JavaScript disabled.
+a copy button for paths and links on the detail page, and the error boundary,
+which the framework requires to be a client component. Search is a GET form;
+the type and capability filters and the pager are plain links whose URLs carry
+the whole search state, so all three work with JavaScript disabled and survive
+Back, reload and a shared link.
 
 So is the motion. The index-flow diagram on the home page, the rail of recently
 indexed cards drifting past under it, the order a list arrives in, and every

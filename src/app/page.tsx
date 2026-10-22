@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArtifactBadge } from '@/components/ArtifactBadge';
 import { ArtifactRail } from '@/components/ArtifactRail';
 import { BoardStats } from '@/components/BoardStats';
 import { FeaturedArtifact } from '@/components/FeaturedArtifact';
@@ -15,8 +16,10 @@ import {
 } from '@/components/Icon';
 import { IndexFlow } from '@/components/IndexFlow';
 import { PackageRows } from '@/components/PackageRows';
+import { TYPE_FILTER_IDS } from '@/components/typeFilters';
+import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
-import { countPackages, listPackages } from '@/db/queries/packages';
+import { countPackagesByType, listPackages } from '@/db/queries/packages';
 import { lastSyncSucceededAt } from '@/db/queries/syncState';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
@@ -36,11 +39,14 @@ const RAIL_ITEMS = 18;
 const LIST_ROWS = 10;
 
 export default async function HomePage() {
-  const [recent, total, lastSync] = await Promise.all([
+  const [recent, byType, lastSync] = await Promise.all([
     listPackages({ limit: RAIL_ITEMS }),
-    countPackages(),
+    countPackagesByType(),
     lastSyncSucceededAt(),
   ]);
+  // The listing total is the sum of the per-type counts — one grouped query
+  // where countPackages() used to be, so this page still makes three.
+  const total = Object.values(byType).reduce((sum, n) => sum + n, 0);
   // Exact rather than approximate: the repository this artifact came from was
   // read on this date. Not "the corpus was read on" — that is a different claim
   // and this page does not have the number for it.
@@ -64,8 +70,8 @@ export default async function HomePage() {
         <div className="hero-copy">
           <h1>Find agent artifacts, and see where they came from.</h1>
           <p className="lede">
-            An open index of skills, plugins, marketplaces, MCP servers, commands and hooks — read
-            from established public repositories, linked back to the exact commit.
+            An open index of skills, plugins, marketplaces, MCP servers, commands, hooks and
+            subagents — read from established public repositories, linked back to the exact commit.
           </p>
 
           {/* The search box, not a button that goes to one.
@@ -117,6 +123,37 @@ export default async function HomePage() {
           <li>Public repositories only, never by request</li>
           <li>Files are read, never executed</li>
           <li>Linked to the exact commit that was read</li>
+        </ul>
+      </section>
+
+      {/* One way in per kind of artifact, for a reader who knows what they want
+          but not its name. Each is the URL the artifacts page's own Type chip
+          produces, and each count is that page's total on arrival — the same
+          listing predicate, grouped (countPackagesByType). The sentence under
+          each is the type's documented definition from usageGuide.ts, the same
+          one its detail pages print: what the kind is, never how good any one
+          of them is. Catalogs have no entry: the search route does not filter
+          on them, so there is no page to send a reader to. */}
+      <section aria-labelledby="types-heading">
+        <div className="section-head">
+          <h2 id="types-heading">Browse by type</h2>
+        </div>
+        <ul className="type-grid">
+          {TYPE_FILTER_IDS.map((id) => (
+            <li key={id}>
+              <Link className="type-card" href={`/artifacts?type=${id}`}>
+                <span className="type-card-head">
+                  <ArtifactBadge type={id} />
+                  <span className="type-count">
+                    {byType[id]
+                      ? `${byType[id].toLocaleString('en-US')} listed`
+                      : 'none listed yet'}
+                  </span>
+                </span>
+                <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
+              </Link>
+            </li>
+          ))}
         </ul>
       </section>
 

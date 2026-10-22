@@ -240,6 +240,23 @@ export const countPackages = cache(async ({ listingOnly = true } = {}): Promise<
   return row?.n ?? 0;
 });
 
+/**
+ * countPackages, per type: the home page's "browse by type" figures. The same
+ * join and the same listing predicate, grouped — so the figures add up to the
+ * listing total and each equals what `/artifacts?type=…` reports on arrival
+ * (the type filter is a plain `type = …` inside that predicate). One query for
+ * all seven types; a type with no listed row is absent from the map, not 0.
+ */
+export const countPackagesByType = cache(async (): Promise<Record<string, number>> => {
+  const rows = await db
+    .select({ type: packageTable.type, n: sql<number>`count(*)::int` })
+    .from(packageTable)
+    .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+    .where(and(isNull(packageTable.delistedAt), sql`${NOT_LISTED_BECAUSE} is null`))
+    .groupBy(packageTable.type);
+  return Object.fromEntries(rows.map((r) => [r.type, r.n]));
+});
+
 export type RepositorySummary = {
   fullName: string;
   description: string | null;

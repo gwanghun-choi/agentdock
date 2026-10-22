@@ -100,6 +100,13 @@ export function SkillBody({ markdown }: { markdown: string }) {
         // again, which is a measured WCAG failure traded for a lint heuristic.
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core.
         pre: ({ node: _node, ...props }) => <pre {...props} tabIndex={0} />,
+        // GFM's task-list item renders a disabled checkbox with no label, which
+        // axe-core reports as a critical `label` violation (Phase 10 baseline,
+        // a `- [ ]` line in a skill body). The item's text follows it, so the
+        // name only has to say what the box is; its checked state is announced
+        // by the control itself. Same React-side override as <pre>: the
+        // sanitizer's allowlist is unchanged.
+        input: ({ node: _node, ...props }) => <input {...props} aria-label="Task" />,
         h1: demote('h3'),
         h2: demote('h4'),
         h3: demote('h5'),

@@ -1248,11 +1248,16 @@ textarea {
     var(--shadow-lift);
 }
 
-.search > label[for="q"] {
+.search label[for="q"] {
   font-size: var(--t-sm);
   font-weight: 560;
   color: var(--fg-strong);
   margin: 0;
+}
+
+.search form {
+  display: grid;
+  gap: var(--s-3);
 }
 
 .search-row {
@@ -1350,6 +1355,21 @@ textarea {
   content: none;
 }
 
+/* A touch screen with no hover has no keyboard to press them on, and on a
+   390px phone the two caps covered a third of the field's placeholder
+   (Phase 10 baseline). */
+@media (hover: none) {
+  .search-row .field::before,
+  .search-row .field::after {
+    content: none;
+  }
+
+  :root[data-platform] .search-row .field input[type="search"],
+  .search-row .field input[type="search"] {
+    padding-right: var(--s-3);
+  }
+}
+
 :root[data-platform="mac"] .search-row .field::before {
   content: "⌘K";
   right: calc(var(--s-3) + 1.45rem + var(--s-1) + 0.9em);
@@ -1376,19 +1396,24 @@ textarea {
   border-top: 1px solid var(--border);
 }
 
-.facets fieldset {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  flex-wrap: wrap;
+.facet {
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* float, because a legend is not a flex item of its own fieldset — floating it
-   is what puts the label on the same line as the chips it names. */
-.facets legend {
+.facet-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+/* float, because a legend is not laid out as a child of its fieldset's
+   content — floating it is what puts the label on the same line as the chips
+   it names. */
+.facet-legend {
   float: left;
   padding: 0 var(--s-3) 0 0;
   font-size: var(--t-xs);
@@ -1399,20 +1424,17 @@ textarea {
   line-height: 1.875rem;
 }
 
-/* Control + text as one chip, so the whole thing is a comfortable click target
-   rather than a 13px box.
+/* One chip per value, the whole axis legible at rest.
  *
- * The type filter was a <select>. A native menu is one control that hides five
- * of its six options until it is opened, which costs two interactions to change
- * a filter and shows nothing about what the alternatives are. As chips the whole
- * axis is legible at rest and switching is one click. The form is unchanged
- * underneath: a radio group named `type` submits exactly one value, which is
- * what the <select> did, so the URL, the parser and the query are all identical.
+ * The type filter was a <select>, then a radio group styled as these chips;
+ * since Phase 10 each chip is a link to the result set it names (see the
+ * comment above `facets` in src/app/artifacts/page.tsx). The URL, the parser
+ * and the query are unchanged: a chip's href is what the form used to submit.
  *
- * Selected state is carried on four channels, not one: the control's own filled
- * shape, the background, the border and the text colour. Nothing here is
- * distinguishable by hue alone. */
-.facets fieldset label {
+ * Selected state is carried on several channels, not one: a drawn mark, the
+ * background, the border and the text colour. Nothing here is distinguishable
+ * by hue alone. */
+.facet .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
@@ -1422,7 +1444,8 @@ textarea {
   background: var(--surface);
   font-size: var(--t-xs);
   color: var(--muted);
-  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
   min-height: 1.875rem;
   transition:
     background var(--dur-fast) var(--ease),
@@ -1432,7 +1455,7 @@ textarea {
     transform var(--dur) var(--ease);
 }
 
-.facets fieldset label:hover {
+.facet .chip:hover {
   border-color: var(--muted);
   color: var(--fg-strong);
 }
@@ -1450,7 +1473,7 @@ textarea {
  * the longest and mostly empty) or anchor positioning, which Firefox does not
  * ship. A ring that grows where the selection landed says the same thing and
  * says it at every width. */
-.facets fieldset label:has(input:checked) {
+.facet .chip[aria-current] {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
@@ -1462,15 +1485,84 @@ textarea {
 /* The ring belongs on the chip, not on the 13px control buried inside it —
    otherwise tabbing through the filters outlines something the reader can
    barely see. */
-.facets fieldset label:has(input:focus-visible) {
+.facet .chip:focus-visible {
   outline: var(--ring-w) solid var(--ring);
   outline-offset: var(--ring-offset);
 }
 
-.facets fieldset input[type="checkbox"],
-.facets fieldset input[type="radio"] {
-  accent-color: var(--accent);
+/* The control's own filled shape was one of the selection channels; a link has
+   no control, so the chip draws one — a ring for a type (one of a set), a box
+   for a capability (each on or off), filled when applied. */
+.facet .chip::before {
+  content: "";
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.facet .chip-toggle::before {
+  border-radius: 3px;
+}
+
+.facet .chip[aria-current]::before {
+  background: currentColor;
+  box-shadow: inset 0 0 0 2px var(--accent-soft);
+}
+
+/* On a phone the two facet rows were five lines of wrapped chips, and the first
+   result started 860px down an 844px screen (Phase 10 baseline, 390px). The
+   legend goes above its row, and each row scrolls sideways instead of wrapping.
+   The scroller holds only links, so it is reachable by Tab without a tab stop
+   of its own. */
+@media (max-width: 40rem) {
+  .facet-legend {
+    float: none;
+  }
+
+  .facet-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--s-4));
+    padding: 4px var(--s-4);
+  }
+}
+
+/* The applied filters, each its own removal link, beside the count. */
+.applied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
   margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-basis: 100%;
+}
+
+.applied a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 24px;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-xs);
+  text-decoration: none;
+}
+
+.applied a.applied-clear {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--muted);
+}
+
+.applied a:hover {
+  color: var(--fg-strong);
 }
 
 /* ---------- search launcher ---------- */
@@ -1759,6 +1851,53 @@ textarea {
   transform: translateX(2px);
 }
 
+.pager-pages {
+  display: flex;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pager-pages a {
+  min-width: 2.25rem;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pager-pages a[aria-current] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pager-gap {
+  align-self: center;
+  padding: 0 var(--s-1);
+  color: var(--faint);
+}
+
+/* Seven numbered entries plus two words do not fit 320px; the arrows do. */
+@media (max-width: 30rem) {
+  .pager-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .pager a {
+    padding-inline: var(--s-2);
+  }
+
+  .pager-pages a {
+    min-width: 2rem;
+  }
+}
+
 .pager .muted {
   margin-inline-start: auto;
 }
@@ -1923,6 +2062,57 @@ textarea {
  * classic scrollbar is present; this measures from the element's own centre and
  * cannot overshoot the layout viewport.
  */
+/* ---------- browse by type ---------- */
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.type-card {
+  display: grid;
+  gap: var(--s-2);
+  height: 100%;
+  padding: var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.type-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lift);
+}
+
+.type-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.type-count {
+  color: var(--muted);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.type-what {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
 .board {
   position: relative;
   isolation: isolate;
@@ -2817,7 +3007,10 @@ textarea {
 
 .facts {
   display: grid;
-  grid-template-columns: minmax(7rem, max-content) 1fr;
+  /* minmax(0, …), not 1fr: a bare 1fr has an automatic minimum, so one
+     unbreakable value widened the column past the screen — 674px of page on a
+     390px phone, measured on an artifact with an 87-character name. */
+  grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
   gap: var(--s-2) var(--s-4);
   margin: 0 0 var(--s-5);
   padding: var(--s-4);
@@ -2881,8 +3074,125 @@ textarea {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  overflow-x: auto;
-  white-space: pre;
+  /* Wrapped rather than scrolled: a path is one line of meaning, and a
+     scrolling box needs a tab stop of its own (axe-core,
+     scrollable-region-focusable, flagged twice per page on the baseline). */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- breadcrumb, section links, copy ---------- */
+
+.crumbs ol,
+.toc ul {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crumbs {
+  margin-bottom: var(--s-4);
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+
+.crumbs li {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 24px;
+}
+
+.crumbs li + li::before {
+  content: "/";
+  padding: 0 var(--s-2);
+  color: var(--faint);
+}
+
+/* 24px tall: measured 21px as plain inline text, under WCAG 2.5.8's minimum
+   for a link that is not inside a sentence. */
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--muted);
+}
+
+.crumbs a:hover {
+  color: var(--accent);
+}
+
+.crumbs [aria-current] {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.toc {
+  margin: 0 0 var(--s-4);
+}
+
+.toc ul {
+  gap: var(--s-2);
+}
+
+.toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-decoration: none;
+}
+
+.toc a:hover {
+  border-color: var(--muted);
+  color: var(--fg-strong);
+}
+
+/* A jump lands the heading below the top edge rather than flush against it. */
+#main [id] {
+  scroll-margin-top: var(--s-5);
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  vertical-align: middle;
+}
+
+.copy-button {
+  min-height: 24px;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font: inherit;
+  font-family: var(--sans);
+  font-size: var(--t-xs);
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  color: var(--fg-strong);
+  border-color: var(--muted);
+}
+
+.copy-status {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: var(--t-xs);
+}
+
+.install .copy {
+  margin-top: var(--s-1);
 }
 
 /* ---------- markdown body ---------- */
@@ -3166,7 +3476,12 @@ textarea {
      that happen to have the same problem — and the next one will not be found
      by a selector that was written before it existed. */
   .featured-meta a,
-  .featured-meta span {
+  .featured-meta span,
+  /* The repository link above a detail page's path: 137×21 at 390px on the
+     Phase 10 sweep, a link on a line of its own rather than inside a sentence. */
+    .detail-head
+    .repo-line
+    a {
     min-height: 24px;
   }
 }
@@ -3224,7 +3539,7 @@ textarea {
  * travelling between two elements of different widths, the shared-element
  * transitions `layoutId` exists for — and the one place this design wanted that
  * is the filter chips, where the decision and the CSS alternative are written
- * up beside `.facets fieldset label:has(input:checked)`. Revisit if a
+ * up beside `.facet .chip[aria-current]`. Revisit if a
  * requirement arrives that is genuinely a layout animation; a second entrance
  * effect is not one.
  */

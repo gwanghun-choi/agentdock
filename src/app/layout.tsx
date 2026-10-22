@@ -5,9 +5,23 @@ import { SearchHotkey } from '@/components/SearchHotkey';
 import { SearchLauncher } from '@/components/SearchLauncher';
 import './globals.css';
 
+const DESCRIPTION =
+  'An index of agent skills, plugins, MCP servers, commands, hooks and subagents read from public GitHub repositories, each linked to the commit it was read at.';
+
+// Text-only sharing cards. No image is generated and no absolute URL is
+// emitted: the deployment's origin is not recorded anywhere in this repository
+// (CLAUDE.md, "Deployment work"), and a guessed one would be wrong on the
+// Docker path.
 export const metadata = {
   title: 'AgentDock',
-  description: 'Discover and inspect AI agent skills, plugins, and MCP servers.',
+  description: DESCRIPTION,
+  openGraph: {
+    siteName: 'AgentDock',
+    type: 'website',
+    title: 'AgentDock',
+    description: DESCRIPTION,
+  },
+  twitter: { card: 'summary', title: 'AgentDock', description: DESCRIPTION },
 };
 
 // Single-line and named, rather than JSX text wrapped across lines, so it is

@@ -369,6 +369,25 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
     });
   });
 
+  describe('countPackagesByType', () => {
+    it('counts listed rows per type with the listing predicate, and sums to countPackages', async () => {
+      const before = await packages.countPackagesByType();
+      const r = await repo('by-type', { stars: 3 });
+      await artifact(r, 'a/SKILL.md', [{ hash: 'bt-a' }]);
+      await artifact(r, 'b/SKILL.md', [{ hash: 'bt-b' }]);
+      // Suppressed: counted nowhere, exactly as the listing does not show it.
+      await artifact(r, 'c/SKILL.md', [{ hash: 'bt-c', status: 'failed' }]);
+      const after = await packages.countPackagesByType();
+      expect((after.skill ?? 0) - (before.skill ?? 0)).toBe(2);
+
+      const [byType, total] = [
+        await packages.countPackagesByType(),
+        await packages.countPackages(),
+      ];
+      expect(Object.values(byType).reduce((s, n) => s + n, 0)).toBe(total);
+    });
+  });
+
   describe('the repository page', () => {
     it('returns more than 250 artifacts, because the scan cap is 400', async () => {
       // packages.ts justified a literal 250 by the scan's file cap. Phase 4 raised

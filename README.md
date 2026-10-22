@@ -246,7 +246,7 @@ capability 필터는 결과를 좁힐 뿐 ranking 입력값이 아닙니다. sta
 ## Architecture
 
 ```
-Next.js 16 (App Router, 모든 route가 force-dynamic, client component 3개)
+Next.js 16 (App Router, 모든 route가 force-dynamic, client component 4개)
         │
         └── PostgreSQL 16          유일한 datastore. cache 없음, queue 없음
              ├── 검색: tsvector + GIN, 오타 허용은 pg_trgm
@@ -258,11 +258,13 @@ Redis도, OpenSearch도, vector database도, message broker도 없습니다. 큐
 
 프런트엔드도 같은 모양입니다. 모든 페이지는 Server Component이고, 스타일은
 custom property를 쓰는 순수 CSS입니다 — UI kit도, CSS framework도, animation
-library도, icon package도 없습니다. `'use client'`를 가진 component는 3개뿐이며
+library도, icon package도 없습니다. `'use client'`를 가진 component는 4개뿐이며
 어느 것도 데이터를 갖거나 fetch하지 않습니다: job 페이지의 polling effect,
-검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 그리고
-framework가 client component이기를 요구하는 error boundary입니다. 검색, 필터,
-페이지네이션은 native control을 쓰는 GET form이라 JavaScript를 꺼도 동작합니다.
+검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 상세 페이지의
+경로·링크 복사 버튼, 그리고 framework가 client component이기를 요구하는 error
+boundary입니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
+검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
+고침·링크 공유에서도 상태가 유지됩니다.
 
 모션도 마찬가지입니다. 홈의 index flow 다이어그램, 최근 인덱싱 항목이 천천히
 흐르는 카드 rail, 목록이 순서대로 등장하는 방식, hover와 focus 반응은 전부

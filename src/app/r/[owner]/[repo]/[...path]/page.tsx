@@ -4,11 +4,13 @@ import { isBundledScript } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
+import { CopyButton } from '@/components/CopyButton';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
 import { detailHref, permalink, permalinkAtLine } from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SkillBody } from '@/components/SkillBody';
+import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
 import {
@@ -78,9 +80,15 @@ export async function generateMetadata({ params }: Props) {
   if (!detail) return { title: 'Not found — AgentDock' };
   // Plain strings. The framework escapes them, and no structured-data block is
   // added: that is the one sink it does not escape.
+  const title = `${detail.name} — ${detail.fullName} — AgentDock`;
+  const description = metaDescription(detail.summary);
+  // Text only: no image is generated, and no URL is emitted because the
+  // deployment's own origin is not something this repository records.
   return {
-    title: `${detail.name} — ${detail.fullName} — AgentDock`,
-    description: metaDescription(detail.summary),
+    title,
+    description,
+    openGraph: { title, description, type: 'article', siteName: 'AgentDock' },
+    twitter: { card: 'summary', title, description },
   };
 }
 
@@ -108,9 +116,42 @@ export default async function PackagePage({ params }: Props) {
   const specKeys: readonly string[] = detail.type === 'agent' ? AGENT_SPEC_KEYS : SPEC_KEYS;
   const extras = keys.filter((k) => !specKeys.includes(k));
   const guide = USAGE_GUIDES[detail.type];
+  const typeListing = TYPE_FILTER_LABELS[detail.type as keyof typeof TYPE_FILTER_LABELS];
+
+  // The page is long — nine sections on a skill, the file itself last — so its
+  // sections are named once at the top, as plain fragment links.
+  const sections = [
+    ['details', 'Details'],
+    detail.files.length > 0 ? ['files', 'Files'] : null,
+    ['observed', 'Capabilities'],
+    related.container || related.components.length > 0 ? ['related', 'Related'] : null,
+    guide ? ['usage', 'Using it'] : null,
+    ['versions', 'Versions'],
+    ['file', 'File'],
+  ].filter((entry) => entry !== null);
 
   return (
     <>
+      {/* Where this page sits: the listing, this type's listing (catalog has
+          none — the search route does not filter on it), the repository, then
+          this artifact. Every step is a page a reader can go back up to. */}
+      <nav aria-label="Breadcrumb" className="crumbs">
+        <ol>
+          <li>
+            <Link href="/artifacts">Artifacts</Link>
+          </li>
+          {typeListing ? (
+            <li>
+              <Link href={`/artifacts?type=${detail.type}`}>{typeListing}</Link>
+            </li>
+          ) : null}
+          <li>
+            <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+          </li>
+          <li aria-current="page">{detail.name}</li>
+        </ol>
+      </nav>
+
       {/* One shell for all seven types: badge, name, repository, description, then
           the two links a reader reaches for. Nothing here is skill-specific —
           the type-conditional parts are further down: the usage guide, which
@@ -141,7 +182,17 @@ export default async function PackagePage({ params }: Props) {
         </div>
       </div>
 
-      <dl className="facts">
+      <nav aria-label="On this page" className="toc">
+        <ul>
+          {sections.map(([id, label]) => (
+            <li key={id}>
+              <a href={`#${id}`}>{label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <dl className="facts" id="details">
         <dt>Type</dt>
         <dd>{artifactTypeLabel(detail.type)}</dd>
 
@@ -191,13 +242,16 @@ export default async function PackagePage({ params }: Props) {
             a location, like the permalink under it, and it is the one short-
             looking fact that is routinely long. */}
         <dt>Path in repository</dt>
-        <dd className="path fact-long">{detail.sourcePath}</dd>
+        <dd className="path fact-long">
+          {detail.sourcePath} <CopyButton label="Copy path" value={detail.sourcePath} />
+        </dd>
 
         <dt>Permalink</dt>
         <dd className="fact-long">
           <a href={source} rel="noopener noreferrer" target="_blank" className="path">
             {source}
-          </a>
+          </a>{' '}
+          <CopyButton label="Copy link" value={source} />
         </dd>
 
         <dt>Frontmatter fields</dt>
@@ -228,7 +282,7 @@ export default async function PackagePage({ params }: Props) {
 
       {detail.files.length > 0 ? (
         <>
-          <h2>Files</h2>
+          <h2 id="files">Files</h2>
           <p className="muted">
             The files this artifact owns in the tree AgentDock already read — a skill&apos;s or a
             plugin&apos;s directory, or the single file a command, hook or MCP configuration is. No
@@ -268,6 +322,7 @@ export default async function PackagePage({ params }: Props) {
         </>
       ) : null}
 
+      <div className="anchor" id="observed" />
       <CapabilityPanel
         findings={observedFindings}
         analyzedAt={detail.analyzedAt}
@@ -293,7 +348,7 @@ export default async function PackagePage({ params }: Props) {
 
       {related.container || related.components.length > 0 ? (
         <>
-          <h2>Related artifacts</h2>
+          <h2 id="related">Related artifacts</h2>
           <p className="muted">
             Linked by directory: an artifact whose path sits under a plugin&apos;s root. A
             plugin.json that points a component somewhere else is not followed, so such a component
@@ -321,7 +376,7 @@ export default async function PackagePage({ params }: Props) {
 
       {guide ? (
         <>
-          <h2>Using this kind of artifact</h2>
+          <h2 id="usage">Using this kind of artifact</h2>
           <p className="muted">
             About the type, from its documentation — not about this file. AgentDock does not install
             or run anything; read the file at the linked commit first.
@@ -340,7 +395,8 @@ export default async function PackagePage({ params }: Props) {
               <div key={place.scope} style={{ display: 'contents' }}>
                 <dt>{place.scope} copy</dt>
                 <dd>
-                  <code>{place.path(detail.slug)}</code>
+                  <code>{place.path(detail.slug)}</code>{' '}
+                  <CopyButton label="Copy path" value={place.path(detail.slug)} />
                 </dd>
               </div>
             ))}
@@ -350,7 +406,7 @@ export default async function PackagePage({ params }: Props) {
         </>
       ) : null}
 
-      <h2>Versions</h2>
+      <h2 id="versions">Versions</h2>
       <p className="muted">
         One row per distinct content AgentDock stored for this file, latest first. Content that
         returns to an earlier version moves that row back to the top, so this is what the file has
@@ -393,7 +449,7 @@ export default async function PackagePage({ params }: Props) {
         </p>
       ) : null}
 
-      <h2>File</h2>
+      <h2 id="file">File</h2>
       <p className="muted">
         An excerpt of{' '}
         <a href={source} rel="noopener noreferrer" target="_blank">

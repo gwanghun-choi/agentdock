@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { PackageRows } from '@/components/PackageRows';
+import { pageWindow, searchHref, toggleCapability, withType } from '@/components/searchState';
 import { TYPE_FILTER_LABELS as SHARED_TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import {
@@ -19,7 +20,31 @@ import { log } from '@/log';
 // Read at request time. next build runs in CI, where there is no database.
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Artifacts — AgentDock' };
+/**
+ * One indexable URL per type, and none per query. A search, a capability
+ * filter or a page number is a combination of parameters a crawler could
+ * enumerate without end, and each is the same rows as some type listing; those
+ * render with `noindex` and are still followed, so the detail pages they link
+ * to are reached. Read from the parameters alone — no query runs for this.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const q = normalizeQuery(sp.q);
+  const [type] = parseTypeFilter(sp.type);
+  const varied = q !== '' || sp.cap !== undefined || pageParam.parse(sp.page) > 1;
+  const subject = type ? TYPE_FILTER_LABELS[type] : 'Artifacts';
+  return {
+    title: q ? `“${q}” in ${subject} — AgentDock` : `${subject} — AgentDock`,
+    description: type
+      ? `${TYPE_FILTER_LABELS[type]} AgentDock read from public GitHub repositories, each linked to the commit it was read at.`
+      : 'Browse and search the agent artifacts AgentDock read from public GitHub repositories.',
+    ...(varied ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 /**
  * Coerced through a bounded schema with a fallback, never through Number().
@@ -99,34 +124,110 @@ function parseCapabilityFilter(
   );
 }
 
-/**
- * The one URL builder every link on this page uses: Previous, Next, and
- * both empty-state links. Four hand-built template strings is four chances
- * to drop `q` (or now, a filter) from one of them while the others keep it
- * — this is the single place that re-emits the whole state, so pagination
- * and filtering cannot silently lose each other (D-35/D-36).
- */
+/** Every link on this page goes through searchHref (see searchState.ts), so
+ * pagination and filtering cannot silently lose each other (D-35/D-36). */
 function hrefFor(q: string, page: number, filters: SearchFilters): string {
-  const params = new URLSearchParams();
-  if (q) params.set('q', q);
-  for (const t of filters.types) params.set('type', t);
-  for (const c of filters.capabilities) params.append('cap', c);
-  if (page > 1) params.set('page', String(page));
-  const qs = params.toString();
-  return qs ? `/artifacts?${qs}` : '/artifacts';
+  return searchHref({ q, types: filters.types, capabilities: filters.capabilities, page });
 }
 
-function appliedFilterLabels(filters: SearchFilters): string[] {
-  const labels: string[] = [];
+/** Each applied filter with the URL of the same search without it. */
+function appliedFilters(q: string, filters: SearchFilters): { label: string; href: string }[] {
+  const state = { q, types: filters.types, capabilities: filters.capabilities, page: 1 };
+  const out: { label: string; href: string }[] = [];
   for (const t of filters.types) {
     const label = TYPE_FILTER_LABELS[t as (typeof ARTIFACT_TYPE_IDS)[number]];
-    if (label) labels.push(label);
+    if (label) out.push({ label, href: searchHref(withType(state, null)) });
   }
   for (const c of filters.capabilities) {
     const label = CAPABILITY_FILTER_LABELS[c as (typeof CAPABILITY_FILTER_IDS)[number]];
-    if (label) labels.push(label);
+    if (label) out.push({ label, href: searchHref(toggleCapability(state, c)) });
   }
-  return labels;
+  return out;
+}
+
+/**
+ * What is narrowing this result set, each with its own way out, beside the
+ * count it narrows. The chips above say the same thing, but on a phone they
+ * are a scrolled row the reader may not be looking at.
+ */
+function AppliedFilters({ q, filters }: { q: string; filters: SearchFilters }) {
+  const applied = appliedFilters(q, filters);
+  if (applied.length === 0) return null;
+  return (
+    <ul aria-label="Applied filters" className="applied">
+      {applied.map((f) => (
+        <li key={f.label}>
+          <Link href={f.href}>
+            <span className="sr-only">Remove filter: </span>
+            {f.label} <span aria-hidden="true">×</span>
+          </Link>
+        </li>
+      ))}
+      {applied.length > 1 ? (
+        <li>
+          <Link className="applied-clear" href={hrefFor(q, 1, NO_FILTERS)}>
+            Clear all
+          </Link>
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+/**
+ * Previous, the pages around this one, Next. Numbered so a reader can see how
+ * far the set goes and jump to its end; `pageWindow` keeps it to at most seven
+ * entries, which fits a 320px screen on one line.
+ */
+function Pager({
+  q,
+  page,
+  last,
+  filters,
+}: {
+  q: string;
+  page: number;
+  last: number;
+  filters: SearchFilters;
+}) {
+  if (last <= 1) return null;
+  return (
+    <nav aria-label="Pagination" className="pager">
+      {page > 1 ? (
+        <Link href={hrefFor(q, page - 1, filters)} rel="prev">
+          <ArrowLeftIcon /> <span className="pager-word">Previous</span>
+        </Link>
+      ) : null}
+      <ol className="pager-pages">
+        {pageWindow(page, last).map((p, i) =>
+          p === null ? (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a gap has no identity but its position
+            <li aria-hidden="true" className="pager-gap" key={`gap-${i}`}>
+              …
+            </li>
+          ) : (
+            <li key={p}>
+              <Link
+                aria-current={p === page ? 'page' : undefined}
+                aria-label={`Page ${p}`}
+                href={hrefFor(q, p, filters)}
+              >
+                {p}
+              </Link>
+            </li>
+          ),
+        )}
+      </ol>
+      {page < last ? (
+        <Link href={hrefFor(q, page + 1, filters)} rel="next">
+          <span className="pager-word">Next</span> <ArrowRightIcon />
+        </Link>
+      ) : null}
+      <span className="muted pager-status">
+        Page {page} of {last}
+      </span>
+    </nav>
+  );
 }
 
 /**
@@ -189,7 +290,7 @@ export default async function ArtifactsPage({
     // No role="search": the label names the field, and the native <search>
     // element is the semantic answer the linter asks for — but wrapping a GET
     // form in one changes nothing a reader or a screen reader gets here.
-    <form method="get" action="/artifacts" className="search">
+    <form method="get" action="/artifacts">
       <label htmlFor="q">Search artifacts</label>
       <div className="search-row">
         <span className="field">
@@ -213,52 +314,86 @@ export default async function ArtifactsPage({
         </span>
         <button type="submit">Search</button>
       </div>
-      <div className="facets">
-        {/* Was a <select>. A radio group named `type` submits exactly one value,
-            which is precisely what the menu did — same parameter, same single
-            value, same parseTypeFilter on the way back in, so the URL and the
-            query are byte-identical to what they were. What changes is that all
-            six options are legible without opening anything and switching costs
-            one click instead of two.
-
-            The "All types" option is value="" for the same reason the <option>
-            was: it submits `type=`, which parseTypeFilter drops, which is the
-            unfiltered state. */}
-        <fieldset>
-          <legend>Type</legend>
-          <label>
-            <input type="radio" name="type" value="" defaultChecked={selectedTypes.length === 0} />{' '}
-            All types
-          </label>
-          {ARTIFACT_TYPE_IDS.map((id) => (
-            <label key={id}>
-              <input type="radio" name="type" value={id} defaultChecked={selectedTypes[0] === id} />{' '}
-              {TYPE_FILTER_LABELS[id]}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset>
-          <legend>Capability</legend>
-          {CAPABILITY_FILTER_IDS.map((id) => (
-            <label key={id}>
-              <input
-                type="checkbox"
-                name="cap"
-                value={id}
-                defaultChecked={selectedCapabilities.includes(id)}
-              />{' '}
-              {CAPABILITY_FILTER_LABELS[id]}
-            </label>
-          ))}
-        </fieldset>
-      </div>
+      {/* The applied filters ride along with a new query. Without these a
+          reader who picked "Subagents" and then typed a word would lose the
+          type on Enter. */}
+      {selectedTypes.map((t) => (
+        <input key={t} name="type" type="hidden" value={t} />
+      ))}
+      {selectedCapabilities.map((c) => (
+        <input key={c} name="cap" type="hidden" value={c} />
+      ))}
     </form>
+  );
+
+  /*
+   * The filters are links, not form controls.
+   *
+   * They were a radio group and a set of checkboxes inside the GET form, styled
+   * as chips. A chip changed its look on click and the results did not change
+   * until the reader also pressed Search — measured on the Phase 10 baseline,
+   * picking "Subagents" left 162 rows of every type under a highlighted
+   * Subagents chip. Submitting on change would need script, and submitting a
+   * radio group on each arrow key is the change-of-context-on-input that WCAG
+   * 3.2.2 warns about.
+   *
+   * A link is the native control for "go to this result set": one click, the
+   * URL is the state, Back undoes it, and it works with JavaScript off. The
+   * hrefs are the URLs the form used to submit — same `type` and `cap`
+   * parameters, same parsers on the way back in — and a selected chip links to
+   * its own removal. `aria-current` names the applied ones to a screen reader;
+   * the look is the same six channels the checked chips used.
+   */
+  const state = { q, types: selectedTypes, capabilities: selectedCapabilities, page: 1 };
+  const facets = (
+    <div className="facets">
+      <fieldset className="facet">
+        <legend className="facet-legend">Type</legend>
+        <div className="facet-chips">
+          <Link
+            aria-current={selectedTypes.length === 0 ? 'true' : undefined}
+            className="chip"
+            href={searchHref(withType(state, null))}
+          >
+            All types
+          </Link>
+          {ARTIFACT_TYPE_IDS.map((id) => (
+            <Link
+              aria-current={selectedTypes.includes(id) ? 'true' : undefined}
+              className="chip"
+              href={searchHref(withType(state, id))}
+              key={id}
+            >
+              {TYPE_FILTER_LABELS[id]}
+            </Link>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="facet">
+        <legend className="facet-legend">Capability</legend>
+        <div className="facet-chips">
+          {CAPABILITY_FILTER_IDS.map((id) => (
+            <Link
+              aria-current={selectedCapabilities.includes(id) ? 'true' : undefined}
+              className="chip chip-toggle"
+              href={searchHref(toggleCapability(state, id))}
+              key={id}
+            >
+              {CAPABILITY_FILTER_LABELS[id]}
+            </Link>
+          ))}
+        </div>
+      </fieldset>
+    </div>
   );
 
   // D-08: filters describe an observation, never a completeness claim.
   const searchControls = (
     <>
-      {searchForm}
+      <div className="search">
+        {searchForm}
+        {facets}
+      </div>
       <p className="notice">
         <InfoIcon />
         <span>
@@ -344,7 +479,7 @@ export default async function ArtifactsPage({
   // above. States the fact, offers next steps, never claims non-existence
   // (D-38), and discloses corpus scope (D-39).
   if (items.length === 0) {
-    const filterLabels = appliedFilterLabels(filters);
+    const filterLabels = appliedFilters(q, filters).map((f) => f.label);
     return (
       <>
         {pageHead}
@@ -358,6 +493,7 @@ export default async function ArtifactsPage({
           <p className="muted">
             AgentDock has not indexed a match. That is not the same as the artifact not existing.
           </p>
+          <AppliedFilters filters={filters} q={q} />
           {nextSteps}
         </div>
       </>
@@ -418,23 +554,10 @@ export default async function ArtifactsPage({
         {mode === 'any' ? (
           <p className="muted">No artifact matched every word; these match at least one.</p>
         ) : null}
+        <AppliedFilters filters={filters} q={q} />
       </div>
       <PackageRows items={items} />
-      <nav className="pager" aria-label="Pagination">
-        {page > 1 ? (
-          <Link href={hrefFor(q, page - 1, filters)} rel="prev">
-            <ArrowLeftIcon /> Previous
-          </Link>
-        ) : null}
-        {page < last ? (
-          <Link href={hrefFor(q, page + 1, filters)} rel="next">
-            Next <ArrowRightIcon />
-          </Link>
-        ) : null}
-        <span className="muted">
-          Page {page} of {last}
-        </span>
-      </nav>
+      <Pager filters={filters} last={last} page={page} q={q} />
     </>
   );
 }
