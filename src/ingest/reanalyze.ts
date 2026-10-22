@@ -143,13 +143,26 @@ export async function analyzePackageVersion(packageVersionId: number): Promise<n
  *
  * Bounded by `limit` so a first run against a large index is a script
  * someone can actually run, not an unbounded loop nobody dares start.
+ *
+ * Each package's latest version first, then the rest by id. The page, the
+ * listing and the capability filters read only the latest version
+ * (search.ts's LATEST_PACKAGE_VERSION_ID), so a bounded run spent on an older
+ * one changes nothing a reader sees. Re-running resumes by construction: an
+ * analyzed row no longer matches.
  */
 export async function unanalyzedVersionIds(limit: number): Promise<number[]> {
   const rows = await db
     .select({ id: packageVersion.id })
     .from(packageVersion)
     .where(isNull(packageVersion.analyzedAt))
-    .orderBy(packageVersion.id)
+    .orderBy(
+      sql`${packageVersion.id} = (
+        select z.id from ${packageVersion} z
+        where z.package_id = ${packageVersion.packageId}
+        order by z.ingested_at desc limit 1
+      ) desc`,
+      packageVersion.id,
+    )
     .limit(limit);
   return rows.map((r) => r.id);
 }

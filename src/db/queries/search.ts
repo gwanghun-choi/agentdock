@@ -37,25 +37,28 @@ export const SEARCH_CAPS = {
    * be outranked by the third (description relevance). */
   prefixNameBonus: 1.0,
   /**
-   * D-02/D-03 decision 3's threshold branch (06-04 plan): ship the
-   * index-usable `<%` operator, which reads the session GUC
-   * `pg_trgm.word_similarity_threshold` (default 0.6) rather than this
-   * constant, UNLESS measuring the three maintainer-named examples
-   * (`playwrit`, `postgress`, `mcp-sever`) shows one below it — in which
-   * case an explicit `word_similarity(...) >= fuzzyThreshold` predicate
-   * ships instead and the index is not used by it.
+   * A query with a '/' in it names a path. Measured on the evaluation set
+   * (search.eval.test.ts, 2026-10-21): `skills/pdf` ranked skills/pdf/SKILL.md
+   * third behind two rows whose summaries say "PDF" more often. Applied only
+   * to a query containing '/', so no other query's order can move — the
+   * other twenty evaluation cases are byte-identical with and without it.
+   */
+  pathBonus: 1.0,
+  /**
+   * pg_trgm's own default for `<%` (the session GUC
+   * `pg_trgm.word_similarity_threshold`), which the fuzzy branch reads; this
+   * constant documents it and is not passed to SQL.
    *
-   * BLOCKED — not measured: `pg_trgm` is not installed in this environment
-   * (`select extname from pg_extension` returns `plpgsql` only, re-verified
-   * live during this plan — see 06-04-SUMMARY.md), so
-   * `word_similarity('playwrit', ...)`, `word_similarity('postgress', ...)`
-   * and `word_similarity('mcp-sever', ...)` could not be run against the
-   * live corpus. This constant carries pg_trgm's own unmeasured default
-   * rather than a guessed number, and the code ships the `<%` operator
-   * unchanged because that is the decision's default branch — not because
-   * the three examples were confirmed to clear it. Re-run this measurement
-   * once the extension is installed (Task 2's checkpoint) and replace this
-   * comment with the three real values before treating DIS-04 as verified.
+   * Measured 2026-10-21 on a local PostgreSQL 17 with pg_trgm, over the 161-row
+   * evaluation corpus (search.eval.test.ts), best word_similarity of the
+   * intended row: `playwrit` 0.778, `mcp-sever` 0.600 — both clear 0.6, so the
+   * decision's default branch (the index-usable operator, unchanged) holds.
+   * `postgress` has no target in that corpus and stays unmeasured.
+   * `brainstroming` (a transposition) scores 0.556 and is missed; at 0.5 it
+   * would match, and `mcp-sever` would go from 3 rows to 4. One recovered
+   * case out of eight sampled is not enough to move a threshold that the
+   * production pooler would have to accept as a session setting — revisit
+   * with typo queries from search logs (DIS-08), not with this sample.
    */
   fuzzyThreshold: 0.6,
 } as const;
@@ -74,7 +77,14 @@ export const SEARCH_CAPS = {
  * Offering a filter that always returns nothing would be a control that
  * lies, so the id is not in this array (decision 6/7, 06-03 plan).
  */
-export const ARTIFACT_TYPE_IDS = ['skill', 'plugin', 'mcp_server', 'command', 'hook'] as const;
+export const ARTIFACT_TYPE_IDS = [
+  'skill',
+  'plugin',
+  'mcp_server',
+  'command',
+  'hook',
+  'agent',
+] as const;
 
 /**
  * The three "no X" capability filters DIS-06 names. Absence tests only —
@@ -323,6 +333,7 @@ function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: Searc
  *   2. name prefix/similarity — SEARCH_CAPS.prefixNameBonus
  *   3. description/text relevance — ts_rank over the weighted search_vector
  *   4. repository name match  — SEARCH_CAPS.repoNameBonus
+ *   5. path substring, only for a query containing '/' — SEARCH_CAPS.pathBonus
  *
  * Nothing here is a quality or safety proxy (D-13): stars, capability
  * findings and parse_status never appear. On the empty query this returns
@@ -332,6 +343,10 @@ function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: Searc
 function rankExpr(q: string, mode: SearchMode) {
   if (q === '') return sql<number>`0::real`;
   const qEsc = escapeLikeOperand(q);
+  const path = q.includes('/')
+    ? sql`+ case when lower(${packageTable.sourcePath}) like '%' || lower(${qEsc}) || '%'
+        then ${SEARCH_CAPS.pathBonus}::real else 0::real end`
+    : sql``;
   return sql<number>`
       case when lower(${packageTable.name}) = lower(${q})
         then ${SEARCH_CAPS.exactNameBonus}::real else 0::real end
@@ -340,6 +355,7 @@ function rankExpr(q: string, mode: SearchMode) {
     + ts_rank(${packageTable.searchVector}, ${tsQuery(q, mode)})
     + case when ${repository.fullName} ilike '%' || ${qEsc} || '%'
         then ${SEARCH_CAPS.repoNameBonus}::real else 0::real end
+    ${path}
   `;
 }
 

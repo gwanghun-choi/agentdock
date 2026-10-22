@@ -3,7 +3,7 @@
 [한국어](./README.md) | English
 
 An open index of AI agent artifacts — skills, plugins, marketplaces, MCP
-servers, slash commands and hooks — discovered from established public GitHub
+servers, slash commands, hooks and subagents — discovered from established public GitHub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
@@ -53,7 +53,7 @@ decisions below:
 
 ## Supported Artifacts
 
-Six types, one detector each in `src/detect/`:
+Seven types, one detector each in `src/detect/`:
 
 | Type | Recognised by |
 |---|---|
@@ -63,6 +63,7 @@ Six types, one detector each in `src/detect/`:
 | **MCP Server** | `.mcp.json`, and the MCP registry's own entries |
 | **Slash Command** | a Markdown file under `.claude/commands/` |
 | **Hook Configuration** | a `hooks` block in `.claude/settings.json` |
+| **Subagent** | a Markdown file under `.claude/agents/` or a plugin's `agents/`, subfolders included; one under `.claude/agents/` needs frontmatter |
 
 Detection is by file shape, never by repository name or topic. A repository with
 none of these costs zero file reads: the tree is inspected for paths first, and
@@ -132,7 +133,7 @@ repository is popular.
 ```
 
 Both gates sit above the expensive part. A declined repository and an unchanged
-one each cost two core requests and **zero** file reads, against the up-to-400
+one each cost two core requests and **zero** file reads, against the up-to-600
 raw fetches and two minutes of wall clock a full read can take.
 
 ## Scheduled Synchronization
@@ -238,6 +239,14 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
 - **Permalinks.** Every artifact has a stable URL, and every "source on GitHub"
   link points at the commit SHA AgentDock actually read — never at a branch,
   which would drift.
+- **Path queries.** A query containing `/` is read as a path, and artifacts whose
+  source path contains it rank first. No other query's order changes.
+- **Artifact pages.** An artifact under a plugin's directory names its plugin, and
+  a plugin lists the components under its directory — by path; a plugin.json path
+  override is not followed. The page also lists every stored version (one row per
+  distinct content, each linked at its commit) and a usage note for the type:
+  its documentation, where a copy goes, what to read first. The note describes
+  the type, never the file.
 
 Capability filters narrow results; they are never a ranking input. Neither are
 stars, downloads, or anything else about a repository's popularity.
@@ -559,7 +568,7 @@ mirror, and every rendered body goes through a sanitizing Markdown pipeline.
 - **Unauthenticated GitHub is 60 requests an hour**, two per repository — about
   thirty repositories an hour, which is the real limit on how fast the index can
   grow. `GITHUB_TOKEN` raises it to 5,000 and needs no scopes.
-- **A large repository is read partially.** 400 files per pass, 120 seconds of
+- **A large repository is read partially.** 600 files per pass, 120 seconds of
   wall clock. A repository cut short says so on its own page, and nothing is
   delisted from an incomplete read — a partial read is not evidence of absence.
 - **Capability observation is not analysis.** It reads a file's declared

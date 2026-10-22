@@ -347,8 +347,8 @@ describe('the registry', () => {
   // The DET-09 canary. This is an assertion about the registry's shape rather
   // than its length precisely so it keeps failing when someone writes a
   // detector file and forgets to add it here. 03-01 added catalog; 03-02 added
-  // plugin and mcp_server; 03-03 adds the final two, command and hook — this is
-  // the phase's final form.
+  // plugin and mcp_server; 03-03 added command and hook; Phase 5 (2026-10-21)
+  // adds agent, the Claude Code subagent.
   it('holds one element per artifact type, each a distinct type string', () => {
     expect(DETECTORS.map((d) => d.type)).toEqual([
       'skill',
@@ -357,6 +357,7 @@ describe('the registry', () => {
       'mcp_server',
       'command',
       'hook',
+      'agent',
     ]);
     expect(new Set(DETECTORS.map((d) => d.type)).size).toBe(DETECTORS.length);
   });

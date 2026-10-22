@@ -3,7 +3,7 @@
 한국어 | [English](./README.en.md)
 
 AI agent artifact — Skill, Plugin, Marketplace, MCP Server, Slash Command,
-Hook — 를 모아 놓은 공개 index입니다. 자리를 잡은 공개 GitHub repository에서
+Hook, Subagent — 를 모아 놓은 공개 index입니다. 자리를 잡은 공개 GitHub repository에서
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
@@ -48,7 +48,7 @@ marketplace도, installer도, package manager도 아니며, GitHub 전체를 색
 
 ## 지원하는 Artifact
 
-여섯 가지이며, `src/detect/`에 detector가 하나씩 있습니다.
+일곱 가지이며, `src/detect/`에 detector가 하나씩 있습니다.
 
 | Type | 인식 기준 |
 |---|---|
@@ -58,6 +58,7 @@ marketplace도, installer도, package manager도 아니며, GitHub 전체를 색
 | **MCP Server** | `.mcp.json`, 그리고 MCP registry의 자체 항목 |
 | **Slash Command** | `.claude/commands/` 아래의 Markdown 파일 |
 | **Hook Configuration** | `.claude/settings.json`의 `hooks` 블록 |
+| **Subagent** | `.claude/agents/` 또는 plugin의 `agents/` 아래 Markdown 파일(하위 폴더 포함). `.claude/agents/`의 파일은 frontmatter가 있어야 합니다 |
 
 인식은 **파일의 모양**으로만 하며, repository 이름이나 topic으로 하지 않습니다.
 이 중 아무것도 없는 repository는 파일을 한 번도 읽지 않습니다 — tree에서 경로를
@@ -127,7 +128,7 @@ topic sweep의 자체 하한선, 안내 메시지, UI 문구 — 가 그 값을 
 
 두 gate 모두 비싼 구간보다 **위**에 있습니다. 거절된 repository와 변경 없는
 repository는 각각 core request 2회와 파일 읽기 **0회**로 끝납니다. 전체를 읽을
-때 드는 최대 400회의 raw fetch와 2분의 wall clock에 대비되는 비용입니다.
+때 드는 최대 600회의 raw fetch와 2분의 wall clock에 대비되는 비용입니다.
 
 ## Scheduled Synchronization
 
@@ -231,6 +232,13 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
 - **Permalink.** 모든 artifact에 고정 URL이 있고, 모든 "source on GitHub" 링크는
   AgentDock이 실제로 읽은 commit SHA를 가리킵니다. branch를 가리키지 않습니다 —
   branch는 움직이기 때문입니다.
+- **경로 검색.** `/`가 들어간 검색어는 경로로 보고, source path에 그 문자열이 든
+  artifact를 위로 올립니다. 다른 검색어의 순위는 바뀌지 않습니다.
+- **상세 화면.** plugin 디렉터리 아래에 있는 artifact는 소속 plugin을, plugin은
+  자기 디렉터리 아래의 구성요소를 보여줍니다. 경로 기준 관계이며 plugin.json의
+  경로 override는 따라가지 않습니다. 저장된 version 목록(내용별 1행, commit 링크)과
+  유형별 사용 안내(공식 문서 링크, 복사 위치, 주의사항 — 유형에 대한 설명이며
+  해당 파일에 대한 평가가 아님)도 표시합니다.
 
 capability 필터는 결과를 좁힐 뿐 ranking 입력값이 아닙니다. star, 다운로드 수,
 그 밖에 repository의 인기와 관련된 어떤 것도 마찬가지입니다.
@@ -550,7 +558,7 @@ artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다
 - **인증 없는 GitHub은 시간당 60건**이고 repository당 2건이므로 시간당 약 30개
   repository입니다. index가 자랄 수 있는 속도의 실제 한계입니다. `GITHUB_TOKEN`을
   주면 5,000건으로 올라가며, scope는 필요 없습니다.
-- **큰 repository는 부분적으로 읽힙니다.** 1회 400 파일, wall clock 120초.
+- **큰 repository는 부분적으로 읽힙니다.** 1회 600 파일, wall clock 120초.
   중간에 잘린 repository는 자기 페이지에 그 사실을 밝히고, 불완전한 읽기로는
   아무것도 목록에서 내리지 않습니다 — 부분적으로 읽었다는 것이 무언가 사라졌다는
   증거는 아니기 때문입니다.

@@ -133,7 +133,8 @@ try {
        ('catalog', 'Plugin Marketplace'),
        ('mcp_server', 'MCP Server'),
        ('command', 'Slash Command'),
-       ('hook', 'Hook Configuration')
+       ('hook', 'Hook Configuration'),
+       ('agent', 'Subagent')
      on conflict do nothing`,
   );
 

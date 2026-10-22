@@ -885,6 +885,12 @@ main {
   border-color: light-dark(#f5cdd8, #55232f);
 }
 
+.badge-agent {
+  color: light-dark(#3d4f9e, #a8b6f2);
+  background: light-dark(#eef0fb, #161a2e56);
+  border-color: light-dark(#cfd5f3, #2d3558);
+}
+
 .badge-catalog {
   color: light-dark(#4a5560, #a9b4c0);
   background: var(--surface-2);

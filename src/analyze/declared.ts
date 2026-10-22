@@ -73,6 +73,28 @@ export function declaredCapabilities(input: AnalyzeInput): Finding[] {
     }
   }
 
+  // A subagent's grant is its `tools` field, stored by agent.ts as
+  // meta.declaredTools. Same one-finding-per-token rule. An agent that omits
+  // `tools` inherits every tool, so nothing here (and no absence filter)
+  // reads the missing field as "no tools".
+  const agentTools = Array.isArray(input.meta.declaredTools)
+    ? (input.meta.declaredTools as unknown[]).filter((t): t is string => typeof t === 'string')
+    : [];
+  for (const token of agentTools) {
+    findings.push({
+      detectorId: declaredCapabilities.name,
+      detectorVersion: DECLARED_VERSION,
+      category: 'declared',
+      signal: token,
+      summary: `declares tools: ${token}`,
+      sourcePath: input.sourcePath,
+      startLine: null,
+      endLine: null,
+      evidenceText: null,
+      metadata: {},
+    });
+  }
+
   const servers = Array.isArray(input.meta.servers) ? (input.meta.servers as ServerMeta[]) : [];
   for (const server of servers) {
     if (typeof server.command !== 'string') continue;

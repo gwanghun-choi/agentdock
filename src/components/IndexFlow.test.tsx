@@ -16,7 +16,7 @@ describe('IndexFlow', () => {
     // Not a decorative div stack: the order is real, and a screen reader that
     // gets "list of 4 items" gets the shape of the content.
     expect(html).toMatch(/^<ol class="flow">/);
-    expect(html.match(/<li>/g)?.length).toBe(4 + 7); // four steps, seven filenames
+    expect(html.match(/<li>/g)?.length).toBe(4 + 8); // four steps, eight filenames
   });
 
   it('is legible with no CSS and no JavaScript at all', () => {

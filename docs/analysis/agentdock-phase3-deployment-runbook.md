@@ -1,5 +1,7 @@
 # AgentDock Phase 2·3 운영 반영 Runbook
 
+> **후속(2026-10-21):** Phase 4~7은 migration 0009·0010을 더한다. 이 Runbook의 0008을 적용한 뒤 [Phase 4~7 통합 보고서 §3](agentdock-phase4-7-integration-report.md#3-운영-반영-순서-phase-3-runbook의-연장)을 이어서 진행한다. 0008을 적용하지 않은 상태라면 `bun run db:migrate` 한 번에 3개가 함께 적용된다.
+
 > 작성 2026-10-21, 기준 HEAD `77e7184` + 미커밋 변경 70개 항목.
 > 이 문서는 **실행 절차**다. 아래 명령은 모두 운영자가 직접 실행한다. 작성 시점에는
 > 운영 Neon 변경, 운영 Sync, Vercel 배포, commit/push를 하나도 하지 않았다.

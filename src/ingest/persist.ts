@@ -188,8 +188,9 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
       // so the insert conflicted and minted nothing — and "latest" (ingested_at
       // DESC, packages.ts and search.ts) kept pointing at B, showing a body and
       // findings the repository no longer has. Moving A's ingested_at to now
-      // makes it latest again with no new column; ingested_at is read only as
-      // that ordering, never rendered. Guarded by "not already latest", so the
+      // makes it latest again with no new column. ingested_at is that ordering;
+      // the detail page's Versions table prints it as "Recorded" and says a
+      // returned content moves to the top. Guarded by "not already latest", so the
       // ordinary unchanged artifact costs this one indexed no-op UPDATE.
       let reverted = false;
       if (inserted.length === 0) {

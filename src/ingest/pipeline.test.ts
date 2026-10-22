@@ -1166,7 +1166,7 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     });
   });
 
-  describe('the phase gate: all six detectors over all four corpora (DET-05 / DET-09 / DET-10)', () => {
+  describe('the phase gate: all seven detectors over all four corpora (DET-05 / DET-09 / DET-10)', () => {
     const CORPORA: { slug: string; fullName: string; nodeId: string; dir: string }[] = [
       { slug: 'anthropics-skills', fullName: FULL_NAME, nodeId: NODE_ID, dir: DIR },
       {
@@ -1192,11 +1192,21 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     // The per-type counts the four trees hold, matching CONTEXT.md's own
     // Measurement 1 table exactly. catalog never produces a package row (it
     // routes to repo_seed instead), so it is absent from every entry here.
+    // agent (Phase 5, 2026-10-21) adds rows and changes no other count; at the
+    // old 400-file cap wshobson-agents' 588 wanted paths would have truncated
+    // every type in it, which `truncated: false` below now guards.
     const EXPECTED: Record<string, Record<string, number>> = {
       'anthropics-skills': { skill: 18 },
-      'addyosmani-agent-skills': { skill: 24, plugin: 1, command: 8, hook: 1 },
+      'addyosmani-agent-skills': { skill: 24, plugin: 1, command: 8, hook: 1, agent: 4 },
       'baoyu-skills': { skill: 22 },
-      'wshobson-agents': { skill: 180, plugin: 91, mcp_server: 1, command: 109, hook: 2 },
+      'wshobson-agents': {
+        skill: 180,
+        plugin: 91,
+        mcp_server: 1,
+        command: 109,
+        hook: 2,
+        agent: 204,
+      },
     };
 
     /**

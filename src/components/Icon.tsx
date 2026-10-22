@@ -209,7 +209,7 @@ export function DockIcon(props: IconProps) {
 }
 
 /*
- * The six artifact types, one glyph each.
+ * The seven artifact types, one glyph each.
  *
  * A hue alone was carrying type identity in the badge, and hue is the one
  * channel a reader may not have: the six badge colours are distinguishable to
@@ -298,6 +298,19 @@ export function HookIcon(props: IconProps) {
   return (
     <Svg {...props}>
       <path d="M13 2 4.5 13H11l-1 9 8.5-11H12Z" />
+    </Svg>
+  );
+}
+
+/** A Subagent: a second figure beside the first — a separate assistant the main
+ *  one hands work to. A person shape, not a robot: nothing here says what it does. */
+export function AgentIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0 1 12 0" />
+      <circle cx="17" cy="9" r="2" />
+      <path d="M16 14a4 4 0 0 1 5 4" />
     </Svg>
   );
 }

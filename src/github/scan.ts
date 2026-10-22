@@ -20,8 +20,17 @@ export const CAPS = {
    * abuse-throttle exposure: 400 files at concurrency 2 inside wallClockMs
    * allows 600 ms per file, comfortably above a measured raw read. No core
    * request is added by this change.
+   *
+   * 400 -> 600 with the subagent detector (Phase 5, 2026-10-21). Measured on
+   * the same corpus: wshobson-agents adds 204 agents/*.md, 384 -> 588 wanted.
+   * At 400 the round robin would have cut every type in that repository,
+   * skills included, to make room — a new type costing an old one coverage.
+   * 600 at concurrency 2 inside wallClockMs is 400 ms per file, still above
+   * the ~150 ms raw read the original budget assumed (AGD-01 RESEARCH A3, not
+   * benchmarked at volume). A repository over it is still read partially and
+   * says so (artifactsTruncated). Still no core request.
    */
-  maxFiles: 400,
+  maxFiles: 600,
   maxFileBytes: 512 * 1024,
   maxTreeEntries: 100_000,
   maxDepth: 10,

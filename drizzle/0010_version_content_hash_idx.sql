@@ -1,0 +1,19 @@
+-- Additive: one btree index, no data change, no column change.
+--
+-- NOT_LISTED_BECAUSE's duplicate test (src/db/queries/packages.ts) looks up
+-- package_version by content_hash for every candidate row of every listing,
+-- search and count. With no index on that column it is a sequential scan per
+-- row. Measured 2026-10-21 on a local PostgreSQL 17 with synthetic data, the
+-- listing count query: 1k packages / 2k versions 111 ms -> 6.3 ms; 10k / 20k
+-- 11,102 ms -> 51 ms. The ponytail note that deferred it named 100 ms as the
+-- trigger; 1k rows already crosses it.
+--
+-- Not CONCURRENTLY: scripts/migrate.mjs runs each migration in a transaction,
+-- where CONCURRENTLY is refused. A plain CREATE INDEX blocks writes to
+-- package_version (not reads) while it builds — milliseconds at the deployed
+-- size; run it outside a sync window all the same (runbook).
+--
+-- Rollback (code reading the table does not depend on it):
+--   DROP INDEX "agentdock"."package_version_content_hash_idx";
+--   DELETE FROM "agentdock"."__drizzle_migrations" WHERE created_at = <0010's "when" in meta/_journal.json>;
+CREATE INDEX "package_version_content_hash_idx" ON "agentdock"."package_version" USING btree ("content_hash");

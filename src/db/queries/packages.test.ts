@@ -578,4 +578,102 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       ]);
     });
   });
+  describe('related artifacts and version history (Phase 5)', () => {
+    async function setParent(id: number, parentPath: string) {
+      await sql`UPDATE package SET parent_path = ${parentPath} WHERE id = ${id}`;
+    }
+
+    async function detailOf(fullName: string, segments: string[]) {
+      const d = await packages.getPackageDetail(
+        fullName.split('/')[0],
+        fullName.split('/')[1],
+        segments,
+      );
+      if (!d) throw new Error(`no detail for ${segments.join('/')}`);
+      return d;
+    }
+
+    it('links a manifest plugin and the components under its root, both ways', async () => {
+      const r = await repo('rel');
+      await artifact(r, 'plugins/p/.claude-plugin/plugin.json', [{ hash: 'rel-p' }], {
+        type: 'plugin',
+        meta: '{"detectionConfidence":"manifest"}',
+      });
+      const a = await artifact(r, 'plugins/p/agents/x.md', [{ hash: 'rel-a' }], { type: 'agent' });
+      const s = await artifact(r, 'plugins/p/skills/s/SKILL.md', [{ hash: 'rel-s' }]);
+      const other = await artifact(r, 'other/agents/y.md', [{ hash: 'rel-o' }], { type: 'agent' });
+      await setParent(a, 'plugins/p');
+      await setParent(s, 'plugins/p');
+      await setParent(other, 'other');
+
+      const fullName = `${PREFIX}-rel`;
+      const plugin = await detailOf(fullName, ['plugins', 'p', '.claude-plugin', 'plugin.json']);
+      const fromPlugin = await packages.getRelatedPackages(plugin);
+      expect(fromPlugin.container).toBeNull();
+      expect(fromPlugin.components.map((c) => c.sourcePath)).toEqual([
+        'plugins/p/agents/x.md',
+        'plugins/p/skills/s/SKILL.md',
+      ]);
+
+      const agentDetail = await detailOf(fullName, ['plugins', 'p', 'agents', 'x.md']);
+      const fromAgent = await packages.getRelatedPackages(agentDetail);
+      expect(fromAgent.container?.sourcePath).toBe('plugins/p/.claude-plugin/plugin.json');
+      expect(fromAgent.components).toEqual([]);
+
+      // A parent_path with no plugin row behind it links to nothing — never a
+      // relation the ingest did not record.
+      const orphan = await detailOf(fullName, ['other', 'agents', 'y.md']);
+      expect((await packages.getRelatedPackages(orphan)).container).toBeNull();
+    });
+
+    it('resolves a shape-only plugin by its directory, and a root plugin to no component list', async () => {
+      const r = await repo('shape');
+      await artifact(r, 'plugins/q', [{ hash: 'shape-q' }], {
+        type: 'plugin',
+        meta: '{"detectionConfidence":"shape-only"}',
+      });
+      const c = await artifact(r, 'plugins/q/commands/go.md', [{ hash: 'shape-c' }], {
+        type: 'command',
+      });
+      await setParent(c, 'plugins/q');
+      await artifact(r, '.claude-plugin/plugin.json', [{ hash: 'shape-root' }], {
+        type: 'plugin',
+        meta: '{"detectionConfidence":"manifest"}',
+      });
+
+      const fullName = `${PREFIX}-shape`;
+      const shape = await detailOf(fullName, ['plugins', 'q']);
+      expect((await packages.getRelatedPackages(shape)).components.map((x) => x.name)).toEqual([
+        'plugins/q/commands/go.md',
+      ]);
+      const cmd = await detailOf(fullName, ['plugins', 'q', 'commands', 'go.md']);
+      expect((await packages.getRelatedPackages(cmd)).container?.sourcePath).toBe('plugins/q');
+      const root = await detailOf(fullName, ['.claude-plugin', 'plugin.json']);
+      expect((await packages.getRelatedPackages(root)).components).toEqual([]);
+    });
+
+    it('lists every stored content latest first, and counts what the limit left out', async () => {
+      const r = await repo('hist');
+      const n = packages.VERSION_HISTORY_LIMIT + 2;
+      const id = await artifact(
+        r,
+        'h/SKILL.md',
+        Array.from({ length: n }, (_, i) => ({ hash: `hist-${i}` })),
+      );
+      const { versions, total } = await packages.getVersionHistory(id);
+      expect(total).toBe(n);
+      expect(versions).toHaveLength(packages.VERSION_HISTORY_LIMIT);
+      const times = versions.map((v) => v.ingestedAt.getTime());
+      expect([...times].sort((a, b) => b - a)).toEqual(times);
+
+      const short = await artifact(r, 'k/SKILL.md', [{ hash: 'hist-k' }]);
+      expect(await packages.getVersionHistory(short)).toMatchObject({ total: 1 });
+    });
+
+    it('pluginRoot inverts what plugin.ts set as containerRoot', () => {
+      expect(packages.pluginRoot('a/b/.claude-plugin/plugin.json', {})).toBe('a/b');
+      expect(packages.pluginRoot('.claude-plugin/plugin.json', {})).toBe('');
+      expect(packages.pluginRoot('a/b', { detectionConfidence: 'shape-only' })).toBe('a/b');
+    });
+  });
 });

@@ -253,6 +253,11 @@ export const packageVersion = agentdock.table(
     // constraint, not a code path that can race.
     unique('package_version_content_key').on(t.packageId, t.contentHash),
     index('package_version_recent_idx').on(t.packageId, t.ingestedAt.desc()),
+    // The lookup key of NOT_LISTED_BECAUSE's duplicate test (packages.ts),
+    // which the unique key above cannot serve: it leads with package_id.
+    // Measured 2026-10-21 on a local PostgreSQL 17, the listing count over
+    // synthetic data: 1k packages 111 ms -> 6.3 ms, 10k 11.1 s -> 51 ms.
+    index('package_version_content_hash_idx').on(t.contentHash),
   ],
 );
 

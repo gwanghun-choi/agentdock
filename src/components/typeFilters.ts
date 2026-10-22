@@ -32,6 +32,7 @@ export const TYPE_FILTER_LABELS = {
   mcp_server: 'MCP Servers',
   command: 'Slash Commands',
   hook: 'Hook Configurations',
+  agent: 'Subagents',
 } as const;
 
 export const TYPE_FILTER_IDS = Object.keys(

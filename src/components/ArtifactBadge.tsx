@@ -1,5 +1,6 @@
 import type { ReactElement, SVGProps } from 'react';
 import {
+  AgentIcon,
   CatalogIcon,
   CommandIcon,
   HookIcon,
@@ -19,7 +20,7 @@ import {
  *
  * The colour is identity, not judgement. A hue here groups a scanning eye by
  * kind; it never means an artifact is safe, trusted or risky, and there is no
- * ordering among the six. That distinction is the same one Phase 4's vocabulary
+ * ordering among the seven. That distinction is the same one Phase 4's vocabulary
  * invariant draws, and check-boundaries.mjs rule six enforces on the copy.
  *
  * An unknown id renders as itself rather than disappearing: a type added to the
@@ -32,13 +33,14 @@ export const ARTIFACT_TYPE_LABELS: Record<string, string> = {
   mcp_server: 'MCP Server',
   command: 'Slash Command',
   hook: 'Hook Configuration',
+  agent: 'Subagent',
 };
 
 /**
  * The third channel.
  *
  * Hue and word carried type identity between them, and hue is the channel a
- * reader may not have — several of the six badge pairs are not distinguishable
+ * reader may not have — several of the seven badge pairs are not distinguishable
  * to a deuteranope, which is why the word was always spelled out. The glyph adds
  * shape, so any one of the three is enough on its own and none of them is doing
  * the work alone.
@@ -55,6 +57,7 @@ const ARTIFACT_TYPE_ICONS: Record<string, (props: SVGProps<SVGSVGElement>) => Re
   mcp_server: ServerIcon,
   command: CommandIcon,
   hook: HookIcon,
+  agent: AgentIcon,
 };
 
 export function artifactTypeLabel(type: string): string {
@@ -62,7 +65,7 @@ export function artifactTypeLabel(type: string): string {
 }
 
 export function ArtifactBadge({ type }: { type: string }) {
-  // Only the six known ids get a hue class; anything else falls back to the
+  // Only the seven known ids get a hue class; anything else falls back to the
   // neutral base badge styling.
   const known = type in ARTIFACT_TYPE_LABELS;
   const Glyph = ARTIFACT_TYPE_ICONS[type];

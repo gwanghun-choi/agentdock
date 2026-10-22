@@ -64,6 +64,20 @@
       "when": 1792545594506,
       "tag": "0008_overjoyed_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792577697648,
+      "tag": "0009_subagent_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792578824084,
+      "tag": "0010_version_content_hash_idx",
+      "breakpoints": true
     }
   ]
 }

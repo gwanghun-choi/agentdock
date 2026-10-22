@@ -5,12 +5,19 @@ import { ANALYZE_CAPS } from '@/analyze/types';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
-import { permalink, permalinkAtLine } from '@/components/hrefs';
+import { detailHref, permalink, permalinkAtLine } from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SkillBody } from '@/components/SkillBody';
+import { USAGE_GUIDES } from '@/components/usageGuide';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
-import { getPackageDetail } from '@/db/queries/packages';
+import {
+  getPackageDetail,
+  getRelatedPackages,
+  getVersionHistory,
+  VERSION_HISTORY_LIMIT,
+} from '@/db/queries/packages';
+import { AGENT_SPEC_KEYS } from '@/detect/agent';
 import { SPEC_KEYS } from '@/detect/skill';
 
 // Read at request time. next build runs in CI, where there is no database.
@@ -82,7 +89,12 @@ export default async function PackagePage({ params }: Props) {
   const detail = await getPackageDetail(owner, repo, path);
   if (!detail) notFound();
 
-  const findings = await getCapabilityFindings(detail.packageVersionId);
+  // Independent reads, one round trip of latency instead of three.
+  const [findings, related, history] = await Promise.all([
+    getCapabilityFindings(detail.packageVersionId),
+    getRelatedPackages(detail),
+    getVersionHistory(detail.id),
+  ]);
   // The general list and the Hidden Content panel below never show the same
   // row twice — see splitHiddenContent's own doc.
   const { hidden: hiddenFindings, observed: observedFindings } = splitHiddenContent(findings);
@@ -91,20 +103,19 @@ export default async function PackagePage({ params }: Props) {
   const keys = Array.isArray(detail.meta.frontmatterKeys)
     ? (detail.meta.frontmatterKeys as string[])
     : [];
-  const extras = keys.filter((k) => !SPEC_KEYS.includes(k as (typeof SPEC_KEYS)[number]));
-
-  // Text only. Nothing here is executed, and no line pipes a download into a shell.
-  const install = [
-    { runtime: 'Claude Code (project)', text: `.claude/skills/${detail.slug}/` },
-    { runtime: 'Claude Code (personal)', text: `~/.claude/skills/${detail.slug}/` },
-  ];
+  // A subagent's documented field set is not a skill's; judging one by the
+  // other would call `tools` and `model` unspecified.
+  const specKeys: readonly string[] = detail.type === 'agent' ? AGENT_SPEC_KEYS : SPEC_KEYS;
+  const extras = keys.filter((k) => !specKeys.includes(k));
+  const guide = USAGE_GUIDES[detail.type];
 
   return (
     <>
-      {/* One shell for all six types: badge, name, repository, description, then
+      {/* One shell for all seven types: badge, name, repository, description, then
           the two links a reader reaches for. Nothing here is skill-specific —
-          the only type-conditional block on this page is Install, further down,
-          and it stays conditional. */}
+          the type-conditional parts are further down: the usage guide, which
+          reads its type's entry from usageGuide.ts, and the frontmatter row's
+          field set. */}
       <div className="detail-head">
         <ArtifactBadge type={detail.type} />
         <h1>{detail.name}</h1>
@@ -280,24 +291,106 @@ export default async function PackagePage({ params }: Props) {
         ))}
       </ul>
 
-      {detail.type === 'skill' ? (
+      {related.container || related.components.length > 0 ? (
         <>
-          <h2>Install</h2>
+          <h2>Related artifacts</h2>
           <p className="muted">
-            Copy the skill directory from the source repository to one of these paths. AgentDock
-            does not install anything for you.
+            Linked by directory: an artifact whose path sits under a plugin&apos;s root. A
+            plugin.json that points a component somewhere else is not followed, so such a component
+            is not listed here.
+          </p>
+          <ul className="notes">
+            {related.container ? (
+              <li>
+                Inside the plugin{' '}
+                <Link href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}>
+                  {related.container.name}
+                </Link>
+              </li>
+            ) : null}
+            {related.components.map((c) => (
+              <li key={`${c.type}:${c.sourcePath}`}>
+                <ArtifactBadge type={c.type} />{' '}
+                <Link href={detailHref(detail.fullName, c.sourcePath, c.type)}>{c.name}</Link>{' '}
+                <span className="muted path">{c.sourcePath}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {guide ? (
+        <>
+          <h2>Using this kind of artifact</h2>
+          <p className="muted">
+            About the type, from its documentation — not about this file. AgentDock does not install
+            or run anything; read the file at the linked commit first.
           </p>
           <dl className="facts install">
-            {install.map((i) => (
-              <div key={i.runtime} style={{ display: 'contents' }}>
-                <dt>{i.runtime}</dt>
+            <dt>What it is</dt>
+            <dd>{guide.what}</dd>
+            <dt>Format documented by</dt>
+            <dd>
+              {guide.documentedFor} —{' '}
+              <a href={guide.docs} rel="noopener noreferrer" target="_blank">
+                <ExternalIcon /> documentation
+              </a>
+            </dd>
+            {guide.places?.map((place) => (
+              <div key={place.scope} style={{ display: 'contents' }}>
+                <dt>{place.scope} copy</dt>
                 <dd>
-                  <code>{i.text}</code>
+                  <code>{place.path(detail.slug)}</code>
                 </dd>
               </div>
             ))}
+            <dt>Before you copy it</dt>
+            <dd>{guide.note}</dd>
           </dl>
         </>
+      ) : null}
+
+      <h2>Versions</h2>
+      <p className="muted">
+        One row per distinct content AgentDock stored for this file, latest first. Content that
+        returns to an earlier version moves that row back to the top, so this is what the file has
+        been, not every commit that touched it.
+      </p>
+      <table className="files">
+        <thead>
+          <tr>
+            <th>Commit</th>
+            <th>Recorded</th>
+            <th>Declared version</th>
+            <th>Read</th>
+            <th>Analyzed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.versions.map((v) => (
+            <tr key={v.id}>
+              <td className="path">
+                <a
+                  href={permalink(detail.fullName, v.commitSha, detail.sourcePath)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {v.commitSha.slice(0, 7)}
+                </a>
+                {v.id === detail.packageVersionId ? <span className="muted"> — shown</span> : null}
+              </td>
+              <td>{utc(v.ingestedAt)}</td>
+              <td>{v.declaredVersion ?? 'not declared'}</td>
+              <td>{v.parseStatus}</td>
+              <td>{v.analyzedAt ? 'yes' : 'not analyzed'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {history.total > history.versions.length ? (
+        <p className="muted">
+          Showing the latest {VERSION_HISTORY_LIMIT} of {history.total}; the rest are not listed.
+        </p>
       ) : null}
 
       <h2>File</h2>

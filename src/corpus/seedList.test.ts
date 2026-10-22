@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -43,6 +43,20 @@ describe('the committed operator seed list', () => {
   it('names no repository twice, across seeds and link lists alike', () => {
     const names = [...FILE.seeds, ...FILE.linkLists].map((e) => e.fullName);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('never lists a repository it also records as rejected', () => {
+    // The loader drops `rejected`, so a name added to seeds after it was
+    // rejected (404, no markers) would be fetched again in silence — two core
+    // requests a run for a decision already written down beside it.
+    const raw = JSON.parse(readFileSync(SEED_LIST_PATH, 'utf8')) as {
+      rejected?: { fullName: string }[];
+    };
+    const rejected = new Set((raw.rejected ?? []).map((r) => r.fullName.toLowerCase()));
+    expect(rejected.size).toBeGreaterThan(0);
+    for (const entry of [...FILE.seeds, ...FILE.linkLists]) {
+      expect(rejected.has(entry.fullName.toLowerCase()), entry.fullName).toBe(false);
+    }
   });
 
   it('gives every link list a path to read, so nothing has to be guessed', () => {

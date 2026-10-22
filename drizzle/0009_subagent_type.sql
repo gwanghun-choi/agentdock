@@ -1,0 +1,12 @@
+-- Data only: one artifact_type row for the subagent detector (src/detect/agent.ts).
+-- No DDL, so the snapshot is 0008's unchanged. ON CONFLICT DO NOTHING, so a
+-- schema scripts/migrate.mjs's own seed already reached is a no-op here.
+--
+-- Must land before code that writes package.type = 'agent': the
+-- package_type_artifact_type_id_fk rejects the row otherwise, and the whole
+-- repository's persistScan transaction rolls back with it.
+--
+-- Rollback (only once no package row has type 'agent'):
+--   DELETE FROM "agentdock"."artifact_type" WHERE id = 'agent';
+--   DELETE FROM "agentdock"."__drizzle_migrations" WHERE created_at = <0009's "when" in meta/_journal.json>;
+INSERT INTO "agentdock"."artifact_type" ("id", "label") VALUES ('agent', 'Subagent') ON CONFLICT DO NOTHING;

@@ -242,6 +242,18 @@ describe.skipIf(!DB_URL)('analyzePackageVersion / unanalyzedVersionIds', () => {
     const bounded = await unanalyzedVersionIds(0);
     expect(bounded).toEqual([]);
   });
+
+  it('hands out the latest version of a package before an older one', async () => {
+    const first = await persistScan(scan({ packages: [pkg({ contentHash: 'hash-old' })] }));
+    const old = await versionIdOf(first.packageIds[0]);
+    await persistScan(scan({ packages: [pkg({ contentHash: 'hash-new' })] }));
+    const latest = await versionIdOf(first.packageIds[0]);
+    expect(latest).toBeGreaterThan(old);
+    await sql`UPDATE package_version SET analyzed_at = NULL WHERE id IN (${old}, ${latest})`;
+
+    const ids = (await unanalyzedVersionIds(1000)).filter((id) => id === old || id === latest);
+    expect(ids).toEqual([latest, old]);
+  });
 });
 
 /**

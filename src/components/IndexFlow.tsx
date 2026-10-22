@@ -45,7 +45,8 @@ import { CommitIcon, DockIcon, FileIcon, RepoIcon } from '@/components/Icon';
  * The filenames are the ones the detectors actually match, not a plausible set:
  * src/detect/skill.ts matches SKILL.md, plugin.ts .claude-plugin/plugin.json,
  * catalog.ts .claude-plugin/marketplace.json, mcp.ts .mcp.json and server.json,
- * hook.ts .claude/settings.json, and command.ts commands/*.md. They are shown
+ * hook.ts .claude/settings.json, command.ts commands/*.md and agent.ts
+ * agents/*.md. They are shown
  * as leaf names because that is what a reader recognises; the full paths are on
  * every artifact's own row.
  */
@@ -69,6 +70,7 @@ export function IndexFlow({ total }: { total: number }) {
           <li>.mcp.json</li>
           <li>server.json</li>
           <li>commands/*.md</li>
+          <li>agents/*.md</li>
           <li>settings.json</li>
         </ul>
       </li>

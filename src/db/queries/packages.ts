@@ -120,10 +120,12 @@ function latestVersion(column: 'parse_status' | 'content_hash', packageId = pack
  * takes **25.5 ms**. No migration, which is also what 05-CONTEXT C2 expects of
  * this phase.
  *
- * ponytail: `CREATE INDEX ON package_version (content_hash)` takes this from
- * 25.5 ms to 7.1 ms, both measured at 971 packages / 971 versions. Not built —
- * the gate is 100 ms and the rewrite clears it by a factor of four without
- * spending a migration. Build it when a measured listing crosses 100 ms again.
+ * `CREATE INDEX ON package_version (content_hash)` took this from 25.5 ms to
+ * 7.1 ms at 971 packages / 971 versions, and was deferred until a listing
+ * crossed 100 ms. It did, on 2026-10-21's synthetic scale data: the listing
+ * count is 111 ms at 1k packages / 2k versions and 11.1 s at 10k / 20k — a
+ * sequential scan of package_version per candidate row. With the index
+ * (drizzle/0010): 6.3 ms and 51 ms.
  */
 export const NOT_LISTED_BECAUSE = sql<NotListedReason | null>`case
   when ${repository.isFork} then 'fork'
@@ -330,6 +332,9 @@ export type PackageDetail = {
   analyzedAt: Date | null;
   /** The file inventory, from src/analyze/files.ts. Empty until 04-01's Task 3 wires it. */
   files: FileEntry[];
+  repositoryId: number;
+  /** The containing plugin's root directory, from the nesting pass. Null when none. */
+  parentPath: string | null;
 };
 
 export const getPackageDetail = cache(
@@ -354,6 +359,8 @@ export const getPackageDetail = cache(
         scannedAt: repository.scannedAt,
         treeTruncated: repository.treeTruncated,
         files: packageTable.files,
+        repositoryId: packageTable.repositoryId,
+        parentPath: packageTable.parentPath,
         packageVersionId: packageVersion.id,
         commitSha: packageVersion.commitSha,
         declaredVersion: packageVersion.declaredVersion,
@@ -384,5 +391,139 @@ export const getPackageDetail = cache(
       )
       .limit(1);
     return row ?? null;
+  },
+);
+
+const MANIFEST_SUFFIX = '/.claude-plugin/plugin.json';
+
+/**
+ * The directory a plugin row roots, recovered from its own row: a declared
+ * plugin's source_path is its manifest, a shape-only one's is the directory.
+ * The inverse of what plugin.ts set as containerRoot. '' for a plugin that IS
+ * the repository, which the nesting pass deliberately links nothing to.
+ */
+export function pluginRoot(sourcePath: string, meta: Record<string, unknown>): string {
+  if (meta.detectionConfidence === 'shape-only') return sourcePath;
+  if (sourcePath === '.claude-plugin/plugin.json') return '';
+  return sourcePath.endsWith(MANIFEST_SUFFIX)
+    ? sourcePath.slice(0, -MANIFEST_SUFFIX.length)
+    : sourcePath;
+}
+
+export type RelatedPackage = {
+  name: string;
+  type: string;
+  sourcePath: string;
+};
+
+/**
+ * The relations the ingest already recorded, and nothing inferred past them.
+ *
+ * package.parent_path is written by the nesting pass (src/detect/nesting.ts):
+ * an artifact whose path sits under a plugin's root directory. That is a
+ * directory fact, not a manifest declaration — a plugin.json that points its
+ * `agents` or `skills` elsewhere is recorded as observed and never followed
+ * (plugin.ts), so such a component is not linked here and the page says so.
+ *
+ * One query each way, both on the repository's own rows; bounded by the scan
+ * cap because a repository cannot hold more rows than one read produced.
+ */
+export const getRelatedPackages = cache(
+  async (
+    detail: Pick<
+      PackageDetail,
+      'id' | 'repositoryId' | 'type' | 'sourcePath' | 'meta' | 'parentPath'
+    >,
+  ): Promise<{ container: RelatedPackage | null; components: RelatedPackage[] }> => {
+    const columns = {
+      name: packageTable.name,
+      type: packageTable.type,
+      sourcePath: packageTable.sourcePath,
+    };
+    const live = and(
+      eq(packageTable.repositoryId, detail.repositoryId),
+      isNull(packageTable.delistedAt),
+    );
+
+    let container: RelatedPackage | null = null;
+    if (detail.parentPath) {
+      const [row] = await db
+        .select(columns)
+        .from(packageTable)
+        .where(
+          and(
+            live,
+            eq(packageTable.type, 'plugin'),
+            inArray(packageTable.sourcePath, [
+              detail.parentPath,
+              `${detail.parentPath}${MANIFEST_SUFFIX}`,
+            ]),
+          ),
+        )
+        .limit(1);
+      container = row ?? null;
+    }
+
+    let components: RelatedPackage[] = [];
+    const root = detail.type === 'plugin' ? pluginRoot(detail.sourcePath, detail.meta) : '';
+    if (root !== '') {
+      components = await db
+        .select(columns)
+        .from(packageTable)
+        .where(and(live, eq(packageTable.parentPath, root)))
+        .orderBy(packageTable.type, packageTable.name, packageTable.sourcePath)
+        .limit(CAPS.maxFiles);
+    }
+
+    return { container, components };
+  },
+);
+
+export type VersionHistoryItem = {
+  id: number;
+  commitSha: string;
+  ingestedAt: Date;
+  declaredVersion: string | null;
+  parseStatus: string;
+  analyzedAt: Date | null;
+};
+
+/** The history list's length. A package with more says how many it left out. */
+export const VERSION_HISTORY_LIMIT = 20;
+
+/**
+ * Every distinct content AgentDock stored for one artifact, latest first.
+ *
+ * One row per content hash, not per commit: identical content re-read is ON
+ * CONFLICT DO NOTHING (package_version_content_key), and content that returns
+ * to an earlier hash moves that row back to the top (persist.ts) — so this is
+ * "what the file has been", never "every commit that touched it". Uses
+ * package_version_recent_idx (package_id, ingested_at desc).
+ */
+export const getVersionHistory = cache(
+  async (packageId: number): Promise<{ versions: VersionHistoryItem[]; total: number }> => {
+    const versions = await db
+      .select({
+        id: packageVersion.id,
+        commitSha: packageVersion.commitSha,
+        ingestedAt: packageVersion.ingestedAt,
+        declaredVersion: packageVersion.declaredVersion,
+        parseStatus: packageVersion.parseStatus,
+        analyzedAt: packageVersion.analyzedAt,
+      })
+      .from(packageVersion)
+      .where(eq(packageVersion.packageId, packageId))
+      .orderBy(desc(packageVersion.ingestedAt))
+      .limit(VERSION_HISTORY_LIMIT);
+    const total =
+      versions.length < VERSION_HISTORY_LIMIT
+        ? versions.length
+        : ((
+            await db
+              .select({ n: sql<number>`count(*)::int` })
+              .from(packageVersion)
+              .where(eq(packageVersion.packageId, packageId))
+          )[0]?.n ?? versions.length);
+    return { versions, total };
   },
 );
