@@ -964,6 +964,74 @@ describe.skipIf(!DB_URL)('the search query', () => {
    * time and this one needs a database round trip, so it is resolved once in
    * this block's own `beforeAll` instead (Reference C, 06-04 plan).
    */
+  // Phase 8: production had 35 active agent rows and the Subagents filter
+  // showed 34. The listing hides an unparsed row and the losing copy of a
+  // duplicate on purpose (COR-07); a delisted row is in neither number. This
+  // pins that the gap is exactly those rows and that the filter's count, its
+  // pages and the home predicate agree at each page boundary. Scoped by a
+  // repository-name query so parallel suites' rows cannot move the numbers.
+  describe('agent counts: stored, listed and paged (Phase 8)', () => {
+    it.each([24, 25, 26])(
+      'with %i listed agents, rows across pages equal the count, and the gap to the stored rows is the suppressed ones',
+      async (n) => {
+        const a = await repo('agentcount-a', { stars: 100 });
+        const b = await repo('agentcount-b', { stars: 1 });
+        for (let i = 0; i < n; i += 1) {
+          await artifact(a, `agents/a${i}.md`, [{ hash: `agentcount-h${i}` }], { type: 'agent' });
+        }
+        // The losing copy of agents/a0.md (fewer stars), an unparsed agent, and
+        // a delisted one.
+        await artifact(b, 'agents/a0.md', [{ hash: 'agentcount-h0' }], { type: 'agent' });
+        await artifact(a, 'agents/broken.md', [{ hash: 'agentcount-broken', status: 'failed' }], {
+          type: 'agent',
+        });
+        const gone = await artifact(a, 'agents/gone.md', [{ hash: 'agentcount-gone' }], {
+          type: 'agent',
+        });
+        await sql`UPDATE package SET delisted_at = now() WHERE id = ${gone}`;
+
+        const [stored] = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM package p JOIN repository r ON r.id = p.repository_id
+        WHERE r.full_name LIKE ${`${PREFIX}-agentcount%`} AND p.type = 'agent' AND p.delisted_at IS NULL`;
+        expect(stored.n).toBe(n + 2);
+
+        const q = 'search-spec-agentcount';
+        const filters = { types: ['agent'], capabilities: [] };
+        const total = await search.countSearchResults({ q, filters });
+        expect(total).toBe(n);
+
+        const pageSize = search.SEARCH_CAPS.pageSize;
+        const seen: number[] = [];
+        for (let offset = 0; offset < total + pageSize; offset += pageSize) {
+          const rows = await search.searchPackages({ q, filters, offset });
+          seen.push(...rows.map((r) => r.id));
+        }
+        expect(seen).toHaveLength(n);
+        expect(new Set(seen).size).toBe(n);
+
+        // The two stored-but-unlisted rows carry their reason on the repository page.
+        const all = [
+          ...(await packages.listPackages({
+            fullName: `${PREFIX}-agentcount-a`,
+            limit: 100,
+            listingOnly: false,
+          })),
+          ...(await packages.listPackages({
+            fullName: `${PREFIX}-agentcount-b`,
+            limit: 100,
+            listingOnly: false,
+          })),
+        ];
+        expect(
+          all
+            .filter((r) => r.notListedBecause !== null)
+            .map((r) => r.notListedBecause)
+            .sort(),
+        ).toEqual(['duplicate', 'unparsed']);
+      },
+    );
+  });
+
   describe('D-04 trigram fallback (DIS-04)', () => {
     let pgTrgmPresent = false;
 

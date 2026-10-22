@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { drainStop, syncBudget } from './budget';
+import { drainStop, syncBudget, syncStatus } from './budget';
 import { CORPUS_CAPS } from './caps';
 
 describe('syncBudget', () => {
@@ -51,5 +51,25 @@ describe('drainStop', () => {
   it('the deadline leaves the worst single repository inside the Actions timeout', () => {
     // sync.yml timeout-minutes: 60; one scan can take 120 s plus two 10 s API timeouts.
     expect(CORPUS_CAPS.drainDeadlineMs + 140_000).toBeLessThan(60 * 60_000);
+  });
+});
+
+describe('syncStatus', () => {
+  it('names what the run reached, and only a failed stage is FAILED', () => {
+    const base = { failed: false, drainStoppedBy: null, due: 0 } as const;
+    expect(syncStatus(base)).toBe('COMPLETED');
+    // Sync #8, 2026-10-22: deadline, 106 still queued, exit 0.
+    expect(syncStatus({ ...base, drainStoppedBy: 'deadline', due: 106 })).toBe('PARTIAL_DEADLINE');
+    expect(syncStatus({ ...base, drainStoppedBy: 'core_budget', due: 4 })).toBe(
+      'PARTIAL_CORE_BUDGET',
+    );
+    expect(syncStatus({ ...base, drainStoppedBy: 'rate_limited', due: 4 })).toBe(
+      'PARTIAL_RATE_LIMITED',
+    );
+    expect(syncStatus({ ...base, due: 12 })).toBe('PARTIAL_CAP');
+    expect(syncStatus({ ...base, due: null })).toBe('NO_DRAIN');
+    expect(syncStatus({ ...base, failed: true, drainStoppedBy: 'deadline', due: 9 })).toBe(
+      'FAILED',
+    );
   });
 });

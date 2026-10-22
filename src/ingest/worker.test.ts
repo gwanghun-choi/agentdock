@@ -327,3 +327,109 @@ describe.skipIf(!DB_URL)('what the loop does with each outcome', () => {
 
 // The preemptive gate's assertions live beside the rest of the policy, in
 // src/ingest/retry.test.ts, so they run where there is no database.
+
+// The drain's stop rules, with the queue and the ingest both faked: what is
+// under test is the order of "may I claim" and "claim", not the database.
+describe.skipIf(!DB_URL)('drainQueue', () => {
+  type Run = import('./worker').JobRun;
+  const ok: Run = { outcome: 'ok', removed: 0, retryScheduled: false };
+
+  function fakeQueue(n: number) {
+    const ids = Array.from({ length: n }, (_, i) => i + 1);
+    const claimed: number[] = [];
+    return {
+      claimed,
+      claim: async () => {
+        const id = ids.shift();
+        if (id === undefined) return null;
+        claimed.push(id);
+        return { id, target: `test-owner/drain-${id}`, attempts: 1, startedAt: new Date() };
+      },
+      left: () => ids.length,
+    };
+  }
+
+  it('stops before a claim once the deadline is reached, and finishes the job in hand', async () => {
+    const { drainQueue } = await import('./worker');
+    const q = fakeQueue(200);
+    let clock = 0;
+    const finished: number[] = [];
+    const result = await drainQueue({
+      limit: 200,
+      // Each job "takes" one tick; the deadline falls during job 107.
+      stop: () => (clock >= 107 ? 'deadline' : null),
+      claim: q.claim,
+      run: async (job) => {
+        clock += 1;
+        finished.push(job.id);
+        return ok;
+      },
+    });
+    expect(result.stoppedBy).toBe('deadline');
+    expect(result.runs).toHaveLength(107);
+    // Every claimed job ran to the end — none is left for the reaper.
+    expect(finished).toEqual(q.claimed);
+    expect(q.left()).toBe(93);
+
+    // The next run picks up exactly the remainder, none of it twice.
+    const next = await drainQueue({
+      limit: 200,
+      stop: () => null,
+      claim: q.claim,
+      run: async () => ok,
+    });
+    expect(next.stoppedBy).toBeNull();
+    expect(next.runs).toHaveLength(93);
+    expect(new Set(q.claimed).size).toBe(200);
+  });
+
+  it('claims nothing when the stop already holds', async () => {
+    const { drainQueue } = await import('./worker');
+    const q = fakeQueue(3);
+    const result = await drainQueue({
+      limit: 3,
+      stop: () => 'core_budget',
+      claim: q.claim,
+      run: async () => ok,
+    });
+    expect(result).toEqual({ runs: [], stoppedBy: 'core_budget' });
+    expect(q.claimed).toEqual([]);
+  });
+
+  it('stops after a rate-limited job, so the rest do not each spend a request on the wall', async () => {
+    const { drainQueue } = await import('./worker');
+    const q = fakeQueue(5);
+    const result = await drainQueue({
+      limit: 5,
+      stop: () => null,
+      claim: q.claim,
+      run: async (job) => (job.id === 2 ? { ...ok, outcome: 'rate_limited' } : ok),
+    });
+    expect(result.stoppedBy).toBe('rate_limited');
+    expect(result.runs.map((r) => r.outcome)).toEqual(['ok', 'rate_limited']);
+    expect(q.left()).toBe(3);
+  });
+
+  it('ends at its cap or an empty queue without calling either a stop, and reports each job as it ends', async () => {
+    const { drainQueue } = await import('./worker');
+    const seen: string[] = [];
+    const capped = await drainQueue({
+      limit: 2,
+      stop: () => null,
+      claim: fakeQueue(5).claim,
+      run: async () => ok,
+      onRun: (run) => seen.push(run.target),
+    });
+    expect(capped.stoppedBy).toBeNull();
+    expect(seen).toEqual(['test-owner/drain-1', 'test-owner/drain-2']);
+    expect(capped.runs.every((r) => r.durationMs >= 0)).toBe(true);
+
+    const empty = await drainQueue({
+      limit: 5,
+      stop: () => null,
+      claim: fakeQueue(0).claim,
+      run: async () => ok,
+    });
+    expect(empty).toEqual({ runs: [], stoppedBy: null });
+  });
+});

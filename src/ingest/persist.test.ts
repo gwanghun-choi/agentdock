@@ -206,6 +206,86 @@ describe.skipIf(!DB_URL)('persistScan', () => {
     expect(again.counters.unchanged).toBe(1);
   });
 
+  // The writes go out in chunks of 200 rows (Phase 8). 450 crosses two
+  // boundaries, so a row mapped back to the wrong id, or a chunk dropped,
+  // shows up as a missing finding, a wrong body or a wrong counter.
+  it('writes a scan larger than one chunk, every row keyed to its own package', async () => {
+    const many = Array.from({ length: 450 }, (_, i) =>
+      pkg({
+        sourcePath: `skills/s${i}/SKILL.md`,
+        name: `s${i}`,
+        slug: `s${i}`,
+        contentHash: `hash-${i}`,
+        body: `body-${i}`,
+        findings: [
+          {
+            detectorId: 'network',
+            detectorVersion: '1',
+            category: 'network_request',
+            signal: 'url',
+            summary: `finding-${i}`,
+            sourcePath: `skills/s${i}/SKILL.md`,
+            startLine: 1,
+            endLine: 1,
+            evidenceText: null,
+            metadata: {},
+          },
+        ],
+      }),
+    );
+    const first = await persistScan(scan({ packages: many }));
+    expect(first.counters.new).toBe(450);
+    expect(first.newVersions).toBe(450);
+    expect(new Set(first.packageIds).size).toBe(450);
+
+    const mismatched = await sql<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM package p
+      JOIN repository r ON r.id = p.repository_id
+      JOIN package_version pv ON pv.package_id = p.id
+      JOIN capability_finding cf ON cf.package_version_id = pv.id
+      WHERE r.github_node_id = ${NODE_ID}
+        AND pv.analyzed_at IS NOT NULL
+        AND pv.body = 'body-' || substring(p.name from 2)
+        AND cf.summary = 'finding-' || substring(p.name from 2)
+    `;
+    expect(mismatched[0].n).toBe(450);
+
+    // Same content again: nothing minted, nothing bumped, all unchanged.
+    const again = await persistScan(scan({ packages: many }));
+    expect(again.counters.unchanged).toBe(450);
+    expect(again.newVersions).toBe(0);
+    expect(again.packageIds).toEqual(first.packageIds);
+
+    // One package past the first chunk goes A→B→A while the rest hold still.
+    const changed = many.map((p, i) => (i === 300 ? { ...p, contentHash: 'hash-b' } : p));
+    await persistScan(scan({ packages: changed }));
+    const back = await persistScan(scan({ packages: many }));
+    expect(back.counters.updated).toBe(1);
+    expect(back.counters.unchanged).toBe(449);
+  });
+
+  // A multi-row ON CONFLICT DO UPDATE refuses to touch one row twice, so the
+  // batch keeps the last of two rows with one identity — what the per-row
+  // upserts it replaced ended up storing.
+  it('takes the last of two scanned rows with one identity instead of failing', async () => {
+    const result = await persistScan(
+      scan({
+        packages: [pkg({ name: 'first' }), pkg({ name: 'second' })],
+        seeds: [seed({ hint: { n: 1 } }), seed({ hint: { n: 2 } })],
+      }),
+    );
+    expect(new Set(result.packageIds).size).toBe(1);
+    const [row] = await sql<{ name: string }[]>`
+      SELECT p.name FROM package p JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID}
+    `;
+    expect(row.name).toBe('second');
+    const [stored] = await sql<{ hint: { n: number } }[]>`
+      SELECT hint FROM repo_seed WHERE full_name = ${SEED_NAME}
+    `;
+    expect(stored.hint.n).toBe(2);
+  });
+
   it('round-trips parent_path through both the insert and the conflict path', async () => {
     const first = await persistScan(scan({ packages: [pkg({ parentPath: 'plugins/foo' })] }));
     const [inserted] = await sql<{ parent_path: string | null }[]>`

@@ -2,6 +2,8 @@
 
 작성일 2026-10-21 · 기준 HEAD `57c7c54` (develop) · 변경은 모두 미커밋 · commit, push, 배포는 하지 않았다
 
+후속: [Phase 8 — Sync 처리량·재개 안정성·정합성](agentdock-phase8-sync-performance-and-consistency.md)
+
 세부 문서:
 
 - [Phase 4](agentdock-phase4-ingestion-and-data-quality.md)

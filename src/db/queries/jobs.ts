@@ -53,6 +53,22 @@ export async function queuedJobCount(): Promise<number> {
   return depth?.n ?? 0;
 }
 
+/**
+ * The backlog after a drain, split by whether a job could be claimed now. A
+ * retry or a rate-limit deferral is queued but not due, and counting it as
+ * work the drain left behind would call a finished run partial.
+ */
+export async function queueDepth(): Promise<{ queued: number; due: number }> {
+  const [row] = await db
+    .select({
+      queued: sql<number>`count(*)::int`,
+      due: sql<number>`(count(*) filter (where ${ingestJob.nextAttemptAt} <= now()))::int`,
+    })
+    .from(ingestJob)
+    .where(eq(ingestJob.status, 'queued'));
+  return { queued: row?.queued ?? 0, due: row?.due ?? 0 };
+}
+
 export async function enqueueJob(fullName: string): Promise<EnqueueResult> {
   const target = fullName.toLowerCase();
 

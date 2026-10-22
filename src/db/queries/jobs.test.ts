@@ -291,4 +291,95 @@ describe.skipIf(!DB_URL)('the queue', () => {
       expect(row).toMatchObject({ status: 'running', worker_id: 'alive' });
     });
   });
+
+  // Phase 8: Sync #8 stopped on its deadline with 106 jobs queued. This is that
+  // shape end to end on the real queue — a deadline mid-drain, a worker that
+  // died holding a job, retries due and not due among new jobs — and what the
+  // next run does with all of it.
+  describe('a drain stopped by its deadline, then resumed', () => {
+    it('loses no job, runs none twice except the one a dead worker held, and leaves no job running', async () => {
+      const { drainQueue } = await import('@/ingest/worker');
+      await sql`
+        INSERT INTO ingest_job (target, next_attempt_at)
+        SELECT 'test-owner/queue-spec-r' || lpad(i::text, 3, '0'), now() - interval '1 minute'
+        FROM generate_series(1, 200) AS i
+      `;
+      // A retry that came due before every new job, and one not due for an hour.
+      await sql`
+        INSERT INTO ingest_job (target, attempts, next_attempt_at) VALUES
+          ('test-owner/queue-spec-retry-due', 1, now() - interval '1 hour'),
+          ('test-owner/queue-spec-retry-later', 1, now() + interval '1 hour')
+      `;
+
+      const finish = async (job: { id: number; attempts: number }) => {
+        await jobs.finishJob(
+          {
+            jobId: job.id,
+            attemptNo: job.attempts,
+            startedAt: new Date(),
+            outcome: 'ok',
+            errorDetail: null,
+            commitSha: null,
+            filesRead: 0,
+            artifactsFound: 0,
+            artifactsNew: 0,
+            artifactsUpdated: 0,
+            artifactsUnchanged: 0,
+            artifactsRemoved: 0,
+            parseFailed: 0,
+            truncated: false,
+            rateRemaining: null,
+            rateReset: null,
+          },
+          'succeeded',
+        );
+        return { outcome: 'ok' as const, removed: 0, retryScheduled: false };
+      };
+
+      let ran = 0;
+      const first = await drainQueue({
+        limit: 200,
+        stop: () => (ran >= 107 ? 'deadline' : null),
+        run: async (job) => {
+          ran += 1;
+          return finish(job);
+        },
+      });
+      expect(first.stoppedBy).toBe('deadline');
+      expect(first.runs).toHaveLength(107);
+      // Oldest due first: the overdue retry is not starved by new arrivals.
+      expect(first.runs[0].target).toBe('test-owner/queue-spec-retry-due');
+      expect(await jobs.queueDepth()).toEqual({ queued: 95, due: 94 });
+      const [running] = await sql<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM ingest_job
+        WHERE target LIKE 'test-owner/queue-spec%' AND status = 'running'
+      `;
+      expect(running.n).toBe(0);
+
+      // A worker claims one and dies with it. The next run's reaper returns it,
+      // its attempt spent.
+      const held = await jobs.claimJob('dead-worker');
+      if (!held) throw new Error('unreachable');
+      await sql`UPDATE ingest_job SET started_at = now() - interval '20 minutes' WHERE id = ${held.id}`;
+      expect((await jobs.reapAbandoned(15 * 60_000)).map((r) => r.id)).toEqual([held.id]);
+
+      const second = await drainQueue({ limit: 500, stop: () => null, run: finish });
+      expect(second.stoppedBy).toBeNull();
+      expect(second.runs).toHaveLength(94);
+      expect(second.runs.find((r) => r.target === held.target)).toBeDefined();
+      // What is left is the retry whose time has not come — queued, not due.
+      expect(await jobs.queueDepth()).toEqual({ queued: 1, due: 0 });
+
+      const rows = await sql<{ status: string; attempts: number; runs: number }[]>`
+        SELECT j.status, j.attempts, count(a.id)::int AS runs
+        FROM ingest_job j LEFT JOIN ingest_attempt a ON a.job_id = j.id
+        WHERE j.target LIKE 'test-owner/queue-spec-r___' OR j.target = 'test-owner/queue-spec-retry-due'
+        GROUP BY j.id
+      `;
+      expect(rows).toHaveLength(201);
+      expect(rows.every((r) => r.status === 'succeeded' && r.runs === 1)).toBe(true);
+      // Every job ran once; the abandoned claim cost its job one extra attempt.
+      expect(rows.filter((r) => r.attempts === 2)).toHaveLength(2);
+    });
+  });
 });

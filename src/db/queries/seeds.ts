@@ -14,7 +14,7 @@ export type SeedRow = {
 /**
  * Writes seeds a corpus source produced, refreshing the ones already known.
  *
- * ponytail: src/ingest/persist.ts:277-297 holds a second copy of this conflict
+ * ponytail: persistScan's seed insert (src/ingest/persist.ts) holds a second copy of this conflict
  * clause, inside the ingest transaction, where it belongs — extracting a shared
  * one means editing the artifact transaction, the single riskiest path in the
  * project. Merge them when a third caller appears, or when that transaction is

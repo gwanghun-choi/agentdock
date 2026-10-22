@@ -40,6 +40,22 @@ export type PersistResult = {
 };
 
 /**
+ * Rows per multi-row statement. PostgreSQL caps one statement at 65,535 bind
+ * parameters; the widest row here (a finding) binds 12, and a version carries
+ * a body of up to 32 KB, so 200 keeps a statement under ~7 MB and 2,400
+ * parameters. A repository at CAPS.maxFiles is three statements per table.
+ */
+const ROWS_PER_STATEMENT = 200;
+
+function chunks<T>(items: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += ROWS_PER_STATEMENT) {
+    out.push(items.slice(i, i + ROWS_PER_STATEMENT));
+  }
+  return out;
+}
+
+/**
  * One transaction, three upserts, one delisting.
  *
  * Idempotency is not implemented here — it is delegated to three unique
@@ -119,154 +135,182 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
     const key = (type: string, sourcePath: string) => `${type} ${sourcePath}`;
     const prior = new Map(before.map((r) => [key(r.type, r.sourcePath), r.delistedAt]));
 
-    const packageIds: number[] = [];
-    let newVersions = 0;
-    let newCount = 0;
-    let updatedCount = 0;
-    let unchangedCount = 0;
+    // One statement per chunk rather than three to four per artifact. Measured
+    // from Sync #8's log (2026-10-22): the runner paid ~0.46 s per statement
+    // against Neon, so a new artifact cost ~1.6 s here and 920 of them were 24
+    // of the drain's 31.5 minutes; a 178-artifact repository held the loop for
+    // 290 s. The rows written are the same — the fixture benchmark's state hash
+    // is byte-identical before and after (docs/analysis, Phase 8).
+    //
+    // One row per identity, last wins — which is what the per-row upserts did.
+    // ON CONFLICT DO UPDATE refuses to touch a row twice in one statement.
+    const rows = [...new Map(scan.packages.map((p) => [key(p.type, p.sourcePath), p])).values()];
 
-    for (const found of scan.packages) {
-      const [pkg] = await tx
+    const idOf = new Map<string, number>();
+    for (const part of chunks(rows)) {
+      const upserted = await tx
         .insert(packageTable)
-        .values({
-          repositoryId: repo.id,
-          type: found.type,
-          sourcePath: found.sourcePath,
-          name: found.name,
-          slug: found.slug,
-          summary: found.summary,
-          licenseText: found.licenseText,
-          meta: found.meta,
-          parentPath: found.parentPath,
-          files: found.files,
-        })
-        // The array must name the same three columns, in the same order, as the
-        // unique('package_identity') constraint.
-        .onConflictDoUpdate({
-          target: [packageTable.repositoryId, packageTable.type, packageTable.sourcePath],
-          set: {
+        .values(
+          part.map((found) => ({
+            repositoryId: repo.id,
+            type: found.type,
+            sourcePath: found.sourcePath,
             name: found.name,
             slug: found.slug,
             summary: found.summary,
             licenseText: found.licenseText,
             meta: found.meta,
             parentPath: found.parentPath,
+            files: found.files,
+          })),
+        )
+        // The array must name the same three columns, in the same order, as the
+        // unique('package_identity') constraint.
+        .onConflictDoUpdate({
+          target: [packageTable.repositoryId, packageTable.type, packageTable.sourcePath],
+          set: {
+            name: sql`excluded.name`,
+            slug: sql`excluded.slug`,
+            summary: sql`excluded.summary`,
+            licenseText: sql`excluded.license_text`,
+            meta: sql`excluded.meta`,
+            parentPath: sql`excluded.parent_path`,
             // Refreshed on every scan, unlike a version's own columns: the
             // inventory's lifetime is the scan, not the content hash. A commit
             // where the tree moved but the manifest did not still updates
             // this — see ScannedPackage.files's own doc.
-            files: found.files,
+            files: sql`excluded.files`,
             delistedAt: null,
             updatedAt: sql`now()`,
           },
         })
-        .returning();
+        // Keyed back by identity, not by position: RETURNING order is not a
+        // documented guarantee.
+        .returning({
+          id: packageTable.id,
+          type: packageTable.type,
+          sourcePath: packageTable.sourcePath,
+        });
+      for (const r of upserted) idOf.set(key(r.type, r.sourcePath), r.id);
+    }
+    const pkgId = (found: { type: string; sourcePath: string }) =>
+      idOf.get(key(found.type, found.sourcePath)) as number;
 
-      packageIds.push(pkg.id);
-
+    // package_id -> the version row this scan minted for it.
+    const minted = new Map<number, number>();
+    for (const part of chunks(rows)) {
       const inserted = await tx
         .insert(packageVersion)
-        .values({
-          packageId: pkg.id,
-          commitSha: scan.commitSha,
-          blobSha: found.blobSha,
-          contentHash: found.contentHash,
-          declaredVersion: found.declaredVersion,
-          body: found.body,
-          frontmatter: found.frontmatter,
-          parseStatus: found.parseStatus,
-          parseErrors: found.parseErrors,
-        })
+        .values(
+          part.map((found) => ({
+            packageId: pkgId(found),
+            commitSha: scan.commitSha,
+            blobSha: found.blobSha,
+            contentHash: found.contentHash,
+            declaredVersion: found.declaredVersion,
+            body: found.body,
+            frontmatter: found.frontmatter,
+            parseStatus: found.parseStatus,
+            parseErrors: found.parseErrors,
+            // In the insert rather than a follow-up UPDATE: the same now() of
+            // the same transaction, and only on a row this scan created.
+            analyzedAt: found.analysisIncomplete ? null : sql`now()`,
+          })),
+        )
         .onConflictDoNothing({
           target: [packageVersion.packageId, packageVersion.contentHash],
         })
-        .returning({ id: packageVersion.id });
+        .returning({ id: packageVersion.id, packageId: packageVersion.packageId });
+      for (const r of inserted) minted.set(r.packageId, r.id);
+    }
+    const newVersions = minted.size;
 
-      newVersions += inserted.length;
+    // A→B→A: the content went back to a version this package already holds,
+    // so the insert conflicted and minted nothing — and "latest" (ingested_at
+    // DESC, packages.ts and search.ts) kept pointing at B, showing a body and
+    // findings the repository no longer has. Moving A's ingested_at to now
+    // makes it latest again with no new column. ingested_at is that ordering;
+    // the detail page's Versions table prints it as "Recorded" and says a
+    // returned content moves to the top. Guarded by "not already latest", so an
+    // ordinary unchanged artifact is matched and left alone.
+    const reverted = new Set<number>();
+    for (const part of chunks(rows.filter((found) => !minted.has(pkgId(found))))) {
+      const bumped = await tx
+        .update(packageVersion)
+        .set({ ingestedAt: sql`now()` })
+        .where(
+          and(
+            sql`(${packageVersion.packageId}, ${packageVersion.contentHash}) in (${sql.join(
+              part.map((found) => sql`(${pkgId(found)}::bigint, ${found.contentHash}::text)`),
+              sql`, `,
+            )})`,
+            sql`${packageVersion.id} <> (
+              select z.id from ${packageVersion} z
+              where z.package_id = ${packageVersion.packageId}
+              order by z.ingested_at desc limit 1
+            )`,
+          ),
+        )
+        .returning({ packageId: packageVersion.packageId });
+      for (const r of bumped) reverted.add(r.packageId);
+    }
 
-      // A→B→A: the content went back to a version this package already holds,
-      // so the insert conflicted and minted nothing — and "latest" (ingested_at
-      // DESC, packages.ts and search.ts) kept pointing at B, showing a body and
-      // findings the repository no longer has. Moving A's ingested_at to now
-      // makes it latest again with no new column. ingested_at is that ordering;
-      // the detail page's Versions table prints it as "Recorded" and says a
-      // returned content moves to the top. Guarded by "not already latest", so the
-      // ordinary unchanged artifact costs this one indexed no-op UPDATE.
-      let reverted = false;
-      if (inserted.length === 0) {
-        const bumped = await tx
-          .update(packageVersion)
-          .set({ ingestedAt: sql`now()` })
-          .where(
-            and(
-              eq(packageVersion.packageId, pkg.id),
-              eq(packageVersion.contentHash, found.contentHash),
-              sql`${packageVersion.id} <> (
-                select z.id from ${packageVersion} z
-                where z.package_id = ${pkg.id}
-                order by z.ingested_at desc limit 1
-              )`,
-            ),
-          )
-          .returning({ id: packageVersion.id });
-        reverted = bumped.length > 0;
-      }
+    // Analysis findings exist for exactly one reason: a new version row was
+    // created. On the conflict branch there is no id to key them on, and the
+    // findings for that content are already stored from when it was new —
+    // which is how Phase 2's (package_id, content_hash) unique constraint
+    // makes CAP-13's idempotency free rather than a code path that can race.
+    const findings = rows.flatMap((found) => {
+      const versionId = minted.get(pkgId(found));
+      if (versionId === undefined) return [];
+      return found.findings.map((f) => ({
+        packageVersionId: versionId,
+        detectorId: f.detectorId,
+        detectorVersion: f.detectorVersion,
+        category: f.category,
+        signal: f.signal,
+        summary: f.summary,
+        sourcePath: f.sourcePath,
+        startLine: f.startLine,
+        endLine: f.endLine,
+        commitSha: scan.commitSha,
+        evidenceText: f.evidenceText,
+        metadata: f.metadata,
+      }));
+    });
+    for (const part of chunks(findings)) {
+      await tx
+        .insert(capabilityFinding)
+        .values(part)
+        // The array must name the same six columns, in the same order,
+        // as capability_finding_identity.
+        .onConflictDoNothing({
+          target: [
+            capabilityFinding.packageVersionId,
+            capabilityFinding.detectorId,
+            capabilityFinding.category,
+            capabilityFinding.sourcePath,
+            capabilityFinding.startLine,
+            capabilityFinding.summary,
+          ],
+        });
+    }
 
-      // Analysis findings exist for exactly one reason: a new version row was
-      // created. On the conflict branch there is no id to key them on, and the
-      // findings for that content are already stored from when it was new —
-      // which is how Phase 2's (package_id, content_hash) unique constraint
-      // makes CAP-13's idempotency free rather than a code path that can race.
-      if (inserted.length > 0) {
-        if (!found.analysisIncomplete) {
-          await tx
-            .update(packageVersion)
-            .set({ analyzedAt: sql`now()` })
-            .where(eq(packageVersion.id, inserted[0].id));
-        }
-
-        if (found.findings.length > 0) {
-          await tx
-            .insert(capabilityFinding)
-            .values(
-              found.findings.map((f) => ({
-                packageVersionId: inserted[0].id,
-                detectorId: f.detectorId,
-                detectorVersion: f.detectorVersion,
-                category: f.category,
-                signal: f.signal,
-                summary: f.summary,
-                sourcePath: f.sourcePath,
-                startLine: f.startLine,
-                endLine: f.endLine,
-                commitSha: scan.commitSha,
-                evidenceText: f.evidenceText,
-                metadata: f.metadata,
-              })),
-            )
-            // The array must name the same six columns, in the same order,
-            // as capability_finding_identity.
-            .onConflictDoNothing({
-              target: [
-                capabilityFinding.packageVersionId,
-                capabilityFinding.detectorId,
-                capabilityFinding.category,
-                capabilityFinding.sourcePath,
-                capabilityFinding.startLine,
-                capabilityFinding.summary,
-              ],
-            });
-        }
-      }
-
+    const packageIds: number[] = [];
+    let newCount = 0;
+    let updatedCount = 0;
+    let unchangedCount = 0;
+    for (const found of scan.packages) {
+      const id = pkgId(found);
+      packageIds.push(id);
       const k = key(found.type, found.sourcePath);
       const seenBefore = prior.has(k);
       // The upsert's conflict branch already cleared the tombstone, so this is
-      // read from the snapshot taken before the loop, not from the row.
+      // read from the snapshot taken before the upsert, not from the row.
       const wasDelisted = seenBefore && prior.get(k) !== null;
 
       if (!seenBefore) newCount += 1;
-      else if (inserted.length > 0 || wasDelisted || reverted) updatedCount += 1;
+      else if (minted.has(id) || wasDelisted || reverted.has(id)) updatedCount += 1;
       else unchangedCount += 1;
     }
 
@@ -313,24 +357,32 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
           )
         : new Set<string>();
 
-    for (const seed of scan.seeds) {
-      if (blockedSeeds.has(seed.fullName)) continue;
+    // One row per name, last wins, as the per-row upserts did — and one
+    // statement per chunk for the same round-trip reason as the packages.
+    const seedRows = [
+      ...new Map(
+        scan.seeds.filter((seed) => !blockedSeeds.has(seed.fullName)).map((s) => [s.fullName, s]),
+      ).values(),
+    ];
+    for (const part of chunks(seedRows)) {
       await tx
         .insert(repoSeed)
-        .values({
-          fullName: seed.fullName,
-          sourceKind: seed.sourceKind,
-          discoveredFrom: seed.discoveredFrom,
-          discoveredPath: seed.discoveredPath,
-          hint: seed.hint,
-        })
-        .onConflictDoUpdate({
-          target: repoSeed.fullName,
-          set: {
+        .values(
+          part.map((seed) => ({
+            fullName: seed.fullName,
             sourceKind: seed.sourceKind,
             discoveredFrom: seed.discoveredFrom,
             discoveredPath: seed.discoveredPath,
             hint: seed.hint,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: repoSeed.fullName,
+          set: {
+            sourceKind: sql`excluded.source_kind`,
+            discoveredFrom: sql`excluded.discovered_from`,
+            discoveredPath: sql`excluded.discovered_path`,
+            hint: sql`excluded.hint`,
             updatedAt: sql`now()`,
           },
         });

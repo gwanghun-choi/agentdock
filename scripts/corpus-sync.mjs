@@ -56,7 +56,7 @@ function count(name, fallback) {
 }
 
 const { CORPUS_CAPS } = await import('../src/corpus/caps.ts');
-const { syncBudget, drainStop } = await import('../src/corpus/budget.ts');
+const { syncBudget, drainStop, syncStatus } = await import('../src/corpus/budget.ts');
 const { normalizeGithubToken } = await import('../src/env.ts');
 
 // Picked once, from whether a token is set: unauthenticated it is exactly the
@@ -110,12 +110,11 @@ const { loadSeedList, seedListRows } = await import('../src/corpus/seedList.ts')
 const { expandLinkLists } = await import('../src/corpus/links.ts');
 const { upsertSeeds } = await import('../src/db/queries/seeds.ts');
 const { fanOutBySource } = await import('../src/corpus/fanout.ts');
-const { readSweepState, writeSweepState, recordSyncSucceeded, recordSyncAttempt } = await import(
-  '../src/db/queries/syncState.ts'
-);
+const { readSweepState, writeSweepState, recordSyncSucceeded, recordSyncAttempt, lastSyncAttempt } =
+  await import('../src/db/queries/syncState.ts');
 const { countPackages } = await import('../src/db/queries/packages.ts');
-const { claimJob, reapAbandoned, queuedJobCount } = await import('../src/db/queries/jobs.ts');
-const { runJob, REAP_AFTER_MS, WORKER_ID } = await import('../src/ingest/worker.ts');
+const { reapAbandoned, queueDepth } = await import('../src/db/queries/jobs.ts');
+const { drainQueue, REAP_AFTER_MS } = await import('../src/ingest/worker.ts');
 const { rateLimitState, fetchCoreRateLimit } = await import('../src/github/client.ts');
 const { sql } = await import('../src/db/client.ts');
 
@@ -145,6 +144,8 @@ function annotate(level, title, message) {
 /** Stages that threw. Each is isolated, so the rest of the run still happens;
  * the process still exits 1 at the end, so a broken source is never green. */
 const stageFailures = [];
+/** Wall clock per stage, for the summary: Sync #8's 38 minutes had no breakdown. */
+const stageMs = new Map();
 
 /**
  * One acquisition stage, isolated. Before this a single try/catch wrapped the
@@ -152,6 +153,7 @@ const stageFailures = [];
  * list, the topic sweep, the refresh and the drain with it.
  */
 async function stage(name, run) {
+  const t0 = Date.now();
   try {
     await run();
   } catch (error) {
@@ -160,6 +162,8 @@ async function stage(name, run) {
     stageFailures.push(name);
     console.error(`corpus-sync: stage=${name} FAILED — ${message}. The other stages still ran.`);
     annotate('error', `AgentDock sync: ${name} failed`, message);
+  } finally {
+    stageMs.set(name, Date.now() - t0);
   }
 }
 
@@ -177,6 +181,12 @@ let refreshedCount = 0;
 let failingChecks = null;
 /** Jobs left queued after the drain; null when the drain did not run. */
 let backlog = null;
+/** Of those, the ones claimable now (not a retry or deferral waiting); null likewise. */
+let due = null;
+/** Per-job wall clock of this run's drain, in claim order. */
+const jobMs = [];
+/** The previous scheduled run's `queued`, for the backlog trend; null if unknown. */
+let previousQueued = null;
 /** Failures put back in the queue for another attempt this run (not rate limits). */
 let retriesScheduled = 0;
 /** Artifacts the reads this run delisted. */
@@ -196,6 +206,10 @@ const outcomes = new Map();
 /** Zero is a fact; an absent key is not. Every known outcome prints. */
 function outcomeCount(name) {
   return outcomes.get(name) ?? 0;
+}
+
+function currentStatus() {
+  return syncStatus({ failed: failed || stageFailures.length > 0, drainStoppedBy, due });
 }
 
 /**
@@ -238,6 +252,8 @@ function summarize() {
   console.log('');
   console.log('AgentDock scheduled sync');
   console.log('');
+  line('Status', currentStatus());
+  console.log('');
   // "Processed", not "read". A repository the policy declined had its metadata
   // fetched and nothing else, and a line calling that "read" would overstate
   // both what AgentDock looked at and what it spent.
@@ -263,7 +279,18 @@ function summarize() {
     'Stored repos failing checks',
     failingChecks === null ? 'not measured (no refresh)' : `${failingChecks} (before this drain)`,
   );
-  line('Jobs still queued', backlog ?? 'not measured (no drain)');
+  line(
+    'Jobs still queued',
+    backlog === null
+      ? 'not measured (no drain)'
+      : `${backlog} (${due} due now, ${backlog - due} waiting on a retry time)`,
+  );
+  line(
+    '  since the previous run',
+    backlog === null || previousQueued === null
+      ? 'not known'
+      : `${backlog - previousQueued >= 0 ? '+' : ''}${backlog - previousQueued} (was ${previousQueued})`,
+  );
   line(
     'Drain stopped by',
     drainStoppedBy ?? (drainedCount > 0 ? 'its cap or an empty queue' : 'n/a'),
@@ -285,6 +312,22 @@ function summarize() {
   );
   line('Budget', budget.authenticated ? 'authenticated (token set)' : 'unauthenticated');
   line('Duration', `${Math.round((Date.now() - startedAt) / 1000)}s`);
+  // Measured per job by drainQueue, never estimated. Per-stage seconds say
+  // where a run's time went before anyone has to read the log line by line.
+  for (const [name, ms] of stageMs) line(`  stage ${name}`, `${Math.round(ms / 1000)}s`);
+  if (jobMs.length > 0) {
+    const sorted = [...jobMs].sort((a, b) => a - b);
+    const at = (p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+    const drainS = jobMs.reduce((n, v) => n + v, 0) / 1000;
+    line(
+      'Drain throughput',
+      `${(jobMs.length / (drainS / 60)).toFixed(1)} jobs/min over ${drainS.toFixed(1)}s of jobs`,
+    );
+    line(
+      '  per job',
+      `p50 ${(at(0.5) / 1000).toFixed(1)}s, p95 ${(at(0.95) / 1000).toFixed(1)}s, max ${(sorted.at(-1) / 1000).toFixed(1)}s`,
+    );
+  }
   console.log('');
   line('Discovered this run', '');
   for (const [name, written] of discovered) line(`  ${name}`, `${written} seed(s) written`);
@@ -630,9 +673,9 @@ try {
 
   if (drainLimit > 0) {
     await stage('drain', async () => {
-      // Bounded and rate-aware, and deliberately not a resident worker: claimJob
-      // and runJob are exported, so this is those two calls with the loop bounded
-      // instead of endless. There is no sleep and no signal handling — a
+      // Bounded and rate-aware, and deliberately not a resident worker:
+      // drainQueue (src/ingest/worker.ts) is claimJob and runJob with the loop
+      // bounded instead of endless. There is no sleep and no signal handling — a
       // scheduled process that has run out of budget should exit and let cron
       // start the next one, not hold a connection open waiting for a clock.
       //
@@ -649,33 +692,27 @@ try {
       // below with the real number instead of nothing.
       coreBefore = await fetchCoreRateLimit();
 
-      let drained = 0;
-      for (let i = 0; i < drainLimit; i += 1) {
-        // Checked BEFORE the claim rather than after the failure. An ingest costs
-        // two core requests, so with fewer than two left the next claim spends
-        // one only to hit the wall — and every remaining job would then spend one
-        // more to rediscover the same fact. The deadline is the other half: a
-        // larger authenticated cap must never carry the run past the Actions
-        // timeout with a transaction open.
-        drainStoppedBy = drainStop(rateLimitState(), Date.now() - startedAt);
-        if (drainStoppedBy) break;
-        const job = await claimJob(WORKER_ID);
-        if (!job) break;
-        const run = await runJob(job);
-        drained += 1;
-        outcomes.set(run.outcome, (outcomes.get(run.outcome) ?? 0) + 1);
-        delisted += run.removed;
-        if (run.retryScheduled) retriesScheduled += 1;
-        // A secondary limit leaves the core count high, so the check above
-        // cannot see it, and every later claim would spend a request to hit the
-        // same wall and defer its job. The job in hand is already deferred with
-        // its attempt refunded; the queue waits for the next run.
-        if (run.outcome === 'rate_limited') {
-          drainStoppedBy = 'rate_limited';
-          break;
-        }
-      }
-      drainedCount = drained;
+      // Checked BEFORE each claim rather than after the failure. An ingest costs
+      // two core requests, so with fewer than two left the next claim spends
+      // one only to hit the wall — and every remaining job would then spend one
+      // more to rediscover the same fact. The deadline is the other half: a
+      // larger authenticated cap must never carry the run past the Actions
+      // timeout with a transaction open.
+      const drain = await drainQueue({
+        limit: drainLimit,
+        stop: () => drainStop(rateLimitState(), Date.now() - startedAt),
+        // Counted as each job ends, so a database error later in the drain
+        // still leaves what was done in the summary.
+        onRun: (run) => {
+          outcomes.set(run.outcome, (outcomes.get(run.outcome) ?? 0) + 1);
+          delisted += run.removed;
+          if (run.retryScheduled) retriesScheduled += 1;
+          jobMs.push(run.durationMs);
+          drainedCount += 1;
+        },
+      });
+      drainStoppedBy = drain.stoppedBy;
+      const drained = drain.runs.length;
       coreAfter = await fetchCoreRateLimit();
       console.log(`corpus-sync: drained ${drained} job(s) of at most ${drainLimit}`);
       if (drainStoppedBy === 'core_budget') {
@@ -701,8 +738,10 @@ try {
             'the sync started. Whatever is still queued is read by the next scheduled run.',
         );
       }
-      backlog = await queuedJobCount();
-      console.log(`corpus-sync: ${backlog} job(s) still queued after the drain`);
+      ({ queued: backlog, due } = await queueDepth());
+      console.log(
+        `corpus-sync: ${backlog} job(s) still queued after the drain, ${due} of them due now`,
+      );
       if (drainStoppedBy) {
         annotate(
           'warning',
@@ -732,13 +771,25 @@ try {
       `renders; the ${held - listed} difference is on each repository's own page carrying its reason`,
   );
 
+  // Read before this run overwrites it, for the backlog trend. A backlog that
+  // grows run after run is the signal a single PARTIAL_DEADLINE is not.
+  if (scheduled) {
+    try {
+      const previous = await lastSyncAttempt();
+      previousQueued = typeof previous?.queued === 'number' ? previous.queued : null;
+    } catch {
+      previousQueued = null;
+    }
+  }
+
   summarize();
 
   if (stageFailures.length > 0) failed = true;
   annotate(
     'notice',
-    'AgentDock sync',
-    `processed=${drainedCount} ingested=${outcomeCount('ok')} unchanged=${outcomeCount('unchanged')} ` +
+    `AgentDock sync: ${currentStatus()}`,
+    `status=${currentStatus()} processed=${drainedCount} ingested=${outcomeCount('ok')} ` +
+      `unchanged=${outcomeCount('unchanged')} queued=${backlog ?? 'n/a'} due=${due ?? 'n/a'} ` +
       `failed-stages=${stageFailures.length === 0 ? 'none' : stageFailures.join(',')} ` +
       `duration=${Math.round((Date.now() - startedAt) / 1000)}s`,
   );
@@ -771,6 +822,8 @@ if (scheduled) {
       enqueued: fanOut.reduce((n, r) => n + r.enqueued, 0) + refreshedCount,
       failingChecks,
       queued: backlog,
+      due,
+      status: currentStatus(),
       drainStoppedBy,
       coreSpent:
         coreBefore && coreAfter && coreBefore.reset === coreAfter.reset

@@ -282,6 +282,13 @@ new repositories and 100 re-checks and drains up to 200, stopping 35 minutes
 after it started so it ends well inside a 60-minute job timeout
 (`src/corpus/caps.ts`); the summary prints how much of the cap it left unspent.
 
+The summary's first line, `Status`, says which of these happened: `COMPLETED`
+(no job left that is due), `PARTIAL_DEADLINE`, `PARTIAL_CORE_BUDGET`,
+`PARTIAL_RATE_LIMITED`, `PARTIAL_CAP` (the drain cap ran out with jobs still
+due) or `FAILED`. Only `FAILED` exits non-zero, so a green run is not by itself
+"everything was read" — read `Status` and `Jobs still queued … since the
+previous run`; a backlog that grows run after run is the signal to act on.
+
 Run it a second time and check that repositories read by the first run are **not
 re-read**: the refresh pass only offers repositories whose last read is older
 than twelve hours, and the ones it does offer come back `unchanged` at two

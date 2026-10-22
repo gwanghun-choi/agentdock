@@ -56,3 +56,37 @@ export function drainStop(
   if (elapsedMs >= deadlineMs) return 'deadline';
   return null;
 }
+
+export type SyncStatus =
+  | 'COMPLETED'
+  | 'PARTIAL_DEADLINE'
+  | 'PARTIAL_CORE_BUDGET'
+  | 'PARTIAL_RATE_LIMITED'
+  | 'PARTIAL_CAP'
+  | 'NO_DRAIN'
+  | 'FAILED';
+
+/**
+ * What one sync reached, in one word, so a green Actions run is never read as
+ * "everything was processed". Sync #8 (2026-10-22) exited 0 with 106 jobs
+ * still queued; that is by design — a deadline is a bound, not an error, and a
+ * run red on every bound would bury the runs that broke — but it now says
+ * PARTIAL_DEADLINE where it used to say only "success".
+ *
+ * Only FAILED exits non-zero. PARTIAL_CAP is a drain that spent its whole cap
+ * with jobs still due. COMPLETED allows `queued > 0` when none of them is due
+ * yet: those are retries and rate-limit deferrals waiting for their time.
+ */
+export function syncStatus(run: {
+  failed: boolean;
+  drainStoppedBy: 'core_budget' | 'deadline' | 'rate_limited' | null;
+  /** Due jobs left after the drain; null when the drain did not run. */
+  due: number | null;
+}): SyncStatus {
+  if (run.failed) return 'FAILED';
+  if (run.due === null) return 'NO_DRAIN';
+  if (run.drainStoppedBy === 'deadline') return 'PARTIAL_DEADLINE';
+  if (run.drainStoppedBy === 'core_budget') return 'PARTIAL_CORE_BUDGET';
+  if (run.drainStoppedBy === 'rate_limited') return 'PARTIAL_RATE_LIMITED';
+  return run.due > 0 ? 'PARTIAL_CAP' : 'COMPLETED';
+}

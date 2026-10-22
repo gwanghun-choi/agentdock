@@ -137,7 +137,8 @@ export const CORPUS_CAPS = {
    * sync.yml's timeout-minutes is 60, and one repository can hold the loop for
    * scan.ts's CAPS.wallClockMs (120 s) plus two 10 s API timeouts, so 35
    * minutes leaves room for the last claim, the summary and a slow Neon wake
-   * well inside the kill. Applies with or without a token; unauthenticated, the
+   * well inside the kill. (Sync #8, 2026-10-22, ended at 38.5 minutes; its
+   * longest job, 290 s, was the database write, since batched — Phase 8.) Applies with or without a token; unauthenticated, the
    * core budget stops the drain first.
    */
   drainDeadlineMs: 35 * 60_000,
