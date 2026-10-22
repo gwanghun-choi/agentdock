@@ -6,8 +6,9 @@ invariants, same lifecycles — only who runs each piece changes.
 
 ```
 Vercel (Hobby)          the web: SSR, browse, search      — reads, never ingests
+GitHub Actions          .github/workflows/ci.yml          — every push and pull request
+GitHub Actions          .github/workflows/deploy.yml      — after CI on develop: migrate, then deploy
 GitHub Actions          .github/workflows/sync.yml        — `bun run sync`, twice a day
-your machine            `bun run db:migrate`              — when a migration ships
 Neon (Free)             PostgreSQL; AgentDock owns one schema in it
 ```
 
@@ -24,7 +25,7 @@ file.
 | Piece | Why not on Vercel |
 |---|---|
 | sync | A Hobby function stops at 300 s and a Hobby cron fires at most once a day (±59 min). One sync's topic sweep alone is up to 60 search requests at 6.5 s spacing, then up to 25 repositories at up to 120 s of reads each. And a cron needs a route — a public URL that starts ingestion. |
-| migrate | An operator action, never a boot step (DEPLOY.md step 6). |
+| migrate | Never a boot step (DEPLOY.md step 6). It is a step of `deploy.yml` that runs before Vercel builds the commit, so no build that needs a migration goes live before that migration is applied. |
 | corpus reset | Never on Vercel at all. `AGENTDOCK_ALLOW_CORPUS_RESET` is not set there. |
 
 ## Free-plan limits that matter
@@ -131,8 +132,9 @@ that reads them.**
 ## Step 5 — create the Vercel project
 
 Import the GitHub repository. Leave the defaults: Vercel detects Next.js, and
-`bun.lock` makes it install with bun. No `vercel.json` is needed, and none is
-committed.
+`bun.lock` makes it install with bun. The committed `vercel.json` holds a single
+setting: it turns off Vercel's own Git deployments of `develop` and `main`, so
+`deploy.yml` is the only path to production ([Automated deploys](#automated-deploys)).
 
 - **Settings → Functions → Function Region:** the region nearest your Neon
   region (Vercel's default is `iad1`, Washington, D.C.).
@@ -199,6 +201,9 @@ Repository → Settings → Secrets and variables → Actions:
 The workflow passes only these two secrets, grants the job `contents: read`, and
 checks out without persisting credentials.
 
+`deploy.yml` needs one more secret and four variables, all in the `production`
+environment. [Automated deploys](#automated-deploys), step A, lists them.
+
 Public repository logs are public. A sync prints repository names and counts,
 never a credential: secrets are masked, and `corpus-sync.mjs` prints error
 messages without their causes.
@@ -251,9 +256,180 @@ Then open the project's **Logs** within the hour Hobby keeps them:
 |---|---|
 | A bad web deploy | Vercel → Deployments → the previous production deployment → **Instant Rollback**. Hobby can roll back to the immediately previous one; anything older is a redeploy of that commit. Either costs zero GitHub requests, like every web lifecycle event. |
 | Stop ingestion | `gh workflow disable sync.yml`. Re-enable with `enable`. A run killed part-way leaves a claimed job, which the next run's `reapAbandoned` returns to the queue. |
-| A bad migration | Migrations are additive and are applied before the code that reads them, so rolling back the web is normally enough. For data, use Neon's branch restore within your plan's history window. |
+| A bad migration | Migrations that run unattended are additive and are applied before the code that reads them, so rolling back the web is normally enough. For data, use Neon's instant restore. Free keeps 6 hours of history, up to 1 GB-month (checked 2026-10-22). [Emergency recovery](#emergency-recovery) has the order. |
+| Stop automated deploys | `gh workflow disable deploy.yml`. Production keeps serving what it serves. |
 | Back to Docker | DEPLOY.md is unchanged and still works. Disable `sync.yml` **before** the host cron starts. |
 | Remove AgentDock entirely | `scripts/sql/rollback-agentdock.sql`. **Destructive** — it drops both schemas with everything in them. Read its header and run the listing query it gives first. |
+
+## Automated deploys
+
+```
+push to develop ─▶ CI (check, database) ─success─▶ deploy.yml
+                                                    gate      this sha's own push CI passed; sha is develop's tip;
+                                                              production does not already serve it
+                                                    plan      target pin, history vs drizzle/, risk rule   (read-only)
+                                                    migrate   same checks under an advisory lock, apply, verify, commit
+                                                    verify    nothing pending                               (read-only)
+                                                    vercel    vercel deploy --prod: Vercel builds; the domain moves when ready
+                                                    smoke     pages render from the database; X-AgentDock-Commit = sha
+```
+
+**The invariant: production never serves a build whose migrations have not
+been applied.** Two things keep it true:
+
+- `vercel.json` turns off Vercel's Git deployments of `develop` and `main`, so a
+  push activates nothing by itself.
+- `deploy.yml` reaches `vercel deploy` only after `migrate` and `verify` have
+  succeeded for that same sha, in that same job.
+
+Running the migration first in some other workflow would not be enough while
+Vercel's Git deployment of the same push races it.
+
+| Outcome | Production | What to do |
+|---|---|---|
+| `SUCCESS` | the new sha | nothing |
+| `SKIPPED (SUPERSEDED)` | unchanged; a newer commit is on develop and has its own run | nothing |
+| `SKIPPED (ALREADY_DEPLOYED)` | already serves this sha (a duplicate push event or a re-run) | nothing |
+| `BLOCKED (migration plan)` | unchanged | read the plan step. `needs approval` → [a migration the rule held back](#a-migration-the-rule-held-back). `history:` → stop and investigate; do not edit the history table to make it pass |
+| `FAILED (migration)` | unchanged code; the transaction rolled back. `55P03 … lock timeout` means a sync or another migrator held a lock for 15 s | re-run the workflow |
+| `FAILED (Vercel deploy)` | the previous deployment; migrations of this sha are applied (additive, so the old build runs against them) | fix the build, push |
+| `DEGRADED (smoke)` | the new build, or the old one if the domain did not move | read the smoke lines; [Emergency recovery](#emergency-recovery) |
+
+Each pending migration is classified by `scripts/migration-gate.mjs`. Only an
+allowlist of additive shapes applies unattended:
+
+- a new table, index, type or sequence
+- a nullable column, or a column with a literal default
+- a foreign key on a table created in the same file
+- the `artifact_type` seed
+
+Everything else needs a person, whatever it looks like: DROP, DELETE, UPDATE,
+ALTER COLUMN, RENAME, a DO block, a volatile or generated default, a
+constraint on an existing table. So does anything the rule cannot read.
+
+The principle is expand → migrate → contract. A contraction, such as dropping
+a column the previous build still reads, ships in a later push. That push
+comes once no deployed build reads the column.
+
+### Activation — once, in this order
+
+Nothing here has been run. Each step names what you should see before you go
+on.
+
+**A. GitHub (before any push).**
+
+1. Repository → Settings → Environments → **New environment** → name
+   `production`.
+2. **Deployment branches and tags** → *Selected branches and tags* → add the
+   rule `develop`.
+3. **Environment secrets** → add `VERCEL_TOKEN`.
+   - Create it at vercel.com → Account Settings → Tokens → **Create Token**.
+   - Scope: your Hobby account. Choose an expiration and note it; Hobby has no
+     per-project tokens, so this token can deploy every project in the account.
+4. **Environment variables** (not secrets — none is a credential) → add these
+   four:
+
+| Variable | Value |
+|---|---|
+| `VERCEL_PROJECT_ID` | Vercel → the project → Settings → General → *Project ID* |
+| `VERCEL_ORG_ID` | Vercel → Account Settings → General → *Vercel ID* (the account's id) |
+| `PRODUCTION_URL` | the production domain, `https://<project>.vercel.app` |
+| `AGENTDOCK_TARGET_FINGERPRINT` | the output of step B |
+
+The repository secret `DATABASE_URL` (the direct string, step 6) is reused. No
+Neon API key is needed: nothing calls Neon's API.
+
+**B. Read-only check of production, from your machine.** This opens one
+connection and reads `__drizzle_migrations`; it writes nothing.
+
+```bash
+# from the repository root
+read -rs DATABASE_URL && export DATABASE_URL            # the agentdock_app DIRECT string
+bun --no-env-file scripts/migrate.mjs --fingerprint     # → target fingerprint <16 hex>; store it (step A.4)
+AGENTDOCK_TARGET_FINGERPRINT=<16 hex> bun --no-env-file scripts/migrate.mjs --plan --production
+unset DATABASE_URL
+```
+
+Expect `agentdock: 11 applied, 0 pending, 11 on disk — UP_TO_DATE`.
+
+- `history: … edited after it was applied` means a file in `drizzle/` differs
+  from what production recorded. Stop here and find out why. Every automated
+  deploy would block on it.
+- Any `pending:` line means production is behind `develop` today. Apply it the
+  way step 4 does before going on.
+
+**C. Vercel.** Settings → Environments → Production → *Branch Tracking*
+should name `develop`. Change nothing else. `vercel.json` does the switching,
+and it travels with the commit.
+
+**D. Push the activation commit.** It carries `vercel.json`, `deploy.yml` and no
+migration. That is why the switch-over cannot violate the invariant. If
+Vercel's Git deployment of this one commit did happen, it would serve code that
+needs no migration.
+
+Expect:
+
+- one CI run
+- a `Deploy` run whose summary reads `SUCCESS`
+- `curl -sI "$PRODUCTION_URL" | grep -i x-agentdock-commit` printing the pushed
+  sha
+
+If `Deploy` fails, production still serves the previous Git deployment. Fix the
+named step, then run `gh workflow run deploy.yml --ref develop`.
+
+**E. Confirm Git deployments are off.** Push a second commit with no migration
+(any small change). In Vercel → Deployments, its only new deployment must be
+the one `deploy.yml` made. If a Git-triggered deployment appears, do not push a
+migration. Disconnect the repository instead (Settings → Git → **Disconnect**);
+`vercel deploy` from the workflow does not need the connection. Then repeat E. **Only after E passes may a commit carry a migration.**
+
+### Every day
+
+Push to `develop`. Read the `Deploy` summary. A sync never waits for a deploy:
+`sync.yml` and `deploy.yml` have separate concurrency groups. The two meet only
+in PostgreSQL:
+
+- **The migrator's locks.** It waits at most 15 s for any lock and then fails
+  cleanly; re-run it.
+- **The sync's first step.** The sync refuses to run while `agentdock` is behind
+  the checked-out code (`migrate.mjs --plan --require-current`). New sync code
+  therefore never writes to a schema it does not match. While a migration waits
+  for approval, every scheduled sync fails loudly for this reason.
+
+### A migration the rule held back
+
+1. Read the plan step: it names each file and the shape that was not additive.
+2. Back up. Use Neon Console → Branches → **Create branch**, from `production`,
+   at *Current point in time*, named `pre-<tag>`. Free allows 10 branches.
+   Instant restore also covers the last 6 hours.
+3. `gh workflow run deploy.yml --ref develop -f approve_migrations=<tag>[,<tag>]`.
+   - An approval names exact tags.
+   - It must name only pending files. A stale or misspelled tag blocks the run.
+4. Delete the `pre-<tag>` branch once you no longer need it.
+
+### Emergency recovery
+
+The app and the database are recovered separately. Neither is ever rolled back
+automatically.
+
+1. **Stop the next deploy**: `gh workflow disable deploy.yml`.
+2. **App**: Vercel → project → Production Deployment → **Instant Rollback**.
+   Hobby can roll back to the immediately previous production deployment only.
+   - After a rollback, Vercel stops assigning the domain to new deployments, so
+     every later `deploy.yml` reports `DEGRADED` at the identity check.
+   - **Undo Rollback** on the same tile (or `vercel promote <url>`) restores
+     normal behaviour.
+3. **Database**: a migration that ran unattended was additive, so the previous
+   build runs against it. Leave the schema alone.
+   - Do not "revert" a migration by deleting its file. The history check then
+     blocks every deploy, because the database records a migration the checkout
+     does not have. Revert the code that uses it instead.
+4. **Data loss from an approved migration**:
+   - Neon Console → Branches → the `pre-<tag>` branch from the approval steps,
+     or *Restore* within the 6-hour window.
+   - Restoring `production` in place discards everything written since that
+     point, sync results included. Restore to a new branch first and inspect it.
+5. Re-enable: `gh workflow enable deploy.yml`.
 
 ## What differs from the Docker deployment
 
@@ -261,7 +437,7 @@ Then open the project's **Logs** within the hour Hobby keeps them:
 |---|---|---|
 | Web | `node server.js` from the standalone image | Vercel Functions, Fluid compute |
 | Schedule | host crontab, server-local time | `sync.yml`, UTC |
-| Migrate | `docker compose … run --rm migrate` | `bun run db:migrate` from your machine |
+| Migrate | `docker compose … run --rm migrate` | `deploy.yml`, before the build goes live |
 | TLS | your proxy, forwarding `X-Forwarded-Proto` | Vercel. The CSP adds `upgrade-insecure-requests` on its own |
 | DB connection | one long-lived pool | pooled string for the web, direct for batch work; `idle_timeout` closes what sits unused |
 | Logs | `docker logs` | Vercel Logs (Hobby: 1 hour); Actions run logs |
@@ -279,3 +455,8 @@ checked by doing the step that names it:
 5. A Vercel build of this repository: bun install from `bun.lock`, with
    `output` unset because `VERCEL` is (step 5).
 6. Real CU-hour use after a week, against the 100-hour allowance.
+7. Automated deploys, activation steps A–E: `deploy.yml` has run only against
+   mocks and a local PostgreSQL (docs/analysis/agentdock-phase9-cicd-migration-automation.md).
+   That `vercel.json`'s `git.deploymentEnabled` stops Git deployments of
+   `develop` is Vercel's documented behaviour, confirmed for this project only
+   by step E.

@@ -331,6 +331,24 @@ Migrations first, then the image. A new column the old image does not read is
 harmless; a new image reading a column that does not exist yet is a 500 on every
 page.
 
+`migrate` checks before it applies (`scripts/migration-gate.mjs`). It refuses
+when the recorded history differs from `drizzle/`: a file edited after it was
+applied, a migration the checkout does not have, or a gap. It also holds back
+any pending file that is not plainly additive (a new table, index, nullable or
+literal-default column, or the `artifact_type` seed). It exits 2 and names each
+file it held back. Back up first, then name the files exactly:
+
+```bash
+# read-only: what is pending and why
+docker compose --env-file .env.production --profile tools run --rm migrate bun scripts/migrate.mjs --plan
+docker compose --env-file .env.production --profile tools run --rm \
+  -e AGENTDOCK_APPROVED_MIGRATIONS=<tag>[,<tag>] migrate
+```
+
+Migrators serialise on a PostgreSQL advisory lock. Each one waits at most 15 s
+for a lock, then fails without changing anything; that is usually a sync's
+write transaction, so run it again.
+
 ## Restart behaviour
 
 `restart: unless-stopped` on the web container covers reboot and crash. There is

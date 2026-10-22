@@ -42,3 +42,7 @@ tmp/
 # Migrations generated on the fly for the test schema — never reviewed, never applied to dev
 .drizzle-test/
 .gstack/
+
+# Vercel CLI link state (project and org ids); deploy.yml reads them from GitHub variables.
+.vercel
+.env*

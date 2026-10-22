@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
+const commit = process.env.AGENTDOCK_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
+
 const config: NextConfig = {
   // Docker deployment (single server). 'standalone' emits .next/standalone
   // with only the traced runtime dependencies, so the production image ships
@@ -30,6 +32,14 @@ const config: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
+          // Which commit this deployment was built from, so the deploy workflow
+          // can tell whether production already serves a sha and whether the
+          // domain moved to the build it just made (scripts/release.mjs). A
+          // public repository's commit sha is public; nothing else is exposed.
+          // The workflow passes AGENTDOCK_COMMIT_SHA as a build variable; a Git
+          // deployment has Vercel's own; a Docker build has neither and sends
+          // no header.
+          ...(commit ? [{ key: 'X-AgentDock-Commit', value: commit }] : []),
         ],
         // X-Frame-Options is deliberately absent: frame-ancestors in the policy
         // supersedes it and expresses the same thing.

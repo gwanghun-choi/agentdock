@@ -52,6 +52,15 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # New sync code must not run against a schema it expects but the
+      # database does not have yet: a schedule checks out develop's tip, and a
+      # migration held back by deploy.yml's risk rule (or a failed deploy)
+      # leaves the schema behind it. Read-only; fails the run loudly instead.
+      - run: bun scripts/migrate.mjs --plan --require-current
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SCHEMA: agentdock
+
       - run: bun run sync
         env:
           # The DIRECT (non-pooled) connection string. One batch process has

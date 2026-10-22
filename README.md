@@ -420,6 +420,15 @@ sync를 Vercel Cron으로 돌리지 않는 이유는 두 가지입니다. Hobby�
 | Vercel | `DATABASE_SCHEMA` | `agentdock` |
 | GitHub Actions secret | `DATABASE_URL` | agentdock_app의 Neon **direct** 연결 문자열 |
 | GitHub Actions secret | `AGENTDOCK_GITHUB_TOKEN` | scope 없는 token. 선택이지만 권장합니다 |
+| GitHub Environment `production` secret | `VERCEL_TOKEN` | `deploy.yml`의 `vercel deploy`용 |
+| GitHub Environment `production` variable | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PRODUCTION_URL`, `AGENTDOCK_TARGET_FINGERPRINT` | credential이 아닌 식별자. 마지막 값은 `migrate.mjs --fingerprint` 출력입니다 |
+
+production 배포는 `.github/workflows/deploy.yml` 하나뿐입니다. develop에 push하면
+CI가 성공한 같은 sha에 대해 migration plan → migration 적용·검증 →
+`vercel deploy --prod` → smoke test가 순서대로 실행됩니다. Vercel의 Git 자동
+배포는 `vercel.json`이 끕니다. 그래서 migration이 적용되기 전에 새 코드가
+production에 활성화되지 않습니다. 추가형이 아닌 migration은 자동으로 적용되지
+않습니다. 운영자가 백업한 뒤 tag를 지정해 수동으로 실행합니다.
 
 Neon bootstrap, `pg_trgm`, migration, Preview DB 분리, 최초 sync, smoke test,
 롤백, 무료 플랜 제한을 담은 전체 runbook은 [VERCEL_DEPLOY.md](VERCEL_DEPLOY.md)에

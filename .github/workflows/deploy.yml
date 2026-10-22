@@ -1,0 +1,173 @@
+name: Deploy
+
+# The only path by which a commit reaches Vercel production:
+#
+#   push to develop → CI (check + database) → this workflow:
+#     gate → migration plan → migrate → verify → vercel deploy --prod → smoke
+#
+# Vercel's own Git deployments of develop are off (vercel.json), so nothing
+# activates new code on the production domain before the migrate step below
+# has succeeded for that same commit. VERCEL_DEPLOY.md, "Automated deploys",
+# has the reasoning and the activation order; this file assumes the
+# `production` environment it describes exists.
+
+on:
+  # Runs from the workflow file on the default branch, for the sha CI ran on.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop]
+  # A person re-running the tip of develop — the only way to apply a migration
+  # the risk rule held back: name its exact tag, after taking a backup.
+  workflow_dispatch:
+    inputs:
+      approve_migrations:
+        description: 'Pending migration tags to apply despite the risk rule (comma-separated). Leave empty otherwise.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read # checkout, and the tip of develop for the gate
+  actions: read # this sha's CI runs, for the gate
+
+# One deploy at a time, never cancelled: a run killed between migrate and
+# deploy would leave the schema ahead of the code (harmless — migrations are
+# additive — but a run that finishes is easier to reason about). GitHub keeps
+# one run pending and replaces it with a newer one, so a burst of pushes
+# deploys only the newest; the gate below covers a run that started anyway.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A cancelled or failed CI run, a pull request's run, and a fork's run never
+    # start a deploy. The gate re-checks CI for a manual dispatch.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    # Holds the Vercel token and the target pin, and only develop may use it
+    # (Settings → Environments → production → Deployment branches).
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    timeout-minutes: 25
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+      DATABASE_SCHEMA: agentdock
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      # DEPLOY, SUPERSEDED (a newer commit is on develop), ALREADY_DEPLOYED
+      # (production serves this sha) or BLOCKED_CI (no successful push CI run
+      # for this sha). Only BLOCKED_CI fails the run.
+      - id: gate
+        run: |
+          bun scripts/release.mjs gate
+          if grep -q '^decision=BLOCKED_CI$' "$GITHUB_OUTPUT"; then exit 1; fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Read-only: target pin, recorded history against drizzle/, and the risk
+      # rule for each pending file. Exit 1 blocked, 2 needs approval.
+      - id: plan
+        if: steps.gate.outputs.decision == 'DEPLOY' || steps.gate.outputs.decision == 'ALREADY_DEPLOYED'
+        run: bun scripts/migrate.mjs --plan --production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AGENTDOCK_TARGET_FINGERPRINT: ${{ vars.AGENTDOCK_TARGET_FINGERPRINT }}
+          AGENTDOCK_APPROVED_MIGRATIONS: ${{ inputs.approve_migrations }}
+
+      # The same checks again under the advisory lock, then the pending files in
+      # one transaction, then the history verified before commit. A no-op when
+      # nothing is pending.
+      - id: migrate
+        if: steps.plan.outcome == 'success'
+        run: bun scripts/migrate.mjs --production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AGENTDOCK_TARGET_FINGERPRINT: ${{ vars.AGENTDOCK_TARGET_FINGERPRINT }}
+          AGENTDOCK_APPROVED_MIGRATIONS: ${{ inputs.approve_migrations }}
+
+      - id: verify
+        if: steps.migrate.outcome == 'success'
+        run: bun scripts/migrate.mjs --plan --production --require-current
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AGENTDOCK_TARGET_FINGERPRINT: ${{ vars.AGENTDOCK_TARGET_FINGERPRINT }}
+
+      # Vercel builds the uploaded checkout with the project's own Production
+      # variables — no database URL reaches this step. The domain moves only
+      # when that build is ready; a failed build exits non-zero and production
+      # keeps serving the previous deployment. The token is read from the
+      # environment, never passed as an argument.
+      - id: vercel
+        if: steps.verify.outcome == 'success' && steps.gate.outputs.decision == 'DEPLOY'
+        run: |
+          url=$(npx --yes vercel@61.1.0 deploy --prod --yes --build-env "AGENTDOCK_COMMIT_SHA=$SHA")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+
+      # Pages render from the database, so a 200 without the error boundary is
+      # the database check; the commit header proves the domain moved.
+      - id: smoke
+        if: steps.vercel.outcome == 'success' || (steps.verify.outcome == 'success' && steps.gate.outputs.decision == 'ALREADY_DEPLOYED')
+        run: bun scripts/release.mjs smoke "$PRODUCTION_URL" "$SHA"
+
+      - name: Summary
+        if: always()
+        run: |
+          status=FAILED
+          case "$DECISION" in
+            SUPERSEDED|ALREADY_DEPLOYED) status="SKIPPED ($DECISION)" ;;
+            BLOCKED_CI) status="BLOCKED (no successful CI run for this sha)" ;;
+          esac
+          [ "$PLAN" = failure ] && status="BLOCKED (migration plan — see the plan step)"
+          [ "$MIGRATE" = failure ] || [ "$VERIFY" = failure ] && status="FAILED (migration — nothing was deployed)"
+          [ "$VERCEL" = failure ] && status="FAILED (Vercel deploy — production still serves the previous deployment)"
+          [ "$VERCEL" = success ] && [ "$SMOKE" = success ] && status=SUCCESS
+          [ "$SMOKE" = failure ] && status="DEGRADED (smoke test failed after the deploy)"
+          [ "$DECISION" = ALREADY_DEPLOYED ] && [ "$SMOKE" = success ] && status="SKIPPED (ALREADY_DEPLOYED, smoke passed)"
+          {
+            echo "## Deploy: $status"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| commit | \`$SHA\` |"
+            echo "| gate | ${DECISION:-not reached} |"
+            echo "| migration plan / apply / verify | ${PLAN:-skipped} / ${MIGRATE:-skipped} / ${VERIFY:-skipped} |"
+            echo "| vercel deploy | ${VERCEL:-skipped} ${DEPLOYMENT_URL} |"
+            echo "| smoke | ${SMOKE:-skipped} |"
+            echo ""
+            echo "Rollback — app: Vercel → Deployments → previous production deployment → Instant Rollback"
+            echo "(afterwards Vercel stops assigning the domain to new deployments until the rollback is undone)."
+            echo "Database: never rolled back automatically. Migrations are additive, so the previous app"
+            echo "runs against the new schema; VERCEL_DEPLOY.md, \"Emergency recovery\", has the rest."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=AgentDock deploy: ${status%% *}::sha=${SHA:0:7} gate=${DECISION:-none}"
+          case "$status" in SUCCESS*|SKIPPED*) exit 0 ;; *) exit 1 ;; esac
+        env:
+          DECISION: ${{ steps.gate.outputs.decision }}
+          PLAN: ${{ steps.plan.outcome }}
+          MIGRATE: ${{ steps.migrate.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+          VERCEL: ${{ steps.vercel.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+          DEPLOYMENT_URL: ${{ steps.vercel.outputs.url }}

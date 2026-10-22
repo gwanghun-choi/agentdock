@@ -1,8 +1,23 @@
 name: CI
 
 on:
+  # Branch-filtered so a pushed branch with an open pull request is checked
+  # once, as the pull request, not twice. develop is where deploys come from
+  # (deploy.yml runs after this workflow succeeds on a develop push).
   push:
+    branches: [develop, main]
   pull_request:
+
+# One run per event and commit. 0602d99 was checked twice (runs 24 and 25):
+# GitHub recorded two push events for the same ref update 28730e9→0602d99 in
+# the same second (repos/…/activity, ids 47339677051 and 47339678237), and
+# each push event starts its own run. Same sha, same event → the newer run
+# cancels the older one. A different sha never shares a group, so no commit
+# goes unchecked. Safe to cancel: CI writes nothing, and deploy.yml starts only
+# from a run that concluded success.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.sha }}
+  cancel-in-progress: true
 
 # Checkout only. Neither job needs a secret: the database job's PostgreSQL is a
 # service container on the runner, and no step reaches GitHub's API.

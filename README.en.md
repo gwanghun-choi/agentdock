@@ -430,6 +430,20 @@ starts ingestion.
 | Vercel | `DATABASE_SCHEMA` | `agentdock` |
 | GitHub Actions secret | `DATABASE_URL` | the agentdock_app Neon **direct** connection string |
 | GitHub Actions secret | `AGENTDOCK_GITHUB_TOKEN` | a scopeless token; optional, recommended |
+| GitHub Environment `production` secret | `VERCEL_TOKEN` | for `deploy.yml`'s `vercel deploy` |
+| GitHub Environment `production` variable | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PRODUCTION_URL`, `AGENTDOCK_TARGET_FINGERPRINT` | identifiers, not credentials. The last one is the output of `migrate.mjs --fingerprint` |
+
+`.github/workflows/deploy.yml` is the only path to production. After CI succeeds
+on a push to develop, it runs these for the same sha, in order:
+
+1. the migration plan
+2. apply and verify the migrations
+3. `vercel deploy --prod`
+4. a smoke test
+
+`vercel.json` turns off Vercel's own Git deployments, so new code never goes live
+before its migrations are applied. A migration that is not plainly additive is
+held back: an operator backs up first, then names its tag.
 
 The full runbook — Neon bootstrap, `pg_trgm`, migrations, the Preview database
 policy, the first sync, smoke test, rollback and free-plan limits — is
