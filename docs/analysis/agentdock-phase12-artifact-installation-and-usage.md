@@ -264,7 +264,7 @@ baseline 측정은 HEAD 빌드를 `:3971`에 띄우고 같은 DB에서 했다.
 | `check:boundaries` | PASS(11 migration, 96 source, 32 UI) |
 | `lint`(biome) | PASS(222 files) |
 | `typecheck` | PASS |
-| `test`(unit+DB, `TEST_DATABASE_URL`) | 1차 **1426 passed, 2 skipped**. 마지막 변경 후 재실행에서는 live GitHub 테스트(`src/github/permalink.test.ts`, CI에서 skip) 1건이 비인증 rate limit 소진(remaining 0/60)으로 FAIL. `CI=1`로 재실행하면 **1425 passed, 3 skipped** |
+| `test`(unit+DB, `TEST_DATABASE_URL`) | 1차 **1426 passed, 2 skipped**. 마지막 변경 후 재실행에서는 live GitHub 테스트(`src/github/permalink.test.ts`, CI에서 skip) 1건이 비인증 rate limit 소진(remaining 0/60)으로 FAIL. `CI=1`로 재실행하면 **1425 passed, 3 skipped**. rate limit이 리셋된 뒤 live 테스트만 다시 실행해 **1 passed** |
 | Search evaluation | PASS 52. MRR 0.924, nDCG@10 0.903, Recall@10 0.883으로 Phase 11과 같음 |
 | Production build(standalone) | PASS |
 | Vercel build mode(`VERCEL=1`) | PASS(standalone 미생성, 의도된 동작) |
