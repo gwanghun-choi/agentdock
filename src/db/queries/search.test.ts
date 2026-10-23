@@ -1348,6 +1348,24 @@ describe.skipIf(!DB_URL)('the search query', () => {
       expect((await names('skills/xqcanvas-design/SKILL.md'))[0]).toBe('xqcanvas-design');
     });
 
+    it('a dotted name finds the text that says it, not text holding both halves apart', async () => {
+      const web = await repo('xqweb');
+      await artifact(web, 'skills/xqserver/SKILL.md', [{ hash: 'q17-dotted' }], {
+        name: 'xqserver',
+        summary: 'Build Xqnode.js services',
+      });
+      await artifact(web, 'skills/xqgraph/SKILL.md', [{ hash: 'q17-apart' }], {
+        name: 'xqgraph',
+        summary: 'Renders an xqnode graph and emits js files',
+      });
+      // Before: `xqnode & js`, which found xqgraph and missed xqserver.
+      expect(await names('xqnode.js')).toEqual(['xqserver']);
+      expect(await count('xqnode.js')).toBe(1);
+      expect(await names('xqnode.j')).toEqual(['xqserver']);
+      // A path's dots are spaces in the stored vector; its parts still match.
+      expect(await names('xqserver/SKILL.md')).toEqual(['xqserver']);
+    });
+
     it('a repository name finds what that repository holds', async () => {
       expect(await names('search-spec-xqdevops')).toEqual(['xqdeploy']);
     });

@@ -116,10 +116,16 @@ const EVAL_CASES: Case[] = [
     q: '.claude/commands',
     relevant: ['hooks-mastery/.claude/commands/', 'claude-code/.claude/commands/'],
   },
+  // The plugin's hooks.json joined on 2026-10-23, when hooks took the name of
+  // the plugin they configure: a component of hookify, as its command is.
   {
     id: 'plugin-name',
     q: 'hookify',
-    relevant: ['plugins/hookify/.claude-plugin/plugin.json', 'plugins/hookify/commands/hookify.md'],
+    relevant: [
+      'plugins/hookify/.claude-plugin/plugin.json',
+      'plugins/hookify/commands/hookify.md',
+      'plugins/hookify/hooks/hooks.json',
+    ],
   },
   {
     id: 'plugin-name-2',
@@ -202,6 +208,10 @@ const EVAL_CASES: Case[] = [
     types: ['agent'],
     relevant: ['agents/code-architect.md'],
   },
+  // Phase 17 additions, judged 2026-10-23: the only two fixture descriptions
+  // that name a dotted library, "using p5.js" and "Supports Node.js".
+  { id: 'dotted-name', q: 'p5.js', relevant: ['skills/algorithmic-art/SKILL.md'] },
+  { id: 'dotted-name-2', q: 'node.js', relevant: ['release-skills/SKILL.md'] },
 ];
 
 /**
@@ -559,10 +569,15 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
     'cjk-2': { total: 1, firstRelevant: 1 },
     'repo-name-hyphen': { total: 22, firstRelevant: 1 },
     'agent-type-description': { total: 1, firstRelevant: 1 },
+    // 2026-10-23, with dotted words kept whole: before it `p5.js` also returned
+    // release-skills (total 2) and `node.js` found baoyu-electron-extract only.
+    'dotted-name': { total: 1, firstRelevant: 1 },
+    'dotted-name-2': { total: 1, firstRelevant: 1 },
   };
 
-  /** The means over the judged cases on that date; a change may not lower either. */
-  const PINNED = { mrr: 0.924, ndcg10: 0.902 };
+  /** The means over the judged cases on that date; a change may not lower either.
+   * 52 cases since 2026-10-23 (0.924 / 0.902 over the first 50, unchanged). */
+  const PINNED = { mrr: 0.927, ndcg10: 0.906 };
 
   it.each(EVAL_CASES)('$id: $q', async (c) => {
     const result = await run(c);

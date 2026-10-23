@@ -103,6 +103,23 @@ describe.skipIf(!DB_URL)('repo_seed queries', () => {
       expect(await ours()).toEqual([C, A, B]);
     });
 
+    it('offers a seed the sweep saw at or above the floor before every earlier unknown one', async () => {
+      const D = `${PREFIX}d`;
+      const E = `${PREFIX}e`;
+      const floor = (await import('@/corpus/caps')).CORPUS_CAPS.searchMinStars;
+      // Arrival order A, B, C, D, E; only C and E carry a number at the floor.
+      await seeds.upsertSeeds([seed(A, { registryName: 'x' })]);
+      await seeds.upsertSeeds([seed(B, { stars: floor - 1 })]);
+      await seeds.upsertSeeds([seed(C, { topic: 't', stars: floor })]);
+      await seeds.upsertSeeds([seed(D, { stars: 'many' })]);
+      await seeds.upsertSeeds([seed(E, { topic: 't', stars: floor + 900 })]);
+      // Known first, then arrival order within each group; a malformed hint is
+      // unknown, not a failed statement.
+      expect(await ours()).toEqual([C, E, A, B, D]);
+      // The same key inside a scoped offer, which is what each fan-out group runs.
+      expect(await seeds.unenqueuedSeeds(10, [A, E])).toEqual([E, A]);
+    });
+
     it('omits a seed that already has a job, in every status including terminal ones', async () => {
       await seeds.upsertSeeds([seed(A), seed(B), seed(C)]);
       // Never `queued`: claimJob takes the oldest claimable row in the whole

@@ -313,14 +313,29 @@ export type SearchMode = 'all' | 'any';
  * C-weight path column holds; `websearch_to_tsquery` read it as one file token
  * and matched nothing. Mode `any` joins with `|` instead.
  *
+ * A dotted word (`node.js`, `socket.io`, `1.2.3`) is one term with two forms:
+ * the single lexeme the parser makes of it in a name or summary (`Node.js` is
+ * a `host` token, 'node.js'), or its parts adjacent, which is how the path
+ * column — '.' replaced by a space — holds `SKILL.md`. Measured 2026-10-23 on
+ * production: `node.js` split to `node & js` returned 2 artifacts, neither
+ * about Node.js, and `three.js` 81, matched by "three" and "js" anywhere.
+ *
  * The text reaches PostgreSQL as a bound parameter either way; to_tsquery sees
- * only letter/digit runs joined by operators this function wrote.
+ * only letter/digit runs, dots between them, and operators this function wrote.
  */
 function tsQuery(q: string, mode: SearchMode) {
-  const words = plainWords(q);
-  if (!words) return sql`websearch_to_tsquery('english', ${q})`;
-  const last = words.length - 1;
-  const terms = words.map((w, i) => (i === last && w.length >= MIN_PREFIX_CHARS ? `${w}:*` : w));
+  if (!plainWords(q)) return sql`websearch_to_tsquery('english', ${q})`;
+  // The same letter/digit runs plainWords returns, a dotted run kept together.
+  const chunks = q.toLowerCase().match(/[\p{L}\p{N}]+(?:\.[\p{L}\p{N}]+)*/gu) ?? [];
+  const last = chunks.length - 1;
+  const prefix = (w: string, isLast: boolean) =>
+    isLast && w.length >= MIN_PREFIX_CHARS ? `${w}:*` : w;
+  const terms = chunks.map((chunk, i) => {
+    const parts = chunk.split('.');
+    if (parts.length === 1) return prefix(chunk, i === last);
+    const adjacent = parts.map((p, j) => prefix(p, i === last && j === parts.length - 1));
+    return `(${prefix(chunk, i === last)} | ${adjacent.join(' <-> ')})`;
+  });
   return sql`to_tsquery('english', ${terms.join(mode === 'any' ? ' | ' : ' & ')})`;
 }
 

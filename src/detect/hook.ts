@@ -26,9 +26,21 @@ function isSettingsJson(path: string): boolean {
   return path === SETTINGS_FILENAME || path.endsWith(`/${SETTINGS_FILENAME}`);
 }
 
-function basenameNoExt(path: string): string {
-  const base = path.split('/').pop() as string;
-  return base.replace(/\.json$/, '');
+/**
+ * The directory a hook file configures — `plugins/p/hooks/hooks.json` is p's,
+ * `app/.claude/settings.json` is app's — else the file's basename, which is
+ * all a repository-root `hooks/hooks.json` or `.claude/settings.json` has.
+ *
+ * The basename alone named 51 of 57 sampled production hooks "hooks"
+ * (2026-10-23, /artifacts?type=hook pages 1 and 7), so the list read as one
+ * word repeated and a plugin's name never reached the hook's A-weight name.
+ * The same rule mcp.ts applies to a `.mcp.json` (dirOf), and the same kind of
+ * fact: where the file sits, not anything the file claims.
+ */
+function hookName(path: string): string {
+  const segments = path.split('/');
+  if (segments.length >= 3) return segments[segments.length - 3];
+  return (segments.pop() as string).replace(/\.json$/, '');
 }
 
 type Handler = { event: string; matcher: unknown; type: unknown; command: unknown };
@@ -129,11 +141,10 @@ export const hook: Detector = {
       };
     }
 
-    // A hook has no name, no description, and no meaning outside the file it
-    // sits in — an event handler is not something a user searches for. The
-    // file's basename is the only honest identity, and source_path is the
-    // identity key anyway, so two hook files in one repository never collide.
-    const name = basenameNoExt(c.sourcePath);
+    // A hook has no name and no description of its own, so it is named by
+    // where it sits (hookName). source_path is the identity key, so two hook
+    // files in one repository never collide whatever their names.
+    const name = hookName(c.sourcePath);
     const scope = isSettingsJson(c.sourcePath) ? 'project' : 'plugin';
 
     return {

@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { CORPUS_CAPS } from '@/corpus/caps';
 import { db } from '@/db/client';
 import { ingestJob, repoSeed, repositoryDenylist } from '@/db/schema';
 
@@ -95,6 +96,13 @@ export async function upsertSeeds(seeds: SeedRow[]): Promise<number> {
  * source knows which names it just produced; it cannot rely on the column still
  * agreeing.
  *
+ * Ahead of arrival order, one key: whether the topic sweep saw the repository
+ * at or above its star floor (KNOWN_ELIGIBLE). Without it the backlog — the
+ * global FIFO — offered the registry's first-arrived names before thousands of
+ * swept ones. Measured on sync 39853119505 (2026-10-22, slots in enqueue
+ * order): the 34 search slots gave 27 ingests and 0 declines, the 33 backlog
+ * slots 1 ingest, 24 below the floor and 7 unreadable.
+ *
  * ponytail: unindexed on ingest_job.target — a sequential scan at tens of
  * thousands of job rows. The upgrade is one additive
  * CREATE INDEX ON ingest_job (target). Not built: this is a manual operation
@@ -107,10 +115,29 @@ export async function unenqueuedSeeds(limit: number, only?: string[]): Promise<s
     .leftJoin(ingestJob, eq(ingestJob.target, repoSeed.fullName))
     .leftJoin(repositoryDenylist, eq(repositoryDenylist.fullName, repoSeed.fullName))
     .where(and(isNull(ingestJob.id), isNull(repositoryDenylist.fullName), nameScope(only)))
-    .orderBy(asc(repoSeed.createdAt), asc(repoSeed.id))
+    .orderBy(KNOWN_ELIGIBLE, asc(repoSeed.createdAt), asc(repoSeed.id))
     .limit(limit);
   return rows.map((r) => r.fullName);
 }
+
+/**
+ * 0 for a seed whose hint carries a star count at or above the sweep's floor,
+ * 1 for every other seed. Only the topic sweep writes `hint.stars`
+ * (src/corpus/search.ts), from the search result itself, so a 0 is a number
+ * GitHub returned and a 1 is "not known" — never "below the floor". It only
+ * orders: an unknown seed is still offered, after the known ones. The CASE
+ * tests the JSON type before the cast, so a hint written by hand cannot fail
+ * the statement.
+ *
+ * ponytail: an unknown seed (the registry's, most of the curated lists') waits
+ * while any known one is pending. Give the registry its own fan-out group if
+ * its eligible names start arriving weeks late — not before: its slots were 3%
+ * productive on the run measured above.
+ */
+const KNOWN_ELIGIBLE = sql`case
+  when jsonb_typeof(${repoSeed.hint}->'stars') is distinct from 'number' then 1
+  when (${repoSeed.hint}->>'stars')::numeric >= ${CORPUS_CAPS.searchMinStars} then 0
+  else 1 end`;
 
 /** An empty set is not "every seed" — it is "no seed", and must select nothing
  * rather than silently widening to the whole table. */

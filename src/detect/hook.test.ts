@@ -93,10 +93,27 @@ describe('hook.parse — a plugin hooks.json', () => {
     );
     expect(result.ok).toBe(true);
     if (!isArtifact(result)) throw new Error('expected an artifact');
-    expect(result.artifact.name).toBe('hooks');
+    // Named by the plugin directory it configures, not "hooks" (hook.ts).
+    expect(result.artifact.name).toBe('p');
     expect(result.artifact.meta.scope).toBe('plugin');
     expect(result.artifact.meta.events).toEqual(['PreToolUse', 'PostToolUse']);
     expect(result.artifact.meta.hookCount).toBe(3);
+  });
+
+  it.each([
+    ['plugins/ralph-loop/hooks/hooks.json', 'ralph-loop'],
+    ['harnesses/claude-code/hooks/hooks.json', 'claude-code'],
+    ['hooks/hooks.json', 'hooks'],
+    ['apps/web/.claude/settings.json', 'web'],
+    ['.claude/settings.json', 'settings'],
+  ])('%s is named %s: the directory it configures, else its basename', async (path, name) => {
+    const result = await parseAt(
+      path,
+      JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'true' }] }] } }),
+    );
+    if (!isArtifact(result)) throw new Error('expected an artifact');
+    expect(result.artifact.name).toBe(name);
+    expect(result.artifact.slug).toBe(name);
   });
 
   it('an event name AgentDock has never heard of is recorded, read from the file', async () => {
