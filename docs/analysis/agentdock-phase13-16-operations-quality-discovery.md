@@ -277,8 +277,10 @@ bun run quality:check [--repo=owner/] [--stale-days=14] [--samples=5] [--json]
 
 ## 18. CI/CD 영향
 
-- `ci.yml`과 `deploy.yml`은 바꾸지 않았다. 새 테스트는 기존 check job(DB 없이 1060 passed)과 database job에서 실행된다.
-- 운영 DB 상태에 따라 결과가 달라지는 검사는 CI 필수 조건으로 넣지 않았다. `quality:check`는 CI에 넣지 않았다.
+- `deploy.yml`은 바꾸지 않았다. 새 테스트는 기존 check job(DB 없이 1060 passed)과 database job에서 실행된다.
+- 운영 DB 상태에 따라 결과가 달라지는 검사는 CI 필수 조건으로 넣지 않았다.
+- 2026-10-23 보강: `ci.yml` database job에 `ops.mjs preflight`·`status`·`quality`를 한 step으로 추가했다. 대상은 그 job의 일회용 DB(loopback, 방금 migration한 빈 `agentdock` schema)이고 secret은 쓰지 않는다. 운영 데이터가 아니라 배선(읽기 전용 확인 → 리포트)을 검사한다.
+- 2026-10-23 보강: 두 리포트는 읽기 전에 `src/db/readOnly.ts`의 연결 확인을 거친다. pool 연결 10개 모두에서 `default_transaction_read_only`·`transaction_read_only`가 on, `statement_timeout` 30 s, role `agentdock_app`, search_path가 schema 하나인지 확인하고, rollback되는 transaction 안의 `CREATE TEMP TABLE`이 25006으로 거부되는지 시험한다. 하나라도 어긋나면 exit 2로 아무것도 읽지 않는다. `-pooler` 호스트는 연결 전에 거부하고, `--production`은 `migration-gate.mjs`의 `productionTargetRejection`(loopback·pooler 거부, fingerprint 일치)을 재사용한다. `bun run ops:preflight`가 확인만 출력한다. 회귀 테스트는 `src/db/readOnly.test.ts` 17개이며, 읽기 전용 파라미터 제거·pool 확인 생략·probe 무조건 통과·pooler 허용·transaction_read_only 확인 생략의 다섯 변형을 각각 잡는 것을 확인했다.
 - `sync.yml`: summary step이 약 1초 늘어난다(로컬 측정: 10k에서 52 ms). GitHub 요청은 0이다. `continue-on-error`이므로 sync 결과에는 영향이 없다. drain deadline(35분) 안에 들지 않는 후속 step이다.
 
 ## 19. Performance Before/After

@@ -216,8 +216,34 @@ repositories, read age, failing checks, partial reads, delistings, parse status,
 and failed jobs by their last outcome. `--repo=owner/` narrows it, `--json`
 prints it whole. It repairs nothing.
 
-Both open their connections with `default_transaction_read_only=on`, so
-PostgreSQL refuses a write; both print an error's code, never its message.
+Both send `default_transaction_read_only=on` and `statement_timeout=30s` as
+startup parameters, and before reading anything they open all ten pool
+connections and confirm the server's settings on each (read-only, timeout, role
+`agentdock_app`, search_path), then check that a `CREATE TEMP TABLE` inside an
+always-rolled-back transaction is refused with SQLSTATE 25006
+(`src/db/readOnly.ts`). Any mismatch reads nothing and exits 2. A pooled
+endpoint (`-pooler`) is refused before connecting, since PgBouncer may drop a
+startup parameter. Errors print their code, never their message.
+
+Against the deployment's database, run **`bun run ops:preflight`** first: the
+same checks, one PASS/FAIL line each. `--production` (any mode) adds the deploy
+workflow's target check before connecting — no loopback, no pooler, fingerprint
+equal to `AGENTDOCK_TARGET_FINGERPRINT`. Bun reads `.env` by itself, so a run
+aimed at a hosted database is `bun --no-env-file scripts/ops.mjs …`:
+
+```zsh
+# From the repository root. The URL is typed without echo, never an argument.
+read -rs "DATABASE_URL?direct URL: "; echo; export DATABASE_URL DATABASE_SCHEMA=agentdock
+export AGENTDOCK_TARGET_FINGERPRINT=<the 16 hex the deploy workflow pins>
+bun --no-env-file scripts/ops.mjs preflight --production   # exit 0 before going on
+bun --no-env-file scripts/ops.mjs status --production
+bun --no-env-file scripts/ops.mjs quality --production
+unset DATABASE_URL
+```
+
+Exit codes, every mode: 0 read and reported (preflight: every check passed); 1
+`quality:check` found a rule violated; 2 nothing reported — the target was
+refused, a connection check failed, or the database could not be read.
 
 ### Incremental refresh, by commit SHA
 
@@ -581,6 +607,7 @@ refuses any URL the test allowlist refuses. CI's `e2e` job runs the same steps.
 | `bun run corpus:reset --confirm` | Empty the corpus. Refuses unless `AGENTDOCK_ALLOW_CORPUS_RESET=1` as well. Drops nothing. |
 | `bun run ops:status [--hours=24] [--markdown \| --json]` | Sync health: last run, queue, attempts in a window, corpus counts. Read-only; exit 2 only if the database could not be read. |
 | `bun run quality:check [--repo=owner/] [--json]` | Integrity rules and corpus observations. Read-only; exit 1 if a rule holds a row. |
+| `bun run ops:preflight [--production]` | Only the connection checks both reports run before reading, one PASS/FAIL line each. Exit 2 on any FAIL. |
 | `bun run ci` | Boundary scan, lint, type-check, tests |
 | `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which also executes these files and loads `.env`, so `bunfig.toml`'s preload applies the same test-database isolation. |
 | `bun run lint` / `bun run format` | Biome, check and write |

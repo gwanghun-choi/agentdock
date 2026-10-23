@@ -114,6 +114,18 @@ jobs:
 
       - run: bun run test
 
+      # scripts/ops.mjs end to end — the read-only connection checks, then
+      # both reports — against the migrated `agentdock` schema of this job's
+      # disposable database. src/db/readOnly.test.ts covers the checks; this
+      # covers the wiring. No secret here: the URL is the loopback test one.
+      - run: |
+          bun --no-env-file scripts/ops.mjs preflight
+          bun --no-env-file scripts/ops.mjs status
+          bun --no-env-file scripts/ops.mjs quality
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          DATABASE_SCHEMA: agentdock
+
   # The browser journeys (e2e/journeys.spec.ts) against the production build,
   # on the same disposable PostgreSQL as the job above, seeded offline from the
   # committed fixtures — no secret, no GitHub request, nothing that can name the

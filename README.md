@@ -207,8 +207,31 @@ source path, 빈 이름, version과 commit이 다른 finding, artifact는 있는
 delist, parse 상태, 마지막 outcome별 실패 job입니다. `--repo=owner/`로 범위를 좁히고
 `--json`으로 전체를 출력합니다. 아무것도 고치지 않습니다.
 
-두 명령 모두 `default_transaction_read_only=on`으로 연결하므로 PostgreSQL이 쓰기를
-거부하고, 오류는 메시지가 아닌 코드만 출력합니다.
+두 명령 모두 `default_transaction_read_only=on`과 `statement_timeout=30s`를 연결 시작
+파라미터로 보내고, 무엇이든 읽기 전에 pool의 연결 10개를 모두 열어 서버 쪽 설정(읽기
+전용, timeout, role `agentdock_app`, search_path)을 확인하며, rollback되는 transaction
+안의 `CREATE TEMP TABLE`이 SQLSTATE 25006으로 거부되는지 시험합니다(`src/db/readOnly.ts`).
+하나라도 어긋나면 아무것도 읽지 않고 exit 2입니다. pooled endpoint(`-pooler`)는 시작
+파라미터를 버릴 수 있으므로 연결 전에 거부합니다. 오류는 메시지가 아닌 코드만 출력합니다.
+
+운영 DB에서는 **`bun run ops:preflight`** 로 이 확인만 먼저 실행해 항목별 PASS/FAIL을
+봅니다. `--production`(모든 모드)을 붙이면 deploy workflow와 같은 target 검사
+(loopback·pooled 거부, `AGENTDOCK_TARGET_FINGERPRINT` 일치)를 연결 전에 더 합니다.
+Bun은 `.env`를 스스로 읽으므로 운영 대상 실행은 `bun --no-env-file scripts/ops.mjs …`로 합니다.
+
+```zsh
+# 저장소 루트에서. URL은 echo 없이 입력하고 명령 인자에 넣지 않는다.
+read -rs "DATABASE_URL?direct URL: "; echo; export DATABASE_URL DATABASE_SCHEMA=agentdock
+export AGENTDOCK_TARGET_FINGERPRINT=<deploy workflow의 vars와 같은 16 hex>
+bun --no-env-file scripts/ops.mjs preflight --production   # exit 0이어야 다음으로
+bun --no-env-file scripts/ops.mjs status --production
+bun --no-env-file scripts/ops.mjs quality --production
+unset DATABASE_URL
+```
+
+종료 코드는 모든 모드에서 같습니다. 0 읽고 출력함(preflight는 모든 항목 PASS), 1
+`quality:check`의 규칙 위반, 2 아무것도 출력하지 않음(target 거부, 연결 확인 실패, DB를
+읽지 못함).
 
 ### Commit SHA 기준 Incremental refresh
 
@@ -557,8 +580,9 @@ bun run test:e2e
 | `bun run sync` | **scheduled job.** discovery, refresh, drain, 요약 출력. |
 | `bun run corpus:sync --source=…` | 같은 기능을 소스와 상한선을 노출한 형태로. 색인을 수동으로 채울 때 씁니다. |
 | `bun run corpus:reset --confirm` | corpus 비우기. `AGENTDOCK_ALLOW_CORPUS_RESET=1`도 함께여야 실행됩니다. 어떤 것도 DROP하지 않습니다. |
-| `bun run ops:status [--hours=24] [--markdown \| --json]` | sync 상태: 마지막 실행, queue, 기간 내 attempt, corpus 수. 읽기 전용이며 DB를 읽지 못했을 때만 exit 2. |
+| `bun run ops:status [--hours=24] [--markdown \| --json]` | sync 상태: 마지막 실행, queue, 기간 내 attempt, corpus 수. 읽기 전용이며 연결 확인 실패나 DB를 읽지 못했을 때만 exit 2. |
 | `bun run quality:check [--repo=owner/] [--json]` | 무결성 규칙과 corpus 관찰. 읽기 전용이며 규칙에 걸린 행이 있으면 exit 1. |
+| `bun run ops:preflight [--production]` | 위 두 명령이 읽기 전에 하는 연결 확인만 항목별 PASS/FAIL로 출력. 하나라도 FAIL이면 exit 2. |
 | `bun run ci` | 경계 검사, lint, type check, test |
 | `bun run test` | Vitest. `run`이 붙어 있는 데 유의 — 맨 `bun test`는 Bun 자체 러너를 부릅니다. 그 러너도 이 파일들을 실행하고 `.env`를 읽으므로, `bunfig.toml`의 preload가 같은 테스트 DB 격리를 적용합니다. |
 | `bun run lint` / `bun run format` | Biome, 검사와 자동 수정 |

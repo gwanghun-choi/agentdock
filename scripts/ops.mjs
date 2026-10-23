@@ -4,7 +4,9 @@
 // Two read-only operator reports over the database the sync writes. Neither
 // changes a row, starts a job or calls GitHub; both open their connections with
 // default_transaction_read_only=on, so PostgreSQL refuses a write even if one
-// were ever added here by mistake.
+// were ever added here by mistake — and both confirm that on every pooled
+// connection before the first read (src/db/readOnly.ts). A check that fails
+// stops the run before anything is read.
 //
 //   bun run ops:status       is the scheduled sync running and finishing? The
 //                            last run, the queue now, the attempts in a window,
@@ -12,10 +14,18 @@
 //   bun run quality:check    integrity rules and corpus observations
 //                            (src/db/queries/quality.ts). Exit 1 if a rule that
 //                            must hold does not.
+//   bun run ops:preflight    only the connection checks, one PASS/FAIL line
+//                            each. Run it first against a hosted database.
 //
-// Both: exit 2 when the database could not be read. The error's code is
-// printed, never its message — a connection error's message can carry a host
-// name, and a statement error's can carry values.
+// --production (any mode) also requires the target the deploy workflow pins:
+// hosted, direct, and fingerprint equal to AGENTDOCK_TARGET_FINGERPRINT
+// (scripts/migration-gate.mjs). It stops a pasted preview or local URL.
+//
+// Exit codes, every mode: 0 read and reported (preflight: every check passed);
+// 1 quality:check found a rule violated; 2 nothing was reported — the target
+// was refused, a connection check failed, or the database could not be read.
+// The error's code is printed, never its message — a connection error's
+// message can carry a host name, and a statement error's can carry values.
 //
 // Neither is public. AgentDock has no sign-in, so operator detail stays in a
 // terminal, a cron mail or the sync workflow's run summary (sync.yml), which
@@ -24,6 +34,7 @@
 // Usage:
 //   bun run ops:status    [--hours=<n>] [--stale-hours=<n>] [--json | --markdown]
 //   bun run quality:check [--repo=<owner/repo prefix>] [--stale-days=<n>] [--samples=<n>] [--json]
+//   bun run ops:preflight [--production]
 
 const [mode, ...args] = process.argv.slice(2);
 
@@ -46,28 +57,58 @@ function count(name, fallback) {
   return n;
 }
 
-if (mode !== 'status' && mode !== 'quality') {
-  console.error('ops: usage: scripts/ops.mjs status|quality [flags]');
+if (mode !== 'status' && mode !== 'quality' && mode !== 'preflight') {
+  console.error('ops: usage: scripts/ops.mjs status|quality|preflight [flags]');
   process.exit(2);
 }
 
-// Read-only at the server, as a startup parameter: postgres.js sends a URL's
-// query parameters as connection parameters, and src/db/client.ts reads this
-// variable once at import, so every pooled connection carries it.
-try {
-  const url = new URL(process.env.DATABASE_URL ?? '');
-  url.searchParams.set('default_transaction_read_only', 'on');
-  process.env.DATABASE_URL = url.href;
-} catch {
-  console.error('ops: DATABASE_URL is missing or not a URL.');
+const { OPS_STATEMENT_TIMEOUT_MS, readOnlyChecks, readOnlyTarget } = await import(
+  '../src/db/readOnly.ts'
+);
+if (flag('production') !== undefined) {
+  const { productionTargetRejection } = await import('./migration-gate.mjs');
+  const reason = productionTargetRejection(
+    process.env.DATABASE_URL,
+    process.env.AGENTDOCK_TARGET_FINGERPRINT,
+  );
+  if (reason) {
+    console.error(`ops: refusing the production target: ${reason}.`);
+    process.exit(2);
+  }
+}
+// src/db/client.ts reads this variable once at import, so every pooled
+// connection carries the read-only startup parameters.
+const target = readOnlyTarget(process.env.DATABASE_URL);
+if ('refused' in target) {
+  console.error(`ops: ${target.refused}.`);
   process.exit(2);
 }
+process.env.DATABASE_URL = target.url;
 
 let exitCode = 0;
 let sql;
 try {
   ({ sql } = await import('../src/db/client.ts'));
-  if (mode === 'status') {
+  const { AGENTDOCK_SCHEMA } = await import('../src/db/schema.ts');
+  const checks = await readOnlyChecks(sql, {
+    schema: AGENTDOCK_SCHEMA,
+    role: 'agentdock_app',
+    statementTimeoutMs: OPS_STATEMENT_TIMEOUT_MS,
+  });
+  const failed = checks.filter((c) => !c.ok);
+  if (mode === 'preflight') {
+    for (const c of checks) console.log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.check}`);
+    console.log(
+      failed.length === 0 ? 'preflight passed' : 'preflight failed — do not run the reports',
+    );
+  } else if (failed.length > 0) {
+    // stderr, so a --markdown summary on stdout never carries half a report.
+    for (const c of failed) console.error(`ops: FAIL  ${c.check}`);
+  }
+  if (failed.length > 0) {
+    console.error('ops: the connection is not confirmed read-only; nothing was read.');
+    exitCode = 2;
+  } else if (mode === 'status') {
     const { readSyncReport } = await import('../src/db/queries/opsReport.ts');
     const { REAP_AFTER_MS } = await import('../src/ingest/worker.ts');
     const { DEFAULT_STALE_HOURS, formatMarkdown, formatText, syncHealth } = await import(
@@ -86,7 +127,7 @@ try {
     } else {
       process.stdout.write(formatText(report, staleHours));
     }
-  } else {
+  } else if (mode === 'quality') {
     const { runQualityChecks } = await import('../src/db/queries/quality.ts');
     const repo = flag('repo') || undefined;
     const staleDays = count('stale-days', 14);

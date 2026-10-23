@@ -229,7 +229,11 @@ and 03:00 KST).
 
 The run's summary page also carries an "AgentDock sync health" table: the
 step after the sync runs `bun run ops:status --markdown` over a read-only
-connection (README, Scheduled Synchronization). Counts and statuses only.
+connection (README, Scheduled Synchronization). Counts and statuses only. The
+report first confirms the connection is read-only on every pooled connection;
+if it cannot, the step prints `ops: FAIL …` to its log, adds no table, and the
+sync stays green (`continue-on-error`). The secret must be the direct endpoint:
+a `-pooler` URL is refused.
 
 ## Step 8 — smoke the deployment
 
