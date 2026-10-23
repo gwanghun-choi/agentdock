@@ -322,9 +322,14 @@ export type SearchMode = 'all' | 'any';
  *
  * The text reaches PostgreSQL as a bound parameter either way; to_tsquery sees
  * only letter/digit runs, dots between them, and operators this function wrote.
+ *
+ * Each form is a scalar subquery so it runs once per statement. The statements
+ * are prepared (src/db/client.ts), and a generic plan does not fold a function
+ * of a parameter: measured 2026-10-23 at 50k rows, the bare call re-ran per row
+ * and took the node.js count from 29 ms to 102 ms; as a subquery, 26 ms.
  */
 function tsQuery(q: string, mode: SearchMode) {
-  if (!plainWords(q)) return sql`websearch_to_tsquery('english', ${q})`;
+  if (!plainWords(q)) return sql`(SELECT websearch_to_tsquery('english', ${q}))`;
   // The same letter/digit runs plainWords returns, a dotted run kept together.
   const chunks = q.toLowerCase().match(/[\p{L}\p{N}]+(?:\.[\p{L}\p{N}]+)*/gu) ?? [];
   const last = chunks.length - 1;
@@ -336,7 +341,7 @@ function tsQuery(q: string, mode: SearchMode) {
     const adjacent = parts.map((p, j) => prefix(p, i === last && j === parts.length - 1));
     return `(${prefix(chunk, i === last)} | ${adjacent.join(' <-> ')})`;
   });
-  return sql`to_tsquery('english', ${terms.join(mode === 'any' ? ' | ' : ' & ')})`;
+  return sql`(SELECT to_tsquery('english', ${terms.join(mode === 'any' ? ' | ' : ' & ')}))`;
 }
 
 /**

@@ -41,12 +41,13 @@ export const sql = postgres(env.DATABASE_URL, {
 // statements took 6.2 round trips. Prepared, a statement this connection has
 // run before takes one. Transactions (sql.begin) get their own client and keep
 // postgres.js's unsafe() default.
-// ponytail: a prepared search statement goes to a generic plan after five runs
-// on a connection unless the role sets plan_cache_mode = force_custom_plan
-// (scripts/sql/bootstrap-agentdock.sql has the measurement). Without it this
-// trade stays ahead only while a round trip costs more than the generic-plan
-// penalty: 0.215 s against 5–15 ms at 7.3k rows. Revisit if the function and
-// database ever share a region and the round trip drops to milliseconds.
+// ponytail: a prepared statement goes to a generic plan after five runs on a
+// connection, where a function of a parameter is no longer folded at plan
+// time. The search's tsquery is a scalar subquery for that reason (search.ts,
+// tsQuery); with it, the 10 page query sets measured 2026-10-23 at 7.3k–50k
+// rows ran within noise of prepare:false under the default plan_cache_mode.
+// Revisit if a new statement puts a parameter-dependent call in a per-row
+// position — EXPLAIN (GENERIC_PLAN) shows it in a Filter.
 export const db = drizzle(
   new Proxy(sql, {
     get: (target, key) =>

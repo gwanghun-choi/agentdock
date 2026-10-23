@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
 import { MARK_CLOSE, MARK_OPEN } from '@/components/Marked';
@@ -1499,5 +1499,38 @@ describe.skipIf(!DB_URL)('the search query', () => {
         await expect(count(q)).resolves.toBeTypeOf('number');
       }
     });
+  });
+
+  // Drizzle's statements are prepared (src/db/client.ts), and PostgreSQL moves
+  // a prepared statement to a generic plan after five runs. There an expression
+  // over a parameter is no longer folded at plan time: measured 2026-10-23 at
+  // 50k rows, to_tsquery('english', $1) re-ran on every row and took the
+  // node.js count from 29 ms to 102 ms. Asserted on the plan, not a timing.
+  describe('the tsquery in a generic plan', () => {
+    function perRowTsquery(node: Record<string, unknown>): string[] {
+      if (node['Parent Relationship'] === 'InitPlan') return [];
+      const { Plans, ...own } = node as { Plans?: Record<string, unknown>[] };
+      const here = /to_tsquery\(/.test(JSON.stringify(own)) ? [String(node['Node Type'])] : [];
+      return [...here, ...(Plans ?? []).flatMap(perRowTsquery)];
+    }
+
+    it.each([['node.js'], ['code review'], ['xqpdf -convert'], ['xqgenericplanword']])(
+      'is computed once per statement, not per row (%s)',
+      async (q) => {
+        const filters = { types: [], capabilities: [] };
+        const mode = await search.searchMode({ q, filters });
+        const unsafe = vi.spyOn(sql, 'unsafe');
+        await search.countSearchResults({ q, filters, mode });
+        await search.searchPackages({ q, filters, mode, sort: 'relevance', limit: 25, offset: 0 });
+        const statements = unsafe.mock.calls.map(([text]) => text);
+        unsafe.mockRestore();
+
+        expect(statements.some((text) => text.includes('to_tsquery('))).toBe(true);
+        for (const text of statements) {
+          const [row] = await sql.unsafe(`EXPLAIN (GENERIC_PLAN, VERBOSE, FORMAT JSON) ${text}`);
+          expect(perRowTsquery(row['QUERY PLAN'][0].Plan)).toEqual([]);
+        }
+      },
+    );
   });
 });

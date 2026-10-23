@@ -53,15 +53,6 @@ CREATE SCHEMA agentdock_test AUTHORIZATION agentdock_app;
 -- created three statements ago, not a pre-existing object.
 ALTER ROLE agentdock_app SET search_path = agentdock;
 
--- The web prepares its statements (src/db/client.ts) to save a round trip, and
--- PostgreSQL's default switches a prepared statement to a generic plan after
--- five runs. Measured 2026-10-23 on a synthetic 7.3k corpus: the search
--- statements went from 11 ms to 27 ms (q=node.js); at 50k, 32 ms to 96 ms.
--- Planned per run, they matched the unprepared timings. A role default, not a
--- startup parameter, because a pooler may refuse unknown startup parameters.
--- An existing deployment applies this one statement once, as a superuser.
-ALTER ROLE agentdock_app SET plan_cache_mode = force_custom_plan;
-
 -- Deliberately absent:
 --   * no GRANT CONNECT       -- PUBLIC already has CONNECT on this database
 --   * no REVOKE of any kind  -- nothing to revoke, and revoking from PUBLIC
