@@ -1,12 +1,20 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { isBundledScript } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
 import { CopyButton } from '@/components/CopyButton';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
-import { detailHref, historyHref, permalink, permalinkAtLine, treeHref } from '@/components/hrefs';
+import {
+  detailHref,
+  detailTail,
+  historyHref,
+  permalink,
+  permalinkAtLine,
+  sourcePathCandidates,
+  treeHref,
+} from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SetupPanel } from '@/components/SetupPanel';
@@ -96,7 +104,10 @@ export async function generateMetadata({ params }: Props) {
   // Plain strings. The framework escapes them, and no structured-data block is
   // added: that is the one sink it does not escape.
   const title = `${detail.name} — ${detail.fullName} — AgentDock`;
-  const description = metaDescription(detail.summary);
+  const description = metaDescription(
+    detail.summary,
+    `${artifactTypeLabel(detail.type)} at ${detail.sourcePath} in ${detail.fullName}, as read at commit ${detail.commitSha.slice(0, 7)}.`,
+  );
   // Text only: no image is generated, and no URL is emitted because the
   // deployment's own origin is not something this repository records.
   return {
@@ -111,6 +122,18 @@ export default async function PackagePage({ params }: Props) {
   const { owner, repo, path } = await params;
   const detail = await getPackageDetail(owner, repo, path);
   if (!detail) notFound();
+  // One address per artifact. The lookup folds the repository name's case and
+  // accepts a skill's SKILL.md, so /r/composiohq/… and …/SKILL.md answered 200
+  // with the same page as the address this site links (production, 2026-10-23).
+  // A canonical link needs the deployment's origin, which this repository does
+  // not record (layout.tsx); a redirect needs none. Compared decoded, so an
+  // escape the browser chose differently cannot loop.
+  if (
+    `${owner}/${repo}` !== detail.fullName ||
+    sourcePathCandidates(path)[0] !== detailTail(detail.sourcePath, detail.type)
+  ) {
+    permanentRedirect(detailHref(detail.fullName, detail.sourcePath, detail.type));
+  }
 
   // Independent reads, one round trip of latency instead of three.
   const [findings, related, history] = await Promise.all([

@@ -47,11 +47,16 @@ export async function generateMetadata({
   const varied =
     q !== '' || sp.cap !== undefined || sp.sort !== undefined || pageParam.parse(sp.page) > 1;
   const subject = type ? TYPE_FILTER_LABELS[type] : 'Artifacts';
+  const title = q ? `“${q}” in ${subject} — AgentDock` : `${subject} — AgentDock`;
+  const description = type
+    ? `${TYPE_FILTER_LABELS[type]} AgentDock read from public GitHub repositories, each linked to the commit it was read at.`
+    : 'Browse and search the agent artifacts AgentDock read from public GitHub repositories.';
   return {
-    title: q ? `“${q}” in ${subject} — AgentDock` : `${subject} — AgentDock`,
-    description: type
-      ? `${TYPE_FILTER_LABELS[type]} AgentDock read from public GitHub repositories, each linked to the commit it was read at.`
-      : 'Browse and search the agent artifacts AgentDock read from public GitHub repositories.',
+    title,
+    description,
+    // As on the repository page: otherwise the card is the layout's.
+    openGraph: { title, description, type: 'website', siteName: 'AgentDock' },
+    twitter: { card: 'summary', title, description },
     ...(varied ? { robots: { index: false, follow: true } } : {}),
   };
 }

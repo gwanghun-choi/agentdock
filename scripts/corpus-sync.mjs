@@ -365,7 +365,7 @@ async function runRegistry() {
   console.log(
     `corpus-sync: source=registry pages=${sync.pagesRead} sanitized=${sync.pagesSanitized} ` +
       `rows=${sync.rowsSeen} invalid=${sync.rowsInvalid} no-github-repo=${sync.rowsNoGithubRepo} ` +
-      `seeds=${sync.seedsUpserted} stopped=${sync.stoppedBecause} ` +
+      `seeds=${sync.seedsUpserted} retried=${sync.retries} stopped=${sync.stoppedBecause} ` +
       `updated-since=${sync.updatedSinceUsed ?? 'none'} ` +
       `resumed-from=${sync.resumedFromCursor ?? 'the start'}`,
   );

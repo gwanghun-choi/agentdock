@@ -89,6 +89,15 @@ describe('metaDescription', () => {
     expect(metaDescription(undefined)).toBe('');
   });
 
+  it('uses the fallback for an absent or blank text, capped the same way', () => {
+    expect(metaDescription(null, 'Hook Configuration at x.json')).toBe(
+      'Hook Configuration at x.json',
+    );
+    expect(metaDescription('   ', 'f')).toBe('f');
+    expect(metaDescription('own', 'f')).toBe('own');
+    expect([...metaDescription(null, 'd'.repeat(500))]).toHaveLength(META_DESCRIPTION_MAX);
+  });
+
   it('does not split a multi-code-unit character in half', () => {
     const emoji = '🚀'.repeat(400);
     const out = metaDescription(emoji);

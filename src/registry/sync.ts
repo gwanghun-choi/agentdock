@@ -53,6 +53,8 @@ export type RegistrySyncResult = {
   /** Valid rows naming no GitHub repository. The expected 41%, not an error. */
   rowsNoGithubRepo: number;
   seedsUpserted: number;
+  /** Pages fetched a second time after the registry did not answer: 0 or 1. */
+  retries: number;
   stoppedBecause: 'exhausted' | 'page_cap' | 'seed_cap' | 'parse_failure';
   /** The cursor to resume from, stored and printed whenever the pass is not done. */
   stoppedAtCursor: string | null;
@@ -160,10 +162,11 @@ export const REGISTRY_SOURCE = 'mcp-registry';
  * which costs registry bandwidth and no GitHub quota.
  */
 export async function syncRegistry(
-  options: { maxPages?: number; maxSeeds?: number } = {},
+  options: { maxPages?: number; maxSeeds?: number; retryDelayMs?: number } = {},
 ): Promise<RegistrySyncResult> {
   const maxPages = options.maxPages ?? REGISTRY_CAPS.maxPages;
   const maxSeeds = options.maxSeeds ?? CORPUS_CAPS.maxSeedsPerSource;
+  const retryDelayMs = options.retryDelayMs ?? REGISTRY_CAPS.retryDelayMs;
 
   const state = await readSweepState(REGISTRY_SOURCE);
   // A pass in flight keeps its own start time and its own window. Only a run
@@ -178,6 +181,7 @@ export async function syncRegistry(
     rowsInvalid: 0,
     rowsNoGithubRepo: 0,
     seedsUpserted: 0,
+    retries: 0,
     stoppedBecause: 'exhausted',
     stoppedAtCursor: null,
     updatedSinceUsed: state.watermark,
@@ -197,6 +201,20 @@ export async function syncRegistry(
       if (error instanceof RegistryError && error.failure === 'invalid_response') {
         result.stoppedBecause = 'parse_failure';
         break;
+      }
+      // The same cursor once more, after REGISTRY_CAPS.retryDelayMs; `read`
+      // steps back so the retry does not spend a page of the cap.
+      if (error instanceof RegistryError && error.failure === 'unavailable') {
+        if (result.retries === 0) {
+          result.retries = 1;
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+          read -= 1;
+          continue;
+        }
+        throw new RegistryError(
+          error.failure,
+          `${error.message} Retried once after ${retryDelayMs / 1000} s.`,
+        );
       }
       throw error;
     }

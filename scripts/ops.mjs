@@ -57,6 +57,21 @@ function count(name, fallback) {
   return n;
 }
 
+// --markdown is sync.yml's run summary. A report that could not be read left
+// that page blank, which reads the same as a step that never ran (measured
+// 2026-10-23: a refused pooled URL and a refused connection both appended 0
+// bytes). The reason is on stderr, in the step log; the summary gets one line
+// that sends the reader there, with no detail of the target in it.
+if (flag('markdown') !== undefined) {
+  process.on('exit', (code) => {
+    if (code !== 0) {
+      process.stdout.write(
+        `## AgentDock sync health\n\n**Not available** — the report could not be read (exit ${code}); the step log says why. Nothing was read.\n`,
+      );
+    }
+  });
+}
+
 if (mode !== 'status' && mode !== 'quality' && mode !== 'preflight') {
   console.error('ops: usage: scripts/ops.mjs status|quality|preflight [flags]');
   process.exit(2);

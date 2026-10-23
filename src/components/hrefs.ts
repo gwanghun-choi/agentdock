@@ -101,12 +101,12 @@ export function sourcePathCandidates(segments: string[]): string[] {
  * character such as `#` or `?`.
  */
 export function detailHref(fullName: string, sourcePath: string, type: string): string {
-  const tail =
-    type === 'skill'
-      ? (() => {
-          const dir = sourcePath.replace(/(^|\/)SKILL\.md$/, '');
-          return dir === '' ? 'SKILL.md' : dir;
-        })()
-      : sourcePath;
-  return `/r/${fullName}/${encodePath(tail)}`;
+  return `/r/${fullName}/${encodePath(detailTail(sourcePath, type))}`;
+}
+
+/** detailHref's tail before encoding — what sourcePathCandidates(…)[0] reads back. */
+export function detailTail(sourcePath: string, type: string): string {
+  if (type !== 'skill') return sourcePath;
+  const dir = sourcePath.replace(/(^|\/)SKILL\.md$/, '');
+  return dir === '' ? 'SKILL.md' : dir;
 }

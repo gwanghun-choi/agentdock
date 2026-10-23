@@ -387,6 +387,46 @@ test('bad parameters fall back to defaults, and parameterised listings are noind
   await expect(page.locator('meta[name=robots]')).toHaveCount(0);
 });
 
+test('another spelling of an artifact or repository address redirects to the one the site links', async ({
+  request,
+}) => {
+  // Both answered 200 with the linked page's content before (production, 2026-10-23).
+  for (const [from, to] of [
+    ['/r/ANTHROPICS/Skills/skills/pdf', '/r/anthropics/skills/skills/pdf'],
+    ['/r/anthropics/skills/skills/pdf/SKILL.md', '/r/anthropics/skills/skills/pdf'],
+    [
+      '/r/Fixture/ui-edge-cases/.claude/commands/c%23-review.md',
+      '/r/fixture/ui-edge-cases/.claude/commands/c%23-review.md',
+    ],
+    ['/r/ANTHROPICS/skills', '/r/anthropics/skills'],
+  ]) {
+    const res = await request.get(from, { maxRedirects: 0 });
+    expect(res.status(), from).toBe(308);
+    expect(res.headers().location, from).toBe(to);
+  }
+  for (const linked of [
+    '/r/anthropics/skills/skills/pdf',
+    '/r/fixture/ui-edge-cases/.claude/commands/c%23-review.md',
+  ]) {
+    expect((await request.get(linked, { maxRedirects: 0 })).status(), linked).toBe(200);
+  }
+});
+
+test('every page carries its own description and sharing card', async ({ page }) => {
+  // A hook declares no description: the page used to ship no description tag,
+  // and the repository and listing cards were the site's own (2026-10-23).
+  await page.goto('/r/fixture/ui-edge-cases/.claude/settings.json');
+  expect(await page.locator('meta[name=description]').getAttribute('content')).toBe(
+    'Hook Configuration at .claude/settings.json in fixture/ui-edge-cases, as read at commit eeeeeee.',
+  );
+  for (const path of ['/r/fixture/ui-edge-cases', '/artifacts?type=hook']) {
+    await page.goto(path);
+    expect(await page.locator('meta[property="og:title"]').getAttribute('content')).toBe(
+      await page.title(),
+    );
+  }
+});
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 

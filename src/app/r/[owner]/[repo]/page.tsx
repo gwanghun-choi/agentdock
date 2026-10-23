@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { PackageRows } from '@/components/PackageRows';
@@ -17,9 +17,18 @@ export async function generateMetadata({ params }: Props) {
   const { owner, repo } = await params;
   const found = await getRepositoryPackages(owner, repo);
   if (!found) return { title: 'Not found — AgentDock' };
+  const title = `${found.repository.fullName} — AgentDock`;
+  const description = metaDescription(
+    found.repository.description,
+    `Agent artifacts AgentDock read from ${found.repository.fullName} on GitHub.`,
+  );
+  // The sharing card too: without these it inherited the layout's, titled
+  // "AgentDock" with the site's description (measured 2026-10-23).
   return {
-    title: `${found.repository.fullName} — AgentDock`,
-    description: metaDescription(found.repository.description),
+    title,
+    description,
+    openGraph: { title, description, type: 'website', siteName: 'AgentDock' },
+    twitter: { card: 'summary', title, description },
   };
 }
 
@@ -29,6 +38,8 @@ export default async function RepositoryPage({ params }: Props) {
   if (!found) notFound();
 
   const { repository, packages } = found;
+  // The stored spelling is the one address, as on the artifact page beside this.
+  if (`${owner}/${repo}` !== repository.fullName) permanentRedirect(`/r/${repository.fullName}`);
 
   // Every artifact here, listed or not. COR-07's other half: a suppressed
   // artifact stays reachable at its own URL, and the page that still shows it is

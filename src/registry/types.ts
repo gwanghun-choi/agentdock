@@ -58,4 +58,13 @@ export const REGISTRY_CAPS = {
   requestTimeoutMs: 10_000,
   /** Identical to src/github/client.ts:17, for the same reason. */
   maxRedirects: 2,
+  /**
+   * The wait before the one retry an invocation gets, for a page the registry
+   * did not answer. Measured on the scheduled runs of 2026-10-21 and 10-22
+   * (39586894653, 39765655496): one request failed 12–18 s into a sweep that
+   * reads its 40 pages in 22–33 s, nothing retried it, and the stage failure
+   * turned each whole run FAILED. One retry, not one per page: a registry that
+   * is down costs a run this long once, not forty times.
+   */
+  retryDelayMs: 10_000,
 } as const;

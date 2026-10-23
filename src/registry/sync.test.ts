@@ -49,7 +49,8 @@ function normalExhausted(): string {
 let hosts: string[] = [];
 let urls: string[] = [];
 
-function stubPages(...bodies: string[]) {
+/** A number in `bodies` is an empty response with that status. */
+function stubPages(...bodies: (string | number)[]) {
   hosts = [];
   urls = [];
   let call = 0;
@@ -61,7 +62,7 @@ function stubPages(...bodies: string[]) {
       urls.push(url.toString());
       const body = bodies[Math.min(call, bodies.length - 1)];
       call += 1;
-      return new Response(body);
+      return typeof body === 'number' ? new Response(null, { status: body }) : new Response(body);
     }),
   );
 }
@@ -278,6 +279,30 @@ describe.skipIf(!DB_URL)('syncRegistry', () => {
       // everything after it, so the sweep stops — but what it already read stays.
       expect((await storedSeeds()).map((r) => r.full_name)).toEqual([AGENTBERG, TANDEM]);
       expect((await state()).cursor).toBe('c1');
+    });
+  });
+
+  describe('a page the registry did not answer', () => {
+    it('is asked for once more, and the sweep goes on from the same cursor', async () => {
+      // The shape of 39765655496: a 500 part-way through an otherwise healthy sweep.
+      const rows = normalRows();
+      stubPages(pageWith(rows.slice(0, 2), 'c1'), 500, pageWith(rows.slice(2), null));
+
+      const result = await syncRegistry({ maxPages: 5, retryDelayMs: 0 });
+
+      expect(result).toMatchObject({ pagesRead: 2, retries: 1, stoppedBecause: 'exhausted' });
+      expect(askedFor(1).get('cursor')).toBe('c1');
+      expect(askedFor(2).get('cursor')).toBe('c1');
+    });
+
+    it('fails the stage on a second miss, saying it retried, and keeps the seeds already read', async () => {
+      stubPages(pageWith(normalRows(), 'c1'), 500, 503);
+
+      await expect(syncRegistry({ maxPages: 5, retryDelayMs: 0 })).rejects.toThrow(
+        'The registry answered 503. Retried once after 0 s.',
+      );
+      expect(urls).toHaveLength(3);
+      expect((await storedSeeds()).map((r) => r.full_name)).toEqual([AGENTBERG, TANDEM]);
     });
   });
 

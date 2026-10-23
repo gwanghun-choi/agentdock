@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { detailHref, historyHref, permalink, sourcePathCandidates, treeHref } from './hrefs';
+import {
+  detailHref,
+  detailTail,
+  historyHref,
+  permalink,
+  sourcePathCandidates,
+  treeHref,
+} from './hrefs';
 
 const SHA = 'a'.repeat(40);
 
@@ -32,6 +39,21 @@ describe('GitHub links', () => {
     expect(detailHref('o/r', '.claude/commands/c#.md', 'command')).toBe(
       '/r/o/r/.claude/commands/c%23.md',
     );
+  });
+});
+
+// The detail page redirects whenever these two disagree, so they must agree on
+// every address detailHref writes, or that address would redirect to itself.
+describe('detailTail', () => {
+  it.each([
+    ['skills/pdf/SKILL.md', 'skill'],
+    ['SKILL.md', 'skill'],
+    ['.claude/commands/c#.md', 'command'],
+    ['plugins/p/.claude-plugin/plugin.json', 'plugin'],
+    ['x/SKILL.md', 'command'],
+  ])('reads %s (%s) back from its own href', (sourcePath, type) => {
+    const tail = detailHref('o/r', sourcePath, type).split('/').slice(4);
+    expect(sourcePathCandidates(tail)[0]).toBe(detailTail(sourcePath, type));
   });
 });
 

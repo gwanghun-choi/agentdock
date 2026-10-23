@@ -11,8 +11,14 @@
  */
 export const META_DESCRIPTION_MAX = 200;
 
-export function metaDescription(text: string | null | undefined): string {
-  const trimmed = (text ?? '').trim();
+/**
+ * `fallback` stands in for an absent or blank text. An empty string here also
+ * overrode the layout's description, so a page whose artifact declares none —
+ * every hook, 22 of the 177 e2e artifacts — shipped no description tag at all
+ * (2026-10-23). The fallback is built by the caller from stored facts only.
+ */
+export function metaDescription(text: string | null | undefined, fallback = ''): string {
+  const trimmed = (text ?? '').trim() || fallback;
   if (trimmed.length <= META_DESCRIPTION_MAX) return trimmed;
   // Code points, not code units: a byte or unit cut can split an emoji in half.
   return `${[...trimmed].slice(0, META_DESCRIPTION_MAX - 1).join('')}…`;
