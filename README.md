@@ -188,6 +188,28 @@ AgentDock scheduled sync
 못한 refresh는 몇 개를 남겼는지 말합니다. 아무것도 출력하지 않는 상한선은
 "전부 훑었다"로 읽히기 때문입니다.
 
+**실행과 실행 사이에는 `bun run ops:status`** 로 실행이 남긴 기록을 읽습니다. 마지막
+실행(`schema_meta`의 `sync:last_attempt`, `sync:last_success`), 현재 상태별
+`ingest_job` 수, 최근 24시간(`--hours=`) 안에 끝난 attempt의 outcome별 수와 worker의
+retry 처분별 분류, attempt당 p50/p95, corpus 수를 보여 줍니다. 판정은 sync 하나에만
+합니다. `OK`, `PARTIAL`(마지막 실행이 상한에 걸려 멈춤), `DEGRADED`(마지막 실행 실패,
+또는 36시간 동안 오류 없는 실행이 없음, `--stale-hours=`), `UNKNOWN`(기록 없음)입니다.
+사이트 상태는 판정하지 않습니다. 오래된 index도 동작하는 index이기 때문입니다. sync
+workflow가 실행마다 이 결과를 summary 페이지에 표로 붙입니다(`--markdown`). public
+저장소의 run summary는 공개되므로 수와 상태만 담습니다.
+
+**`bun run quality:check`** 는 corpus의 무결성 규칙을 검사합니다. version이 없는
+artifact(상세가 404), 전부 읽은 저장소에서 존재하지 않는 부모 plugin, 잘못된 형태의
+source path, 빈 이름, version과 commit이 다른 finding, artifact는 있는데 읽은 날짜가
+없는 저장소, 홈·검색·유형별 합계 불일치이며, 하나라도 행이 있으면 exit 1입니다. 그
+옆에 허용되지만 볼 가치가 있는 관찰도 출력합니다. 목록에서 빠진 행과 이유, 여러
+저장소에 있는 같은 파일·같은 이름, 읽은 지 얼마나 됐는지, 확인 실패, 부분 읽기,
+delist, parse 상태, 마지막 outcome별 실패 job입니다. `--repo=owner/`로 범위를 좁히고
+`--json`으로 전체를 출력합니다. 아무것도 고치지 않습니다.
+
+두 명령 모두 `default_transaction_read_only=on`으로 연결하므로 PostgreSQL이 쓰기를
+거부하고, 오류는 메시지가 아닌 코드만 출력합니다.
+
 ### Commit SHA 기준 Incremental refresh
 
 마지막으로 읽은 이후 default branch가 움직이지 않은 repository는 **파일을 단 한
@@ -234,10 +256,14 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
   branch는 움직이기 때문입니다.
 - **경로 검색.** `/`가 들어간 검색어는 경로로 보고, source path에 그 문자열이 든
   artifact를 위로 올립니다. 다른 검색어의 순위는 바뀌지 않습니다.
-- **정렬.** 관련도(검색어가 있을 때), 최근 색인순, 이름순. 링크로 바꾸며 URL에
-  `sort=`로 남고, 필터와 페이지 이동 뒤에도 유지되며, 바꾸면 1페이지로 돌아갑니다.
-  검색어가 없으면 기본은 최근 색인순이고 관련도는 보이지 않습니다(모든 행이 같은
-  점수이기 때문입니다).
+- **정렬.** 관련도(검색어가 있을 때), 최근 색인순, 새로 추가된 순, 내용 변경순,
+  이름순. 링크로 바꾸며 URL에 `sort=`로 남고, 필터와 페이지 이동 뒤에도 유지되며,
+  바꾸면 1페이지로 돌아갑니다. 검색어가 없으면 기본은 최근 색인순이고 관련도는
+  보이지 않습니다(모든 행이 같은 점수이기 때문입니다). 날짜 정렬 셋은 서로 다른
+  시계이고, 화면이 어느 것인지 밝힙니다. *최근 색인*은 읽기가 마지막으로 artifact를
+  저장한 때, *새로 추가*는 AgentDock가 처음 저장한 때, *내용 변경*은 AgentDock가 그
+  파일의 두 번째 이후 version을 기록한 때입니다. 내용 변경은 commit 시각이 아닙니다.
+  내용이 한 번만 기록된 artifact는 뒤에 이어지므로 결과 집합은 바뀌지 않습니다.
 - **일치 이유.** 각 결과가 검색어 단어가 어느 필드에 있었는지(이름, 경로, 설명,
   유형, 저장소) 보여줍니다. 검색이 일치시킨 저장된 search vector에서 같은
   조건으로 계산하므로 추측이 아닙니다. 이름과 설명의 일치 단어는 `ts_headline`
@@ -247,9 +273,12 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
   Precision@5/10, Recall@10, MRR, NDCG@10, Top-1, 결과 없음 비율, latency를
   출력합니다. 질의별 첫 정답 순위와 평균 MRR·NDCG를 테스트가 고정하므로, 하나라도
   나빠지는 ranking 변경은 CI에서 실패합니다.
-- **상세 화면.** plugin 디렉터리 아래에 있는 artifact는 소속 plugin을, plugin은
-  자기 디렉터리 아래의 구성요소를 보여줍니다. 경로 기준 관계이며 plugin.json의
-  경로 override는 따라가지 않습니다. 저장된 version 목록(내용별 1행, commit 링크)과
+- **상세 화면.** plugin 디렉터리 아래에 있는 artifact는 소속 plugin과 그 plugin의
+  다른 구성요소를, plugin은 자기 디렉터리 아래의 구성요소를 보여줍니다. 경로 기준
+  관계이며 plugin.json의 경로 override는 따라가지 않습니다. 그 아래에 같은 저장소의
+  다른 목록 artifact를 유형·이름순으로 최대 12개, 전체 수, 저장소 페이지 링크, 그리고
+  artifact 이름을 같은 유형 안에서 검색하는 링크를 둡니다. 유사도 점수는 없습니다.
+  모든 관계는 저장된 사실이고, "비슷한 것"은 측정된 검색 ranking에 맡깁니다. 저장된 version 목록(내용별 1행, commit 링크)과
   유형별 사용 안내(공식 문서 링크, 복사 위치, 주의사항 — 유형에 대한 설명이며
   해당 파일에 대한 평가가 아님)도 표시합니다.
 
@@ -528,6 +557,8 @@ bun run test:e2e
 | `bun run sync` | **scheduled job.** discovery, refresh, drain, 요약 출력. |
 | `bun run corpus:sync --source=…` | 같은 기능을 소스와 상한선을 노출한 형태로. 색인을 수동으로 채울 때 씁니다. |
 | `bun run corpus:reset --confirm` | corpus 비우기. `AGENTDOCK_ALLOW_CORPUS_RESET=1`도 함께여야 실행됩니다. 어떤 것도 DROP하지 않습니다. |
+| `bun run ops:status [--hours=24] [--markdown \| --json]` | sync 상태: 마지막 실행, queue, 기간 내 attempt, corpus 수. 읽기 전용이며 DB를 읽지 못했을 때만 exit 2. |
+| `bun run quality:check [--repo=owner/] [--json]` | 무결성 규칙과 corpus 관찰. 읽기 전용이며 규칙에 걸린 행이 있으면 exit 1. |
 | `bun run ci` | 경계 검사, lint, type check, test |
 | `bun run test` | Vitest. `run`이 붙어 있는 데 유의 — 맨 `bun test`는 Bun 자체 러너를 부릅니다. 그 러너도 이 파일들을 실행하고 `.env`를 읽으므로, `bunfig.toml`의 preload가 같은 테스트 DB 격리를 적용합니다. |
 | `bun run lint` / `bun run format` | Biome, 검사와 자동 수정 |
@@ -616,8 +647,14 @@ server의 command·args·URL, hook의 event·matcher·command, command의 slash 
   읽을 뿐, import를 해석하거나 참조를 따라가거나 무언가를 실행하지 않습니다.
 - **검색은 PostgreSQL 전문 검색과 trigram입니다.** embedding도, 의미 검색도,
   텍스트 관련도 외의 ranking도 없습니다.
-- **정렬은 관련도·최근 색인·이름순이며 품질순이 아닙니다.** "most starred" 정렬은 없고, 추가하려면
-  그것이 무엇을 의미하는지에 대한 명시적 결정이 필요합니다.
+- **정렬은 관련도·날짜·이름순이며 품질순이 아닙니다.** "most starred" 정렬도 "인기"
+  목록도 없습니다. AGENTS.md가 인기를 ranking에서 제외하고, star순 목록은 곧 ranking이기
+  때문입니다.
+- **"내용 변경"은 AgentDock의 시계입니다.** 변경은 sync가 기록한 시점으로 표시되므로
+  commit보다 예약 실행 한 번, 또는 refresh 주기만큼 늦을 수 있고, 처음 읽은 저장소는
+  아무것도 변경으로 기록하지 않습니다.
+- **운영 리포트는 공개하지 않습니다.** 로그인이 없으므로 `ops:status`와
+  `quality:check`는 터미널이나 workflow에서만 실행하고 페이지에는 표시하지 않습니다.
 - **Setup 안내는 파일에 적힌 내용이지, 검증된 설치가 아닙니다.** AgentDock는
   나열한 것을 실행하지 않으므로, 어떤 설정이 특정 client에서 동작하는지 말할 수
   없습니다.

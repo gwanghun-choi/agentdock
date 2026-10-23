@@ -201,6 +201,11 @@ export default async function HomePage() {
               <Link className="board-search" href="/artifacts?q=">
                 <SearchIcon /> Search
               </Link>
+              {/* The listing's two other date orders, each a URL the sort
+                  chips on /artifacts produce. The page there says what each
+                  date is a date of. */}
+              <Link href="/artifacts?sort=added">Newly added</Link>
+              <Link href="/artifacts?sort=changed">Content changed</Link>
               <Link href="/artifacts">
                 Browse all {total} artifacts <ArrowRightIcon />
               </Link>

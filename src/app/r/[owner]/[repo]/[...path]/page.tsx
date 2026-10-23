@@ -11,6 +11,7 @@ import { ExternalIcon } from '@/components/Icon';
 import { metaDescription } from '@/components/metadata';
 import { SetupPanel } from '@/components/SetupPanel';
 import { SkillBody } from '@/components/SkillBody';
+import { searchHref } from '@/components/searchState';
 import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
@@ -19,6 +20,7 @@ import {
   getRelatedPackages,
   getVersionHistory,
   pluginRoot,
+  type RelatedPackage,
   VERSION_HISTORY_LIMIT,
 } from '@/db/queries/packages';
 import { AGENT_SPEC_KEYS } from '@/detect/agent';
@@ -70,6 +72,17 @@ const CAPABILITY_NOT_CHECKED = [
   // Also on the SANCTIONED ledger.
   'AgentDock cannot tell you whether an artifact is safe.',
 ];
+
+/** One related artifact: its type, its name as a link, its path. */
+function RelatedRow({ fullName, item }: { fullName: string; item: RelatedPackage }) {
+  return (
+    <li>
+      <ArtifactBadge type={item.type} />{' '}
+      <Link href={detailHref(fullName, item.sourcePath, item.type)}>{item.name}</Link>{' '}
+      <span className="muted path">{item.sourcePath}</span>
+    </li>
+  );
+}
 
 function utc(value: Date | null): string {
   return value ? `${value.toISOString().slice(0, 16).replace('T', ' ')} UTC` : 'unknown';
@@ -139,13 +152,16 @@ export default async function PackagePage({ params }: Props) {
     />
   );
 
+  const othersShown = related.siblings.length + related.elsewhere.length;
+  const othersTotal = related.siblingTotal + related.elsewhereTotal;
+
   // The page is long — nine sections on a skill, the file itself last — so its
   // sections are named once at the top, as plain fragment links.
   const sections = [
     ['details', 'Details'],
     detail.files.length > 0 ? ['files', 'Files'] : null,
     ['observed', 'Capabilities'],
-    related.container || related.components.length > 0 ? ['related', 'Related'] : null,
+    ['related', 'Related'],
     // The six types with a usage guide are the six SetupPanel renders for.
     guide ? ['setup', 'Setup'] : null,
     guide ? ['usage', 'Using it'] : null,
@@ -369,33 +385,72 @@ export default async function PackagePage({ params }: Props) {
         ))}
       </ul>
 
+      {/* Every relation here is a stored fact, said as what it is — a
+          directory under a plugin root, or the same repository — and never a
+          similarity score. The last line hands the name to the search route,
+          which already has a measured ranking (search.eval.test.ts), rather
+          than ranking "similar" artifacts with a second, unmeasured one. */}
+      <h2 id="related">Related artifacts</h2>
+      {related.container || related.components.length > 0 || related.siblings.length > 0 ? (
+        <p className="muted">
+          Linked by directory: an artifact whose path sits under a plugin&apos;s root. A plugin.json
+          that points a component somewhere else is not followed, so such a component is not listed
+          here.
+        </p>
+      ) : null}
       {related.container || related.components.length > 0 ? (
+        <ul className="notes">
+          {related.container ? (
+            <li>
+              Inside the plugin{' '}
+              <Link href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}>
+                {related.container.name}
+              </Link>
+            </li>
+          ) : null}
+          {related.components.map((c) => (
+            <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
+          ))}
+        </ul>
+      ) : null}
+      {related.siblings.length > 0 ? (
         <>
-          <h2 id="related">Related artifacts</h2>
-          <p className="muted">
-            Linked by directory: an artifact whose path sits under a plugin&apos;s root. A
-            plugin.json that points a component somewhere else is not followed, so such a component
-            is not listed here.
-          </p>
+          <h3>Other components of the same plugin</h3>
           <ul className="notes">
-            {related.container ? (
-              <li>
-                Inside the plugin{' '}
-                <Link href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}>
-                  {related.container.name}
-                </Link>
-              </li>
-            ) : null}
-            {related.components.map((c) => (
-              <li key={`${c.type}:${c.sourcePath}`}>
-                <ArtifactBadge type={c.type} />{' '}
-                <Link href={detailHref(detail.fullName, c.sourcePath, c.type)}>{c.name}</Link>{' '}
-                <span className="muted path">{c.sourcePath}</span>
-              </li>
+            {related.siblings.map((c) => (
+              <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
             ))}
           </ul>
         </>
       ) : null}
+      {related.elsewhere.length > 0 ? (
+        <>
+          <h3>Elsewhere in {detail.fullName}</h3>
+          <ul className="notes">
+            {related.elsewhere.map((c) => (
+              <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
+            ))}
+          </ul>
+        </>
+      ) : null}
+      <p className="muted">
+        {othersShown < othersTotal
+          ? `Showing ${othersShown} of the ${othersTotal} other listed artifacts in this repository, by type and name. `
+          : othersTotal === 0 && related.components.length === 0 && !related.container
+            ? 'No other listed artifact in this repository. '
+            : ''}
+        <Link href={`/r/${detail.fullName}`}>Every artifact in {detail.fullName}</Link>
+        {typeListing ? (
+          <>
+            {' · '}
+            <Link
+              href={searchHref({ q: detail.name, types: [detail.type], capabilities: [], page: 1 })}
+            >
+              Search {typeListing} for &ldquo;{detail.name}&rdquo;
+            </Link>
+          </>
+        ) : null}
+      </p>
 
       {guide ? setup : null}
 

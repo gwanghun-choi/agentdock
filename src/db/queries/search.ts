@@ -14,6 +14,10 @@ export type SearchResultItem = PackageListItem & {
   /** `name` / `summary` with every query word delimited (src/components/Marked.tsx). */
   nameMarked?: string | null;
   summaryMarked?: string | null;
+  /** package.created_at: when AgentDock first indexed this artifact. */
+  addedAt?: Date;
+  /** CONTENT_CHANGED_AT: null when only one content has ever been recorded. */
+  changedAt?: Date | null;
 };
 
 /**
@@ -126,10 +130,14 @@ export const CAPABILITY_FILTER_IDS = ['no_network', 'no_shell', 'no_scripts'] as
  *
  * `recent` is package.updated_at — the last time a scan wrote this artifact's
  * row, which is every scan that read its repository at a new commit. It is
- * the order browsing has always used. Stars are deliberately not an order:
- * AGENTS.md, popularity never ranks artifacts.
+ * the order browsing has always used. `added` is package.created_at, when
+ * AgentDock first stored the artifact — the upsert never rewrites it, so a
+ * re-read or a delist-and-return keeps the first date. `changed` is
+ * CONTENT_CHANGED_AT below. Stars are deliberately not an order: AGENTS.md,
+ * popularity never ranks artifacts — which is also why Phase 16 has no
+ * "popular" list.
  */
-export const SEARCH_SORTS = ['relevance', 'recent', 'name'] as const;
+export const SEARCH_SORTS = ['relevance', 'recent', 'added', 'changed', 'name'] as const;
 export type SearchSort = (typeof SEARCH_SORTS)[number];
 
 /** Where a query word was found on a row; see `matchedIn`. */
@@ -385,6 +393,26 @@ function marked(
 }
 
 /**
+ * When AgentDock recorded this artifact's current content, if it has recorded
+ * more than one: the `changed` sort's key and the date its rows print.
+ *
+ * Derived from package_version alone, because that is where a change is
+ * recorded — a version row is minted only when the bytes' hash differs
+ * (package_version_content_key), and content returning to an earlier hash moves
+ * that row's ingested_at to now (persist.ts). The first version is not a
+ * change, so a single-version artifact is null. This is AgentDock's recording
+ * time, not the upstream commit's: the sync reads twice a day at best, and
+ * repository.pushed_at is a repository-wide fact, not this file's.
+ *
+ * Correlated per row on package_version_recent_idx (package_id, ingested_at).
+ * mapWith, because a raw fragment comes back from the driver as a string.
+ */
+export const CONTENT_CHANGED_AT = sql<Date | null>`(
+  select case when count(*) > 1 then max(v.ingested_at) end
+  from ${packageVersion} v where v.package_id = ${packageTable.id}
+)`.mapWith(packageVersion.ingestedAt);
+
+/**
  * The ORDER BY for each sort. Every one ends in `id`, the primary key, so two
  * rows never tie and a page boundary falls in the same place on every
  * request — no row on two pages, none on neither.
@@ -392,6 +420,16 @@ function marked(
 function orderFor(sort: SearchSort, rank: ReturnType<typeof sql<number>>) {
   if (sort === 'name') return [sql`lower(${packageTable.name})`, packageTable.id];
   if (sort === 'recent') return [desc(packageTable.updatedAt), packageTable.id];
+  if (sort === 'added') return [desc(packageTable.createdAt), packageTable.id];
+  // A sort reorders the same set (searchState.ts, withSort), so artifacts
+  // with one recorded content are not dropped — they follow, in `recent` order.
+  if (sort === 'changed') {
+    return [
+      sql`${CONTENT_CHANGED_AT} desc nulls last`,
+      desc(packageTable.updatedAt),
+      packageTable.id,
+    ];
+  }
   return [desc(rank), desc(packageTable.updatedAt), packageTable.id];
 }
 
@@ -570,6 +608,8 @@ async function fuzzySearch(
         fullName: repository.fullName,
         stars: repository.stars,
         scannedAt: repository.scannedAt,
+        addedAt: packageTable.createdAt,
+        changedAt: CONTENT_CHANGED_AT,
         // Same correlated-subquery idiom as searchPackages' own projection —
         // one scalar per row, never a joined alternative.
         commitSha: sql<string | null>`(
@@ -707,6 +747,8 @@ export const searchPackages = cache(
         fullName: repository.fullName,
         stars: repository.stars,
         scannedAt: repository.scannedAt,
+        addedAt: packageTable.createdAt,
+        changedAt: CONTENT_CHANGED_AT,
         // Correlated subquery rather than a joined alternative — one
         // scalar per row, no per-row query, the same idiom listPackages
         // already uses.

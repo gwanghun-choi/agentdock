@@ -1816,6 +1816,11 @@ textarea {
   gap: var(--s-2);
 }
 
+/* What a date order is a date of, on its own line under the chips. */
+.sort-note {
+  flex-basis: 100%;
+}
+
 /* The query, quoted by CSS rather than by the markup. The quotation marks were
    literal characters in a template string, which put them inside the text a
    screen reader reads out and made the query itself impossible to select

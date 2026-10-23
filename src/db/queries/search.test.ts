@@ -1297,7 +1297,7 @@ describe.skipIf(!DB_URL)('the search query', () => {
         offset?: number;
         types?: string[];
         capabilities?: string[];
-        sort?: 'relevance' | 'recent' | 'name';
+        sort?: 'relevance' | 'recent' | 'added' | 'changed' | 'name';
       } = {},
     ) =>
       search.searchPackages({
@@ -1413,6 +1413,29 @@ describe.skipIf(!DB_URL)('the search query', () => {
       }
       // A sort changes the order, never the set: the count has no sort.
       expect(await count('xqgeneric')).toBe(30);
+    });
+
+    it('orders by first indexed, or by a recorded content change first, and pages both whole', async () => {
+      await sql`UPDATE package SET created_at = now() + interval '1 hour' WHERE id = ${ids.f3}`;
+      const added = await rows('xqgeneric', { sort: 'added' });
+      expect(added[0].name).toBe('xqfiller-3');
+      expect(added[0].addedAt).toBeInstanceOf(Date);
+
+      // One recorded content is not a change. A second one is, dated by when
+      // AgentDock recorded it; the never-changed rows follow, not vanish.
+      await sql`INSERT INTO package_version (package_id, commit_sha, content_hash, ingested_at)
+                VALUES (${ids.f9}, ${'e'.repeat(40)}, 'q17-f9-second', now() + interval '1 hour')`;
+      const changed = await rows('xqgeneric', { sort: 'changed' });
+      expect(changed[0].name).toBe('xqfiller-9');
+      expect(changed[0].changedAt).toBeInstanceOf(Date);
+      expect(changed.slice(1).every((r) => r.changedAt === null)).toBe(true);
+
+      for (const sort of ['added', 'changed'] as const) {
+        const first = await names('xqgeneric', { sort });
+        const second = await names('xqgeneric', { sort, offset: 25 });
+        expect(new Set([...first, ...second]).size).toBe(30);
+        expect(await names('xqgeneric', { sort })).toEqual(first);
+      }
     });
 
     it('names, as reasons, only the fields where PostgreSQL found a query word', async () => {

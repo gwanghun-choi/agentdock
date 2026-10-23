@@ -75,3 +75,18 @@ jobs:
           # not start with GITHUB_, hence the prefix; an unset secret arrives as
           # an empty string, which src/env.ts reads as absent.
           GITHUB_TOKEN: ${{ secrets.AGENTDOCK_GITHUB_TOKEN }}
+
+      # The run's summary page: the sync's state, the queue now and the last
+      # 24 h of attempts, as a table (scripts/ops.mjs). Counts and statuses
+      # only — no repository name, no error text, no connection detail — since
+      # a public repository's run summary is public. Runs after a failed sync
+      # too, which is when it is read. A read-only connection and no GitHub
+      # request; about a second. continue-on-error, so a report that could not
+      # be read never turns a green sync red.
+      - name: Sync health summary
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: bun run ops:status --markdown >> "$GITHUB_STEP_SUMMARY"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SCHEMA: agentdock

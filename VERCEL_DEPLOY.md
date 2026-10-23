@@ -227,6 +227,10 @@ A run that stops with `fewer than two GitHub core requests remain` is correct,
 not a failure. From then on, the schedule runs at 06:00 and 18:00 UTC (15:00
 and 03:00 KST).
 
+The run's summary page also carries an "AgentDock sync health" table: the
+step after the sync runs `bun run ops:status --markdown` over a read-only
+connection (README, Scheduled Synchronization). Counts and statuses only.
+
 ## Step 8 — smoke the deployment
 
 ```bash

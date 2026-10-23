@@ -22,6 +22,8 @@
     "sync": "bun scripts/corpus-sync.mjs --scheduled",
     "corpus:sync": "bun scripts/corpus-sync.mjs",
     "corpus:reset": "bun scripts/corpus-reset.mjs",
+    "ops:status": "bun scripts/ops.mjs status",
+    "quality:check": "bun scripts/ops.mjs quality",
     "ci": "bun run check:boundaries && bun run lint && bun run typecheck && bun run test",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun scripts/migrate.mjs",

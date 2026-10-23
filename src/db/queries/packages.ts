@@ -437,6 +437,21 @@ export type RelatedPackage = {
   sourcePath: string;
 };
 
+/** How many of the rest of a repository the Related section names before linking to it. */
+export const RELATED_LIMIT = 12;
+
+export type RelatedPackages = {
+  container: RelatedPackage | null;
+  components: RelatedPackage[];
+  /** Listed artifacts under the same plugin root as this one, this one excluded. */
+  siblings: RelatedPackage[];
+  /** Every other listed artifact in the repository, not in the three groups above. */
+  elsewhere: RelatedPackage[];
+  /** Totals before RELATED_LIMIT, so a cut list says what it left out. */
+  siblingTotal: number;
+  elsewhereTotal: number;
+};
+
 /**
  * The relations the ingest already recorded, and nothing inferred past them.
  *
@@ -446,8 +461,14 @@ export type RelatedPackage = {
  * `agents` or `skills` elsewhere is recorded as observed and never followed
  * (plugin.ts), so such a component is not linked here and the page says so.
  *
- * One query each way, both on the repository's own rows; bounded by the scan
- * cap because a repository cannot hold more rows than one read produced.
+ * The rest of the repository is the one other fact every row carries:
+ * repository_id. No similarity score, no ranking signal — siblings under the
+ * same plugin root first, then by type and name, and the listing predicate
+ * applies, so a fork or a suppressed duplicate is not offered as a next step
+ * (it stays on the repository page with its reason). Three statements, in
+ * parallel, each on the repository's own rows: the container, the components
+ * (bounded by the scan cap), and the rest (bounded by RELATED_LIMIT, totals by
+ * window function rather than a second count).
  */
 export const getRelatedPackages = cache(
   async (
@@ -455,7 +476,7 @@ export const getRelatedPackages = cache(
       PackageDetail,
       'id' | 'repositoryId' | 'type' | 'sourcePath' | 'meta' | 'parentPath'
     >,
-  ): Promise<{ container: RelatedPackage | null; components: RelatedPackage[] }> => {
+  ): Promise<RelatedPackages> => {
     const columns = {
       name: packageTable.name,
       type: packageTable.type,
@@ -465,38 +486,79 @@ export const getRelatedPackages = cache(
       eq(packageTable.repositoryId, detail.repositoryId),
       isNull(packageTable.delistedAt),
     );
+    const root = detail.type === 'plugin' ? pluginRoot(detail.sourcePath, detail.meta) : '';
+    const containerPaths = detail.parentPath
+      ? [detail.parentPath, `${detail.parentPath}${MANIFEST_SUFFIX}`]
+      : [];
+    // One expression whatever parentPath is: a literal `false` in ORDER BY is a
+    // "non-integer constant" error, and `is not distinct from null` would make
+    // every top-level row a sibling. coalesce, because a bare `=` is NULL on a
+    // top-level row and DESC sorts NULL first — ahead of the siblings, which
+    // RELATED_LIMIT could then cut.
+    const sibling = sql<boolean>`coalesce(${packageTable.parentPath} = ${detail.parentPath ?? null}, false)`;
 
-    let container: RelatedPackage | null = null;
-    if (detail.parentPath) {
-      const [row] = await db
-        .select(columns)
+    const [containerRows, components, rest] = await Promise.all([
+      containerPaths.length > 0
+        ? db
+            .select(columns)
+            .from(packageTable)
+            .where(
+              and(
+                live,
+                eq(packageTable.type, 'plugin'),
+                inArray(packageTable.sourcePath, containerPaths),
+              ),
+            )
+            .limit(1)
+        : [],
+      root !== ''
+        ? db
+            .select(columns)
+            .from(packageTable)
+            .where(and(live, eq(packageTable.parentPath, root)))
+            .orderBy(packageTable.type, packageTable.name, packageTable.sourcePath)
+            .limit(CAPS.maxFiles)
+        : [],
+      db
+        .select({
+          ...columns,
+          sibling,
+          total: sql<number>`(count(*) over ())::int`,
+          siblings: sql<number>`(count(*) filter (where ${sibling}) over ())::int`,
+        })
         .from(packageTable)
+        .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
         .where(
           and(
             live,
-            eq(packageTable.type, 'plugin'),
-            inArray(packageTable.sourcePath, [
-              detail.parentPath,
-              `${detail.parentPath}${MANIFEST_SUFFIX}`,
-            ]),
+            sql`${packageTable.id} <> ${detail.id}`,
+            // Already listed above as this plugin's components, or as its container.
+            root !== '' ? sql`${packageTable.parentPath} is distinct from ${root}` : undefined,
+            containerPaths.length > 0
+              ? sql`not (${packageTable.type} = 'plugin' and ${inArray(packageTable.sourcePath, containerPaths)})`
+              : undefined,
+            sql`${NOT_LISTED_BECAUSE} is null`,
           ),
         )
-        .limit(1);
-      container = row ?? null;
-    }
+        .orderBy(
+          desc(sibling),
+          packageTable.type,
+          sql`lower(${packageTable.name})`,
+          packageTable.id,
+        )
+        .limit(RELATED_LIMIT),
+    ]);
 
-    let components: RelatedPackage[] = [];
-    const root = detail.type === 'plugin' ? pluginRoot(detail.sourcePath, detail.meta) : '';
-    if (root !== '') {
-      components = await db
-        .select(columns)
-        .from(packageTable)
-        .where(and(live, eq(packageTable.parentPath, root)))
-        .orderBy(packageTable.type, packageTable.name, packageTable.sourcePath)
-        .limit(CAPS.maxFiles);
-    }
-
-    return { container, components };
+    const strip = ({ name, type, sourcePath }: RelatedPackage) => ({ name, type, sourcePath });
+    const siblingTotal = rest[0]?.siblings ?? 0;
+    return {
+      container: containerRows[0] ?? null,
+      components,
+      siblings: rest.filter((r) => r.sibling).map(strip),
+      elsewhere: rest.filter((r) => !r.sibling).map(strip),
+      siblingTotal,
+      elsewhereTotal: (rest[0]?.total ?? 0) - siblingTotal,
+    };
   },
 );
 

@@ -95,7 +95,12 @@ test('sort: links reorder the same set, reset the page, and survive filters and 
   await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Name');
   // Browsing offers no Relevance: with no query every row would tie.
   await page.goto('/artifacts');
-  await expect(page.locator('.sort .chip')).toHaveText(['Recently indexed', 'Name']);
+  await expect(page.locator('.sort .chip')).toHaveText([
+    'Recently indexed',
+    'Newly added',
+    'Content changed',
+    'Name',
+  ]);
 });
 
 test('highlight and reason: query words are marked as text, and the row says where they matched', async ({
@@ -314,6 +319,63 @@ test('keyboard: / focuses search, Tab reaches a sort link and a result, focus is
   await page.waitForURL(/\/r\//);
 });
 
+test('related: siblings in the same plugin, then the rest of the repository, each a working link', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/agents/security-reviewer.md');
+  const related = page.locator('#related ~ ul.notes');
+  await expect(related.first()).toContainText('Inside the plugin review-kit');
+  await expect(
+    page.locator('h3:has-text("Other components of the same plugin") + ul'),
+  ).toContainText('review-checklist');
+  const elsewhere = page.locator('h3:has-text("Elsewhere in fixture/ui-edge-cases") + ul');
+  // The plugin itself is named once, as the container, not again here.
+  await expect(elsewhere).not.toContainText('review-kit');
+  await expect(elsewhere).toContainText('code-reviewer');
+  await elsewhere.locator('a:has-text("c#-review")').click();
+  await page.waitForURL(/c%23-review\.md$/);
+  await expect(page.locator('h1')).toHaveText('c#-review');
+});
+
+test('related: a row the listing leaves out is not offered, and the search hand-off keeps the type', async ({
+  page,
+}) => {
+  await page.goto('/r/disler/claude-code-hooks-mastery/.claude/commands/prime.md');
+  const elsewhere = page.locator('h3:has-text("Elsewhere in") + ul');
+  await expect(elsewhere).toContainText('question');
+  // cook.md's frontmatter did not parse, so it is unlisted — on the repository
+  // page with its reason, never suggested as a next step.
+  await expect(elsewhere).not.toContainText('cook');
+  await page.click('#related ~ p a:has-text("Search Slash Commands for")');
+  await page.waitForURL(/\/artifacts\?q=prime&type=command$/);
+  expect(await total(page)).toBeGreaterThan(0);
+});
+
+test('date orders: newly added and content changed, each saying what its date is', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.click('.board-actions a:has-text("Newly added")');
+  await page.waitForURL(/\/artifacts\?sort=added$/);
+  const listed = await total(page);
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Newly added');
+  await expect(page.locator('.sort-note')).toContainText('first indexed');
+  await expect(page.locator('.rows .row-meta').first()).toContainText(
+    /first indexed \d{4}-\d{2}-\d{2}/,
+  );
+  // A sort reorders the same set: same total, and filters compose with it.
+  await page.click('.sort .chip:has-text("Content changed")');
+  await page.waitForURL(/\/artifacts\?sort=changed$/);
+  expect(await total(page)).toBe(listed);
+  await expect(page.locator('.sort-note')).toContainText('not when that change was committed');
+  await page.click('.facet .chip:has-text("Subagents")');
+  await page.waitForURL(/type=agent&sort=changed$/);
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Content changed');
+  // An empty result keeps the order in its exits.
+  await page.goto('/artifacts?q=zzqqnothing&sort=added');
+  await expect(page.locator('.rows li')).toHaveCount(0);
+});
+
 test('bad parameters fall back to defaults, and parameterised listings are noindex', async ({
   page,
 }) => {
@@ -351,6 +413,19 @@ test.describe('on a phone', () => {
     await noHorizontalOverflow(page);
     await page.locator('.rows .row-title a').first().tap();
     await page.waitForURL(/\/r\//);
+    await noHorizontalOverflow(page);
+  });
+
+  test('related lists and date orders fit 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/agents/security-reviewer.md');
+    await page.locator('#related').scrollIntoViewIfNeeded();
+    await noHorizontalOverflow(page);
+    for (const sort of ['added', 'changed']) {
+      await page.goto(`/artifacts?sort=${sort}`);
+      await noHorizontalOverflow(page);
+    }
+    await page.goto('/');
     await noHorizontalOverflow(page);
   });
 

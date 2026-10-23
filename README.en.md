@@ -194,6 +194,31 @@ how much of the cap it left unspent; a refresh pass that could not reach every
 stale repository says how many it left behind. A cap that prints nothing reads
 as "we covered everything".
 
+**Between runs, `bun run ops:status`** reads what the runs left behind — the last
+run (`schema_meta`'s `sync:last_attempt` and `sync:last_success`), every
+`ingest_job` by its current status, the attempts that finished in the last 24 h
+(`--hours=`) by outcome and by the worker's own retry disposition, with p50/p95
+per attempt, and the corpus counts. It judges one thing, the sync: `OK`,
+`PARTIAL` (the last run stopped at a limit), `DEGRADED` (the last run failed, or
+no clean run in 36 h, `--stale-hours=`) or `UNKNOWN` (nothing recorded yet) —
+never the site, since a stale index is still a working one. The sync workflow
+appends it to each run's summary page as a table (`--markdown`); it holds counts
+and statuses only, because a public repository's run summary is public.
+
+**`bun run quality:check`** runs the corpus's integrity rules — an artifact with
+no stored version (its page would 404), a parent plugin that is not there in a
+repository read in full, a malformed source path, a blank name, a finding whose
+commit is not its version's, a repository with artifacts but no read date, and
+the home, search and per-type totals disagreeing — and exits 1 if any holds a
+row. Beside them it prints observations that are allowed and worth seeing: what
+the listing leaves out and why, the same file or the same name in several
+repositories, read age, failing checks, partial reads, delistings, parse status,
+and failed jobs by their last outcome. `--repo=owner/` narrows it, `--json`
+prints it whole. It repairs nothing.
+
+Both open their connections with `default_transaction_read_only=on`, so
+PostgreSQL refuses a write; both print an error's code, never its message.
+
 ### Incremental refresh, by commit SHA
 
 A repository whose default branch has not moved since the last read
@@ -241,10 +266,15 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
   which would drift.
 - **Path queries.** A query containing `/` is read as a path, and artifacts whose
   source path contains it rank first. No other query's order changes.
-- **Sort.** Relevance (beside a query), recently indexed, or name — links, in the
-  URL as `sort=`, kept across filters and paging and reset to page 1 when changed.
-  With no query the default is recently indexed, and relevance is not offered:
-  every row would tie.
+- **Sort.** Relevance (beside a query), recently indexed, newly added, content
+  changed, or name — links, in the URL as `sort=`, kept across filters and paging
+  and reset to page 1 when changed. With no query the default is recently
+  indexed, and relevance is not offered: every row would tie. The three date
+  orders are three different clocks, and the page says which one it is using:
+  *recently indexed* is when a read last stored the artifact, *newly added* when
+  AgentDock first stored it, and *content changed* when AgentDock recorded a
+  second or later version of its bytes — not when the change was committed.
+  Artifacts with one recorded content follow, so the set never changes.
 - **Why a row matched.** Each result says which fields held a query word — name,
   path, description, type, repository — read from the same stored search vector
   the query matched, so the sentence is a condition PostgreSQL evaluated, not a
@@ -255,9 +285,13 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
   and prints Precision@5/10, Recall@10, MRR, NDCG@10, Top-1, zero-result rate and
   latency; the test pins each query's first relevant rank and the mean MRR and
   NDCG, so a ranking change that worsens any of them fails CI.
-- **Artifact pages.** An artifact under a plugin's directory names its plugin, and
-  a plugin lists the components under its directory — by path; a plugin.json path
-  override is not followed. The page also lists every stored version (one row per
+- **Artifact pages.** An artifact under a plugin's directory names its plugin and
+  the plugin's other components, and a plugin lists the components under its
+  directory — by path; a plugin.json path override is not followed. Below that,
+  up to twelve other listed artifacts from the same repository, by type and name,
+  with the total and a link to the repository page, and a link that searches the
+  artifact's own name within its type. No similarity score: every relation is a
+  stored fact, and "similar" is left to the measured search ranking. The page also lists every stored version (one row per
   distinct content, each linked at its commit) and a usage note for the type:
   its documentation, where a copy goes, what to read first. The note describes
   the type, never the file.
@@ -545,6 +579,8 @@ refuses any URL the test allowlist refuses. CI's `e2e` job runs the same steps.
 | `bun run sync` | **The scheduled job.** Discover, refresh, drain, summarize. |
 | `bun run corpus:sync --source=…` | The same machinery with sources and caps exposed, for filling an index by hand |
 | `bun run corpus:reset --confirm` | Empty the corpus. Refuses unless `AGENTDOCK_ALLOW_CORPUS_RESET=1` as well. Drops nothing. |
+| `bun run ops:status [--hours=24] [--markdown \| --json]` | Sync health: last run, queue, attempts in a window, corpus counts. Read-only; exit 2 only if the database could not be read. |
+| `bun run quality:check [--repo=owner/] [--json]` | Integrity rules and corpus observations. Read-only; exit 1 if a rule holds a row. |
 | `bun run ci` | Boundary scan, lint, type-check, tests |
 | `bun run test` | Vitest. Note the `run`: bare `bun test` invokes Bun's own runner, which also executes these files and loads `.env`, so `bunfig.toml`'s preload applies the same test-database isolation. |
 | `bun run lint` / `bun run format` | Biome, check and write |
@@ -634,9 +670,14 @@ command is composed: a plugin's marketplace is not recorded, so none is shown.
   execute anything.
 - **Search is PostgreSQL full text plus trigrams.** No embeddings, no semantic
   search, no ranking by anything but text relevance.
-- **Ordering is by relevance, recency or name, never quality.** There is no "most
-  starred" sort, and adding one would need a deliberate decision about what it
-  means.
+- **Ordering is by relevance, a date or name, never quality.** There is no "most
+  starred" sort and no "popular" list: AGENTS.md keeps popularity out of
+  ranking, and a list ordered by stars is a ranking.
+- **"Content changed" is AgentDock's clock.** A change is dated when a sync
+  recorded it — up to a scheduled run, or a refresh cycle, after the commit — and
+  a repository read for the first time records nothing as changed.
+- **Operator reports are not public.** There is no sign-in, so `ops:status` and
+  `quality:check` run in a terminal or a workflow, never on a page.
 - **Setup guidance is what the file says, not a tested install.** AgentDock does
   not run what it lists, so it cannot say whether a configuration works in a
   given client.

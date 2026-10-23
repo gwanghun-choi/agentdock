@@ -75,11 +75,14 @@ export function PackageRows({
   items,
   showRepo = true,
   pathQuery,
+  date,
 }: {
   items: (PackageListItem & Partial<SearchResultItem>)[];
   showRepo?: boolean;
   /** A search query that was also tested as a path substring; marks it in the path. */
   pathQuery?: string;
+  /** The result order; a date order adds the date it sorted by, named. */
+  date?: string;
 }) {
   return (
     <ul className="rows">
@@ -129,6 +132,14 @@ export function PackageRows({
                 <span>
                   <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}
                 </span>
+              ) : null}
+              {/* The order's own date beside the read date, each in its own
+                  words, so "added", "changed" and "read" are never one number. */}
+              {date === 'added' && p.addedAt ? (
+                <span>first indexed {p.addedAt.toISOString().slice(0, 10)}</span>
+              ) : null}
+              {date === 'changed' && p.changedAt ? (
+                <span>content changed {p.changedAt.toISOString().slice(0, 10)}</span>
               ) : null}
               {p.commitSha ? (
                 <a

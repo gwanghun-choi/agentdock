@@ -671,6 +671,73 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
       expect((await packages.getRelatedPackages(root)).components).toEqual([]);
     });
 
+    it('names the rest of the repository — siblings under the same plugin first, listed rows only', async () => {
+      const r = await repo('nearby');
+      await artifact(r, 'plugins/p/.claude-plugin/plugin.json', [{ hash: 'nb-p' }], {
+        type: 'plugin',
+        meta: '{"detectionConfidence":"manifest"}',
+      });
+      const me = await artifact(r, 'plugins/p/agents/me.md', [{ hash: 'nb-me' }], {
+        type: 'agent',
+      });
+      const sib = await artifact(r, 'plugins/p/skills/s/SKILL.md', [{ hash: 'nb-s' }]);
+      const bad = await artifact(r, 'plugins/p/skills/bad/SKILL.md', [
+        { hash: 'nb-bad', status: 'failed' },
+      ]);
+      for (const id of [me, sib, bad]) await setParent(id, 'plugins/p');
+      await artifact(r, '.claude/commands/go.md', [{ hash: 'nb-c' }], { type: 'command' });
+      await artifact(r, 'skills/top/SKILL.md', [{ hash: 'nb-t' }]);
+
+      const fullName = `${PREFIX}-nearby`;
+      const fromMe = await packages.getRelatedPackages(
+        await detailOf(fullName, ['plugins', 'p', 'agents', 'me.md']),
+      );
+      // The container is named once, as the container — not again below.
+      expect(fromMe.container?.sourcePath).toBe('plugins/p/.claude-plugin/plugin.json');
+      // An unparsed sibling is not offered: the listing predicate applies.
+      expect(fromMe.siblings.map((x) => x.sourcePath)).toEqual(['plugins/p/skills/s/SKILL.md']);
+      expect(fromMe.siblingTotal).toBe(1);
+      expect(fromMe.elsewhere.map((x) => x.sourcePath)).toEqual([
+        '.claude/commands/go.md',
+        'skills/top/SKILL.md',
+      ]);
+      expect(fromMe.elsewhereTotal).toBe(2);
+
+      // From the plugin, its components are already listed; the rest is not them.
+      const fromPlugin = await packages.getRelatedPackages(
+        await detailOf(fullName, ['plugins', 'p', '.claude-plugin', 'plugin.json']),
+      );
+      expect(fromPlugin.components).toHaveLength(3);
+      expect(fromPlugin.siblings).toEqual([]);
+      expect(fromPlugin.elsewhere.map((x) => x.sourcePath)).toEqual([
+        '.claude/commands/go.md',
+        'skills/top/SKILL.md',
+      ]);
+    });
+
+    it('cuts the rest of the repository at RELATED_LIMIT, siblings first, and reports the totals', async () => {
+      const r = await repo('many');
+      const n = packages.RELATED_LIMIT + 3;
+      // Top-level rows that sort ahead of the plugin's by type and name ('a…').
+      for (let i = 0; i < n; i += 1) {
+        await artifact(r, `a/s${String(i).padStart(2, '0')}/SKILL.md`, [{ hash: `many-${i}` }], {
+          type: 'agent',
+        });
+      }
+      const me = await artifact(r, 'z/p/skills/me/SKILL.md', [{ hash: 'many-me' }]);
+      const sib = await artifact(r, 'z/p/skills/zz/SKILL.md', [{ hash: 'many-sib' }]);
+      await setParent(me, 'z/p');
+      await setParent(sib, 'z/p');
+
+      const related = await packages.getRelatedPackages(
+        await detailOf(`${PREFIX}-many`, ['z', 'p', 'skills', 'me', 'SKILL.md']),
+      );
+      expect(related.siblings.map((x) => x.sourcePath)).toEqual(['z/p/skills/zz/SKILL.md']);
+      expect(related.elsewhere).toHaveLength(packages.RELATED_LIMIT - 1);
+      expect(related.elsewhereTotal).toBe(n);
+      expect(related.siblingTotal).toBe(1);
+    });
+
     it('lists every stored content latest first, and counts what the limit left out', async () => {
       const r = await repo('hist');
       const n = packages.VERSION_HISTORY_LIMIT + 2;

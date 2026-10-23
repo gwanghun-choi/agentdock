@@ -137,7 +137,23 @@ function parseSort(raw: string | string[] | undefined, q: string): SearchSort {
 const SORT_LABELS: Record<SearchSort, string> = {
   relevance: 'Relevance',
   recent: 'Recently indexed',
+  added: 'Newly added',
+  changed: 'Content changed',
   name: 'Name',
+};
+
+/**
+ * What the three date orders are dates OF, said under the chips while one is
+ * applied. Three different clocks, and none of them is the upstream commit's:
+ * a reader comparing two dates must be able to tell which one each is.
+ */
+const SORT_NOTES: Partial<Record<SearchSort, string>> = {
+  recent:
+    'By when a read last stored each artifact — every read of its repository at a new commit.',
+  added:
+    'By when AgentDock first indexed each artifact. Not when it was written: a repository read for the first time today brings its old files with it.',
+  changed:
+    'Artifacts whose content AgentDock has recorded more than once come first, by when it recorded the latest change — not when that change was committed. The rest follow, most recently indexed first.',
 };
 
 /** Repeated `cap` parameters arrive as an array; a single one arrives as a
@@ -233,6 +249,7 @@ function SortLinks({ q, filters, sort }: { q: string; filters: SearchFilters; so
           {SORT_LABELS[s]}
         </Link>
       ))}
+      {SORT_NOTES[sort] ? <span className="muted sort-note">{SORT_NOTES[sort]}</span> : null}
     </nav>
   );
 }
@@ -598,7 +615,7 @@ export default async function ArtifactsPage({
             <span className="muted">Close matches by name and summary</span>
           </p>
         </div>
-        <PackageRows items={items} />
+        <PackageRows date={sort} items={items} />
       </>
     );
   }
@@ -637,7 +654,7 @@ export default async function ArtifactsPage({
         <AppliedFilters filters={filters} q={q} sort={sort} />
         <SortLinks filters={filters} q={q} sort={sort} />
       </div>
-      <PackageRows items={items} pathQuery={pathQuery} />
+      <PackageRows date={sort} items={items} pathQuery={pathQuery} />
       <Pager filters={filters} last={last} page={page} q={q} sort={sort} />
     </>
   );
