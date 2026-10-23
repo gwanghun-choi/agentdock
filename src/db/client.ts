@@ -33,7 +33,30 @@ export const sql = postgres(env.DATABASE_URL, {
   onnotice: () => {},
 });
 
-export const db = drizzle(sql, { schema });
+// Drizzle sends every statement through sql.unsafe(), and postgres.js gives
+// unsafe() prepare:false — so the "prepared statements stay on" above held only
+// for tagged queries, and every Drizzle statement with a parameter cost two
+// round trips (Parse/Describe, then Bind/Execute), on every request. Measured
+// 2026-10-23 through a 100 ms-RTT proxy: the repository page's three serial
+// statements took 6.2 round trips. Prepared, a statement this connection has
+// run before takes one. Transactions (sql.begin) get their own client and keep
+// postgres.js's unsafe() default.
+// ponytail: a prepared search statement goes to a generic plan after five runs
+// on a connection unless the role sets plan_cache_mode = force_custom_plan
+// (scripts/sql/bootstrap-agentdock.sql has the measurement). Without it this
+// trade stays ahead only while a round trip costs more than the generic-plan
+// penalty: 0.215 s against 5–15 ms at 7.3k rows. Revisit if the function and
+// database ever share a region and the round trip drops to milliseconds.
+export const db = drizzle(
+  new Proxy(sql, {
+    get: (target, key) =>
+      key === 'unsafe'
+        ? (query: string, args?: never[], options?: object) =>
+            target.unsafe(query, args, { prepare: true, ...options })
+        : Reflect.get(target, key),
+  }),
+  { schema },
+);
 
 /**
  * Refuses to let the process continue against a connection that is not confined

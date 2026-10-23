@@ -1,5 +1,6 @@
+import { sql as drizzleSql } from 'drizzle-orm';
 import postgres from 'postgres';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // The test schema, like every other DB-backed suite, so this connection passes
 // through env.ts's local-test-database fence too.
@@ -8,6 +9,20 @@ process.env.DATABASE_SCHEMA = 'agentdock_test';
 const DB_URL = process.env.DATABASE_URL;
 
 describe.skipIf(!DB_URL)('assertSchemaIsolation', () => {
+  // Before the test below that ends the pool. Drizzle reaches postgres.js only
+  // through unsafe(), whose default is prepare:false: two round trips for every
+  // statement with a parameter, measured through a latency proxy (2026-10-23).
+  it('prepares the statements Drizzle sends', async () => {
+    const { db, sql } = await import('./client');
+    const unsafe = vi.spyOn(sql, 'unsafe');
+    try {
+      await expect(db.execute(drizzleSql`SELECT ${1}::int AS n`)).resolves.toEqual([{ n: 1 }]);
+      expect(unsafe.mock.calls.at(-1)?.[2]).toMatchObject({ prepare: true });
+    } finally {
+      unsafe.mockRestore();
+    }
+  });
+
   it('accepts the real application connection', async () => {
     const { assertSchemaIsolation, sql } = await import('./client');
     await expect(assertSchemaIsolation(sql)).resolves.toBeUndefined();

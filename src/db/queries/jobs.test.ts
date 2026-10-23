@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Database-backed tests write, so they write to the test schema. The schema
 // module reads this at import time, hence the assignment before any import of
@@ -254,6 +254,23 @@ describe.skipIf(!DB_URL)('the queue', () => {
         SELECT count(*)::int AS n FROM ingest_job WHERE target = ${A}
       `;
       expect(row.n).toBe(0);
+    });
+  });
+
+  describe('latestJobForTarget', () => {
+    it('answers the repository page in one statement, whatever the spelling', async () => {
+      const { id } = (await jobs.enqueueJob(A)) as { id: number };
+      // It read the job, then the job again and its latest attempt for a page
+      // that renders only id and status: three serial statements, measured at
+      // 0.215 s of round trip each in production (2026-10-23).
+      const unsafe = vi.spyOn(sql, 'unsafe');
+      try {
+        expect(await jobs.latestJobForTarget(A.toUpperCase())).toEqual({ id, status: 'queued' });
+        expect(unsafe).toHaveBeenCalledTimes(1);
+      } finally {
+        unsafe.mockRestore();
+      }
+      expect(await jobs.latestJobForTarget('test-owner/queue-spec-none')).toBeNull();
     });
   });
 

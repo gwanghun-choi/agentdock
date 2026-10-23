@@ -271,13 +271,20 @@ export async function getJobView(id: number): Promise<JobView | null> {
   return { ...job, attempt: attempt ?? null };
 }
 
-/** What the repository page shows when it wants to say what AgentDock is doing about it. */
-export async function latestJobForTarget(fullName: string): Promise<JobView | null> {
+/**
+ * What the repository page shows when it wants to say what AgentDock is doing
+ * about it: a link and a status, so one statement. It used to hand back the
+ * whole getJobView — two more serial statements, measured at 0.215 s of round
+ * trip each in production (2026-10-23), for columns the page never rendered.
+ */
+export async function latestJobForTarget(
+  fullName: string,
+): Promise<{ id: number; status: string } | null> {
   const [job] = await db
-    .select({ id: ingestJob.id })
+    .select({ id: ingestJob.id, status: ingestJob.status })
     .from(ingestJob)
     .where(sql`lower(${ingestJob.target}) = ${fullName.toLowerCase()}`)
     .orderBy(desc(ingestJob.id))
     .limit(1);
-  return job ? getJobView(job.id) : null;
+  return job ?? null;
 }

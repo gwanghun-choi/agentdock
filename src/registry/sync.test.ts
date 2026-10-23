@@ -299,10 +299,12 @@ describe.skipIf(!DB_URL)('syncRegistry', () => {
       stubPages(pageWith(normalRows(), 'c1'), 500, 503);
 
       await expect(syncRegistry({ maxPages: 5, retryDelayMs: 0 })).rejects.toThrow(
-        'The registry answered 503. Retried once after 0 s.',
+        'The registry answered 503. Retried once after 0 s; 1 page(s) were read this run, and the next run resumes after them.',
       );
       expect(urls).toHaveLength(3);
       expect((await storedSeeds()).map((r) => r.full_name)).toEqual([AGENTBERG, TANDEM]);
+      // The pages already read are not walked again, as after a parse failure.
+      expect((await state()).cursor).toBe('c1');
     });
   });
 

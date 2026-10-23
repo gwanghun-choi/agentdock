@@ -211,9 +211,18 @@ export async function syncRegistry(
           read -= 1;
           continue;
         }
+        // Where it got to is kept, as on a parse failure. The three failed
+        // scheduled runs (2026-10-20..22) threw 12–18 s into a sweep without
+        // storing the cursor or saying how far they had read.
+        await writeSweepState(REGISTRY_SOURCE, {
+          cursor,
+          watermark: state.watermark,
+          passStartedAt,
+        });
         throw new RegistryError(
           error.failure,
-          `${error.message} Retried once after ${retryDelayMs / 1000} s.`,
+          `${error.message} Retried once after ${retryDelayMs / 1000} s; ` +
+            `${result.pagesRead} page(s) were read this run, and the next run resumes after them.`,
         );
       }
       throw error;
