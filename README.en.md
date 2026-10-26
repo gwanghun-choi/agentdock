@@ -7,26 +7,23 @@ servers, slash commands, hooks and subagents — discovered from established pub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
-![The whole AgentDock home page, top to bottom: a search field, a horizontal pipeline from repository to artifact index, a Recently indexed dashboard leading with the most recently read artifact and the figures describing its window, a card rail and an artifact list, and the discovery gate that decides which repositories get read](docs/images/agentdock-home.png)
+![The whole AgentDock home page, top to bottom: a search field with a row of per-type chips and counts, a list of the ten most recently read artifacts, a card per artifact type saying what it is, and a horizontal pipeline from repository to artifact index above the discovery gate that decides which repositories get read](docs/images/agentdock-home.png)
 
-That image is the whole page, not a crop of it. The home page is in three parts.
+That image is the whole page, not a crop of it. The home page is in four parts.
 
-- **Search and the pipeline.** The search field is the control the page opens
-  with, and under it four stages run left to right: a repository, the files that
-  declare an artifact, AgentDock reading them, and the result filed against the
-  commit it read. A pulse travels the connectors between them.
-- **Recently indexed.** The most recently read artifact at full size, the three
-  figures describing the window it came from beside it, then the rest of that
-  window drifting past as cards and standing still as a list. The rail carries an
-  always-visible stop control.
-- **How a repository gets indexed.** The four discovery conditions, and what
-  they decide.
+- **Search.** The search field is the control the page opens with. Under it, a
+  chip per artifact type goes straight to that type's listing and says how many
+  it lists.
+- **Recently indexed.** The ten most recently read artifacts, as a list, on the
+  first screen.
+- **Browse by type.** A card per type saying what that kind of artifact is.
+- **How a repository gets indexed.** Four stages running left to right — a
+  repository, the files that declare an artifact, AgentDock reading them, and
+  the result filed against the commit it read — then the four discovery
+  conditions and what they decide.
 
-Every figure on those tiles is computed from the list the page had already
-fetched — there is no second query — so each is true of that window and not of
-the corpus. Any tile that could be mistaken for a total says so in its own label
-("in these 18"), because a number printed without its window is read as a total
-by everyone who sees it.
+The chip and card counts come from one grouped query, the same totals the
+listing shows on arrival. The home page makes three queries.
 
 **AgentDock reads files and reports what it read. It does not run them, and it
 cannot say whether an artifact is safe.** There is no risk score, no grade and
@@ -349,20 +346,13 @@ the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
 Back, reload and a shared link.
 
-So is the motion. The index-flow diagram on the home page, the rail of recently
-indexed cards drifting past under it, the order a list arrives in, and every
+So is the motion. The index-flow diagram on the home page, the order a list
+arrives in, and every
 hover and focus response are CSS — the diagram is HTML and CSS rather than an
 SVG asset, and there is no scroll observer anywhere. Every keyframe animation is
 declared inside one `prefers-reduced-motion: no-preference` block, so for a
 reader who asked for less motion there is nothing left to switch off: it is
 never declared.
-
-The rail moves on its own, so it carries an **always-visible stop control**
-(WCAG 2.2.2). Hover and focus stop it too, but neither is what makes it
-conformant — an interaction a reader never performs is not a mechanism they
-have. On a touch pointer and under reduced motion the rail does not move at
-all: it is a scroll-snapping carousel, and the stop control is not shown,
-because there is nothing to stop.
 
 ```
 src/

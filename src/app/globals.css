@@ -56,9 +56,8 @@
   --t-xl: 1.5rem;
   --t-2xl: 2rem;
   /* A number that is the answer to a question, not a word in a sentence:
-     the count in the hero and the figures on the board's metric tiles. It is
-     the one size in this scale that is set in tabular figures — see .metric —
-     because a number that changes width as it counts is a number that jitters
+     the count at the end of the index flow. It is the one size in this scale
+     that is set in tabular figures — see .count — because a number that changes width as it counts is a number that jitters
      the layout around it. */
   --t-metric: 1.75rem;
 
@@ -413,11 +412,13 @@ main {
      the page background. */
   isolation: isolate;
   display: grid;
-  gap: var(--s-6);
-  /* The largest vertical space on the page, by a wide margin. Section rhythm is
-     carried by these numbers rather than by rules between sections: the hero
-     breathes, the board is dense, the gate sits between them. */
-  padding-block: var(--s-6) var(--s-7);
+  gap: var(--s-5);
+  /* Section rhythm is carried by these numbers rather than by rules between
+     sections. The bottom was --s-7 while the pipeline closed the hero; with the
+     search box and the type row closing it, the first artifact is what comes
+     next, and 48px of air before it was a screen's worth of nothing on a
+     phone. */
+  padding-block: var(--s-6) var(--s-5);
 }
 
 /*
@@ -471,17 +472,23 @@ main {
 
 .hero-copy {
   max-width: 46rem;
+  /* A grid item's automatic minimum is its content, and the type row's
+     content is a scroller as wide as all seven chips: without this the row
+     widened the page instead of scrolling (378px of overflow at 390px). */
+  min-width: 0;
 }
 
+/* 3.5rem at most, 1.875rem at 320px: at the previous 2.25rem floor the
+   headline was three lines and 130px on a 390px phone. */
 .hero h1 {
-  font-size: clamp(2.25rem, 1.3rem + 3.2vw, 3.5rem);
-  margin-bottom: var(--s-4);
+  font-size: clamp(1.875rem, 1.1rem + 3.2vw, 3.5rem);
+  margin-bottom: var(--s-3);
 }
 
 .hero .lede {
   font-size: clamp(var(--t-base), 0.9rem + 0.4vw, 1.25rem);
   max-width: 42rem;
-  margin-bottom: var(--s-5);
+  margin-bottom: var(--s-4);
 }
 
 /*
@@ -549,8 +556,15 @@ main {
   background: var(--accent-hover);
 }
 
-.hero .actions {
+/* The type row under the search box: the artifacts page's chips (the ring is
+   taken off beside the chip rules further down). */
+.hero-types {
   margin: 0;
+}
+
+.chip-count {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -1529,22 +1543,40 @@ textarea {
   box-shadow: inset 0 0 0 2px var(--accent-soft);
 }
 
+/* The home page's type row is the same chips as links to a type rather than as
+   one of a set, so it draws no ring. */
+.hero-types .chip::before {
+  content: none;
+}
+
 /* On a phone the two facet rows were five lines of wrapped chips, and the first
-   result started 860px down an 844px screen (Phase 10 baseline, 390px). The
-   legend goes above its row, and each row scrolls sideways instead of wrapping.
-   The scroller holds only links, so it is reachable by Tab without a tab stop
-   of its own. */
+   result started 860px down an 844px screen (Phase 10 baseline, 390px). Each
+   row scrolls sideways instead of wrapping. The scroller holds only links, so
+   it is reachable by Tab without a tab stop of its own.
+
+   The legend stays beside its row, as it is on a desktop, at a fixed width so
+   the three rows' chips start on one line. Above its row it cost a line per
+   facet: 3 × 24px between the field and the first result (Phase 54, 390px).
+   A scroller is a block formatting context, so it takes the width the floated
+   legend leaves rather than running under it. */
 @media (max-width: 40rem) {
   .facet-legend {
-    float: none;
+    width: 6rem;
+    padding-block: 4px;
   }
 
   .facet-chips {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
+    margin-inline-end: calc(-1 * var(--s-4));
+    padding: 4px var(--s-4) 4px 4px;
+  }
+
+  /* The hero's type row has no legend, so it bleeds to both edges. */
+  .hero-types .facet-chips {
     margin-inline: calc(-1 * var(--s-4));
-    padding: 4px var(--s-4);
+    padding-inline: var(--s-4);
   }
 }
 
@@ -1822,17 +1854,17 @@ textarea {
 }
 
 /* On a phone the five sort chips wrapped to three lines under the count (375px,
-   2026-10-26). The legend goes above, as the facets' does, and the chips take
-   the facets' scrolled row; min-width lets a flex item be narrower than its
-   content, which is what makes it scroll rather than overflow. */
+   2026-10-26). The chips take the facets' scrolled row, beside the legend as
+   the facets' rows are; min-width lets a flex item be narrower than its
+   content, which is what makes it scroll rather than overflow. The legend is a
+   flex item here, not a float, so it sizes to its word. */
 @media (max-width: 40rem) {
   .sort .facet-legend {
-    flex-basis: 100%;
-    line-height: 1.25rem;
+    width: auto;
   }
 
   .sort .facet-chips {
-    flex: 1 1 100%;
+    flex: 1 1 0;
     min-width: 0;
   }
 }
@@ -2079,6 +2111,15 @@ details.notice[open] p {
   margin-top: var(--s-2);
 }
 
+/* Inside the search panel it is one more line of the panel, not a box in a
+   box: the panel already draws the edge. */
+.search details.notice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 /* The empty result's ways out, each with its count. */
 .ways {
   text-align: left;
@@ -2199,6 +2240,13 @@ details.notice[open] p {
   isolation: isolate;
   padding-block: var(--s-6);
   margin-block: var(--s-4);
+}
+
+/* The band's own padding is the space above the heading. With the section
+   head's top margin added to it the heading sat 64px into the band, which on a
+   phone was most of the gap between the search box and the first artifact. */
+.board .section-head {
+  margin-top: 0;
 }
 
 .board::before {
@@ -2384,15 +2432,10 @@ details.notice[open] p {
 /* ---------- activity board ---------- */
 
 /*
- * "Recently indexed" as a board rather than a heading over a list: a header row
- * that says what the feed is and what to do with it, a rail to glance at, and
- * the rows to actually read.
- *
- * The three layers are deliberately not equal. The rail is the thing that moves
- * and the thing that must not become the point — the hero's diagram is this
- * page's one loud object, and a second animated element competing with it is how
- * a product page turns into a screensaver. So the rail is short, quiet, and
- * sits above content that says the same thing standing still.
+ * "Recently indexed": a header row that says what the feed is and where else to
+ * read it, then the rows. The featured card, the window figures and the
+ * auto-scrolling rail that stood between them drew the same query three times
+ * and were removed (see src/app/page.tsx).
  */
 .board-meta {
   margin: 0;
@@ -2424,596 +2467,6 @@ details.notice[open] p {
 .board-search svg {
   width: 14px;
   height: 14px;
-}
-
-/* The rail's pause control, styled as one of the filter chips because it is the
-   same kind of thing: a small binary the reader sets and the page obeys. Hidden
-   by default and shown only where the rail actually moves — see the motion
-   block. */
-.rail-pause {
-  display: none;
-  align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-1) var(--s-3);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: var(--t-xs);
-  cursor: pointer;
-  min-height: 1.875rem;
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.rail-pause:hover {
-  border-color: var(--muted);
-  color: var(--fg-strong);
-}
-
-.rail-pause:has(input:checked) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 560;
-}
-
-/* The ring goes on the chip, not on the 13px control inside it — the same rule
-   the facet chips follow. */
-.rail-pause:has(input:focus-visible) {
-  outline: var(--ring-w) solid var(--ring);
-  outline-offset: var(--ring-offset);
-}
-
-.rail-pause input {
-  accent-color: var(--accent);
-  margin: 0;
-}
-
-/* ---------- the board dashboard ---------- */
-
-/*
- * The board is now the second thing on the page, not the last, and it opens with
- * an answer rather than a heading over a strip of small tiles.
- *
- * Two tracks: the newest artifact at full size, and the three figures describing
- * the window it came from stacked beside it. Below 68rem the featured card takes
- * the width and the figures go under it, which is the same reading order.
- */
-.board-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-  gap: var(--s-3);
-  margin-bottom: var(--s-3);
-  align-items: stretch;
-}
-
-@media (max-width: 68rem) {
-  .board-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/*
- * The featured artifact.
- *
- * The one card on this page that is allowed to be large. It carries the accent
- * edge and the lift because it is the answer to the question the section asks;
- * everything else on the board is context for it.
- */
-.featured {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  min-width: 0;
-  padding: var(--s-5);
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(120% 100% at 0% 0%, var(--accent-soft), transparent 60%), var(--surface);
-  box-shadow:
-    inset 0 0 0 1px var(--border),
-    var(--shadow);
-}
-
-.featured-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  max-width: none;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 550;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.featured-eyebrow svg {
-  width: 13px;
-  height: 13px;
-  flex: none;
-}
-
-/* The date is not an uppercase label, so it steps back out of that register. */
-.featured-eyebrow span {
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.featured .badge {
-  align-self: flex-start;
-}
-
-.featured-name {
-  margin: var(--s-1) 0 0;
-  font-size: var(--t-xl);
-  font-weight: 660;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.featured-name a {
-  color: var(--fg-strong);
-  text-decoration: none;
-}
-
-.featured-name a:hover {
-  color: var(--accent);
-}
-
-.featured-repo {
-  margin: 0;
-  max-width: none;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: var(--t-sm);
-}
-
-.featured-desc {
-  margin: var(--s-1) 0 0;
-  max-width: 44rem;
-  color: var(--fg);
-  font-size: var(--t-base);
-  line-height: 1.6;
-  /* Three lines. The summary is a capped excerpt already; this keeps the card
-     from becoming a page when one artifact writes a long one. */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-}
-
-.featured-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s-2) var(--s-4);
-  margin: auto 0 0;
-  padding-top: var(--s-3);
-  max-width: none;
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
-.featured-meta > span,
-.featured-meta > a {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  min-width: 0;
-}
-
-.featured-meta svg {
-  width: 13px;
-  height: 13px;
-  flex: none;
-}
-
-.featured-meta .path {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ---------- board tiles (bento) ---------- */
-
-/*
- * A three-cell bento over the rail: two figures and one small chart.
- *
- * Bento here means cells of unequal weight in one grid, not a wall of identical
- * squares — the chart is worth two of the figures and gets two columns, and on a
- * narrow viewport the whole thing becomes one column in reading order. Four
- * equal tiles would have been a stat row, which is the pattern this is
- * deliberately not: three of the four numbers a stat row wants do not exist
- * without a query this page does not make.
- *
- * Same surface, border and radius as every other card on the site. These are not
- * a separate visual species; they are the same object at a different size, which
- * is what keeps a dashboard from looking pasted onto a document.
- */
-/*
- * The figures, stacked in the dashboard's right-hand column.
- *
- * `.tiles` is only ever rendered inside `.board-grid`, so there is one set of
- * rules for it rather than a default plus overrides. That matters: the previous
- * version had a base `.tile-wide { grid-column: span 2 }` and a narrower rule
- * fighting it, and at equal specificity source order decided — which is exactly
- * how a one-column grid ended up opening an implicit second column and leaving a
- * 34px tile in it.
- *
- * `grid-column: 1 / -1` is correct at every step here and needs no override: in
- * one column it is the whole row, in two it spans both. Nothing has to come
- * after anything else.
- */
-.tiles {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-3);
-  margin: 0;
-  align-content: stretch;
-}
-
-.tile-wide {
-  grid-column: 1 / -1;
-}
-
-/* Beside the featured card the column is narrow, so the figures stack. Once the
-   dashboard has collapsed to one column they have the full width and sit two
-   across, until a phone takes that back to one. */
-@media (max-width: 68rem) and (min-width: 34.01rem) {
-  .tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  min-width: 0;
-  padding: var(--s-3) var(--s-4);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.tile dt {
-  display: flex;
-  align-items: center;
-  gap: var(--s-1);
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 550;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.tile dt svg {
-  width: 13px;
-  height: 13px;
-  flex: none;
-}
-
-.tile dd {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  margin: 0;
-  min-width: 0;
-}
-
-/*
- * The figure.
- *
- * Tabular figures because two of these tiles hold numbers that change, and
- * proportional digits change the width of the number as they do — a count going
- * 9 → 10 nudges everything after it. `font-variant-numeric` costs nothing and
- * removes the whole class of jitter.
- */
-.metric {
-  color: var(--fg-strong);
-  font-size: var(--t-metric);
-  font-weight: 640;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.tile dd small {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
-/*
- * The distribution.
- *
- * A row per kind: a proportional bar, the label, the count. The bar is sized off
- * --share, which BoardStats sets as the fraction of the window this kind is —
- * so the bar is proportioned inside the tile and makes no claim beyond it.
- *
- * It borrows the badge hue by class (`badge-skill` and friends), which means the
- * bar and the badge on the row below are the same colour by construction rather
- * than by two lists agreeing. `background: currentColor` picks up the badge
- * rule's own `color`; the badge's border and background come along, so the bar
- * is reset to a plain block first.
- */
-.dist {
-  display: grid;
-  gap: var(--s-1);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.dist > li {
-  display: grid;
-  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr) 2ch;
-  align-items: center;
-  gap: var(--s-2);
-  font-size: var(--t-xs);
-}
-
-/* The track is the whole window; the bar is this kind's share of it. Sizing the
-   bar against a flexible track rather than a fixed length is what makes a
-   one-kind window read as "all of them" instead of as a short stub in an empty
-   tile — which is the shape this chart has whenever a sync happens to bring in
-   one repository's worth of one kind, i.e. often. */
-.dist-track {
-  display: block;
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--surface-3);
-}
-
-.dist-bar {
-  display: block;
-  /* A floor of 4px so a single item in a long window is still a mark rather
-     than a sliver indistinguishable from nothing. */
-  width: max(4px, calc(var(--share) * 100%));
-  height: 100%;
-  border: 0;
-  border-radius: 999px;
-  background: currentColor;
-  padding: 0;
-}
-
-.dist-label {
-  color: var(--fg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dist-count {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-/* ---------- the rail ---------- */
-
-/*
- * A scroll container first and an animation second, and that order is the
- * accessibility answer rather than a style choice.
- *
- * `overflow-x: auto` is declared unconditionally, so on every configuration
- * where the track is not being translated — reduced motion, a touch pointer,
- * keyboard focus inside the rail — the rail is an ordinary horizontal scroller
- * that the browser can scroll a focused card into view inside. A rail built as
- * `overflow: hidden` plus a transform cannot do that: tab to the fifteenth card
- * and focus lands somewhere off-screen with nothing able to bring it back. That
- * is why focusing inside the rail cancels the animation outright rather than
- * merely pausing it — cancelling returns the track to translate zero, which
- * makes the scroll geometry honest again and hands the problem to the browser.
- *
- * `overscroll-behavior-x: contain` because a horizontal flick that runs off the
- * end of a rail is otherwise a browser back-navigation on a touchpad.
- *
- * The scrollbar is hidden: this is a strip of cards inside a card, a persistent
- * gutter under it reads as a bug, and the edge fade plus the rows immediately
- * below carry the affordance. Container scroll-state queries would draw a
- * better hint — the guidance for them is in modern-web-guidance — but they are
- * Chrome-only today and the mask is not.
- */
-/* The frame. Separate from .rail because .rail carries the edge mask, and a
-   mask fades the border it is painted on — a panel whose own outline dissolves
-   at both ends reads as broken, not soft. This element paints; the one inside
-   it clips and fades. */
-.rail-well {
-  margin: 0 0 var(--s-4);
-  padding: var(--s-3) 0;
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.rail {
-  position: relative;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  padding-block: var(--s-1);
-  /* Both edges fade so a card entering or leaving does so gradually instead of
-     being guillotined by the panel border. --s-6 of fade at each end, which is
-     about a fifth of a card. */
-  padding-inline: var(--s-3);
-  mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 var(--s-5),
-    #000 calc(100% - var(--s-5)),
-    transparent
-  );
-}
-
-.rail::-webkit-scrollbar {
-  display: none;
-}
-
-.rail-track {
-  display: flex;
-  width: max-content;
-  transform-origin: left;
-}
-
-.rail-set {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/*
- * The gap is a trailing margin on every card, including the last one, and not
- * the flex `gap` property. This is the seam.
- *
- * With `gap`, the track measures 2 × half + one gap, and translating it -50%
- * stops half a gap short of the second half's start — so the loop shifts by
- * half a gap every cycle and drifts visibly within a minute. With the space
- * carried inside each item both halves are exactly equal and -50% lands on the
- * duplicate's first card to the pixel.
- */
-.rail-set > li {
-  margin-right: var(--s-3);
-}
-
-.rail-set-dup {
-  /* Rendered only where there is a loop for it to close. See the motion block. */
-  display: none;
-}
-
-.rail-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  /* Fixed, so the loop's period is an exact function of the card count and the
-     speed is the same on every home page regardless of how long a name is. */
-  width: 17rem;
-  height: 100%;
-  padding: var(--s-3) var(--s-4);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  color: var(--fg);
-  text-decoration: none;
-  scroll-snap-align: start;
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
-}
-
-/* The whole card is the target — one link, 17rem wide, rather than a name-sized
-   one inside a card-sized box that mostly does nothing when clicked.
-
-   Hovering used to go to --surface, which in the dark theme is *darker* than
-   the --surface-2 the card sits on: the card receded under the cursor while a
-   list row two sections down came forward. --surface-3 is the interactive step
-   in both themes, so every hovered thing on this page now moves the same
-   direction. */
-.rail-card:hover,
-.rail-card:focus-visible {
-  background: var(--surface-3);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lift);
-  transform: translateY(-1px);
-}
-
-.rail-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-}
-
-.rail-card-stars {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  color: var(--faint);
-  font-size: var(--t-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.rail-card-stars svg {
-  width: 12px;
-  height: 12px;
-  fill: currentColor;
-  stroke: none;
-}
-
-.rail-card-name {
-  color: var(--fg-strong);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-card:hover .rail-card-name {
-  color: var(--accent);
-}
-
-.rail-card-repo {
-  color: var(--faint);
-  font-family: var(--mono);
-  font-size: var(--t-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-card-desc {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* `margin-top: auto` pins this to the bottom of whatever height the row of
-   cards settles on, so the closing line sits on one baseline across the rail
-   whether a card carries a two-line summary, a one-line summary or none. */
-.rail-card-read {
-  display: flex;
-  align-items: center;
-  gap: var(--s-1);
-  margin-top: auto;
-  padding-top: var(--s-2);
-  color: var(--faint);
-  font-size: var(--t-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.rail-card-read svg {
-  flex: none;
-  width: 11px;
-  height: 11px;
-}
-
-/* Snap only where the rail is actually scrolled by hand. With the track being
-   translated instead, there is no scrolling for a snap point to catch, and a
-   snap that fires against an animation is a fight nobody wins. */
-@media (prefers-reduced-motion: reduce), (pointer: coarse) {
-  .rail {
-    scroll-snap-type: x proximity;
-    scroll-padding-inline: var(--s-4);
-  }
 }
 
 /* ---------- detail page ---------- */
@@ -3485,19 +2938,39 @@ details.notice[open] p {
     flex-direction: column;
   }
 
-  .search-row {
-    flex-direction: column;
+  /* The search field keeps its button beside it. Stacked, the button was a
+     second 44px row between the field and the results (Phase 54, 390px); a
+     query is a few words, and the field still holds 25 characters at 320px. */
+  .search-row .field input[type="search"] {
+    min-width: 0;
   }
 
-  .facets {
-    gap: var(--s-3);
+  .hero-search button[type="submit"] {
+    padding-inline: var(--s-4);
   }
 
-  /* No keyboard to press it with. */
+  /* The panel's heading-sized label, kept for assistive technology. The page's
+     h1 and the field's placeholder say the same thing to a sighted reader,
+     and the line cost 30px above the field. */
+  .search label[for="q"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* No keyboard to press it with — and, with the button now beside the field,
+     no room: in a 320px window with a mouse the chord cap covered all but two
+     letters of the placeholder (Phase 54). Both caps go, and the padding they
+     reserved, at the specificity the per-platform padding was set with. */
+  .search-row .field::before,
   .search-row .field::after {
     display: none;
   }
 
+  :root[data-platform] .search-row .field input[type="search"],
   .search-row .field input[type="search"] {
     padding-right: var(--s-3);
   }
@@ -3587,14 +3060,6 @@ details.notice[open] p {
      sentence exception does not cover it. Same treatment, same reason — the
      text does not change size, only the box around it. */
   .section-head a,
-  /* The featured card's meta line is the row metadata line at a larger size,
-     and it inherited the same fault: "source on GitHub" measured 110×19 at
-     390px on the sweep that added this card. Listing it here rather than
-     widening the selector above, because these are two different components
-     that happen to have the same problem — and the next one will not be found
-     by a selector that was written before it existed. */
-  .featured-meta a,
-  .featured-meta span,
   /* The repository link above a detail page's path: 137×21 at 390px on the
      Phase 10 sweep, a link on a line of its own rather than inside a sentence. */
     .detail-head
@@ -3920,94 +3385,6 @@ details.notice[open] p {
 
   .rows > li:nth-child(n + 8) {
     animation-delay: 175ms;
-  }
-
-  /* --- the activity rail --- */
-
-  /*
-   * Nested inside the no-preference block rather than beside it, so this
-   * stylesheet keeps exactly one place an animation can be declared and
-   * motion.test.ts keeps being able to say so.
-   *
-   * `pointer: coarse` is excluded outright rather than given a slower speed. A
-   * translated track and a finger are two ways to move the same strip and they
-   * do not compose: the flick fights the animation, and the thing a touch user
-   * wants — to push the rail along and stop it where they can read it — is
-   * exactly what the rail already is when nothing is translating it. On a
-   * touch device this is a scroll-snapping carousel, which is the better
-   * answer, not a degraded one.
-   */
-  @media (pointer: fine) {
-    @keyframes rail-scroll {
-      to {
-        /* Exactly one half. Both halves are identical widths — see the trailing
-           margin on .rail-set > li — so this lands on the duplicate's first
-           card and the loop has no seam. */
-        transform: translateX(-50%);
-      }
-    }
-
-    .rail-set-dup {
-      display: flex;
-    }
-
-    /*
-     * 6.5s per card, not a fixed total. Each card is a fixed 17rem plus a
-     * 0.75rem margin, so a half measures items × 284px and the speed is a
-     * constant 43.7 px/s whatever the feed length — measured at eighteen cards:
-     * a 5,112px half over 117s. A fixed total duration would instead crawl at
-     * eighteen cards and sprint at forty. One card-width takes 6.5 seconds to
-     * pass, which is the number that actually decides whether this is readable.
-     *
-     * `linear`, and it is the only linear timing in this file. Every other curve
-     * here decelerates because it is a thing arriving somewhere; a rail is not
-     * arriving anywhere, and an eased marquee visibly surges once a cycle.
-     */
-    .rail-track {
-      animation: rail-scroll calc(var(--rail-items) * 6.5s) linear infinite;
-    }
-
-    .rail-pause {
-      display: inline-flex;
-    }
-
-    /* Pause, not slow down. The reason a cursor lands on a moving card is to
-       read it or to click it, and a rail that is merely slower still walks the
-       click target out from under the pointer. Stopping is the only version
-       where the thing under the cursor is the thing that gets clicked. */
-    .rail:hover .rail-track {
-      animation-play-state: paused;
-    }
-
-    /* The explicit control, for every reader who is not hovering. */
-    .board:has(.rail-pause input:checked) .rail-track {
-      animation-play-state: paused;
-    }
-
-    /*
-     * Focus cancels the animation instead of pausing it, and hides the
-     * duplicate half with it.
-     *
-     * Pausing leaves the track mid-translate, where the scroll container's
-     * geometry no longer matches what is on screen and the browser cannot
-     * scroll a focused card into view. Cancelling returns the track to zero and
-     * the rail becomes an ordinary scroller, which is the one state in which
-     * tabbing to the fifteenth card actually shows it. The jump this costs is
-     * paid once, on entering the rail, by a reader who has just asked to stop
-     * looking at it and start reading it.
-     */
-    .rail:focus-within .rail-track {
-      animation: none;
-    }
-
-    .rail:focus-within .rail-set-dup {
-      display: none;
-    }
-
-    .rail:focus-within {
-      scroll-snap-type: x proximity;
-      scroll-padding-inline: var(--s-4);
-    }
   }
 
   /* --- the loading placeholder --- */

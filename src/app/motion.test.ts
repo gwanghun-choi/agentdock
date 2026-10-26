@@ -32,7 +32,7 @@ const code = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
  *
  * The at-rule's condition must match EXACTLY — nothing but whitespace between
  * the text asked for and the opening brace. A plain `indexOf` matches a prefix,
- * and this file now contains
+ * and this file once contained
  * `@media (prefers-reduced-motion: reduce), (pointer: coarse)`, which is a
  * different rule that happens to start with the same twenty-nine characters.
  * With a prefix match the reduced-motion suite silently read that block instead
@@ -169,13 +169,15 @@ describe('every keyframe animation is inside the no-preference block', () => {
 
   it('reads the block whose condition matches exactly, not one that starts the same way', () => {
     // Regression. `@media (prefers-reduced-motion: reduce), (pointer: coarse)`
-    // — the rail's scroll-snap rule — shares its first twenty-nine characters
-    // with the reduced-motion block and appears earlier in the file. A prefix
-    // match returned that block instead, and every assertion about reduced
-    // motion was suddenly being made against a scroll-snap rule.
-    expect(code).toContain(`${REDUCE}, (pointer: coarse)`);
-    expect(atRuleBody(code, REDUCE)).toMatch(/--dur-fast:/);
-    expect(atRuleBody(code, REDUCE)).not.toMatch(/scroll-snap-type/);
+    // — the activity rail's scroll-snap rule — shared its first twenty-nine
+    // characters with the reduced-motion block and appeared earlier in the
+    // file. A prefix match returned that block instead, and every assertion
+    // about reduced motion was suddenly being made against a scroll-snap rule.
+    // The rail was removed in Phase 54, so the decoy is written out here: the
+    // helper has to skip it whether or not the stylesheet still has one.
+    const decoy = `${REDUCE}, (pointer: coarse) { .x { scroll-snap-type: x proximity; } }\n${code}`;
+    expect(atRuleBody(decoy, REDUCE)).toMatch(/--dur-fast:/);
+    expect(atRuleBody(decoy, REDUCE)).not.toMatch(/scroll-snap-type/);
   });
 
   it('keeps the two blocks distinct, so neither is matched by the other', () => {

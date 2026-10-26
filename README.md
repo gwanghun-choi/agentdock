@@ -7,22 +7,21 @@ Hook, Subagent — 를 모아 놓은 공개 index입니다. 자리를 잡은 공
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
-![AgentDock 홈 화면 전체. 위에서부터 검색창, repository에서 artifact index까지의 가로 pipeline, 가장 최근에 읽은 artifact와 그 창을 설명하는 숫자를 담은 Recently indexed dashboard, 카드 rail과 artifact 목록, 그리고 repository 수집 조건을 보여주는 discovery gate](docs/images/agentdock-home.png)
+![AgentDock 홈 화면 전체. 위에서부터 검색창과 유형별 개수 칩, 최근에 읽은 artifact 10개의 목록, 유형별 설명 카드, 그리고 repository에서 artifact index까지의 가로 pipeline과 repository 수집 조건을 보여주는 discovery gate](docs/images/agentdock-home.png)
 
-위 이미지는 잘라낸 화면이 아니라 홈 페이지 전체입니다. 홈은 세 부분입니다.
+위 이미지는 잘라낸 화면이 아니라 홈 페이지 전체입니다. 홈은 네 부분입니다.
 
-- **검색과 pipeline.** 검색창이 페이지가 여는 컨트롤이고, 그 아래로
-  repository → 선언 파일 → 읽기 → commit에 기록까지 네 단계가 가로로 흐릅니다.
-  각 단계 사이를 pulse가 지나갑니다.
-- **Recently indexed.** 가장 최근에 읽은 artifact 하나를 크게 보여주고, 그 옆에
-  그 창을 설명하는 숫자 셋, 아래로 나머지가 흐르는 카드 rail과 정지 상태의
-  목록이 이어집니다. rail에는 항상 보이는 정지 컨트롤이 있습니다.
-- **How a repository gets indexed.** discovery 조건 네 가지와 그것이 정하는 것.
+- **검색.** 검색창이 페이지가 여는 컨트롤이고, 그 아래 칩이 유형마다 목록에
+  있는 개수와 함께 그 유형의 목록으로 바로 연결합니다.
+- **Recently indexed.** 가장 최근에 읽은 artifact 10개의 목록입니다. 첫 화면에서
+  보입니다.
+- **Browse by type.** 유형마다 무엇인지 설명하는 카드입니다.
+- **How a repository gets indexed.** repository → 선언 파일 → 읽기 → commit에
+  기록까지 네 단계가 가로로 흐르는 pipeline과, discovery 조건 네 가지와 그것이
+  정하는 것.
 
-tile의 숫자는 전부 그 페이지가 이미 가져온 목록에서 계산한 것이고, 새 query는
-없습니다. 그래서 corpus 전체가 아니라 **그 창(window)에 대해서만** 참이며,
-총계로 오해될 수 있는 tile은 자기 label에 창을 적어 둡니다("이 18개 중").
-창을 밝히지 않은 숫자는 전부 총계로 읽히기 때문입니다.
+칩과 카드의 개수는 목록 페이지에 도착했을 때의 total과 같은 grouped query
+하나에서 나옵니다. 홈의 query는 세 개입니다.
 
 **AgentDock은 파일을 읽고 읽은 내용을 보고합니다. 실행하지 않으며, 어떤
 artifact가 안전한지 말해주지 않습니다.** 위험 점수도, 등급도, 안전 배지도
@@ -331,18 +330,12 @@ boundary입니다. 검색은 GET form이고, type·capability 필터와 페이�
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
-모션도 마찬가지입니다. 홈의 index flow 다이어그램, 최근 인덱싱 항목이 천천히
-흐르는 카드 rail, 목록이 순서대로 등장하는 방식, hover와 focus 반응은 전부
+모션도 마찬가지입니다. 홈의 index flow 다이어그램, 목록이 순서대로 등장하는
+방식, hover와 focus 반응은 전부
 CSS입니다 — 다이어그램은 SVG asset이 아니라 HTML과 CSS이고, scroll observer도
 없습니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
 블록 하나 안에만 선언되어 있어서, 모션을 줄여 달라고 한 사용자에게는 끌 것이
 남지 않습니다. 애초에 선언되지 않습니다.
-
-rail은 자동으로 움직이므로 **항상 보이는 정지 컨트롤**을 가집니다(WCAG 2.2.2).
-hover와 focus도 멈추지만 그 둘은 준수 근거가 아닙니다 — 호버하지 않는 사용자에게는
-없는 것과 같기 때문입니다. 터치 기기와 reduced-motion에서는 자동 이동 없이
-스크롤 스냅 carousel이 되고, 그때는 멈출 것이 없으므로 정지 컨트롤도 표시되지
-않습니다.
 
 ```
 src/

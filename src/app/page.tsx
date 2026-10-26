@@ -1,8 +1,5 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
-import { ArtifactRail } from '@/components/ArtifactRail';
-import { BoardStats } from '@/components/BoardStats';
-import { FeaturedArtifact } from '@/components/FeaturedArtifact';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -16,7 +13,7 @@ import {
 } from '@/components/Icon';
 import { IndexFlow } from '@/components/IndexFlow';
 import { PackageRows } from '@/components/PackageRows';
-import { TYPE_FILTER_IDS } from '@/components/typeFilters';
+import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { countPackagesByType, listPackages } from '@/db/queries/packages';
@@ -26,21 +23,13 @@ import { lastSyncSucceededAt } from '@/db/queries/syncState';
 // CI, where there is no database.
 export const dynamic = 'force-dynamic';
 
-/**
- * One query, two readings.
- *
- * The rail drifts through all eighteen; the list underneath reads the ten it
- * always read. Eighteen is a rail long enough that the loop is not obvious at a
- * glance and short enough that a cycle stays under two minutes at a readable
- * speed — and it is one `listPackages` call, the same one this page has always
- * made, with a larger limit. No second query, no second round trip.
- */
-const RAIL_ITEMS = 18;
+// The ten rows the board has always listed, from the one `listPackages` call
+// this page makes.
 const LIST_ROWS = 10;
 
 export default async function HomePage() {
   const [recent, byType, lastSync] = await Promise.all([
-    listPackages({ limit: RAIL_ITEMS }),
+    listPackages({ limit: LIST_ROWS }),
     countPackagesByType(),
     lastSyncSucceededAt(),
   ]);
@@ -58,14 +47,14 @@ export default async function HomePage() {
           indexed whatever repository a visitor typed; AgentDock has no accounts
           and no operator review, so that was an unauthenticated way to spend a
           shared 60-request budget and to put any repository at all into the
-          index. Browsing is what this page is for now, so that is the button. */}
-      {/* Two columns above 64rem, and the second one is the point. The copy has
-          always been capped at --prose (46rem) inside a 72rem shell, so 40% of
-          this section was empty canvas on every desktop that ever loaded it.
-          What fills it is not decoration: it is the four steps the sentence to
-          its left describes, named and drawn, which is the one thing the
-          paragraph could not do. Below 64rem it stacks underneath, in reading
-          order, because that is the order it is written in. */}
+          index. Searching is what this page is for now, so that is the control.
+
+          What the hero no longer holds is the pipeline diagram. It sat between
+          the search box and the first artifact, and with it there the first
+          artifact on the page started at y=1,232 on a 1280×800 screen and
+          y=2,236 on a 390×844 phone — no visitor saw a single thing the index
+          held without scrolling (local seed, 2026-10-26). It explains how a
+          repository gets here, so it moved to the section that says so. */}
       <section className="hero">
         <div className="hero-copy">
           <h1>Find agent artifacts, and see where they came from.</h1>
@@ -102,23 +91,32 @@ export default async function HomePage() {
             <button type="submit">Search</button>
           </form>
 
-          <p className="actions">
-            <Link className="btn btn-quiet" href="/artifacts">
-              Browse all {total} artifacts <ArrowRightIcon />
-            </Link>
-          </p>
+          {/* The other way in, beside the box: every kind the index holds, with
+              how many it lists. Each is the URL the artifacts page's own Type
+              chip produces and each count is that page's total on arrival — the
+              same grouped query this page already made for the cards further
+              down (countPackagesByType), so this adds no query. The chips are
+              the artifacts page's chips, in the same scrolled row on a phone. */}
+          <nav aria-label="Artifact types" className="hero-types facet">
+            <div className="facet-chips">
+              <Link className="chip" href="/artifacts">
+                All <span className="chip-count">{total.toLocaleString('en-US')}</span>
+              </Link>
+              {TYPE_FILTER_IDS.map((id) => (
+                <Link className="chip" href={`/artifacts?type=${id}`} key={id}>
+                  {TYPE_FILTER_LABELS[id]}{' '}
+                  <span className="chip-count">{(byType[id] ?? 0).toLocaleString('en-US')}</span>
+                </Link>
+              ))}
+            </div>
+          </nav>
         </div>
 
-        {/* The pipeline, across the full width of the shell rather than in a
-            sidebar beside the headline. */}
-        <IndexFlow total={total} />
-
-        {/* Three facts that were sentences inside the diagram. They are
-            properties of the whole flow rather than of any one stage, and each
-            is enforced somewhere in the codebase — the discovery gate below
-            states the first at length, AGENTS.md's "AgentDock reads; it never
-            runs" is the second, and permalink()'s commit sha is the third.
-            Never a claim about an artifact: only about what AgentDock does. */}
+        {/* Three facts about what AgentDock does. Each is enforced somewhere in
+            the codebase — the discovery gate below states the first at length,
+            AGENTS.md's "AgentDock reads; it never runs" is the second, and
+            permalink()'s commit sha is the third. Never a claim about an
+            artifact: only about what AgentDock does. */}
         <ul className="trust">
           <li>Public repositories only, never by request</li>
           <li>Files are read, never executed</li>
@@ -126,14 +124,65 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* One way in per kind of artifact, for a reader who knows what they want
-          but not its name. Each is the URL the artifacts page's own Type chip
-          produces, and each count is that page's total on arrival — the same
-          listing predicate, grouped (countPackagesByType). The sentence under
-          each is the type's documented definition from usageGuide.ts, the same
-          one its detail pages print: what the kind is, never how good any one
-          of them is. Catalogs have no entry: the search route does not filter
-          on them, so there is no page to send a reader to. */}
+      {/* The feed, as the rows a reader reads.
+
+          It was drawn three times from one 18-row query: the newest artifact as
+          a large card, the next seventeen as an auto-scrolling rail, then the
+          first ten again as these rows — so the newest artifact appeared on the
+          page twice and nine others twice, and the rows a reader can actually
+          scan started 1,600px into the page on a phone. Every fact the card and
+          the rail carried is on a row: the type, the name, the repository, the
+          description, the path, the stars, the read date and the source link.
+          The window figures beside the card (distinct repositories and kinds
+          among the 18) described a window, not the corpus, and the
+          per-type counts the page does have are in the hero. */}
+      <section aria-labelledby="recent-heading" className="board">
+        <div className="section-head">
+          <h2 id="recent-heading">Recently indexed</h2>
+          {recent.length > 0 ? (
+            <p className="board-meta">
+              {recent.length} most recent
+              {newestRead ? ` · newest read ${newestRead}` : ''}
+              {/* When a scheduled sync last reached its end with every stage
+                  intact (corpus-sync.mjs). Absent until one has: a green job
+                  that stopped half way does not write it. "Without errors",
+                  not "complete": every run stops at its caps and leaves work
+                  queued (AGENTS.md: every cap says what it dropped). */}
+              {lastSync
+                ? ` · last sync without errors ${lastSync.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+                : ''}
+            </p>
+          ) : null}
+          {recent.length > 0 ? (
+            <p className="board-actions">
+              {/* The listing's two other date orders, each a URL the sort
+                  chips on /artifacts produce. The page there says what each
+                  date is a date of. */}
+              <Link href="/artifacts?sort=added">Newly added</Link>
+              <Link href="/artifacts?sort=changed">Content changed</Link>
+              <Link href="/artifacts">
+                Browse all {total} artifacts <ArrowRightIcon />
+              </Link>
+            </p>
+          ) : null}
+        </div>
+        {recent.length === 0 ? (
+          <div className="empty">
+            <p className="muted">
+              Nothing indexed yet. The scheduled sync fills this the next time it runs.
+            </p>
+          </div>
+        ) : (
+          <PackageRows items={recent} />
+        )}
+      </section>
+
+      {/* What each kind is, for a reader who knows what they want but not its
+          name. Each card is the same URL as the hero's chip for it; what the
+          card adds is the type's documented definition from usageGuide.ts, the
+          same one its detail pages print: what the kind is, never how good any
+          one of them is. Catalogs have no entry: the search route does not
+          filter on them, so there is no page to send a reader to. */}
       <section aria-labelledby="types-heading">
         <div className="section-head">
           <h2 id="types-heading">Browse by type</h2>
@@ -156,88 +205,6 @@ export default async function HomePage() {
           ))}
         </ul>
       </section>
-
-      {/* The board. Three layers, in the order a reader uses them: what this is
-          and what to do next, then the rail to glance at, then the rows to
-          read. The rail never replaces the rows — a feed you can only watch go
-          past is not a feed you can use, and the rows are also where a reader
-          who cannot or does not want to track a moving target gets everything
-          the rail shows. */}
-      <section aria-labelledby="recent-heading" className="board">
-        <div className="section-head">
-          <h2 id="recent-heading">Recently indexed</h2>
-          {recent.length > 0 ? (
-            <p className="board-meta">
-              {recent.length} most recent
-              {newestRead ? ` · newest read ${newestRead}` : ''}
-              {/* When a scheduled sync last reached its end with every stage
-                  intact (corpus-sync.mjs). Absent until one has: a green job
-                  that stopped half way does not write it. "Without errors",
-                  not "complete": every run stops at its caps and leaves work
-                  queued (AGENTS.md: every cap says what it dropped). */}
-              {lastSync
-                ? ` · last sync without errors ${lastSync.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-                : ''}
-            </p>
-          ) : null}
-          {recent.length > 0 ? (
-            <p className="board-actions">
-              {/* WCAG 2.2.2. Hovering pauses the rail and so does focusing a
-                  card, but neither is a mechanism for a reader who does
-                  neither — someone reading with a magnifier, or on a device
-                  with no hover at all on a viewport wide enough to still be
-                  animating. This is that mechanism, and it is a checkbox
-                  because a checkbox is a real control with a real state that
-                  the keyboard already reaches, and because :has() makes it
-                  work with no JavaScript.
-
-                  It is hidden wherever there is nothing to pause — reduced
-                  motion, and coarse pointers, where the rail is a plain
-                  scroller. A pause button for something standing still is
-                  worse than no button. */}
-              <label className="rail-pause">
-                <input type="checkbox" /> Pause
-              </label>
-              <Link className="board-search" href="/artifacts?q=">
-                <SearchIcon /> Search
-              </Link>
-              {/* The listing's two other date orders, each a URL the sort
-                  chips on /artifacts produce. The page there says what each
-                  date is a date of. */}
-              <Link href="/artifacts?sort=added">Newly added</Link>
-              <Link href="/artifacts?sort=changed">Content changed</Link>
-              <Link href="/artifacts">
-                Browse all {total} artifacts <ArrowRightIcon />
-              </Link>
-            </p>
-          ) : null}
-        </div>
-        {recent.length === 0 ? (
-          <div className="empty">
-            <p className="muted">
-              Nothing indexed yet. The scheduled sync fills this the next time it runs.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* The dashboard: the newest artifact at full size beside the three
-                figures describing the window it came from. Both read the same
-                `recent` array the rail and the list read — no new query, and
-                every figure that could be mistaken for a corpus total names its
-                window in its own label. See BoardStats.tsx. */}
-            <div className="board-grid">
-              <FeaturedArtifact item={recent[0]} />
-              <BoardStats items={recent} newestRead={newestRead} />
-            </div>
-            {/* The rail carries the rest. Showing the featured artifact again as
-                the first card would read as a duplicate rather than as the same
-                feed seen twice — the list below is where the whole window is
-                repeated, deliberately and in full. */}
-            <ArtifactRail items={recent.slice(1)} />
-            <PackageRows items={recent.slice(0, LIST_ROWS)} />
-          </>
-        )}
-      </section>
       {/* What used to be the submit form's job — telling a visitor how a
           repository gets in here — stated as the policy it actually is. Every
           number and every condition below is the same one the code enforces:
@@ -251,6 +218,9 @@ export default async function HomePage() {
           AgentDock discovers repositories on its own, twice a day. There is no submission form:
           nothing is added by request.
         </p>
+        {/* The pipeline, at the full width of the shell: what happens to a
+            repository once it is found, before the conditions for finding it. */}
+        <IndexFlow total={total} />
         {/* The four conditions, joined to what they decide.
 
               They used to be four bordered columns with nothing above or below

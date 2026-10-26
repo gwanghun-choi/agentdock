@@ -621,12 +621,15 @@ export default async function ArtifactsPage({
   // the regression Phase 10 had fixed, back after the description facet and
   // its sentence were added. With a capability or language filter applied it
   // is open, beside the results it qualifies.
+  //
+  // Inside the search panel, under the filters it explains, rather than a
+  // second bordered box below it: the box's border, padding and margin were
+  // 62px between the filters and the result count on a 390px phone, for one
+  // line of summary (Phase 54, local seed).
   const searchControls = (
-    <>
-      <div className="search">
-        {searchForm}
-        {facets}
-      </div>
+    <div className="search">
+      {searchForm}
+      {facets}
       <details
         className="notice"
         open={selectedCapabilities.length > 0 || selectedLanguages.length > 0}
@@ -644,7 +647,7 @@ export default async function ArtifactsPage({
           other than English.
         </p>
       </details>
-    </>
+    </div>
   );
 
   const nextSteps = (

@@ -1,5 +1,5 @@
 /**
- * The URL shapes every listing, rail and detail page links through, in a module
+ * The URL shapes every listing and detail page links through, in a module
  * that does not touch the database.
  *
  * These lived in `@/db/queries/packages`, which imports `@/db/client` at module

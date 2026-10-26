@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, type Page, test } from '@playwright/test';
 
 // The reader's journeys through search and detail, in a real browser against
@@ -523,6 +524,76 @@ test('Back from a detail page returns to the same filtered, sorted page of resul
   await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Name');
 });
 
+test('home: the newest artifacts are on the first screen, each listed once, and the type row counts what it links to', async ({
+  page,
+}) => {
+  await page.goto('/');
+  // y=1,232 on this 1280×800 screen while the pipeline diagram sat in the hero
+  // and the newest artifact was drawn as a card, a rail and a row (Phase 54).
+  const first = page.locator('.board .rows li').first();
+  expect((await first.boundingBox())?.y).toBeLessThan(800);
+  const hrefs = await page
+    .locator('.board a[href^="/r/"]')
+    .evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+  const names = hrefs.filter((h) => !h?.includes('/commits/'));
+  expect(names.length).toBeGreaterThan(0);
+  expect(new Set(names).size).toBe(names.length);
+  // Each chip's count is the listing total it leads to.
+  for (const label of ['All', 'Slash Commands']) {
+    const chip = page.locator('.hero-types .chip', { hasText: label }).first();
+    const shown = Number(
+      ((await chip.locator('.chip-count').textContent()) ?? '').replace(/,/g, ''),
+    );
+    await chip.click();
+    await page.waitForURL(label === 'All' ? /\/artifacts$/ : /\/artifacts\?type=command$/);
+    expect(await total(page)).toBe(shown);
+    await page.goBack();
+  }
+});
+
+// axe-core over the pages a reader moves between, in both colour schemes and at
+// both ends of the width range. WCAG 2.2 A/AA plus axe's best-practice rules;
+// the Phase 54 baseline was zero violations on all 28 runs, so any is new.
+const AXE = readFileSync('node_modules/axe-core/axe.min.js', 'utf8');
+const AXE_PAGES = [
+  '/',
+  '/artifacts?q=review',
+  '/artifacts?q=git&type=hook&cap=no_shell',
+  '/r/wshobson/agents/plugins/backend-development/skills/temporal-python-testing',
+  '/r/fixture/ui-edge-cases',
+];
+for (const [width, height, scheme] of [
+  [1280, 800, 'light'],
+  [390, 844, 'dark'],
+] as const) {
+  test(`accessibility: axe finds no violation at ${width}px, ${scheme}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const path of AXE_PAGES) {
+      await page.goto(path);
+      // The page, not /artifacts' loading state: that one streams first and
+      // has no heading by design (loading.tsx), and the slowest page here — the
+      // empty result, which counts its ways out — was still showing it.
+      await page.locator('main h1').waitFor();
+      await page.addScriptTag({ content: AXE });
+      const violations = await page.evaluate(async () => {
+        // @ts-expect-error -- injected above
+        const r = await window.axe.run(document, {
+          runOnly: {
+            type: 'tag',
+            values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'],
+          },
+        });
+        return r.violations.map(
+          (v: { id: string; nodes: { target: string[] }[] }) =>
+            `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`,
+        );
+      });
+      expect(violations, path).toEqual([]);
+    }
+  });
+}
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
@@ -557,6 +628,38 @@ test.describe('on a phone', () => {
     const last = await chips.locator('.chip').last().boundingBox();
     // The applied chip's ring is a pixel wider; a wrapped chip would be a row down.
     expect(Math.abs((last?.y ?? 0) - (first?.y ?? 0))).toBeLessThan(8);
+    await noHorizontalOverflow(page);
+  });
+
+  test('the first result is on the first screen at 390 and starts on it at 375', async ({
+    page,
+  }) => {
+    // 3.7px of it showed at 390×844 before the search button, the facet
+    // legends and the filter note stopped taking lines of their own (Phase 54).
+    await page.goto('/artifacts?q=review');
+    const first = page.locator('.rows li').first();
+    const box = await first.boundingBox();
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThan(844);
+    await page.setViewportSize({ width: 375, height: 667 });
+    expect((await first.boundingBox())?.y).toBeLessThan(667);
+    // Every facet chip is still on the page, one scrolled line per facet.
+    for (const facet of await page.locator('.search .facet-chips').all()) {
+      const chips = facet.locator('.chip');
+      const a = await chips.first().boundingBox();
+      const b = await chips.last().boundingBox();
+      expect(Math.abs((b?.y ?? 0) - (a?.y ?? 0))).toBeLessThan(8);
+    }
+    await noHorizontalOverflow(page);
+  });
+
+  test('home: the search box, the type row and the newest artifact on the first screen', async ({
+    page,
+  }) => {
+    // y=2,236 at 390×844 before (Phase 54).
+    await page.goto('/');
+    await expect(page.locator('#q')).toBeInViewport();
+    await expect(page.locator('.hero-types .chip').first()).toBeInViewport();
+    expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(844);
     await noHorizontalOverflow(page);
   });
 
