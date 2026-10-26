@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { SkillBody } from './SkillBody';
+import { bodyOutline, SkillBody } from './SkillBody';
 
 const DIR = 'fixtures/xss';
 
@@ -157,8 +157,8 @@ describe('SkillBody — ordinary Markdown still works', () => {
     const html = render(source);
     // Two levels down: the body sits under the page's h1 and its <h2>File</h2>
     // (U2 — a body `#` used to be a second h1 on the page).
-    expect(html).toContain('<h3>Heading one</h3>');
-    expect(html).toContain('<h4>Heading two</h4>');
+    expect(html).toContain('<h3 id="file-L1">Heading one</h3>');
+    expect(html).toContain('<h4 id="file-L3">Heading two</h4>');
     expect(html).toContain('<li>first</li>');
     // remark-gfm: tables and strikethrough are the extended syntax.
     expect(html).toContain('<table>');
@@ -228,10 +228,11 @@ describe('SkillBody — document structure (U1, U2)', () => {
     const html = render('# Title\n\n## Section\n\n### Sub\n\n###### Deep');
     expect(html).not.toContain('<h1');
     expect(html).not.toContain('<h2');
-    expect(html).toContain('<h3>Title</h3>');
-    expect(html).toContain('<h4>Section</h4>');
-    expect(html).toContain('<h5>Sub</h5>');
-    expect(html).toContain('<h6>Deep</h6>');
+    // Each carries the id of the line it starts on (see bodyOutline).
+    expect(html).toContain('<h3 id="file-L1">Title</h3>');
+    expect(html).toContain('<h4 id="file-L3">Section</h4>');
+    expect(html).toContain('<h5 id="file-L5">Sub</h5>');
+    expect(html).toContain('<h6 id="file-L7">Deep</h6>');
   });
 
   it('leaves a body with no frontmatter as it was', () => {
@@ -241,6 +242,61 @@ describe('SkillBody — document structure (U1, U2)', () => {
   it('a body that opens on a rule is not frontmatter', () => {
     const html = render('---\n\n# Title\n\nIntro\n\n---\n\nMore');
     expect(html).not.toContain('language-yaml');
-    expect(html).toContain('<h3>Title</h3>');
+    expect(html).toContain('<h3 id="file-L3">Title</h3>');
+  });
+});
+
+describe('bodyOutline — the section list above the file', () => {
+  const ids = (html: string) => [...html.matchAll(/ id="([^"]+)"/g)].map((m) => `#${m[1]}`);
+
+  it('lists headings to depth 3, each linking to an id the rendered body carries', () => {
+    const md = '# Title\n\nIntro\n\n## Install\n\n### Options\n\n#### Too deep\n\n## Usage';
+    const outline = bodyOutline(md);
+    expect(outline.map((h) => [h.depth, h.text])).toEqual([
+      [1, 'Title'],
+      [2, 'Install'],
+      [3, 'Options'],
+      [2, 'Usage'],
+    ]);
+    const rendered = ids(render(md));
+    for (const h of outline) expect(rendered).toContain(h.href);
+  });
+
+  it('agrees with the renderer on fences, setext headings, blockquotes and frontmatter', () => {
+    const md = [
+      '---',
+      'name: x',
+      '---',
+      '',
+      'Setext',
+      '======',
+      '',
+      '```sh',
+      '# not a heading',
+      '```',
+      '',
+      '> ## Quoted',
+      '',
+      '    # indented code',
+      '',
+      '## Real',
+    ].join('\n');
+    const outline = bodyOutline(md);
+    expect(outline.map((h) => h.text)).toEqual(['Setext', 'Quoted', 'Real']);
+    expect(ids(render(md))).toEqual(outline.map((h) => h.href));
+  });
+
+  it('keeps CJK and inline markup as text, and skips an empty heading', () => {
+    const outline = bodyOutline('## 安装 `npm`\n\n## 使い方 **重要**\n\n##\n\n## 사용법');
+    expect(outline.map((h) => h.text)).toEqual(['安装 npm', '使い方 重要', '사용법']);
+  });
+
+  it('reads a heading holding raw HTML as the rendered body shows it', () => {
+    const md = '## <script>alert(1)</script> Setup';
+    const [h] = bodyOutline(md);
+    const shown = /<h4[^>]*>(.*?)<\/h4>/.exec(render(md))?.[1];
+    expect(h.text).toBe(shown?.trim());
+    expect(h.text).not.toContain('<');
+    expect(h.href).toMatch(/^#file-L\d+$/);
   });
 });

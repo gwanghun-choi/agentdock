@@ -3,6 +3,8 @@ import type { ComponentProps } from 'react';
 import Markdown from 'react-markdown';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 
 /**
  * Narrowed from the GitHub-flavoured default. Every deviation is deliberate.
@@ -50,15 +52,61 @@ function fenceFrontmatter(markdown: string): string {
 }
 
 /**
+ * The anchor a body heading gets: the line it starts on in the text rendered.
+ * Unique by construction, stable across renders, and not derived from the
+ * author's words — an id built from heading text is a value the author picks,
+ * and the page's own ids (`details`, `file`, …) share the namespace.
+ */
+const headingId = (line: number) => `file-L${line}`;
+
+type Positioned = { position?: { start: { line: number } } };
+
+/**
  * The body sits under the page's own `<h2>File</h2>`, so its headings start
  * two levels down: an author's `# Title` was a second `<h1>` on the page, and
  * the outline read as two documents (U2). h5 and h6 both land on h6, the
  * last level there is.
+ *
+ * The id is set here, after rehype-sanitize, as `tabIndex` is on <pre> below:
+ * the allowlist is untouched, and an id an author writes is still clobbered.
  */
 const demote = (Tag: 'h3' | 'h4' | 'h5' | 'h6') =>
-  function Demoted({ node: _node, ...props }: { node?: unknown } & ComponentProps<'h3'>) {
-    return <Tag {...props} />;
+  function Demoted({ node, ...props }: { node?: Positioned } & ComponentProps<'h3'>) {
+    const line = node?.position?.start.line;
+    return <Tag {...props} id={line ? headingId(line) : undefined} />;
   };
+
+export type BodyHeading = { depth: number; text: string; href: string };
+
+type MdNode = { type: string; depth?: number; value?: string; children?: MdNode[] } & Positioned;
+
+// Raw HTML is dropped from the rendered body (no raw-HTML plugin), so it is
+// dropped from the heading's text here too.
+const textOf = (n: MdNode): string =>
+  n.type === 'html' ? '' : (n.value ?? (n.children ?? []).map(textOf).join(''));
+
+/**
+ * The body's headings to depth 3, for the section list above it. Parsed by the
+ * renderer's own parser with the renderer's own plugin over the same text, so
+ * every line here is the line a rendered heading's id carries — a separate
+ * scan for `#` would disagree with it on fences, setext headings and
+ * blockquotes. Parsing is the cost: one extra pass, measured at 3.5 ms for the
+ * largest fixture body (12 KB) and 9.2 ms at the 32 KB excerpt cap (2026-10-26).
+ */
+export function bodyOutline(markdown: string): BodyHeading[] {
+  const out: BodyHeading[] = [];
+  const walk = (n: MdNode) => {
+    if (n.type === 'heading' && (n.depth ?? 9) <= 3 && n.position) {
+      const text = textOf(n).trim();
+      if (text)
+        out.push({ depth: n.depth ?? 1, text, href: `#${headingId(n.position.start.line)}` });
+      return;
+    }
+    n.children?.forEach(walk);
+  };
+  walk(unified().use(remarkParse).use(remarkGfm).parse(fenceFrontmatter(markdown)) as MdNode);
+  return out;
+}
 
 /**
  * A Server Component. Nothing untrusted crosses into a Client Component, and no
@@ -112,6 +160,7 @@ export function SkillBody({ markdown }: { markdown: string }) {
         h3: demote('h5'),
         h4: demote('h6'),
         h5: demote('h6'),
+        h6: demote('h6'),
       }}
     >
       {fenceFrontmatter(markdown)}

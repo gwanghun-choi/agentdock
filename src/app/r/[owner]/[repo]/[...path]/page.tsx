@@ -19,7 +19,7 @@ import { ExternalIcon } from '@/components/Icon';
 import { htmlLang, languageNote } from '@/components/language';
 import { metaDescription } from '@/components/metadata';
 import { SetupPanel } from '@/components/SetupPanel';
-import { SkillBody } from '@/components/SkillBody';
+import { bodyOutline, SkillBody } from '@/components/SkillBody';
 import { searchHref } from '@/components/searchState';
 import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
@@ -175,6 +175,16 @@ export default async function PackagePage({ params }: Props) {
       }
     />
   );
+
+  // Every heading to depth 3; a body with more than 15 of those lists its top
+  // two levels instead, when they are enough to navigate by, rather than a list
+  // as long as a screen.
+  const allSections = detail.body ? bodyOutline(detail.body) : [];
+  const topSections = allSections.filter((h) => h.depth <= 2);
+  const bodySections =
+    allSections.length > 15 && topSections.length >= 3 ? topSections : allSections;
+  // Indented from the shallowest level the author used, which is often `##`.
+  const topDepth = Math.min(...bodySections.map((h) => h.depth));
 
   const othersShown = related.siblings.length + related.elsewhere.length;
   const othersTotal = related.siblingTotal + related.elsewhereTotal;
@@ -585,6 +595,30 @@ export default async function PackagePage({ params }: Props) {
         as published by {detail.fullName}, at commit {detail.commitSha.slice(0, 7)}.{' '}
         {FILE_DISCLAIMER}
       </p>
+      {/* The file is last on a long page and is itself long — a sample of 52
+          production artifacts had a median of 7 headings and a quarter had 14
+          or more (2026-10-26) — and "how do I use it" is usually one of its
+          sections, under the author's own title. Its headings, then, as links;
+          below three there is nothing to navigate. AgentDock composes no install
+          command from the text: 4 of those 52 bodies held a command, and none
+          of the four was the artifact's own install. */}
+      {bodySections.length >= 3 ? (
+        <nav aria-label="Sections in this file" className="file-outline">
+          <p className="muted">Sections in this file, as its author titled them</p>
+          <ol>
+            {bodySections.map((h) => (
+              <li
+                className={
+                  h.depth > topDepth ? `outline-sub-${Math.min(h.depth - topDepth, 2)}` : undefined
+                }
+                key={h.href}
+              >
+                <a href={h.href}>{h.text}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      ) : null}
       <div className="body">
         {detail.body ? <SkillBody markdown={detail.body} /> : <p className="muted">No body.</p>}
       </div>

@@ -6,6 +6,7 @@ import { PackageRows } from '@/components/PackageRows';
 import {
   defaultSort,
   pageWindow,
+  type SearchState,
   searchHref,
   toggleCapability,
   withLanguage,
@@ -202,12 +203,12 @@ function hrefFor(q: string, page: number, filters: SearchFilters, sort?: SearchS
   });
 }
 
-/** Each applied filter with the URL of the same search without it. */
+/** Each applied filter with the same search without it, as state and as URL. */
 function appliedFilters(
   q: string,
   filters: SearchFilters,
   sort?: SearchSort,
-): { label: string; href: string }[] {
+): { label: string; href: string; next: SearchState }[] {
   const state = {
     q,
     types: filters.types,
@@ -216,21 +217,66 @@ function appliedFilters(
     sort,
     page: 1,
   };
-  const out: { label: string; href: string }[] = [];
+  const out: { label: string; next: SearchState }[] = [];
   for (const t of filters.types) {
     const label = TYPE_FILTER_LABELS[t as (typeof ARTIFACT_TYPE_IDS)[number]];
-    if (label) out.push({ label, href: searchHref(withType(state, null)) });
+    if (label) out.push({ label, next: withType(state, null) });
   }
   for (const l of filters.languages ?? []) {
     const label = LANGUAGE_LABELS[l as (typeof LANGUAGE_FILTER_IDS)[number]];
-    if (label)
-      out.push({ label: `Description: ${label}`, href: searchHref(withLanguage(state, null)) });
+    if (label) out.push({ label: `Description: ${label}`, next: withLanguage(state, null) });
   }
   for (const c of filters.capabilities) {
     const label = CAPABILITY_FILTER_LABELS[c as (typeof CAPABILITY_FILTER_IDS)[number]];
-    if (label) out.push({ label, href: searchHref(toggleCapability(state, c)) });
+    if (label) out.push({ label, next: toggleCapability(state, c) });
   }
-  return out;
+  return out.map((f) => ({ ...f, href: searchHref(f.next) }));
+}
+
+/**
+ * The empty result's ways out, each with the size of the set it leads to: the
+ * search without one of its filters, and the filters without the words. Before
+ * this the page offered "Clear filters" and "Clear search" blind, and a reader
+ * with three filters had to try each to learn which one emptied the set.
+ *
+ * Counted the way the page it links to counts — searchMode, then the count in
+ * that mode — so the number is the one the reader lands on. Only on this
+ * branch: at most five filters and the words, run together, and a page that
+ * found something runs none of them.
+ *
+ * Measured on production's 19,113-row listing loaded locally (2026-10-26):
+ * +32 ms for a type and a capability, +81 ms when a language filter is one of
+ * them — the language expression classifies every row (language.ts), the same
+ * ceiling `lang=latin` has. The page queries themselves were 6–10 ms.
+ */
+async function relaxedCounts(
+  q: string,
+  filters: SearchFilters,
+  sort: SearchSort,
+): Promise<{ label: string; href: string; total: number }[]> {
+  const ways = appliedFilters(q, filters, sort).map((f) => ({
+    ...f,
+    label: `Without “${f.label}”`,
+  }));
+  if (q !== '' && ways.length > 0) {
+    const next = { ...filters, q: '', page: 1 };
+    ways.push({ label: 'Without the search words', href: searchHref(next), next });
+  }
+  return Promise.all(
+    ways.map(async ({ label, href, next }) => {
+      const narrowed: SearchFilters = {
+        types: [...next.types],
+        languages: [...(next.languages ?? [])],
+        capabilities: [...next.capabilities],
+      };
+      const mode = await searchMode({ q: next.q, filters: narrowed });
+      return {
+        label,
+        href,
+        total: await countSearchResults({ q: next.q, filters: narrowed, mode }),
+      };
+    }),
+  );
 }
 
 /**
@@ -287,16 +333,20 @@ function SortLinks({ q, filters, sort }: { q: string; filters: SearchFilters; so
   return (
     <nav aria-label="Sort results" className="facet sort">
       <span className="facet-legend">Sort</span>
-      {SEARCH_SORTS.filter((s) => q || s !== 'relevance').map((s) => (
-        <Link
-          aria-current={s === sort ? 'true' : undefined}
-          className="chip"
-          href={searchHref(withSort(state, s))}
-          key={s}
-        >
-          {SORT_LABELS[s]}
-        </Link>
-      ))}
+      {/* In a `.facet-chips` row like the filters above, so on a phone it is
+          one scrolled line rather than three wrapped ones. */}
+      <div className="facet-chips">
+        {SEARCH_SORTS.filter((s) => q || s !== 'relevance').map((s) => (
+          <Link
+            aria-current={s === sort ? 'true' : undefined}
+            className="chip"
+            href={searchHref(withSort(state, s))}
+            key={s}
+          >
+            {SORT_LABELS[s]}
+          </Link>
+        ))}
+      </div>
       {SORT_NOTES[sort] ? <span className="muted sort-note">{SORT_NOTES[sort]}</span> : null}
     </nav>
   );
@@ -564,23 +614,36 @@ export default async function ArtifactsPage({
   );
 
   // D-08: filters describe an observation, never a completeness claim.
+  //
+  // Folded until a filter it explains is applied. Open on every page, it was
+  // five lines between the filters and the results on a phone, and the first
+  // result started 1,085px down a 375×900 screen (production, 2026-10-26) —
+  // the regression Phase 10 had fixed, back after the description facet and
+  // its sentence were added. With a capability or language filter applied it
+  // is open, beside the results it qualifies.
   const searchControls = (
     <>
       <div className="search">
         {searchForm}
         {facets}
       </div>
-      <p className="notice">
-        <InfoIcon />
-        <span>
+      <details
+        className="notice"
+        open={selectedCapabilities.length > 0 || selectedLanguages.length > 0}
+      >
+        <summary>
+          <InfoIcon />
+          What these filters mean
+        </summary>
+        <p>
           These filters describe what AgentDock observed while reading the files, not everything an
           artifact can do. The network and Bash filters list only skills and commands whose text
           AgentDock has analyzed; the script filter lists only skills and plugins, whose file list
           is a directory. The description filter reads which writing system each description uses,
           as its author wrote it — nothing is translated, and the Latin alphabet includes languages
           other than English.
-        </span>
-      </p>
+        </p>
+      </details>
     </>
   );
 
@@ -665,6 +728,7 @@ export default async function ArtifactsPage({
   // (D-38), and discloses corpus scope (D-39).
   if (items.length === 0) {
     const filterLabels = appliedFilters(q, filters).map((f) => f.label);
+    const ways = await relaxedCounts(q, filters, sort);
     return (
       <>
         {pageHead}
@@ -678,7 +742,21 @@ export default async function ArtifactsPage({
           <p className="muted">
             AgentDock has not indexed a match. That is not the same as the artifact not existing.
           </p>
-          <AppliedFilters filters={filters} q={q} sort={sort} />
+          {ways.length > 0 ? (
+            <ul aria-label="Ways to widen this search" className="notes ways">
+              {ways.map((w) => (
+                <li key={w.href}>
+                  {w.total > 0 ? <Link href={w.href}>{w.label}</Link> : w.label}
+                  <span className="muted">
+                    {' — '}
+                    {w.total > 0
+                      ? `${w.total.toLocaleString('en-US')} ${w.total === 1 ? 'artifact' : 'artifacts'}`
+                      : 'no match either'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {nextSteps}
         </div>
       </>

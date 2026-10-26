@@ -461,6 +461,68 @@ test('every page carries its own description and sharing card', async ({ page })
   }
 });
 
+test('filter note: folded until a filter it explains is applied, and it still opens', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=review');
+  const note = page.locator('details.notice');
+  await expect(note).not.toHaveAttribute('open');
+  await note.locator('summary').click();
+  await expect(note).toContainText('not everything an artifact can do');
+  for (const path of ['/artifacts?q=review&cap=no_shell', '/artifacts?lang=latin']) {
+    await page.goto(path);
+    await expect(note).toHaveAttribute('open');
+  }
+});
+
+test('empty state: each way out says how many it leads to, and only a non-empty one is a link', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?q=git&type=hook&cap=no_shell');
+  const ways = page.locator('.empty .ways li');
+  await expect(ways).toHaveText([
+    /^Without “Hook Configurations” — \d+ artifacts?$/,
+    'Without “No Bash grant declared” — no match either',
+    'Without the search words — no match either',
+  ]);
+  await expect(ways.locator('a')).toHaveCount(1);
+  const promised = Number(/— (\d+)/.exec((await ways.first().textContent()) ?? '')?.[1]);
+  await ways.first().locator('a').click();
+  await page.waitForURL(/\/artifacts\?q=git&cap=no_shell$/);
+  expect(await total(page)).toBe(promised);
+});
+
+test("file sections: the outline lists the author's headings and each one lands on its heading", async ({
+  page,
+}) => {
+  await page.goto('/r/wshobson/agents/plugins/backend-development/skills/temporal-python-testing');
+  const outline = page.locator('nav.file-outline');
+  await expect(outline.locator('a')).toHaveCount(15);
+  await outline.locator('a', { hasText: 'Quick Start Guide' }).click();
+  await expect(page).toHaveURL(/#file-L\d+$/);
+  const id = new URL(page.url()).hash.slice(1);
+  const heading = page.locator(`[id="${id}"]`);
+  await expect(heading).toHaveText('Quick Start Guide');
+  await expect(heading).toBeInViewport();
+  // A body with fewer than three headings gets no outline.
+  await page.goto('/r/fixture/ui-edge-cases/.claude/agents/code-reviewer.md');
+  await expect(page.locator('nav.file-outline')).toHaveCount(0);
+});
+
+test('Back from a detail page returns to the same filtered, sorted page of results', async ({
+  page,
+}) => {
+  const listing = '/artifacts?q=skill&type=skill&sort=name&page=2';
+  await page.goto(listing);
+  await page.locator('.rows .row-title a').first().click();
+  await page.waitForURL(/\/r\//);
+  await page.goBack();
+  await expect(page).toHaveURL(listing);
+  await expect(page.locator('#q')).toHaveValue('skill');
+  await expect(page.locator('.pager [aria-current="page"]')).toHaveText('2');
+  await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Name');
+});
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
@@ -478,6 +540,23 @@ test.describe('on a phone', () => {
     await page.goto('/artifacts?q=review');
     await page.locator('.sort .chip:has-text("Name")').tap();
     await page.waitForURL(/sort=name/);
+    await noHorizontalOverflow(page);
+  });
+
+  test('the result count is on the first screen, and the sort chips are one scrolled line', async ({
+    page,
+  }) => {
+    await page.goto('/artifacts?q=review');
+    // y=904 before the filter note folded and the sort row stopped wrapping
+    // (2026-10-26); Phase 10 had it at 741.
+    const count = page.locator('.result-count');
+    await expect(count).toBeVisible();
+    expect((await count.boundingBox())?.y).toBeLessThan(741);
+    const chips = page.locator('.sort .facet-chips');
+    const first = await chips.locator('.chip').first().boundingBox();
+    const last = await chips.locator('.chip').last().boundingBox();
+    // The applied chip's ring is a pixel wider; a wrapped chip would be a row down.
+    expect(Math.abs((last?.y ?? 0) - (first?.y ?? 0))).toBeLessThan(8);
     await noHorizontalOverflow(page);
   });
 

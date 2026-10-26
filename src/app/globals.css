@@ -1821,6 +1821,22 @@ textarea {
   flex-basis: 100%;
 }
 
+/* On a phone the five sort chips wrapped to three lines under the count (375px,
+   2026-10-26). The legend goes above, as the facets' does, and the chips take
+   the facets' scrolled row; min-width lets a flex item be narrower than its
+   content, which is what makes it scroll rather than overflow. */
+@media (max-width: 40rem) {
+  .sort .facet-legend {
+    flex-basis: 100%;
+    line-height: 1.25rem;
+  }
+
+  .sort .facet-chips {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
 /* The query, quoted by CSS rather than by the markup. The quotation marks were
    literal characters in a template string, which put them inside the text a
    screen reader reads out and made the query itself impossible to select
@@ -2037,6 +2053,38 @@ textarea {
 .notice strong {
   color: var(--fg-strong);
   font-weight: 600;
+}
+
+/* The artifacts page's filter note, folded (see the comment above
+   `searchControls`). The summary keeps the platform's disclosure marker and
+   its own keyboard behaviour; it only lines the icon up and makes the row a
+   24px target. */
+details.notice {
+  display: block;
+}
+
+.notice summary {
+  min-height: 24px;
+  cursor: pointer;
+  color: var(--fg);
+}
+
+.notice summary svg {
+  display: inline;
+  vertical-align: -3px;
+  margin: 0 var(--s-1) 0 var(--s-1);
+}
+
+details.notice[open] p {
+  margin-top: var(--s-2);
+}
+
+/* The empty result's ways out, each with its count. */
+.ways {
+  text-align: left;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .empty {
@@ -3233,6 +3281,43 @@ textarea {
 .body {
   max-width: var(--prose);
   overflow-wrap: anywhere;
+}
+
+/* The file's own headings, above it (see the detail page). A plain indented
+   list: the author's titles are the content, so nothing competes with them. */
+.file-outline {
+  max-width: var(--prose);
+  margin-bottom: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow-wrap: anywhere;
+}
+
+.file-outline p {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-sm);
+}
+
+.file-outline ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+}
+
+.file-outline a {
+  display: inline-block;
+  padding: 2px 0;
+  min-height: 24px;
+}
+
+.file-outline .outline-sub-1 {
+  padding-left: var(--s-4);
+}
+
+.file-outline .outline-sub-2 {
+  padding-left: var(--s-6);
 }
 
 .body pre {
