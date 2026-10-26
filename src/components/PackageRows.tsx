@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
 import { detailHref, permalink } from '@/components/hrefs';
 import { ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
+import { htmlLang, languageNote } from '@/components/language';
 import { Marked, markSubstring } from '@/components/Marked';
 import type { PackageListItem } from '@/db/queries/packages';
 import type { MatchField, SearchResultItem } from '@/db/queries/search';
@@ -99,7 +100,7 @@ export function PackageRows({
               {showRepo ? <span className="repo">{p.fullName}</span> : null}
             </p>
             {p.summary ? (
-              <p className="row-desc">
+              <p className="row-desc" lang={htmlLang(p.summaryLanguage)}>
                 <Marked plain={p.summary} value={p.summaryMarked} />
               </p>
             ) : null}
@@ -116,6 +117,14 @@ export function PackageRows({
                   }
                 />
               </span>
+              {/* The description's writing system, for the classes an English
+                  page would not lead a reader to expect. Said once, in words:
+                  the description beside it is the author's, untranslated. */}
+              {languageNote(p.summaryLanguage) ? (
+                <span title="The description's writing system. AgentDock shows it as written and does not translate it.">
+                  {languageNote(p.summaryLanguage)}
+                </span>
+              ) : null}
               {/* The repository's star count, in the metadata line beside the
                   path and the read date — the register of "facts about where
                   this came from", never a rank or a score. It is not a sort

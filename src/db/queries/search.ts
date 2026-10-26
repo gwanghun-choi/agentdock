@@ -1,10 +1,11 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, type SQLWrapper, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import { SCRIPT_EXTENSIONS } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
 import { MARK_CLOSE, MARK_OPEN } from '@/components/Marked';
 import { db } from '@/db/client';
 import { capabilityFinding, packageTable, packageVersion, repository } from '@/db/schema';
+import { SUMMARY_LANGUAGE } from './language';
 import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
 
 export type SearchResultItem = PackageListItem & {
@@ -143,9 +144,19 @@ export type SearchSort = (typeof SEARCH_SORTS)[number];
 /** Where a query word was found on a row; see `matchedIn`. */
 export type MatchField = 'name' | 'path' | 'summary' | 'type' | 'repository';
 
+/**
+ * The description languages a reader can narrow to — every class
+ * SUMMARY_LANGUAGE assigns except `unknown`, which names no language to look
+ * for. A filter only ever narrows: with none applied every language is listed,
+ * in the same order as before the filter existed.
+ */
+export const LANGUAGE_FILTER_IDS = ['latin', 'zh', 'ja', 'ko', 'mixed', 'other'] as const;
+
 export type SearchFilters = {
   types: string[];
   capabilities: string[];
+  /** Optional so every caller from before Phase 41 still means "any language". */
+  languages?: string[];
 };
 
 const NO_FILTERS: SearchFilters = { types: [], capabilities: [] };
@@ -164,6 +175,11 @@ function validTypes(types: string[]): (typeof ARTIFACT_TYPE_IDS)[number][] {
 function validCapabilities(capabilities: string[]): (typeof CAPABILITY_FILTER_IDS)[number][] {
   const allowed = new Set<string>(CAPABILITY_FILTER_IDS);
   return capabilities.filter((c): c is (typeof CAPABILITY_FILTER_IDS)[number] => allowed.has(c));
+}
+
+function validLanguages(languages: string[] = []): (typeof LANGUAGE_FILTER_IDS)[number][] {
+  const allowed = new Set<string>(LANGUAGE_FILTER_IDS);
+  return languages.filter((l): l is (typeof LANGUAGE_FILTER_IDS)[number] => allowed.has(l));
 }
 
 /**
@@ -354,6 +370,80 @@ function matchQuery(q: string, mode: SearchMode) {
   return plainWords(q) ? tsQuery(q, 'any') : tsQuery(q, mode);
 }
 
+const CJK_LETTER = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
+/**
+ * The words of a plain query holding Chinese, Japanese or Korean letters, for
+ * the substring test below; null for every other query, which stays on full
+ * text alone, character for character as before.
+ *
+ * The 'english' parser splits text only at spaces and punctuation, so an
+ * unspaced CJK sentence is one lexeme — '当用户要求数学建模' — and `数学建模`
+ * matches it neither whole nor as a prefix. Korean is spaced, but a particle
+ * rides on the word: `코드` is not the lexeme '코드를'. Measured 2026-10-26 on
+ * production's 19,113 listed descriptions loaded locally, six judged queries:
+ * Recall@10 0.42 → 0.72, NDCG@10 0.48 → 0.70, MRR unchanged at 0.75, every
+ * English query and every search.eval.test.ts case returning the identical
+ * rows in the identical order. search.multilingual.eval.test.ts pins these
+ * (docs/analysis/agentdock-phase45-47-release-and-sync-recovery.md §4).
+ */
+function cjkWords(q: string): string[] | null {
+  return CJK_LETTER.test(q) ? plainWords(q) : null;
+}
+
+/**
+ * Rows whose name or description holds every word of a CJK query (any word,
+ * in mode `any`) as a substring, tested over the fuzzy index's own expression,
+ * so `package_fuzzy_trgm_idx` answers it — no migration — and inside
+ * `= any(array(...))`, an InitPlan run once: OR'd straight into the WHERE
+ * beside the repository-name test it became a filter on every row, 45 ms
+ * against 17 ms at 19k rows. Rows matched only here rank on the name and
+ * repository bonuses alone — ts_rank is 0 — so they follow every full-text
+ * match.
+ *
+ * ponytail: a word under three characters has no trigram, so it scans every
+ * listed row's name and description, once per statement — measured 2026-10-26
+ * at 19k rows, `代码` 4 → 14 ms and `文档` 2 → 13 ms per page (rows + count),
+ * linear in rows. Revisit when a two-character query passes 200 ms; the
+ * upgrade is a bigram tsvector column, which is a migration.
+ */
+function cjkSubstring(q: string, mode: SearchMode) {
+  const words = cjkWords(q);
+  if (!words) return null;
+  const tests = words.map((w) => contains(fuzzyMatchExpr(), w));
+  return sql`${packageTable.id} = any(array(
+    select ${packageTable.id} from ${packageTable}
+    where ${sql.join(tests, mode === 'any' ? sql` or ` : sql` and `)}))`;
+}
+
+/**
+ * `text` holds `word`. Measured 2026-10-26 over 19k rows:
+ *   - LIKE for a word with no cased letter (all CJK) — ILIKE lowercases every
+ *     row first, 31 ms against 8 ms for a two-character word;
+ *   - strpos for a word under three characters, which has no trigram: as a
+ *     LIKE, the generic plan the prepared statement settles on still walks
+ *     the whole trigram index for it, 19,113 entries in 46 ms, where strpos
+ *     can only scan, in 12 ms.
+ * plainWords keeps letters and digits only, so no word holds `%` or `_`.
+ */
+function contains(text: SQLWrapper, word: string) {
+  if (/[\p{Lu}\p{Ll}\p{Lt}]/u.test(word)) return sql`${text} ilike ${`%${word}%`}`;
+  return [...word].length < 3
+    ? sql`strpos(${text}, ${word}) > 0`
+    : sql`${text} like ${`%${word}%`}`;
+}
+
+/** The "name"/"description" reason for a row cjkSubstring matched: a word in that field. */
+function cjkIn(column: typeof packageTable.name | typeof packageTable.summary, q: string) {
+  const words = cjkWords(q);
+  return words
+    ? sql` or ${sql.join(
+        words.map((w) => contains(column, w)),
+        sql` or `,
+      )}`
+    : sql``;
+}
+
 /** A query word in the name — the same test the nameWordBonus and the "name"
  * reason both read, written once. */
 function nameWordHit(q: string, mode: SearchMode) {
@@ -375,11 +465,11 @@ function matchedIn(q: string, mode: SearchMode) {
   const sv = packageTable.searchVector;
   return sql<MatchField[]>`array_remove(array[
     case when ${nameWordHit(q, mode)}
-           or lower(${packageTable.name}) like lower(${qEsc}) || '%' then 'name' end,
+           or lower(${packageTable.name}) like lower(${qEsc}) || '%'${cjkIn(packageTable.name, q)} then 'name' end,
     case when ts_filter(${sv}, '{c}') @@ ${mq}
       ${q.includes('/') ? sql`or lower(${packageTable.sourcePath}) like '%' || lower(${qEsc}) || '%'` : sql``}
       then 'path' end,
-    case when ts_filter(${sv}, '{b}') @@ ${mq} then 'summary' end,
+    case when ts_filter(${sv}, '{b}') @@ ${mq}${cjkIn(packageTable.summary, q)} then 'summary' end,
     case when ts_filter(${sv}, '{d}') @@ ${mq} then 'type' end,
     ${
       q.length >= MIN_PREFIX_CHARS
@@ -479,23 +569,26 @@ function orderFor(sort: SearchSort, rank: ReturnType<typeof sql<number>>) {
 function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: SearchMode = 'all') {
   const types = validTypes(filters.types);
   const capabilities = validCapabilities(filters.capabilities);
+  const languages = validLanguages(filters.languages);
+  // The repository-name substring only from three characters up: "ai" as a
+  // substring is in most repository names on GitHub, and measured on the fixed
+  // corpus in search.test.ts it turned a one-row answer into every row the six
+  // repositories held.
+  const text =
+    q.length >= MIN_PREFIX_CHARS
+      ? sql`(${packageTable.searchVector} @@ ${tsQuery(q, mode)}
+             OR ${repository.fullName} ilike ${`%${escapeLikeOperand(q)}%`})`
+      : sql`${packageTable.searchVector} @@ ${tsQuery(q, mode)}`;
+  const cjk = cjkSubstring(q, mode);
   return and(
     isNull(packageTable.delistedAt),
-    q === ''
-      ? undefined
-      : // The repository-name substring only from three characters up: "ai"
-        // as a substring is in most repository names on GitHub, and measured
-        // on the fixed corpus in search.test.ts it turned a one-row answer
-        // into every row the six repositories held.
-        q.length >= MIN_PREFIX_CHARS
-        ? sql`(${packageTable.searchVector} @@ ${tsQuery(q, mode)}
-             OR ${repository.fullName} ilike ${`%${escapeLikeOperand(q)}%`})`
-        : sql`${packageTable.searchVector} @@ ${tsQuery(q, mode)}`,
+    q === '' ? undefined : cjk ? sql`(${text} OR ${cjk})` : text,
     // The same fragment object as searchPackages' projection — see
     // packages.ts:203-208 for why referencing it twice is safe and
     // computing it in SELECT only is a measured performance trap.
     sql`${NOT_LISTED_BECAUSE} is null`,
     types.length > 0 ? inArray(packageTable.type, types) : undefined,
+    languages.length > 0 ? inArray(SUMMARY_LANGUAGE, languages) : undefined,
     ...capabilities.map((id) => CAPABILITY_PREDICATES[id]),
   );
 }
@@ -638,6 +731,7 @@ async function fuzzySearch(
           order by pv.ingested_at desc limit 1
         )`,
         notListedBecause: NOT_LISTED_BECAUSE,
+        summaryLanguage: SUMMARY_LANGUAGE,
         rank: similarity,
       })
       .from(packageTable)
@@ -778,6 +872,7 @@ export const searchPackages = cache(
           order by pv.ingested_at desc limit 1
         )`,
         notListedBecause: NOT_LISTED_BECAUSE,
+        summaryLanguage: SUMMARY_LANGUAGE,
         rank,
         // Browsing matched nothing in particular, so it explains and marks
         // nothing; these three exist only beside a query.

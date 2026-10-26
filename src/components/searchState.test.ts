@@ -3,6 +3,7 @@ import {
   pageWindow,
   searchHref,
   toggleCapability,
+  withLanguage,
   withSort,
   withType,
 } from '@/components/searchState';
@@ -102,5 +103,44 @@ describe('pageWindow', () => {
         for (const p of w) if (p !== null) expect(p >= 1 && p <= last).toBe(true);
       }
     }
+  });
+});
+
+describe('the language filter', () => {
+  it('rides between type and cap, and a URL without it is unchanged', () => {
+    expect(
+      searchHref({
+        q: 'review',
+        types: ['skill'],
+        languages: ['zh'],
+        capabilities: ['no_shell'],
+        page: 2,
+      }),
+    ).toBe('/artifacts?q=review&type=skill&lang=zh&cap=no_shell&page=2');
+    expect(searchHref({ ...base, languages: [] })).toBe('/artifacts');
+  });
+
+  it('a language chip selects one language, keeps the rest, and resets the page', () => {
+    const applied = { q: 'review', types: ['agent'], capabilities: ['no_shell'], page: 4 };
+    expect(searchHref(withLanguage(applied, 'ja'))).toBe(
+      '/artifacts?q=review&type=agent&lang=ja&cap=no_shell',
+    );
+    const chosen = { ...applied, languages: ['ja'] };
+    expect(searchHref(withLanguage(chosen, 'ja'))).toBe(
+      '/artifacts?q=review&type=agent&cap=no_shell',
+    );
+    expect(searchHref(withLanguage(chosen, null))).toBe(
+      '/artifacts?q=review&type=agent&cap=no_shell',
+    );
+  });
+
+  it('survives a type, capability, sort and page change', () => {
+    const state = { ...base, q: 'pdf', languages: ['ko'], page: 3 };
+    expect(searchHref(withType(state, 'skill'))).toBe('/artifacts?q=pdf&type=skill&lang=ko');
+    expect(searchHref(toggleCapability(state, 'no_shell'))).toBe(
+      '/artifacts?q=pdf&lang=ko&cap=no_shell',
+    );
+    expect(searchHref(withSort(state, 'name'))).toBe('/artifacts?q=pdf&lang=ko&sort=name');
+    expect(searchHref(state)).toBe('/artifacts?q=pdf&lang=ko&page=3');
   });
 });

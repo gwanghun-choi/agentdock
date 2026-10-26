@@ -15,6 +15,7 @@
     "fixtures:capture": "bun scripts/capture-fixtures.mjs",
     "precision": "bun scripts/capability-precision.mjs",
     "search:eval": "SEARCH_EVAL_REPORT=1 vitest run src/db/queries/search.eval.test.ts",
+    "search:eval:multilingual": "SEARCH_EVAL_REPORT=1 vitest run src/db/queries/search.multilingual.eval.test.ts",
     "e2e:seed": "bun --no-env-file e2e/seed.mjs",
     "test:e2e": "playwright test",
     "db:seed": "bun scripts/seed-fixture.mjs",

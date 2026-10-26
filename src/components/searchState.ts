@@ -1,5 +1,6 @@
 /**
- * The artifacts route's URL state — query, type, capabilities, sort, page — and
+ * The artifacts route's URL state — query, type, language, capabilities, sort,
+ * page — and
  * the one builder every link on that page goes through: the filter chips, the
  * sort links, the applied-filter removals, the pager and the empty-state exits.
  *
@@ -11,6 +12,8 @@
 export type SearchState = {
   q: string;
   types: readonly string[];
+  /** Absent means any language — every caller from before the filter existed. */
+  languages?: readonly string[];
   capabilities: readonly string[];
   /** Absent means the default for `q` — see defaultSort. */
   sort?: string;
@@ -27,14 +30,22 @@ export function defaultSort(q: string): 'relevance' | 'recent' {
 }
 
 /**
- * Parameter order is fixed (q, type, cap, sort, page) so one state has one URL,
- * and the default sort is left out, so a URL from before sorting existed is
- * still the URL of the same state.
+ * Parameter order is fixed (q, type, lang, cap, sort, page) so one state has one
+ * URL, and the default sort and the absent language are left out, so a URL from
+ * before either existed is still the URL of the same state.
  */
-export function searchHref({ q, types, capabilities, sort, page }: SearchState): string {
+export function searchHref({
+  q,
+  types,
+  languages = [],
+  capabilities,
+  sort,
+  page,
+}: SearchState): string {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   for (const t of types) params.set('type', t);
+  for (const l of languages) params.set('lang', l);
   for (const c of capabilities) params.append('cap', c);
   if (sort && sort !== defaultSort(q)) params.set('sort', sort);
   if (page > 1) params.set('page', String(page));
@@ -49,6 +60,12 @@ export function searchHref({ q, types, capabilities, sort, page }: SearchState):
  */
 export function withType(state: SearchState, type: string | null): SearchState {
   return { ...state, types: type === null || state.types.includes(type) ? [] : [type], page: 1 };
+}
+
+/** As withType: one description language, or none when it is the one applied. */
+export function withLanguage(state: SearchState, language: string | null): SearchState {
+  const languages = language === null || state.languages?.includes(language) ? [] : [language];
+  return { ...state, languages, page: 1 };
 }
 
 /** A sort link reorders the same set, from its first page. */

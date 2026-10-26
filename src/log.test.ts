@@ -174,6 +174,7 @@ const SEARCH_KEYS = [
   'capabilities',
   'durationMs',
   'event',
+  'languages',
   'page',
   'query',
   'resultCount',
@@ -188,6 +189,7 @@ function searchEntryFor(overrides: Partial<SearchLog> = {}): SearchLog {
     event: 'search',
     query: 'mcp server',
     types: ['mcp_server'],
+    languages: ['zh'],
     capabilities: ['no_network', 'no_shell'],
     page: 1,
     resultCount: 12,
@@ -212,9 +214,12 @@ describe('the search log line', () => {
     expect(typeof parsed.resultCount).toBe('number');
   });
 
-  it('carries types and capabilities as empty arrays, present rather than omitted, for an unfiltered entry', () => {
-    const parsed = JSON.parse(capture(searchEntryFor({ types: [], capabilities: [] })));
+  it('carries types, languages and capabilities as empty arrays, present rather than omitted, for an unfiltered entry', () => {
+    const parsed = JSON.parse(
+      capture(searchEntryFor({ types: [], languages: [], capabilities: [] })),
+    );
     expect(parsed.types).toEqual([]);
+    expect(parsed.languages).toEqual([]);
     expect(parsed.capabilities).toEqual([]);
   });
 

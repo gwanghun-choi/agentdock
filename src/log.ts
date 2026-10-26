@@ -84,6 +84,11 @@ export type SearchLog = {
    * pulls in @/db/client at module load (log.test.ts stays DB-free). []
    * when no type filter is applied — emitted, never omitted. */
   types: string[];
+  /** The applied description-language ids, from search.ts's closed
+   * LANGUAGE_FILTER_IDS, same reasoning as types above. Recorded so a later
+   * decision about translation can read how often anyone narrows by language
+   * rather than guess. [] when none is applied — emitted, never omitted. */
+  languages: string[];
   /** The applied capability ids, drawn from search.ts's closed
    * CAPABILITY_FILTER_IDS set, same reasoning as types above. [] when no
    * capability filter is applied — emitted, never omitted. */

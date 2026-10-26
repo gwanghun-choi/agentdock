@@ -16,6 +16,7 @@ import {
   treeHref,
 } from '@/components/hrefs';
 import { ExternalIcon } from '@/components/Icon';
+import { htmlLang, languageNote } from '@/components/language';
 import { metaDescription } from '@/components/metadata';
 import { SetupPanel } from '@/components/SetupPanel';
 import { SkillBody } from '@/components/SkillBody';
@@ -227,7 +228,17 @@ export default async function PackagePage({ params }: Props) {
           <span aria-hidden="true">/</span>
           <span className="path">{detail.sourcePath}</span>
         </p>
-        {detail.summary ? <p className="lede">{detail.summary}</p> : null}
+        {detail.summary ? (
+          <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
+            {detail.summary}
+          </p>
+        ) : null}
+        {languageNote(detail.summaryLanguage) ? (
+          <p className="muted">
+            Description language: {languageNote(detail.summaryLanguage)}. Shown as the author wrote
+            it; AgentDock does not translate it, and a browser&rsquo;s translate feature can.
+          </p>
+        ) : null}
         <div className="detail-actions">
           {/* Both leave AgentDock, and both say so with the same icon — §16's
               internal/external distinction, made visible rather than implied. */}

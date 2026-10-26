@@ -1500,6 +1500,196 @@ describe.skipIf(!DB_URL)('the search query', () => {
       }
     });
   });
+  // Phase 41. One repository holding descriptions in four writing systems — the
+  // multilingual repository the report names — so every language a filter can
+  // pick shares one query word and one ranking.
+  describe('the description language filter', () => {
+    async function multilingual() {
+      const r = await repo('language');
+      const ids = {
+        latin: await artifact(r, 'en/SKILL.md', [{ hash: 'lg1' }], {
+          name: 'langfilterword-en',
+          summary: 'Use when the user asks to review a pull request.',
+        }),
+        zh: await artifact(r, 'zh/SKILL.md', [{ hash: 'lg2' }], {
+          name: 'langfilterword-zh',
+          summary: '当用户要求数学建模、建模竞赛或生成数学建模论文时使用。',
+        }),
+        ja: await artifact(r, 'ja/SKILL.md', [{ hash: 'lg3' }], {
+          name: 'langfilterword-ja',
+          summary: 'インクルーシブなデジタルプロダクトを設計・実装・監査します。',
+        }),
+        mixed: await artifact(r, 'mixed/SKILL.md', [{ hash: 'lg4' }], {
+          name: 'langfilterword-mixed',
+          summary:
+            '给一个主题，产出一条科普讲解视频。Turn any topic into a narrated explainer video.',
+        }),
+        none: await artifact(r, 'none/hooks.json', [{ hash: 'lg5' }], {
+          type: 'hook',
+          name: 'langfilterword-none',
+        }),
+      };
+      return ids;
+    }
+
+    it('narrows to one language, and the rows and the count agree', async () => {
+      const ids = await multilingual();
+      for (const [lang, id] of [
+        ['zh', ids.zh],
+        ['ja', ids.ja],
+        ['latin', ids.latin],
+        ['mixed', ids.mixed],
+      ] as const) {
+        const filters = { types: [], capabilities: [], languages: [lang] };
+        const [rows, count] = await Promise.all([
+          search.searchPackages({ q: 'langfilterword', filters }),
+          search.countSearchResults({ q: 'langfilterword', filters }),
+        ]);
+        expect(rows.map((x) => x.id)).toEqual([id]);
+        expect(rows[0].summaryLanguage).toBe(lang);
+        expect(count).toBe(1);
+      }
+    });
+
+    it('changes nothing without a filter: the same rows in the same order, the description-less row included', async () => {
+      const ids = await multilingual();
+      const before = await search.searchPackages({ q: 'langfilterword' });
+      const empty = await search.searchPackages({
+        q: 'langfilterword',
+        filters: { types: [], capabilities: [], languages: [] },
+      });
+      expect(empty.map((x) => x.id)).toEqual(before.map((x) => x.id));
+      expect(before.map((x) => x.id).sort()).toEqual(Object.values(ids).sort());
+      expect(before.find((x) => x.id === ids.none)?.summaryLanguage).toBeNull();
+    });
+
+    it('drops an unknown language value rather than returning an empty page', async () => {
+      await multilingual();
+      const all = await search.searchPackages({ q: 'langfilterword' });
+      const bogus = await search.searchPackages({
+        q: 'langfilterword',
+        filters: { types: [], capabilities: [], languages: ['xx'] },
+      });
+      expect(bogus.map((x) => x.id)).toEqual(all.map((x) => x.id));
+    });
+
+    it('pages a filtered set: every row once, the count matching', async () => {
+      const r = await repo('language-pages');
+      for (let i = 0; i < 7; i += 1) {
+        await artifact(r, `zh${i}/SKILL.md`, [{ hash: `lgp${i}` }], {
+          name: `langpageword-${i}`,
+          summary: '当用户要求数学建模或生成论文时使用。',
+        });
+        await artifact(r, `en${i}/SKILL.md`, [{ hash: `lgq${i}` }], {
+          name: `langpageword-en-${i}`,
+          summary: 'Use when the user asks for a model.',
+        });
+      }
+      const filters = { types: [], capabilities: [], languages: ['zh'] };
+      const pages = await Promise.all(
+        [0, 3, 6].map((offset) =>
+          search.searchPackages({ q: 'langpageword', filters, limit: 3, offset }),
+        ),
+      );
+      const seen = pages.flat().map((x) => x.sourcePath);
+      expect(seen).toHaveLength(7);
+      expect(new Set(seen).size).toBe(7);
+      expect(seen.every((p) => p.startsWith('zh'))).toBe(true);
+      expect(await search.countSearchResults({ q: 'langpageword', filters })).toBe(7);
+    });
+
+    it('composes with the type filter and with browsing', async () => {
+      const ids = await multilingual();
+      const hooksInChinese = await search.searchPackages({
+        q: 'langfilterword',
+        filters: { types: ['hook'], capabilities: [], languages: ['zh'] },
+      });
+      expect(hooksInChinese).toEqual([]);
+      const browsing = await search.searchPackages({
+        q: '',
+        filters: { types: [], capabilities: [], languages: ['ja'] },
+        limit: 500,
+      });
+      expect(browsing.map((x) => x.id)).toContain(ids.ja);
+      expect(browsing.every((x) => x.summaryLanguage === 'ja')).toBe(true);
+    });
+
+    it('keeps the filter on the trigram fallback', async () => {
+      const ids = await multilingual();
+      const filters = { types: [], capabilities: [], languages: ['zh'] };
+      const rows = await search.searchPackages({ q: 'langfiltrword', filters });
+      expect(rows.every((x) => x.id === ids.zh)).toBe(true);
+    });
+
+    it('names the language on the listing and on the detail page', async () => {
+      const ids = await multilingual();
+      const listed = await packages.listPackages({ fullName: `${PREFIX}-language`, limit: 50 });
+      expect(listed.find((x) => x.id === ids.ja)?.summaryLanguage).toBe('ja');
+      const detail = await packages.getPackageDetail('test-owner', `search-spec-language`, [
+        'zh',
+        'SKILL.md',
+      ]);
+      expect(detail?.summaryLanguage).toBe('zh');
+    });
+  });
+
+  // Phase 43, measured 2026-10-26 on production's descriptions: the 'english'
+  // parser keeps an unspaced CJK clause as one lexeme, so `数学建模` did not
+  // find the math-modeling skill whose description says it mid-sentence.
+  describe('a CJK word inside a description', () => {
+    async function cjk() {
+      const r = await repo('cjk-substring');
+      return {
+        zh: await artifact(r, 'zh/SKILL.md', [{ hash: 'cj1' }], {
+          name: 'cjksubword-zh',
+          summary: '当用户要求数学建模、建模竞赛或生成论文时使用。',
+        }),
+        ko: await artifact(r, 'ko/SKILL.md', [{ hash: 'cj2' }], {
+          name: 'cjksubword-ko',
+          summary: '전문 코드를 리뷰하는 스페셜리스트입니다.',
+        }),
+        en: await artifact(r, 'en/SKILL.md', [{ hash: 'cj3' }], {
+          name: 'cjksubword-en',
+          summary: 'Use when the user asks to review a pull request.',
+        }),
+      };
+    }
+
+    it.each([['数学建模'], ['建模'], ['数学建模 竞赛']])(
+      'finds a Chinese word mid-clause, the rows and the count agreeing (%s)',
+      async (q) => {
+        const ids = await cjk();
+        const [rows, count] = await Promise.all([
+          search.searchPackages({ q }),
+          search.countSearchResults({ q }),
+        ]);
+        expect(rows.map((x) => x.id)).toContain(ids.zh);
+        expect(rows.find((x) => x.id === ids.zh)?.matchedIn).toEqual(['summary']);
+        expect(count).toBe(rows.length);
+      },
+    );
+
+    it('finds a Korean word that carries a particle', async () => {
+      const ids = await cjk();
+      const rows = await search.searchPackages({ q: '코드' });
+      // A trigram fallback row carries no matchedIn: this one came from the WHERE.
+      expect(rows.find((x) => x.id === ids.ko)?.matchedIn).toEqual(['summary']);
+    });
+
+    it('relaxes to any word when no row holds every one', async () => {
+      const ids = await cjk();
+      const q = '数学建模 不存在的词';
+      expect(await search.searchMode({ q })).toBe('any');
+      const rows = await search.searchPackages({ q });
+      expect(rows.find((x) => x.id === ids.zh)?.matchedIn).toEqual(['summary']);
+    });
+
+    it('leaves a Latin query on full text alone: no substring match', async () => {
+      await cjk();
+      // 'subword' is inside all three names, and a lexeme of none of them.
+      expect(await search.countSearchResults({ q: 'subword' })).toBe(0);
+    });
+  });
 
   // Drizzle's statements are prepared (src/db/client.ts), and PostgreSQL moves
   // a prepared statement to a generic plan after five runs. There an expression

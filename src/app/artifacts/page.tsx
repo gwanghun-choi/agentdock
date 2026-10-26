@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
+import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import {
   defaultSort,
   pageWindow,
   searchHref,
   toggleCapability,
+  withLanguage,
   withSort,
   withType,
 } from '@/components/searchState';
@@ -16,6 +18,7 @@ import {
   ARTIFACT_TYPE_IDS,
   CAPABILITY_FILTER_IDS,
   countSearchResults,
+  LANGUAGE_FILTER_IDS,
   normalizeQuery,
   SEARCH_CAPS,
   SEARCH_SORTS,
@@ -45,7 +48,11 @@ export async function generateMetadata({
   const q = normalizeQuery(sp.q);
   const [type] = parseTypeFilter(sp.type);
   const varied =
-    q !== '' || sp.cap !== undefined || sp.sort !== undefined || pageParam.parse(sp.page) > 1;
+    q !== '' ||
+    sp.cap !== undefined ||
+    sp.lang !== undefined ||
+    sp.sort !== undefined ||
+    pageParam.parse(sp.page) > 1;
   const subject = type ? TYPE_FILTER_LABELS[type] : 'Artifacts';
   const title = q ? `“${q}” in ${subject} — AgentDock` : `${subject} — AgentDock`;
   const description = type
@@ -128,6 +135,16 @@ function parseTypeFilter(raw: string | string[] | undefined): (typeof ARTIFACT_T
     : [];
 }
 
+/** As parseTypeFilter: one of LANGUAGE_FILTER_IDS, or none. */
+function parseLanguageFilter(
+  raw: string | string[] | undefined,
+): (typeof LANGUAGE_FILTER_IDS)[number][] {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value !== undefined && (LANGUAGE_FILTER_IDS as readonly string[]).includes(value)
+    ? [value as (typeof LANGUAGE_FILTER_IDS)[number]]
+    : [];
+}
+
 /**
  * One of SEARCH_SORTS, or the default for the query. `relevance` without a query
  * is the default instead: every row would rank 0, so it would be `recent` under
@@ -175,7 +192,14 @@ function parseCapabilityFilter(
 /** Every link on this page goes through searchHref (see searchState.ts), so
  * pagination, sorting and filtering cannot silently lose each other (D-35/D-36). */
 function hrefFor(q: string, page: number, filters: SearchFilters, sort?: SearchSort): string {
-  return searchHref({ q, types: filters.types, capabilities: filters.capabilities, sort, page });
+  return searchHref({
+    q,
+    types: filters.types,
+    languages: filters.languages,
+    capabilities: filters.capabilities,
+    sort,
+    page,
+  });
 }
 
 /** Each applied filter with the URL of the same search without it. */
@@ -184,11 +208,23 @@ function appliedFilters(
   filters: SearchFilters,
   sort?: SearchSort,
 ): { label: string; href: string }[] {
-  const state = { q, types: filters.types, capabilities: filters.capabilities, sort, page: 1 };
+  const state = {
+    q,
+    types: filters.types,
+    languages: filters.languages,
+    capabilities: filters.capabilities,
+    sort,
+    page: 1,
+  };
   const out: { label: string; href: string }[] = [];
   for (const t of filters.types) {
     const label = TYPE_FILTER_LABELS[t as (typeof ARTIFACT_TYPE_IDS)[number]];
     if (label) out.push({ label, href: searchHref(withType(state, null)) });
+  }
+  for (const l of filters.languages ?? []) {
+    const label = LANGUAGE_LABELS[l as (typeof LANGUAGE_FILTER_IDS)[number]];
+    if (label)
+      out.push({ label: `Description: ${label}`, href: searchHref(withLanguage(state, null)) });
   }
   for (const c of filters.capabilities) {
     const label = CAPABILITY_FILTER_LABELS[c as (typeof CAPABILITY_FILTER_IDS)[number]];
@@ -240,7 +276,14 @@ function AppliedFilters({
  * Relevance is offered only beside a query (see parseSort).
  */
 function SortLinks({ q, filters, sort }: { q: string; filters: SearchFilters; sort: SearchSort }) {
-  const state = { q, types: filters.types, capabilities: filters.capabilities, sort, page: 1 };
+  const state = {
+    q,
+    types: filters.types,
+    languages: filters.languages,
+    capabilities: filters.capabilities,
+    sort,
+    page: 1,
+  };
   return (
     <nav aria-label="Sort results" className="facet sort">
       <span className="facet-legend">Sort</span>
@@ -343,10 +386,16 @@ export default async function ArtifactsPage({
   const offset = (page - 1) * SEARCH_CAPS.pageSize;
 
   const selectedTypes = parseTypeFilter(sp.type);
+  const selectedLanguages = parseLanguageFilter(sp.lang);
   const selectedCapabilities = parseCapabilityFilter(sp.cap);
-  const filters: SearchFilters = { types: selectedTypes, capabilities: selectedCapabilities };
+  const filters: SearchFilters = {
+    types: selectedTypes,
+    capabilities: selectedCapabilities,
+    languages: selectedLanguages,
+  };
   const hasQuery = q !== '';
-  const hasFilters = selectedTypes.length > 0 || selectedCapabilities.length > 0;
+  const hasFilters =
+    selectedTypes.length > 0 || selectedCapabilities.length > 0 || selectedLanguages.length > 0;
   const sort = parseSort(sp.sort, q);
 
   // The route emits exactly one log line per request, wrapping BOTH queries
@@ -365,6 +414,7 @@ export default async function ArtifactsPage({
     event: 'search',
     query: q,
     types: selectedTypes,
+    languages: selectedLanguages,
     capabilities: selectedCapabilities,
     page,
     resultCount: items.length,
@@ -408,6 +458,9 @@ export default async function ArtifactsPage({
       {selectedTypes.map((t) => (
         <input key={t} name="type" type="hidden" value={t} />
       ))}
+      {selectedLanguages.map((l) => (
+        <input key={l} name="lang" type="hidden" value={l} />
+      ))}
       {selectedCapabilities.map((c) => (
         <input key={c} name="cap" type="hidden" value={c} />
       ))}
@@ -435,7 +488,14 @@ export default async function ArtifactsPage({
    * its own removal. `aria-current` names the applied ones to a screen reader;
    * the look is the same six channels the checked chips used.
    */
-  const state = { q, types: selectedTypes, capabilities: selectedCapabilities, sort, page: 1 };
+  const state = {
+    q,
+    types: selectedTypes,
+    languages: selectedLanguages,
+    capabilities: selectedCapabilities,
+    sort,
+    page: 1,
+  };
   const facets = (
     <div className="facets">
       <fieldset className="facet">
@@ -456,6 +516,31 @@ export default async function ArtifactsPage({
               key={id}
             >
               {TYPE_FILTER_LABELS[id]}
+            </Link>
+          ))}
+        </div>
+      </fieldset>
+      {/* The description's writing system, read from its characters
+          (src/db/queries/language.ts). Narrows only: with none chosen every
+          language is listed, in the order it always was. */}
+      <fieldset className="facet">
+        <legend className="facet-legend">Description</legend>
+        <div className="facet-chips">
+          <Link
+            aria-current={selectedLanguages.length === 0 ? 'true' : undefined}
+            className="chip"
+            href={searchHref(withLanguage(state, null))}
+          >
+            Any language
+          </Link>
+          {LANGUAGE_FILTER_IDS.map((id) => (
+            <Link
+              aria-current={selectedLanguages.includes(id) ? 'true' : undefined}
+              className="chip"
+              href={searchHref(withLanguage(state, id))}
+              key={id}
+            >
+              {LANGUAGE_LABELS[id]}
             </Link>
           ))}
         </div>
@@ -491,7 +576,9 @@ export default async function ArtifactsPage({
           These filters describe what AgentDock observed while reading the files, not everything an
           artifact can do. The network and Bash filters list only skills and commands whose text
           AgentDock has analyzed; the script filter lists only skills and plugins, whose file list
-          is a directory.
+          is a directory. The description filter reads which writing system each description uses,
+          as its author wrote it — nothing is translated, and the Latin alphabet includes languages
+          other than English.
         </span>
       </p>
     </>

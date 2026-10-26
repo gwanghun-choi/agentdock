@@ -5,6 +5,7 @@ import { sourcePathCandidates } from '@/components/hrefs';
 import { db } from '@/db/client';
 import { packageTable, packageVersion, repository } from '@/db/schema';
 import { CAPS } from '@/github/scan';
+import { SUMMARY_LANGUAGE, type SummaryLanguage } from './language';
 
 /** Why an artifact is not in AgentDock's listings. Null means it is. */
 export type NotListedReason = 'fork' | 'duplicate' | 'unparsed';
@@ -21,6 +22,8 @@ export type PackageListItem = {
   scannedAt: Date | null;
   /** Null when the artifact is in AgentDock's listings. Set by NOT_LISTED_BECAUSE. */
   notListedBecause: NotListedReason | null;
+  /** SUMMARY_LANGUAGE: the description's writing system; null with no description. */
+  summaryLanguage?: SummaryLanguage | null;
 };
 
 /**
@@ -196,6 +199,7 @@ export const listPackages = cache(
           order by pv.ingested_at desc limit 1
         )`,
         notListedBecause: NOT_LISTED_BECAUSE,
+        summaryLanguage: SUMMARY_LANGUAGE,
       })
       .from(packageTable)
       .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
@@ -324,6 +328,7 @@ export type PackageDetail = {
   id: number;
   name: string;
   summary: string | null;
+  summaryLanguage: SummaryLanguage | null;
   type: string;
   slug: string;
   sourcePath: string;
@@ -364,6 +369,7 @@ export const getPackageDetail = cache(
         id: packageTable.id,
         name: packageTable.name,
         summary: packageTable.summary,
+        summaryLanguage: SUMMARY_LANGUAGE,
         type: packageTable.type,
         slug: packageTable.slug,
         sourcePath: packageTable.sourcePath,

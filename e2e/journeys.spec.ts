@@ -63,6 +63,36 @@ test('capability filter: toggles on and off, composes with a type, and Clear all
   await page.waitForURL(/\/artifacts\?q=review$/);
 });
 
+// The corpus's four bilingual descriptions are baoyu-skills' English ones that
+// quote Chinese trigger phrases; nothing in it is Chinese, Japanese or Korean alone.
+test('language filter: narrows to a writing system, names it per row, survives paging state, and comes off', async ({
+  page,
+}) => {
+  await page.goto('/artifacts');
+  const all = await total(page);
+  await page.click('.facet .chip:has-text("Mixed languages")');
+  await page.waitForURL(/\/artifacts\?lang=mixed$/);
+  expect(await total(page)).toBe(4);
+  const metas = await page.locator('.rows .row-meta').allTextContents();
+  expect(metas.every((m) => m.includes('Mixed languages'))).toBe(true);
+  await expect(page.locator('.rows .row-desc[lang]')).toHaveCount(0);
+
+  await page.click('.facet .chip:has-text("Agent Skills")');
+  await page.waitForURL(/type=skill&lang=mixed$/);
+  await page.click('.sort a:has-text("Name")');
+  await page.waitForURL(/type=skill&lang=mixed&sort=name$/);
+  expect(await total(page)).toBe(4);
+
+  await page.click('.applied a:has-text("Description: Mixed languages")');
+  await page.waitForURL(/\/artifacts\?type=skill&sort=name$/);
+  await page.goto('/artifacts?lang=xx');
+  expect(await total(page)).toBe(all);
+
+  await page.goto('/artifacts?lang=mixed&q=translate');
+  await page.click('.rows .row-title a');
+  await expect(page.locator('.detail-head')).toContainText('Description language: Mixed languages');
+});
+
 test('a new query keeps the applied filters and the chosen sort', async ({ page }) => {
   await page.goto('/artifacts?type=command&sort=name');
   await page.fill('#q', 'commit');
@@ -175,6 +205,7 @@ test('detail, Back and a shared URL', async ({ page, browser }) => {
   await expect(other.locator('#q')).toHaveValue('skill');
   await expect(other.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText([
     'Agent Skills',
+    'Any language',
     'No bundled script files',
   ]);
   await expect(other.locator('.sort .chip[aria-current]')).toHaveText('Name');
@@ -379,8 +410,11 @@ test('date orders: newly added and content changed, each saying what its date is
 test('bad parameters fall back to defaults, and parameterised listings are noindex', async ({
   page,
 }) => {
-  await page.goto('/artifacts?page=abc&type=bogus&cap=nope&sort=stars');
-  await expect(page.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText(['All types']);
+  await page.goto('/artifacts?page=abc&type=bogus&lang=zz&cap=nope&sort=stars');
+  await expect(page.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText([
+    'All types',
+    'Any language',
+  ]);
   await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Recently indexed');
   expect(await page.locator('meta[name=robots]').getAttribute('content')).toContain('noindex');
   await page.goto('/artifacts?type=agent');
