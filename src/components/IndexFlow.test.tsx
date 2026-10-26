@@ -20,9 +20,9 @@ describe('IndexFlow', () => {
   });
 
   it('is legible with no CSS and no JavaScript at all', () => {
-    // Every claim the drawing makes is also a sentence. The spine, the nodes and
-    // the travelling pulse are ::before/::after in the stylesheet, so a reader
-    // with styles off loses the picture and keeps all of the meaning.
+    // Every claim the drawing makes is also a sentence. The connectors and the
+    // stage numbers are ::before/::after in the stylesheet, so a reader with
+    // styles off loses the picture and keeps all of the meaning.
     for (const sentence of [
       'A public repository',
       'The files that declare an artifact',

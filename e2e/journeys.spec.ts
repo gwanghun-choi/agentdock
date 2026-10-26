@@ -505,6 +505,17 @@ test("file sections: the outline lists the author's headings and each one lands 
   const heading = page.locator(`[id="${id}"]`);
   await expect(heading).toHaveText('Quick Start Guide');
   await expect(heading).toBeInViewport();
+  // In the viewport is not enough: the header is sticky, and until Phase 57
+  // every jump — this one and the section links — landed its heading at y=24,
+  // under the header's 57px. Both kinds of link, then, clear it.
+  const headerBottom = async () =>
+    (await page.locator('.site-header').boundingBox())?.height ?? Number.POSITIVE_INFINITY;
+  expect((await heading.boundingBox())?.y).toBeGreaterThanOrEqual(await headerBottom());
+  await page.locator('nav.toc a[href="#versions"]').click();
+  await expect(page).toHaveURL(/#versions$/);
+  expect((await page.locator('#versions').boundingBox())?.y).toBeGreaterThanOrEqual(
+    await headerBottom(),
+  );
   // A body with fewer than three headings gets no outline.
   await page.goto('/r/fixture/ui-edge-cases/.claude/agents/code-reviewer.md');
   await expect(page.locator('nav.file-outline')).toHaveCount(0);
@@ -631,15 +642,44 @@ test.describe('on a phone', () => {
     await noHorizontalOverflow(page);
   });
 
-  test('the first result is on the first screen at 390 and starts on it at 375', async ({
+  test("the first result's type, name and description are on the first screen at 390 and 360, and it starts on it at 375", async ({
     page,
   }) => {
     // 3.7px of it showed at 390×844 before the search button, the facet
     // legends and the filter note stopped taking lines of their own (Phase 54).
+    //
+    // Up to the description, not the whole row. Below it is the metadata
+    // line, whose path is set in the system monospace, and its height is the
+    // machine's, not the page's: the row's bottom was 826 on a 0.5em mono and
+    // 848.5 on CI's DejaVu Sans Mono (0.6em, as SF Mono and Menlo are), which
+    // failed 73df119 with nothing on the page changed. The description's
+    // bottom measured 718.1 at 390 and at 360 under both monos and with the
+    // web font blocked — except 766.1 at 360 with CI's fonts and the web font
+    // blocked. The repository beside the name is mono too, so a longer one
+    // than this fixture's could still wrap the title and move it.
     await page.goto('/artifacts?q=review');
-    const first = page.locator('.rows li').first();
-    const box = await first.boundingBox();
-    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThan(844);
+    // The loading skeleton is also `ul.rows > li`, aria-hidden, and it can
+    // still be in the page when navigation resolves: a box taken from it
+    // passes this test with no result on the page at all.
+    await expect(page.locator('.result-count')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const first = page.locator('.rows:not([aria-hidden]) > li').first();
+    const desc = first.locator('.row-desc');
+    await expect(desc).toBeVisible();
+    const bottom = async () => {
+      const box = await desc.boundingBox();
+      return (box?.y ?? Number.POSITIVE_INFINITY) + (box?.height ?? 0);
+    };
+    expect(await bottom()).toBeLessThan(844);
+    // And the row has not moved down. With the description as the bound there
+    // is 126px of slack, enough to take back the stacked search button (+48)
+    // or the visible field label (+41) unnoticed. The top is set by what is
+    // above the list — the brand face and fixed-size controls — and measured
+    // 603.5 under both monos and with the web font blocked; 625 is under one
+    // control row of slack.
+    expect((await first.boundingBox())?.y).toBeLessThan(625);
+    await page.setViewportSize({ width: 360, height: 800 });
+    expect(await bottom()).toBeLessThan(800);
     await page.setViewportSize({ width: 375, height: 667 });
     expect((await first.boundingBox())?.y).toBeLessThan(667);
     // Every facet chip is still on the page, one scrolled line per facet.
@@ -660,6 +700,24 @@ test.describe('on a phone', () => {
     await expect(page.locator('#q')).toBeInViewport();
     await expect(page.locator('.hero-types .chip').first()).toBeInViewport();
     expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(844);
+    await noHorizontalOverflow(page);
+  });
+
+  test('detail: the section links are one scrolled line, and the last one is reachable', async ({
+    page,
+  }) => {
+    // Two wrapped lines at 390 and three at 320 before Phase 57.
+    await page.goto(
+      '/r/wshobson/agents/plugins/backend-development/skills/temporal-python-testing',
+    );
+    const links = page.locator('nav.toc a');
+    // All eight on a skill; one link would pass the one-line check by itself.
+    await expect(links).toHaveCount(8);
+    const first = await links.first().boundingBox();
+    const last = await links.last().boundingBox();
+    expect(Math.abs((last?.y ?? 0) - (first?.y ?? 0))).toBeLessThan(2);
+    await links.last().click();
+    await expect(page).toHaveURL(/#file$/);
     await noHorizontalOverflow(page);
   });
 

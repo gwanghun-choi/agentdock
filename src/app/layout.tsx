@@ -1,9 +1,24 @@
+import localFont from 'next/font/local';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DockIcon, SearchIcon } from '@/components/Icon';
 import { SearchHotkey } from '@/components/SearchHotkey';
 import { SearchLauncher } from '@/components/SearchLauncher';
 import './globals.css';
+
+// One typeface for every word on the site, served from this origin. It was the
+// system UI stack, which set the same page in Segoe UI, San Francisco or
+// whatever a Linux desktop had installed — the brand looked like a different
+// product on each. Schibsted Grotesk (OFL-1.1, ./fonts/OFL.txt) is the latin
+// subset of the variable font, every weight in one 46,752-byte file, preloaded.
+// No request leaves the origin: the CSP's font-src is 'self'. Glyphs outside
+// latin — the CJK descriptions — fall through to the stack in --sans.
+const brand = localFont({
+  src: './fonts/SchibstedGrotesk-latin-wght.woff2',
+  weight: '400 900',
+  variable: '--font-brand',
+  display: 'swap',
+});
 
 const DESCRIPTION =
   'An index of agent skills, plugins, MCP servers, commands, hooks and subagents read from public GitHub repositories, each linked to the commit it was read at.';
@@ -38,7 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     // the default canvas without a script. No toggle, no stored preference, no
     // anti-flash inline script — which is convenient, because an inline script is
     // exactly what the policy exists to forbid.
-    <html lang="en" style={{ colorScheme: 'light dark' }}>
+    <html lang="en" className={brand.variable} style={{ colorScheme: 'light dark' }}>
       <body>
         <a href="#main" className="skip-link">
           Skip to content

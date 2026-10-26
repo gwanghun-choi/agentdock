@@ -23,9 +23,9 @@ import { CommitIcon, DockIcon, FileIcon, RepoIcon } from '@/components/Icon';
  * <ol>, because the order is real and load-bearing. A screen reader gets "list
  * of 4 items", which is the correct shape of this content; nothing here depends
  * on the animation to be understood, and with CSS off it degrades to a numbered
- * list of four short sentences that still reads correctly. The connectors and
- * the travelling beam are ::before/::after in the stylesheet, so they cost the
- * markup nothing and vanish cleanly when styles do.
+ * list of four short sentences that still reads correctly. The connectors are
+ * ::before/::after in the stylesheet, so they cost the markup nothing and
+ * vanish cleanly when styles do.
  *
  * ## The prose left
  *

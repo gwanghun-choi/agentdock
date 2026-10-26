@@ -128,7 +128,7 @@ describe('every animated declaration is reachable by that block', () => {
  *
  * A transition is a state change and has a quieter form — a shorter one — which
  * is why redefining two durations is enough for all of them. An animation does
- * not: a spine drawing itself and a number counting up are either present or
+ * not: the flow's stages arriving and a number counting up are either present or
  * absent, and a 0.01ms version of either is a flicker rather than a courtesy.
  * So they are not declared-then-suppressed. Every `animation` and every
  * `@keyframes` in this file sits inside a single
@@ -157,8 +157,10 @@ describe('every keyframe animation is inside the no-preference block', () => {
   it('declares the block, and the block declares animations', () => {
     expect(block).not.toBe('');
     // Guards the assertion below against passing on an empty set — the way a
-    // regex that stops matching turns into a green suite.
-    expect(motionSites(block).length).toBeGreaterThan(10);
+    // regex that stops matching turns into a green suite. Eight sites since
+    // Phase 57 (four animations, four @keyframes), when the ambient and
+    // entrance animations were removed; it was more than ten before.
+    expect(motionSites(block).length).toBeGreaterThan(5);
   });
 
   it('declares no animation anywhere else in the file', () => {

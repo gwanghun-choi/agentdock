@@ -330,10 +330,12 @@ boundary입니다. 검색은 GET form이고, type·capability 필터와 페이�
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
-모션도 마찬가지입니다. 홈의 index flow 다이어그램, 목록이 순서대로 등장하는
-방식, hover와 focus 반응은 전부
-CSS입니다 — 다이어그램은 SVG asset이 아니라 HTML과 CSS이고, scroll observer도
-없습니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
+모션도 마찬가지입니다. index flow 다이어그램이 한 번 펼쳐지는 것, 로딩 자리표시의
+sweep, hover와 focus 반응은 전부 CSS입니다 — 다이어그램은 SVG asset이 아니라
+HTML과 CSS이고, scroll observer도 없습니다. 반복되거나 페이지마다 재생되는 장식
+모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠습니다.
+서체는 Schibsted Grotesk(OFL-1.1) latin variable 파일 하나를 `next/font/local`로
+같은 origin에서 제공하고, CJK 글자는 시스템 서체로 넘어갑니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
 블록 하나 안에만 선언되어 있어서, 모션을 줄여 달라고 한 사용자에게는 끌 것이
 남지 않습니다. 애초에 선언되지 않습니다.
 

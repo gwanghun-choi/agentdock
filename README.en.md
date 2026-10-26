@@ -346,10 +346,13 @@ the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
 Back, reload and a shared link.
 
-So is the motion. The index-flow diagram on the home page, the order a list
-arrives in, and every
-hover and focus response are CSS — the diagram is HTML and CSS rather than an
-SVG asset, and there is no scroll observer anywhere. Every keyframe animation is
+So is the motion. The index-flow diagram's one reveal, the loading
+placeholder's sweep, and every hover and focus response are CSS — the diagram is
+HTML and CSS rather than an SVG asset, and there is no scroll observer anywhere.
+Decorative motion that looped or replayed on every page (the background drift,
+the connector pulse, block and row entrances) was removed in Phase 57. The
+typeface is one latin variable file of Schibsted Grotesk (OFL-1.1), served from
+the same origin by `next/font/local`; CJK text falls through to system fonts. Every keyframe animation is
 declared inside one `prefers-reduced-motion: no-preference` block, so for a
 reader who asked for less motion there is nothing left to switch off: it is
 never declared.

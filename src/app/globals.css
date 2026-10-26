@@ -116,33 +116,13 @@
   --dur-slow: 320ms;
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* The hero's canvas. A dot grid is the drafting surface this subject's own
-     tools draw on — a node canvas, a schematic, graph paper — and at 8% it is a
-     texture rather than a pattern: there when you look for it, gone when you
-     read over it. */
-  --grid-dot: light-dark(rgb(22 25 29 / 13%), rgb(230 232 235 / 11%));
-
-  /* Two ambient orbs under the dot grid, and the alphas are the whole design.
-     Blue behind the headline, violet behind the far end of the pipeline, so the
-     hero has a light direction instead of an even tint.
-
-     The cost is measured off rendered pixels rather than guessed — see the
-     figures recorded beside the .hero::after rule. The reason to write them down
-     is that this is what breaks quietly if someone raises an alpha: nothing
-     fails, it just gets worse, and the next reader deserves to know what was
-     measured and against what.
-
-     Violet is the second hue on this site and it is deliberately confined to
-     this one decorative layer. It never labels anything, so it never competes
-     with the six artifact-type hues, which are the only colours here that
-     carry meaning. */
-  --hero-wash-a: light-dark(rgb(26 86 184 / 8%), rgb(122 167 240 / 13%));
-  --hero-wash-b: light-dark(rgb(118 76 200 / 6%), rgb(158 132 240 / 11%));
-
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* --font-brand is Schibsted Grotesk, declared by next/font in layout.tsx. The
+     stack after it is what the CJK descriptions and any glyph outside the latin
+     subset fall through to. */
   --sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans KR", sans-serif;
+    var(--font-brand), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans KR", sans-serif;
 
   /* One column width for everything, so the header rule, the content and the
      footer rule all align. */
@@ -159,6 +139,11 @@
 }
 
 html {
+  /* The header is sticky and 3.5rem tall, and every in-page jump — the section
+     links, the file outline, a shared #file-L12 — landed its heading at 24px,
+     under it (measured at 1280 and 390, all six jumps, Phase 57). The margin on
+     #main [id] below is the gap; this is the header it has to clear. */
+  scroll-padding-top: 3.5rem;
   font-family: var(--sans);
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
@@ -182,7 +167,7 @@ h1,
 h2,
 h3 {
   color: var(--fg-strong);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   line-height: 1.25;
   text-wrap: balance;
 }
@@ -394,23 +379,15 @@ main {
 /* ---------- hero ---------- */
 
 /*
- * One column, full width, and the pipeline runs underneath.
+ * One column: the headline, the search box and the type row own the top of
+ * the page, and the first artifact is what comes next.
  *
- * It was two columns: headline on the left, the flow diagram in a bordered card
- * on the right. That composition had two problems and they were the same
- * problem. The page opened with two objects of roughly equal weight competing to
- * be read first, and the diagram — the one picture that says what this product
- * is — was the narrower of the two, framed like a sidebar note.
- *
- * Now the headline and the search box own the top of the page, and the pipeline
- * is the widest thing on it. Reading order and visual order finally agree: what
- * this is, what you can do, how it got here.
+ * No texture behind it. A dot grid and two blurred orbs (one blue, one violet)
+ * sat under this section with a 48-second drift; they were the only decoration
+ * on the site and the only use of a second hue, and they said nothing a reader
+ * could use. Removed in Phase 57 — the headline's type carries the page.
  */
 .hero {
-  position: relative;
-  /* So the negative layers stay inside this section rather than sliding under
-     the page background. */
-  isolation: isolate;
   display: grid;
   gap: var(--s-5);
   /* Section rhythm is carried by these numbers rather than by rules between
@@ -419,55 +396,6 @@ main {
      next, and 48px of air before it was a screen's worth of nothing on a
      phone. */
   padding-block: var(--s-6) var(--s-5);
-}
-
-/*
- * The dot grid.
- *
- * Inset to 0 on both inline edges on purpose: bleeding it past the wrap's
- * padding would put a painted box wider than the viewport on a phone, and a
- * horizontal scrollbar is a high price for eight pixels of texture. It bleeds
- * upward instead, under the sticky header, which is the direction with no
- * overflow to cause.
- *
- * The mask is what keeps it from reading as a pattern: strongest behind the
- * headline, gone before it reaches the pipeline.
- */
-.hero::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: calc(var(--s-7) * -1) 0 0;
-  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(90% 70% at 30% 22%, #000 0%, transparent 76%);
-  pointer-events: none;
-}
-
-/*
- * The ambient wash, under the grid.
- *
- * Two blurred orbs rather than a flat tint — one cool blue behind the headline,
- * one violet behind the pipeline's far end — so the section has a light
- * direction. The alphas were measured against the text that sits on them rather
- * than eyeballed; see --hero-wash-a / --hero-wash-b.
- *
- * The slow drift is the one ambient animation on this page that is not
- * information. It is 48 seconds for a 3% translation, which is below the rate at
- * which peripheral motion pulls the eye — it reads as the page being lit rather
- * than as something moving. It is declared inside the single
- * prefers-reduced-motion: no-preference block near the end of this file, so
- * under the preference it does not exist at all.
- */
-.hero::after {
-  content: "";
-  position: absolute;
-  z-index: -2;
-  inset: calc(var(--s-7) * -1) 0 0;
-  background-image:
-    radial-gradient(38% 58% at 22% 30%, var(--hero-wash-a), transparent 68%),
-    radial-gradient(34% 52% at 82% 62%, var(--hero-wash-b), transparent 70%);
-  pointer-events: none;
 }
 
 .hero-copy {
@@ -482,6 +410,12 @@ main {
    headline was three lines and 130px on a 390px phone. */
 .hero h1 {
   font-size: clamp(1.875rem, 1.1rem + 3.2vw, 3.5rem);
+  /* The one place the type is the design: display size, set tight, at the
+     weight the face draws best at that size. Everything else on the site is
+     quieter so this can be loud. */
+  font-weight: 700;
+  letter-spacing: -0.032em;
+  line-height: 1.05;
   margin-bottom: var(--s-3);
 }
 
@@ -671,9 +605,7 @@ main {
   width: var(--s-6);
   height: 2px;
   margin-right: 1px;
-  background:
-    linear-gradient(90deg, transparent, var(--accent), transparent) -50% 0 / 50% 100% no-repeat,
-    var(--border-strong);
+  background: var(--border-strong);
   pointer-events: none;
 }
 
@@ -755,9 +687,6 @@ main {
     width: 2px;
     height: var(--s-5);
     margin-right: 0;
-    background:
-      linear-gradient(180deg, transparent, var(--accent), transparent) 0 -50% / 100% 50% no-repeat,
-      var(--border-strong);
   }
 }
 
@@ -1108,12 +1037,11 @@ main {
   font-size: var(--t-xs);
 }
 
-/* Digits in the metadata line are compared down a column, so they get fixed
-   advance widths. A star count that reflows its own width per row is noise. */
-.row-stars {
-  font-variant-numeric: tabular-nums;
-}
-
+/* No `.row-stars` rule: its figures stay proportional, unlike the counts
+   elsewhere. It was tabular-nums, and Schibsted Grotesk's tabular set gives the
+   full stop a figure's width too: "38.6k" rendered as "38 .6k" (Phase 57). The
+   count follows a path of any length, so it never sat in a column for fixed
+   widths to align. */
 .row-stars svg {
   /* Filled, unlike every other icon here, because a star outline at 12px reads
      as a smudge. It is still currentColor and still --faint, so it carries no
@@ -1448,11 +1376,12 @@ textarea {
 .facet-legend {
   float: left;
   padding: 0 var(--s-3) 0 0;
-  font-size: var(--t-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--faint);
+  /* Sentence case, as the markup writes it. Tracked capitals were the house
+     style for every label on the site — facets, facts, table heads — and set a
+     word like DESCRIPTION wider than the chips it names. */
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--muted);
   line-height: 1.875rem;
 }
 
@@ -2399,8 +2328,6 @@ details.notice[open] p {
   gap: var(--s-2);
   margin: 0;
   font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--faint);
 }
 
@@ -2556,11 +2483,7 @@ details.notice[open] p {
 
 .facts dt {
   margin: 0;
-  color: var(--faint);
-  font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding-top: 2px;
+  color: var(--muted);
 }
 
 .facts dd {
@@ -2827,8 +2750,6 @@ details.notice[open] p {
 .files th {
   color: var(--faint);
   font-size: var(--t-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   font-weight: 600;
 }
 
@@ -2975,8 +2896,14 @@ details.notice[open] p {
     padding-right: var(--s-3);
   }
 
+  /* 12px above and below, not 16. The path is in the system monospace, and
+     with glyphs 0.6em wide — SF Mono, Menlo, DejaVu Sans Mono — the first
+     search result's path wraps where the 0.5em mono this layout was tuned on
+     did not: its bottom edge sat at 848.5 on a 390×844 screen. 840.5 with
+     this. e2e asserts the row up to its description, which measured the same
+     under every mono tried. */
   .rows > li {
-    padding: var(--s-4);
+    padding: var(--s-3) var(--s-4);
   }
 
   /*
@@ -2999,6 +2926,23 @@ details.notice[open] p {
      margin here would strand the link off on the right by itself. */
   .row-source {
     margin-inline-start: 0;
+  }
+
+  /* The detail page's section links (up to eight), as one scrolling row like
+     the type chips. Wrapped, they were two lines between the actions and the
+     facts at 390px and three at 320px. Not beside the chip rule: `.crumbs ol,
+     .toc ul` sets the wrap after that block, and this has to come later to
+     win. */
+  .toc ul {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--s-4));
+    padding: 4px var(--s-4);
+  }
+
+  .toc li {
+    flex: none;
   }
 
   /* Two columns of facts become one; a 7rem label column against a 45-character
@@ -3082,36 +3026,35 @@ details.notice[open] p {
  * and motion.test.ts fails on any transition that writes its own duration.
  *
  * An animation is not a state change, so a shorter duration is not a smaller
- * version of it: a spine drawing itself and a number counting up have no
+ * version of it: the flow's stages arriving and a number counting up have no
  * quieter form, only a present one and an absent one. Rather than declare them
  * and then suppress them, they are declared inside a `no-preference` block —
  * under the preference they do not exist, the elements render at the styles
  * they animate to, and there is nothing to switch off. motion.test.ts asserts
  * that this block is the only place an `animation` or an `@keyframes` appears.
  *
- * Every animation here runs once, on arrival, except the spine's pulse, which
- * is a seven-second cycle on a two-pixel-wide element in one section of one
- * page. Nothing loops anywhere else, and nothing anywhere is triggered by
+ * Every animation here runs once, on arrival, except the loading sweep, which
+ * lasts as long as the placeholder it sits on. Nothing else loops, and nothing
+ * anywhere is triggered by
  * scrolling: an IntersectionObserver reveal on every section is the pattern
  * that makes a page feel like it is performing rather than loading, and it
  * would also be the first JavaScript this stylesheet ever required.
  *
- * All of it is opacity and transform, plus one background-position and one
- * custom property. None of it changes a box, so none of it can shift the
- * layout, and `backwards` fill without `forwards` means every element's resting
- * style is the one written above — an animation that never runs leaves nothing
- * invisible.
+ * All of it is opacity and transform, plus one custom property. None of it
+ * changes a box, so none of it can shift the layout, and `backwards` fill
+ * without `forwards` means every element's resting style is the one written
+ * above — an animation that never runs leaves nothing invisible.
  *
  * `motion@13.1.0` was installed and measured against this, on 2026-08-13,
  * rather than rejected on principle. The scaffold was the smallest honest one:
  * a single `<motion.li>` inside `<AnimatePresence>` reproducing the row stagger
- * below — one of the eight animations here — imported from a page.
+ * that was here until Phase 57 — imported from a page.
  *
  *     this stylesheet          590,203 B client JS (176,054 B gzip), 10 chunks
  *     with motion              713,873 B client JS (216,503 B gzip), 11 chunks
  *
  * +40 KB gzipped and a chunk, for the eight rules `.rows > li:nth-child()`
- * spends about 300 bytes of gzipped CSS on. The cost is structural rather than
+ * spent about 300 bytes of gzipped CSS on. The cost is structural rather than
  * incidental: 128 of framer-motion's 164 ESM modules carry `'use client'`, so
  * the list that renders database rows on the server becomes a Client Component
  * and every row crosses the boundary as serialized props.
@@ -3127,137 +3070,14 @@ details.notice[open] p {
  * effect is not one.
  */
 @media (prefers-reduced-motion: no-preference) {
-  /* --- the page arriving --- */
+  /* --- the index flow ---
 
-  /* Every top-level block of every page, in document order. React remounts this
-     subtree on a route change, so this is also what a navigation looks like:
-     the same sequence, on the new page's blocks. It is not a view transition —
-     see README.md for why that was left alone. */
-  @keyframes page-rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-  }
-
-  main > * {
-    animation: page-rise var(--dur-slow) var(--ease-emphasized) backwards;
-  }
-
-  main > :nth-child(2) {
-    animation-delay: 50ms;
-  }
-
-  main > :nth-child(3) {
-    animation-delay: 100ms;
-  }
-
-  main > :nth-child(4) {
-    animation-delay: 150ms;
-  }
-
-  /* Past the fourth block the delay stops growing. A page with nine sections
-     would otherwise still be assembling half a second after it arrived. */
-  main > :nth-child(n + 5) {
-    animation-delay: 200ms;
-  }
-
-  /* --- the hero --- */
-
-  @keyframes grid-in {
-    from {
-      opacity: 0;
-    }
-  }
-
-  .hero::before {
-    animation: grid-in 900ms var(--ease) backwards;
-  }
-
-  /* The hero's two orbs drift.
-     3% of their own size over 48 seconds, which is far below the rate at which
-     peripheral motion pulls the eye — it reads as the section being lit rather
-     than as something moving, and it is the only animation on this page that
-     carries no information. Kept because a completely static wash is what made
-     the previous hero read as a printed page. */
-  @keyframes wash-drift {
-    50% {
-      transform: translate3d(2%, -1.5%, 0) scale(1.03);
-    }
-  }
-
-  .hero::after {
-    animation: wash-drift 48s var(--ease) infinite;
-    will-change: transform;
-  }
-
-  /* A pulse travels the pipeline, connector by connector.
-
-     Each connector is a 2px rule carrying a short accent gradient parked off its
-     left end; this moves that gradient across and off the right. The three fire
-     600ms apart, so one light appears to run the whole length of the flow rather
-     than three lights blinking together. The 60% hold is the gap between runs —
-     without it the beam restarts the instant it leaves, which reads as a strobe.
-
-     Sized in percentages of the connector, so it needs to know nothing about how
-     wide the gap is at this viewport. */
-  @keyframes beam {
-    0% {
-      background-position-x: -60%;
-    }
-
-    60%,
-    100% {
-      background-position-x: 160%;
-    }
-  }
-
-  .flow > li + li::after {
-    animation: beam 5.4s var(--ease) 900ms infinite;
-  }
-
-  .flow > li:nth-child(3)::after {
-    animation-delay: 1500ms;
-  }
-
-  .flow > li:nth-child(4)::after {
-    animation-delay: 2100ms;
-  }
-
-  /* Below 64rem the connectors are vertical, so the beam has to travel the other
-     axis. Same timing, same gradient, different property — a rotation would have
-     turned the stage boxes with it. */
-  @media (max-width: 64rem) {
-    @keyframes beam-down {
-      0% {
-        background-position-y: -60%;
-      }
-
-      60%,
-      100% {
-        background-position-y: 160%;
-      }
-    }
-
-    .flow > li + li::after {
-      animation-name: beam-down;
-    }
-  }
-
-  /* The stage the run arrives at breathes, once every six seconds. It is the
-     only stage with a live number on it, and this is what stops the pipeline
-     reading as a finished diagram of something that already happened. */
-  @keyframes stage-glow {
-    50% {
-      box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
-        0 0 0 4px color-mix(in srgb, var(--accent) 9%, transparent);
-    }
-  }
-
-  .flow > li:last-child {
-    animation: stage-glow 6s var(--ease) 1200ms infinite;
-  }
+     Phase 57 removed the page-wide entrance (every block of every page rose in
+     over 320ms, on every navigation), the hero's grid fade and orb drift, the
+     connector beam and the last stage's glow (both looping forever), and the
+     row stagger. None of them answered anything a reader did. What is left is
+     the flow's reveal (its stages, its filenames, its count) and the loading
+     sweep. */
 
   /* Each stage arrives from the left, in the order the run reads. */
   @keyframes flow-step-in {
@@ -3340,51 +3160,6 @@ details.notice[open] p {
 
   .count {
     animation: count-up 800ms var(--ease-emphasized) 700ms backwards;
-  }
-
-  /* --- lists --- */
-
-  /* A short stagger down the first screenful, and a flat delay after it. Eight
-     rows at 25ms is 200ms of sequence; a list of twenty-five at the same step
-     would be 600ms, and the twenty-fifth row is not something anyone is waiting
-     to see arrive. */
-  @keyframes row-in {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-  }
-
-  .rows > li {
-    animation: row-in 260ms var(--ease-emphasized) backwards;
-  }
-
-  .rows > li:nth-child(2) {
-    animation-delay: 25ms;
-  }
-
-  .rows > li:nth-child(3) {
-    animation-delay: 50ms;
-  }
-
-  .rows > li:nth-child(4) {
-    animation-delay: 75ms;
-  }
-
-  .rows > li:nth-child(5) {
-    animation-delay: 100ms;
-  }
-
-  .rows > li:nth-child(6) {
-    animation-delay: 125ms;
-  }
-
-  .rows > li:nth-child(7) {
-    animation-delay: 150ms;
-  }
-
-  .rows > li:nth-child(n + 8) {
-    animation-delay: 175ms;
   }
 
   /* --- the loading placeholder --- */
