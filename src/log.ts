@@ -46,6 +46,12 @@ type IngestLog = {
    * every line without a detector failure keeps the same closed key set.
    */
   detectorErrors?: string[];
+  /**
+   * storage_failed only, and only when the error carried one: a SQLSTATE such
+   * as 22021, or a system code. A code, never a message — a failed statement's
+   * message carries its values. Absent otherwise, like detectorErrors.
+   */
+  errorCode?: string;
 };
 
 /** The loop's own lifecycle. No message field, so there is nothing to interpolate into. */

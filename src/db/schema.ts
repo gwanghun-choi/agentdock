@@ -36,6 +36,13 @@ if (requested !== 'agentdock' && requested !== 'agentdock_test') {
 export const AGENTDOCK_SCHEMA = requested;
 
 /**
+ * The one role every AgentDock process connects as — created by
+ * scripts/sql/bootstrap-agentdock.sql, owner of both schemas and of nothing
+ * else. assertSchemaIsolation and the ops connection checks compare against it.
+ */
+export const AGENTDOCK_ROLE = 'agentdock_app';
+
+/**
  * Every table in this project hangs off this object, so every statement Drizzle
  * emits — DDL and queries alike — is schema-qualified. `search_path` is a
  * default, not a fence, and nothing here relies on it.

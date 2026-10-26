@@ -201,6 +201,12 @@ Repository → Settings → Secrets and variables → Actions:
 The workflow passes only these two secrets, grants the job `contents: read`, and
 checks out without persisting credentials.
 
+The sync runs the web's `assertSchemaIsolation()` before its first stage: a
+`DATABASE_URL` that does not connect as `agentdock_app` with `search_path`
+`agentdock` fails the run with `Refusing to start: …` and nothing read or
+written. Check a new value from your terminal first — `bun run ops:preflight`
+over it must print `PASS  connected as agentdock_app`.
+
 `deploy.yml` needs one more secret and four variables, all in the `production`
 environment. [Automated deploys](#automated-deploys), step A, lists them.
 
@@ -231,8 +237,9 @@ The run's summary page also carries an "AgentDock sync health" table: the
 step after the sync runs `bun run ops:status --markdown` over a read-only
 connection (README, Scheduled Synchronization). Counts and statuses only. The
 report first confirms the connection is read-only on every pooled connection;
-if it cannot, the step prints `ops: FAIL …` to its log, adds no table, and the
-sync stays green (`continue-on-error`). The secret must be the direct endpoint:
+if it cannot, the step prints `ops: FAIL …` to its log, writes one **Not
+available** line instead of the table, and the sync stays green
+(`continue-on-error`). The secret must be the direct endpoint:
 a `-pooler` URL is refused.
 
 ## Step 8 — smoke the deployment

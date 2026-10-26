@@ -104,10 +104,10 @@ let exitCode = 0;
 let sql;
 try {
   ({ sql } = await import('../src/db/client.ts'));
-  const { AGENTDOCK_SCHEMA } = await import('../src/db/schema.ts');
+  const { AGENTDOCK_ROLE, AGENTDOCK_SCHEMA } = await import('../src/db/schema.ts');
   const checks = await readOnlyChecks(sql, {
     schema: AGENTDOCK_SCHEMA,
-    role: 'agentdock_app',
+    role: AGENTDOCK_ROLE,
     statementTimeoutMs: OPS_STATEMENT_TIMEOUT_MS,
   });
   const failed = checks.filter((c) => !c.ok);

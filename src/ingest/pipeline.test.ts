@@ -605,6 +605,29 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     expect(failedRow.parse_errors.length).toBeGreaterThan(0);
   });
 
+  // Jobs 771 and 978 (Sync 39853119505–40083909354): a NUL in a body failed
+  // the repository's whole write with 22021, every attempt, as storage_failed.
+  it('stores a body and frontmatter that carry a NUL instead of failing the repository', async () => {
+    const original = readFileSync(`${DIR}/files/${encodeURIComponent(ONE)}`, 'utf8');
+    const withNul = original
+      .replace('name: canvas-design', 'name: canvas-design\nnote: "a\u0000b"')
+      .concat('\nshell.php\u0000.jpg\n');
+    stubGitHub({ files: { [ONE]: withNul } });
+
+    const result = await ingestRepository(FULL_NAME);
+
+    expect(result).toMatchObject({ ok: true, found: 18, stored: 18, failed: 0 });
+    const [row] = await sql<{ body: string; frontmatter: Record<string, unknown> }[]>`
+      SELECT pv.body, pv.frontmatter FROM package_version pv
+      JOIN package p ON p.id = pv.package_id
+      JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} AND p.source_path = ${ONE}
+    `;
+    expect(row.body).toContain('shell.php\uFFFD.jpg');
+    expect(row.body).not.toContain('\u0000');
+    expect(row.frontmatter.note).toBe('a\uFFFDb');
+  });
+
   it('records incompleteness when the tree itself was cut short', async () => {
     stubGitHub({ tree: treeWith([ONE], { truncated: true }) });
 

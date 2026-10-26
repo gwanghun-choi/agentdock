@@ -141,6 +141,29 @@ function annotate(level, title, message) {
   if (onActions) console.log(`::${level} title=${escapeProperty(title)}::${escapeData(message)}`);
 }
 
+// The check the web runs at boot (src/instrumentation.ts), before the first
+// stage writes anything. Measured 2026-10-23 to 2026-10-25: six scheduled runs
+// in a row ingested normally while sync.yml's ops step, on the same secret,
+// found the connection not agentdock_app — the sync never asked. Exits before
+// recordSyncAttempt too, which would itself be a write on that connection.
+// A driver error prints its code only; its message can carry the host.
+try {
+  const { assertSchemaIsolation } = await import('../src/db/client.ts');
+  await assertSchemaIsolation(sql);
+} catch (error) {
+  const { errorCode } = await import('../src/ingest/errors.ts');
+  const code = errorCode(error);
+  const reason = code
+    ? `could not check the database connection (error code ${code})`
+    : error instanceof Error
+      ? error.message.replace(/\.$/, '')
+      : 'the database connection check failed';
+  console.error(`corpus-sync: ${reason}. Nothing was read or written.`);
+  annotate('error', 'AgentDock sync: database connection refused', reason);
+  await sql.end({ timeout: 1 });
+  process.exit(1);
+}
+
 /** Stages that threw. Each is isolated, so the rest of the run still happens;
  * the process still exits 1 at the end, so a broken source is never green. */
 const stageFailures = [];

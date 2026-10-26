@@ -94,6 +94,17 @@ export function messageFor(outcome: IngestOutcome, resetEpochSeconds?: number): 
   return `${base} The budget resets at ${at.toISOString().slice(11, 16)} UTC.`;
 }
 
+/**
+ * The SQLSTATE or system code behind a failure, for the ingest log line — never
+ * the message, which for a failed statement carries its values. Drizzle wraps
+ * the driver's error, so its code is on `cause`. Null when there is none.
+ */
+export function errorCode(error: unknown): string | null {
+  const e = error as { code?: unknown; cause?: { code?: unknown } } | null;
+  const raw = e?.cause?.code ?? e?.code;
+  return typeof raw === 'string' && /^[A-Z0-9_]+$/i.test(raw) ? raw : null;
+}
+
 /** Maps every internal failure onto exactly one outcome. Unknowns are storage failures, never leaks. */
 export function toIngestOutcome(error: unknown): IngestOutcome {
   if (error instanceof GitHubError) {

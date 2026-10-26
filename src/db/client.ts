@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { parseEnv } from '@/env';
 import * as schema from './schema';
-import { AGENTDOCK_SCHEMA } from './schema';
+import { AGENTDOCK_ROLE, AGENTDOCK_SCHEMA } from './schema';
 
 const env = parseEnv();
 
@@ -69,10 +69,12 @@ export async function assertSchemaIsolation(client = sql): Promise<void> {
     SELECT current_user AS "user", current_setting('search_path') AS "path"
   `;
 
-  if (row.user !== 'agentdock_app') {
+  // The role actually connected is not quoted: it is the URL's user, and this
+  // message also lands in the sync's public Actions log (scripts/corpus-sync.mjs).
+  if (row.user !== AGENTDOCK_ROLE) {
     throw new Error(
-      `Refusing to start: connected as "${row.user}", expected "agentdock_app". ` +
-        'Check DATABASE_URL in .env.',
+      `Refusing to start: connected as a role other than "${AGENTDOCK_ROLE}". ` +
+        'Check the DATABASE_URL this process was given.',
     );
   }
 

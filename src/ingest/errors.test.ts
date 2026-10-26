@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { GitHubError } from '@/github/client';
 import type { GitHubFailure } from '@/github/types';
-import { type IngestOutcome, messageFor, OUTCOME_MESSAGES, toIngestOutcome } from './errors';
+import {
+  errorCode,
+  type IngestOutcome,
+  messageFor,
+  OUTCOME_MESSAGES,
+  toIngestOutcome,
+} from './errors';
 
 const OUTCOMES: IngestOutcome[] = [
   'ok',
@@ -125,6 +131,25 @@ describe('toIngestOutcome', () => {
     expect(toIngestOutcome('a string')).toBe('storage_failed');
     expect(toIngestOutcome(undefined)).toBe('storage_failed');
     expect(messageFor(toIngestOutcome(new Error(secret)))).not.toMatch(/hunter2|client\.ts/);
+  });
+});
+
+describe('errorCode', () => {
+  it("reads the driver's code through Drizzle's wrapper, never the message", () => {
+    const driver = Object.assign(new Error('invalid byte sequence … password=hunter2'), {
+      code: '22021',
+    });
+    const wrapped = Object.assign(new Error('Failed query: insert … hunter2'), { cause: driver });
+    expect(errorCode(wrapped)).toBe('22021');
+    expect(errorCode(driver)).toBe('22021');
+    expect(errorCode(Object.assign(new Error('x'), { code: 'ECONNRESET' }))).toBe('ECONNRESET');
+  });
+
+  it('is null when there is no code, or when the code is not one', () => {
+    expect(errorCode(new Error('no code'))).toBeNull();
+    expect(errorCode(undefined)).toBeNull();
+    expect(errorCode(Object.assign(new Error('x'), { code: 'host=db.example 5432' }))).toBeNull();
+    expect(errorCode(Object.assign(new Error('x'), { code: 42 }))).toBeNull();
   });
 });
 

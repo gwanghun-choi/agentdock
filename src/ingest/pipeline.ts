@@ -12,7 +12,13 @@ import { collectCandidates, type DetectorPass, orderedNeeds, safeParse } from '@
 import { GitHubError, normalizeRepo, rateLimitState } from '@/github/client';
 import { fetchRepoScanInputs } from '@/github/scan';
 import { log } from '@/log';
-import { type AttemptOutcome, type IngestOutcome, messageFor, toIngestOutcome } from './errors';
+import {
+  type AttemptOutcome,
+  errorCode,
+  type IngestOutcome,
+  messageFor,
+  toIngestOutcome,
+} from './errors';
 import {
   type DiffCounters,
   type JobContext,
@@ -130,6 +136,8 @@ export async function ingestRepository(
     truncated?: boolean;
     /** Present only when a detector threw, so a clean run's line is unchanged. */
     detectorErrors?: string[];
+    /** storage_failed only: the code behind it (errors.ts, errorCode). */
+    errorCode?: string | null;
   }) => {
     const rate = rateLimitState();
     log({
@@ -156,6 +164,7 @@ export async function ingestRepository(
         fields.detectorErrors && fields.detectorErrors.length > 0
           ? fields.detectorErrors
           : undefined,
+      errorCode: fields.errorCode ?? undefined,
     });
   };
 
@@ -464,7 +473,9 @@ export async function ingestRepository(
   } catch (error) {
     const outcome = toIngestOutcome(error);
     const reset = error instanceof GitHubError ? error.rateLimit?.reset : undefined;
-    emit({ outcome });
+    // Before this, a storage_failed line said nothing of why: diagnosing jobs
+    // 771 and 978 took re-running the ingest locally (2026-10-26, 22021).
+    emit({ outcome, errorCode: outcome === 'storage_failed' ? errorCode(error) : null });
     // The exception itself never crosses this boundary.
     return { ok: false, outcome, message: messageFor(outcome, reset), resetAt: reset };
   }
