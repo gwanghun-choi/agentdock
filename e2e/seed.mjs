@@ -5,7 +5,10 @@
 // repository holding what no captured fixture does — subagents, an MCP
 // declaration and a hook settings file whose credentials are invented (for the
 // redaction journeys), a command named `c#-review.md`, a plugin that contains a
-// subagent and a skill, and an 87-character name. All of it through the real ingestion pipeline, offline:
+// subagent and a skill, and an 87-character name — and
+// e2e/fixtures/language-visibility, one skill described in Chinese and one in
+// Japanese, for the default language policy (src/db/queries/language.ts). All
+// of it through the real ingestion pipeline, offline:
 // `fetch` is replaced before the pipeline is imported, the same way
 // scripts/seed-fixture.mjs does it, and any other host throws.
 //
@@ -37,6 +40,9 @@ const DIRS = [
 ]
   .map((name) => `fixtures/${name}`)
   .concat('e2e/fixtures/ui-edge-cases');
+// First, so its two rows are the oldest and the home page's ten newest — what
+// the first-screen journeys measure — are the ones they were before Phase 62.
+DIRS.unshift('e2e/fixtures/language-visibility');
 
 let dir = '';
 globalThis.fetch = async (input) => {

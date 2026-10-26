@@ -5,7 +5,12 @@ import { sourcePathCandidates } from '@/components/hrefs';
 import { db } from '@/db/client';
 import { packageTable, packageVersion, repository } from '@/db/schema';
 import { CAPS } from '@/github/scan';
-import { SUMMARY_LANGUAGE, type SummaryLanguage } from './language';
+import {
+  type CjkLanguage,
+  SUMMARY_LANGUAGE,
+  type SummaryLanguage,
+  visibleLanguage,
+} from './language';
 
 /** Why an artifact is not in AgentDock's listings. Null means it is. */
 export type NotListedReason = 'fork' | 'duplicate' | 'unparsed';
@@ -173,6 +178,7 @@ export const listPackages = cache(
     offset = 0,
     fullName,
     listingOnly = true,
+    hiddenLanguages = [],
   }: {
     limit?: number;
     offset?: number;
@@ -180,6 +186,8 @@ export const listPackages = cache(
     fullName?: string;
     /** False returns suppressed rows too, each carrying its own reason. */
     listingOnly?: boolean;
+    /** language.ts, HIDDEN_UNLESS_ASKED: the home page passes it, a repository's page does not. */
+    hiddenLanguages?: readonly CjkLanguage[];
   } = {}): Promise<PackageListItem[]> =>
     db
       .select({
@@ -213,6 +221,7 @@ export const listPackages = cache(
           // would make the projection and the predicate disagree, which is the
           // one bug here that produces a plausible-looking wrong answer.
           listingOnly ? sql`${NOT_LISTED_BECAUSE} is null` : undefined,
+          hiddenLanguages.length > 0 ? visibleLanguage(hiddenLanguages) : undefined,
         ),
       )
       .orderBy(desc(packageTable.updatedAt))
@@ -260,6 +269,37 @@ export const countPackagesByType = cache(async (): Promise<Record<string, number
     .groupBy(packageTable.type);
   return Object.fromEntries(rows.map((r) => [r.type, r.n]));
 });
+
+/**
+ * countPackagesByType for the home page, split by HIDDEN_UNLESS_ASKED in the
+ * same one grouped query: `visible` per type is what `/artifacts?type=…` now
+ * reports on arrival, and `hidden` is how many listed artifacts that leaves
+ * out. The two add up to countPackages(). countPackagesByType itself still
+ * counts every language — the quality report checks it against the
+ * unfiltered search count, which is also every language.
+ */
+export const countVisibleByType = cache(
+  async (
+    hiddenLanguages: readonly CjkLanguage[],
+  ): Promise<{ visible: Record<string, number>; hidden: number }> => {
+    const rows = await db
+      .select({
+        type: packageTable.type,
+        visible: sql<number>`(count(*) filter (where ${visibleLanguage(hiddenLanguages)}))::int`,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(and(isNull(packageTable.delistedAt), sql`${NOT_LISTED_BECAUSE} is null`))
+      .groupBy(packageTable.type);
+    return {
+      visible: Object.fromEntries(
+        rows.filter((r) => r.visible > 0).map((r) => [r.type, r.visible]),
+      ),
+      hidden: rows.reduce((sum, r) => sum + r.n - r.visible, 0),
+    };
+  },
+);
 
 export type RepositorySummary = {
   fullName: string;

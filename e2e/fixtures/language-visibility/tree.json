@@ -1,0 +1,20 @@
+{
+  "sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee34",
+  "truncated": false,
+  "tree": [
+    {
+      "path": "skills/bunsho-seiri/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 209
+    },
+    {
+      "path": "skills/wenjian-zhengli/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "size": 167
+    }
+  ]
+}

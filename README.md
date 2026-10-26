@@ -256,8 +256,14 @@ refresh 대상에서 제외되지만 — archive에는 다음 commit이 없습�
 - **오타 허용.** 전문 검색이 아무것도 찾지 못하면 이름과 요약에 대한 trigram
   검색이 유사한 항목을 제시합니다. 정확히 일치한 결과가 아니라 **유사 항목**이라고
   분명히 표시합니다.
-- **필터.** artifact type과 capability 관찰 결과로 좁힐 수 있으며, 개수를 세는
-  것과 동일한 술어(predicate)를 써서 SQL 안에서 적용됩니다.
+- **필터.** artifact type, capability 관찰 결과, 설명의 문자 체계로 좁힐 수
+  있으며, 개수를 세는 것과 동일한 술어(predicate)를 써서 SQL 안에서 적용됩니다.
+- **중국어 설명은 기본으로 목록에서 뺍니다.** 언어를 고르지 않으면 홈, 탐색,
+  검색이 설명이 중국어인 artifact를 빼고, 개수 옆에 그 사실을 적습니다. 지우는
+  것은 없습니다. 계속 색인되어 있고, 저장소 페이지와 자기 URL에서 보이며,
+  `lang=zh`나 `lang=any`("All languages")로 다시 나열됩니다. 일본어, 한국어,
+  이중 언어 설명은 그대로 나열됩니다. 정책은 `src/db/queries/language.ts`의
+  `HIDDEN_UNLESS_ASKED` 배열 하나입니다.
 - **URL이 곧 상태.** 검색어, 필터, 페이지가 모두 주소창에 있습니다. 폼은 native
   control을 쓰는 평범한 GET이고, JavaScript를 꺼도 페이지 전체가 동작합니다.
 - **키보드.** `/`와 Ctrl/Cmd+K는 검색 입력에 커서를 놓습니다. 입력란이 있는
@@ -330,10 +336,14 @@ boundary입니다. 검색은 GET form이고, type·capability 필터와 페이�
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
-모션도 마찬가지입니다. index flow 다이어그램이 한 번 펼쳐지는 것, 로딩 자리표시의
-sweep, hover와 focus 반응은 전부 CSS입니다 — 다이어그램은 SVG asset이 아니라
-HTML과 CSS이고, scroll observer도 없습니다. 반복되거나 페이지마다 재생되는 장식
-모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠습니다.
+모션도 마찬가지입니다. 홈의 load 연출 한 번(hero 배경이 떠오르고 Latest read
+그림이 lane, 노드, 카드 순서로 그려지는 것), index flow 다이어그램이 펼쳐지는 것,
+로딩 자리표시의 sweep, hover와 focus 반응은 전부 CSS입니다 — 애니메이션
+라이브러리도 scroll observer도 없고, flow가 스크롤에 맞춰 펼쳐지는 것은 지원하는
+브라우저에서 CSS `animation-timeline: view()`로 합니다. 모든 애니메이션은 5초
+안에 끝나고, 로딩 sweep 말고는 반복하지 않습니다. 반복되거나 페이지마다 재생되는
+장식 모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠고,
+Phase 60에서 dot grid와 wash를 움직이지 않는 배경으로 되살렸습니다.
 서체는 Schibsted Grotesk(OFL-1.1) latin variable 파일 하나를 `next/font/local`로
 같은 origin에서 제공하고, CJK 글자는 시스템 서체로 넘어갑니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
 블록 하나 안에만 선언되어 있어서, 모션을 줄여 달라고 한 사용자에게는 끌 것이

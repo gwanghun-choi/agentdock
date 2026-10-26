@@ -48,6 +48,25 @@
   --accent-hover: light-dark(#124291, #a3c3f7);
   --accent-soft: light-dark(#eef3fc, #16202f);
   --on-accent: light-dark(#ffffff, #0b0d10);
+  /* The commit: the end of every read, and the one place a second hue means
+     something — the same teal the MCP badge already uses, so it is a colour
+     the palette had measured for text (5.89:1 at worst) rather than a new one. */
+  --commit: light-dark(#0b6b58, #6ed4b8);
+
+  /* The hero's ground (Phase 60). A dot grid and two washes, one in the
+     accent and one in the commit teal. Phase 57 removed the grid and a blue and
+     violet pair as decoration that said nothing; the user's verdict on the page
+     without them was "flat and static". They come back as the paper the
+     pipeline is drawn on: the blue wash sits behind the search box and
+     brightens while it has focus, the teal one behind the commit the
+     Latest read figure ends on. All alpha. The grid does run under the
+     headline and the lede: 1.1px dots every 22px, under 1% of the area at 16%
+     alpha, so no glyph meets more than a dot's edge. axe reads the solid --bg
+     for contrast and passed every run (docs/analysis/
+     agentdock-phase60-63-visual-and-language.md §15). */
+  --grid-dot: light-dark(rgb(22 25 29 / 16%), rgb(230 232 235 / 12%));
+  --glow-a: light-dark(rgb(26 86 184 / 14%), rgb(122 167 240 / 16%));
+  --glow-b: light-dark(rgb(11 107 88 / 12%), rgb(110 212 184 / 11%));
 
   --t-xs: 0.75rem;
   --t-sm: 0.8125rem;
@@ -379,15 +398,15 @@ main {
 /* ---------- hero ---------- */
 
 /*
- * One column: the headline, the search box and the type row own the top of
- * the page, and the first artifact is what comes next.
- *
- * No texture behind it. A dot grid and two blurred orbs (one blue, one violet)
- * sat under this section with a 48-second drift; they were the only decoration
- * on the site and the only use of a second hue, and they said nothing a reader
- * could use. Removed in Phase 57 — the headline's type carries the page.
+ * The headline, the search box and the type row own the top of the page, and
+ * the first artifact is what comes next. From 64rem up the column the copy has
+ * always left empty (it is capped at 46rem in a 72rem shell) holds the Latest
+ * read figure; below that it is not displayed, so a phone's first screen is
+ * unchanged.
  */
 .hero {
+  position: relative;
+  isolation: isolate;
   display: grid;
   gap: var(--s-5);
   /* Section rhythm is carried by these numbers rather than by rules between
@@ -396,6 +415,42 @@ main {
      next, and 48px of air before it was a screen's worth of nothing on a
      phone. */
   padding-block: var(--s-6) var(--s-5);
+}
+
+/* The ground, bled to the viewport edges the way .board's band is (see there),
+   and up under the header. The grid's mask is centred at the top, so it fades
+   toward the bottom and both sides. */
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  inset-block: calc(var(--s-6) * -1) 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  pointer-events: none;
+}
+
+.hero::before {
+  z-index: -1;
+  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(70% 90% at 50% 0%, #000 0%, transparent 78%);
+}
+
+/* The washes: blue behind the search box, teal behind the figure's commit. */
+.hero::after {
+  z-index: -2;
+  background-image:
+    radial-gradient(36rem 22rem at calc(50% - 22rem) 62%, var(--glow-a), transparent 70%),
+    radial-gradient(30rem 24rem at calc(50% + 26rem) 70%, var(--glow-b), transparent 70%);
+  opacity: 0.7;
+  transition: opacity var(--dur) var(--ease);
+}
+
+/* The page answering the one thing a visitor came to do: with the cursor in the
+   search box, the light behind it comes up. Opacity only — no layout moves. */
+.hero:has(.hero-search input:focus)::after {
+  opacity: 1;
 }
 
 .hero-copy {
@@ -456,11 +511,22 @@ main {
   color: var(--fg);
   font-size: var(--t-lg);
   box-shadow: var(--shadow-lift);
-  transition: border-color var(--dur-fast) var(--ease);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .hero-search input[type="search"]:hover {
   border-color: var(--accent);
+}
+
+/* A halo under the focus ring, not instead of it: the ring is the AA signal on
+   every control on the site, and this is the hero's version of it. */
+.hero-search input[type="search"]:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent),
+    0 10px 30px -12px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .hero-search .field svg {
@@ -538,6 +604,225 @@ main {
   flex: none;
 }
 
+/* ---------- latest read ---------- */
+
+/*
+ * The hero's figure (LatestRead.tsx): a git lane down the left with a node per
+ * stage, ending in the artifact itself as a card. The lane runs from the accent
+ * to the commit teal, so the colour says where the read starts and where it is
+ * filed.
+ */
+.trace {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    column-gap: var(--s-7);
+  }
+
+  .hero-copy {
+    grid-column: 1;
+  }
+
+  /* Under both columns: three short facts in one line, not two. */
+  .trust {
+    grid-column: 1 / -1;
+  }
+
+  .trace {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+}
+
+.trace {
+  min-width: 0;
+  margin: 0;
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    var(--shadow-modal);
+}
+
+.trace figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  font-weight: 620;
+}
+
+.trace-date {
+  color: var(--muted);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-lane {
+  position: relative;
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The lane, behind the nodes: from the first node's centre to the last's. */
+.trace-lane::before,
+.trace-lane::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 11px;
+  width: 2px;
+  pointer-events: none;
+}
+
+.trace-lane::before {
+  background: linear-gradient(var(--accent), var(--commit));
+  transform-origin: top;
+}
+
+/* The light that runs down it after the figure has drawn (the motion block):
+   a tall transparent box with a dot at its top, so the travel is a transform. */
+.trace-lane::after {
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
+  width: 8px;
+  background: radial-gradient(circle at 50% 4px, var(--accent) 0 3px, transparent 4px) no-repeat;
+  filter: drop-shadow(0 0 4px var(--accent));
+  opacity: 0;
+}
+
+.trace-lane li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+  font-size: var(--t-sm);
+}
+
+/* A node: the stage's glyph in a ring sitting on the lane. */
+.trace-lane li > svg {
+  position: relative;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  color: var(--accent);
+}
+
+.trace-lane li:last-child > svg {
+  background: var(--commit);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--commit) 22%, transparent);
+  color: var(--surface);
+}
+
+.trace-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-value.path {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.trace-sha {
+  justify-self: start;
+  color: var(--commit);
+  font-family: var(--mono);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.trace-sha:hover {
+  text-decoration: underline;
+}
+
+.trace-aside {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.trace-aside svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* The artifact the run produced: the one thing in the figure that is a link
+   to read, so the one thing that lifts. */
+.trace-card {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, var(--border)),
+    var(--shadow-lift);
+  color: var(--fg);
+  text-decoration: none;
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+.trace-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px var(--commit),
+    0 14px 30px -14px color-mix(in srgb, var(--commit) 55%, transparent);
+}
+
+/* The card's hit area: the name's link stretched over the whole card. */
+.trace-name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+}
+
+.trace-name {
+  color: var(--fg-strong);
+  text-decoration: none;
+  font-size: var(--t-base);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.trace-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
 /* ---------- index flow ---------- */
 
 /*
@@ -561,6 +846,20 @@ main {
   margin: 0;
   padding: 0;
   counter-reset: stage;
+  isolation: isolate;
+}
+
+/* The hero's paper under the run, so the pipeline in the hero's figure and
+   this one read as one drawing at two sizes. */
+.flow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: calc(var(--s-5) * -1) calc(var(--s-4) * -1);
+  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(closest-side, #000 40%, transparent);
+  pointer-events: none;
 }
 
 /*
@@ -586,8 +885,18 @@ main {
 /* The last stage holds the count and is where the run arrives, so it is the one
    that is lit. */
 .flow > li:last-child {
-  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface-2) 100%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--commit) 10%, var(--surface)) 0%,
+    var(--surface-2) 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, transparent),
+    0 12px 28px -18px color-mix(in srgb, var(--commit) 60%, transparent);
+}
+
+.flow > li:last-child .flow-title svg {
+  color: var(--commit);
 }
 
 /*
@@ -605,7 +914,7 @@ main {
   width: var(--s-6);
   height: 2px;
   margin-right: 1px;
-  background: var(--border-strong);
+  background: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
   pointer-events: none;
 }
 
@@ -890,7 +1199,8 @@ main {
    row the cursor would, or keyboard navigation loses the reading position that
    pointer navigation gets for free.
 
-   The accent edge is an inset shadow, not a border or a left padding change,
+   The edge — the kind's own --hue since Phase 60, the accent where a row has
+   none — is an inset shadow, not a border or a left padding change,
    because both of those change the row's box and reflow the text inside it —
    a whole list nudging sideways under the cursor. A shadow paints inside the
    box and reflows nothing.
@@ -908,9 +1218,36 @@ main {
   z-index: 1;
   background: var(--surface-3);
   box-shadow:
-    inset 2px 0 0 var(--accent),
+    inset 3px 0 0 var(--hue, var(--accent)),
     var(--shadow-lift);
   transform: translateY(-1px);
+}
+
+/* The badge's hue, lifted to the row and the type card that hold it, so the
+   edge a hovered row grows and the strip on a type card are the kind's own
+   colour. Identity, as on the badges: no hue here means better or worse. */
+:is(.rows > li, .type-card):has(.badge-skill) {
+  --hue: light-dark(#1a56b8, #90b8f5);
+}
+
+:is(.rows > li, .type-card):has(.badge-command) {
+  --hue: light-dark(#7a3d00, #f0b678);
+}
+
+:is(.rows > li, .type-card):has(.badge-plugin) {
+  --hue: light-dark(#6b2fa0, #c9a2f0);
+}
+
+:is(.rows > li, .type-card):has(.badge-mcp_server) {
+  --hue: light-dark(#0b6b58, #6ed4b8);
+}
+
+:is(.rows > li, .type-card):has(.badge-hook) {
+  --hue: light-dark(#9a2340, #f293ad);
+}
+
+:is(.rows > li, .type-card):has(.badge-agent) {
+  --hue: light-dark(#3d4f9e, #a8b6f2);
 }
 
 .row-type {
@@ -1751,6 +2088,17 @@ textarea {
   margin: 0;
 }
 
+/* Not on a phone. The line took a row of its own above the first result there
+   (+33px at 390×844, +54px at 360 — Phase 62, local seed), and the same fact
+   is on screen already: the Description row's first chip, selected, names
+   what the default leaves out ("All except …"), and the chip after it lists
+   every language. */
+@media (max-width: 40rem) {
+  .result-scope {
+    display: none;
+  }
+}
+
 /* The size of the result set, at the weight of an answer rather than of a
    caption. The figure is tabular so that paging between a 3-digit and a 4-digit
    total does not shift the word beside it. */
@@ -2125,23 +2473,48 @@ details.notice[open] p {
 }
 
 .type-card {
+  position: relative;
+  overflow: hidden;
   display: grid;
   gap: var(--s-2);
   height: 100%;
   padding: var(--s-4);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  background: var(--surface);
+  background:
+    radial-gradient(
+      14rem 6rem at 0% 0%,
+      color-mix(in srgb, var(--hue, var(--accent)) 7%, transparent),
+      transparent
+    ),
+    var(--surface);
   color: var(--fg);
   text-decoration: none;
   transition:
     border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur) var(--ease);
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+/* The kind's strip along the top edge. */
+.type-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--hue, var(--accent));
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .type-card:hover {
-  border-color: var(--border-strong);
+  border-color: color-mix(in srgb, var(--hue, var(--accent)) 45%, var(--border));
   box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
+}
+
+.type-card:hover::before {
+  opacity: 1;
 }
 
 .type-card-head {
@@ -2188,6 +2561,13 @@ details.notice[open] p {
   background: var(--band);
   border-block: 1px solid var(--border);
   pointer-events: none;
+}
+
+/* What the feed above leaves out, and the way to list it. */
+.board-scope {
+  margin: 0 0 var(--s-3);
+  color: var(--muted);
+  font-size: var(--t-sm);
 }
 
 /* The gate section stands on the plain canvas, which is what makes the band
@@ -3033,12 +3413,13 @@ details.notice[open] p {
  * they animate to, and there is nothing to switch off. motion.test.ts asserts
  * that this block is the only place an `animation` or an `@keyframes` appears.
  *
- * Every animation here runs once, on arrival, except the loading sweep, which
- * lasts as long as the placeholder it sits on. Nothing else loops, and nothing
- * anywhere is triggered by
- * scrolling: an IntersectionObserver reveal on every section is the pattern
- * that makes a page feel like it is performing rather than loading, and it
- * would also be the first JavaScript this stylesheet ever required.
+ * Every animation here runs once, on arrival — the hero's lane light twice —
+ * except the loading sweep, which lasts as long as the placeholder it sits on.
+ * Nothing else loops. The one thing tied to scrolling is the index flow's
+ * reveal, and only where CSS can do it (`animation-timeline: view()`): an
+ * IntersectionObserver reveal on every section is the pattern that makes a
+ * page feel like it is performing rather than loading, and it would also be
+ * the first JavaScript this stylesheet ever required.
  *
  * All of it is opacity and transform, plus one custom property. None of it
  * changes a box, so none of it can shift the layout, and `backwards` fill
@@ -3070,14 +3451,107 @@ details.notice[open] p {
  * effect is not one.
  */
 @media (prefers-reduced-motion: no-preference) {
+  /* --- the hero (Phase 60) ---
+
+     Phase 57 removed the page-wide entrance, the hero's grid fade and orb
+     drift, the connector beam and the last stage's glow, and the row stagger,
+     and the page that was left read as static. What comes back is one
+     orchestrated moment rather than scattered effects: the hero's ground fades
+     up, and the Latest read figure draws itself in the order a read happens —
+     the lane, its four nodes, then the artifact — in 1.5 s. A light then runs
+     down the lane twice and stops. Nothing loops: every animation here ends
+     inside five seconds (WCAG 2.2.2 asks for a pause control past that), and
+     each moves only opacity and transform. */
+  @keyframes ground-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .hero::before {
+    animation: ground-in 900ms var(--ease) backwards;
+  }
+
+  @keyframes lane-draw {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  .trace-lane::before {
+    animation: lane-draw 900ms var(--ease-emphasized) 200ms backwards;
+  }
+
+  @keyframes node-in {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+  }
+
+  .trace-lane li {
+    animation: node-in var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  .trace-lane li:nth-child(1) {
+    animation-delay: 250ms;
+  }
+
+  .trace-lane li:nth-child(2) {
+    animation-delay: 450ms;
+  }
+
+  .trace-lane li:nth-child(3) {
+    animation-delay: 650ms;
+  }
+
+  .trace-lane li:nth-child(4) {
+    animation-delay: 850ms;
+  }
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+  }
+
+  .trace-card {
+    animation: card-in 520ms var(--ease-emphasized) 1000ms backwards;
+  }
+
+  /* From the top node to the bottom one: the box runs from 4px above the first
+     node's centre to 4px below the last's, the dot is its top 8px, so 100%
+     less 8px lands the dot's centre on the commit's. */
+  @keyframes lane-light {
+    0% {
+      opacity: 0;
+      transform: translateY(0);
+    }
+
+    15%,
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateY(calc(100% - 8px));
+    }
+  }
+
+  .trace-lane::after {
+    animation: lane-light 1.5s var(--ease) 1.4s 2;
+  }
+
   /* --- the index flow ---
 
-     Phase 57 removed the page-wide entrance (every block of every page rose in
-     over 320ms, on every navigation), the hero's grid fade and orb drift, the
-     connector beam and the last stage's glow (both looping forever), and the
-     row stagger. None of them answered anything a reader did. What is left is
-     the flow's reveal (its stages, its filenames, its count) and the loading
-     sweep. */
+     It sits below the feed, a screen or more down, so an entrance on page load
+     played where nobody was looking (Phase 57's flow reveal: measured at
+     y=2,493 on a 1280×800 screen; y=2,145 after Phase 60 moved it up a
+     section). Where the browser can tie an animation to
+     scrolling, the stages arrive as the flow scrolls in instead; the
+     time-based reveal below is the fallback for one that cannot. */
 
   /* Each stage arrives from the left, in the order the run reads. */
   @keyframes flow-step-in {
@@ -3160,6 +3634,63 @@ details.notice[open] p {
 
   .count {
     animation: count-up 800ms var(--ease-emphasized) 700ms backwards;
+  }
+
+  /* The connectors draw between the stages as they arrive. */
+  @keyframes connector-draw {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  .flow > li + li::after {
+    transform-origin: left;
+    animation: connector-draw var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  .flow > li:nth-child(2)::after {
+    animation-delay: 330ms;
+  }
+
+  .flow > li:nth-child(3)::after {
+    animation-delay: 470ms;
+  }
+
+  .flow > li:nth-child(4)::after {
+    animation-delay: 610ms;
+  }
+
+  /* Scroll-driven: each stage's reveal runs while that stage enters the
+     viewport and is finished by the time all of it is in — a reader never
+     reads a stage that is still fading. The count runs over its own entry, so
+     the number on screen is the real one whenever the whole number is on
+     screen. Delays are time, and mean nothing on a scroll timeline, so they
+     are reset. */
+  @supports (animation-timeline: view()) {
+    /* :nth-child(n) matches every one, and gives these the specificity of
+       the per-child delay rules above, which they come after. */
+    .flow > li:nth-child(n),
+    .flow > li:nth-child(n)::after,
+    .flow-files li:nth-child(n),
+    .count {
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+      animation-delay: 0s;
+    }
+  }
+
+  /* Where the run is vertical, the connectors are too, and draw downward. */
+  @keyframes connector-draw-down {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  @media (max-width: 64rem) {
+    .flow > li + li::after {
+      transform-origin: top;
+      animation-name: connector-draw-down;
+    }
   }
 
   /* --- the loading placeholder --- */

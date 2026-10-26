@@ -127,3 +127,58 @@ export function summaryLanguage(text: SQL): SQL<SummaryLanguage | null> {
 
 /** The one instance every query projects and filters by, like NOT_LISTED_BECAUSE. */
 export const SUMMARY_LANGUAGE = summaryLanguage(sql`${packageTable.summary}`);
+
+/**
+ * The classes a listing leaves out until a reader names a language — the home
+ * page, browse and search with no `lang`. Nothing is deleted or delisted: the
+ * rows stay in the database, on their repository's page and at their own URL,
+ * and `lang=zh` or `lang=any` lists them again. Emptying this array is the
+ * whole revert.
+ *
+ * `zh` only. Measured 2026-10-26 on production's 19,113 listed descriptions:
+ * 609 zh (3.2%), 169 ja, 37 ko, 59 mixed. Japanese and Korean are their own
+ * classes and are not hidden with it: kana at a tenth or more of the CJK makes
+ * a description ja, Hangul at half or more makes it ko. `mixed` stays listed:
+ * it holds a six-word Latin sentence by definition (46 of the 59 hold Han with
+ * no kana or Hangul — Chinese beside English). The ceiling: Japanese written
+ * mostly in kanji, with kana under a tenth of its CJK, is `zh` and is hidden
+ * with it, as the classification above already names.
+ */
+export const HIDDEN_UNLESS_ASKED: readonly CjkLanguage[] = ['zh'];
+
+/** The classes that need a CJK character — the only ones visibleLanguage can hide. */
+export type CjkLanguage = 'zh' | 'ja' | 'ko' | 'mixed';
+
+/**
+ * True for a row whose description is in none of `hidden`, including a row
+ * with no description at all (SUMMARY_LANGUAGE null).
+ *
+ * The `~` test first because every class it can hide needs a CJK character
+ * (CjkLanguage), and 94% of descriptions have none: those rows skip the
+ * classification's subquery. Measured 2026-10-26 with production's 19,113
+ * descriptions loaded locally: count(*) under this predicate 55 ms, under the
+ * classification alone 82 ms. An ASCII-only test in front of it
+ * (octet_length = length) measured 55 → 54 ms and was not kept: what costs is
+ * classifying the 1,132 CJK-bearing rows, and nothing short of the class
+ * itself says which of them are Chinese.
+ *
+ * ponytail: so a listing with no words classifies every CJK-bearing row on
+ * every request. Measured at production's 19,113 rows: browse count 87 → 138
+ * ms, the home page's feed (listPackages, 10 rows) 93 → 144 ms, its type
+ * counts (countVisibleByType against countPackagesByType) 89 → 147 ms
+ * (docs/analysis/agentdock-phase60-63-visual-and-language.md §14). A search with
+ * words classifies only its matches (search.ts, searchWhere). The upgrade is
+ * the STORED generated column named above, which turns this into an indexed
+ * equality — a migration to approve. Revisit when the browse count passes
+ * 200 ms, about 28k listed rows at this rate.
+ */
+export function visibleLanguage(hidden: readonly CjkLanguage[]): SQL<boolean> {
+  // `not in ()` is a syntax error, and an emptied policy hides nothing.
+  if (hidden.length === 0) return sql<boolean>`true`;
+  return sql<boolean>`(${packageTable.summary} is null
+    or ${packageTable.summary} !~ ${`[${HAN}${KANA}${HANGUL}]`}
+    or coalesce(${SUMMARY_LANGUAGE}, '') not in (${sql.join(
+      hidden.map((l) => sql`${l}`),
+      sql`, `,
+    )}))`;
+}

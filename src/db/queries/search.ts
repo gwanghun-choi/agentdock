@@ -5,7 +5,7 @@ import { ANALYZE_CAPS } from '@/analyze/types';
 import { MARK_CLOSE, MARK_OPEN } from '@/components/Marked';
 import { db } from '@/db/client';
 import { capabilityFinding, packageTable, packageVersion, repository } from '@/db/schema';
-import { SUMMARY_LANGUAGE } from './language';
+import { type CjkLanguage, SUMMARY_LANGUAGE, visibleLanguage } from './language';
 import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
 
 export type SearchResultItem = PackageListItem & {
@@ -147,8 +147,9 @@ export type MatchField = 'name' | 'path' | 'summary' | 'type' | 'repository';
 /**
  * The description languages a reader can narrow to — every class
  * SUMMARY_LANGUAGE assigns except `unknown`, which names no language to look
- * for. A filter only ever narrows: with none applied every language is listed,
- * in the same order as before the filter existed.
+ * for. A filter only ever narrows: with none applied the query lists every
+ * language, in the same order as before the filter existed. The routes apply
+ * HIDDEN_UNLESS_ASKED on top of that (`hiddenLanguages` below).
  */
 export const LANGUAGE_FILTER_IDS = ['latin', 'zh', 'ja', 'ko', 'mixed', 'other'] as const;
 
@@ -157,7 +158,25 @@ export type SearchFilters = {
   capabilities: string[];
   /** Optional so every caller from before Phase 41 still means "any language". */
   languages?: string[];
+  /**
+   * Left out when `languages` names no class (language.ts, HIDDEN_UNLESS_ASKED).
+   * Optional and empty by default, so the query layer still means "any
+   * language" to every caller that does not pass it — the two search
+   * evaluations and the quality report's count check (quality.ts). Only
+   * /artifacts passes it (withDefaultVisibility); the home page has its own
+   * reads (listPackages, countVisibleByType). `lang=any` reaches this layer
+   * as `languages: ['any']`, which validLanguages drops: what lists every
+   * language is the route passing this empty, not the value itself.
+   */
+  hiddenLanguages?: readonly CjkLanguage[];
 };
+
+/**
+ * The `lang` value that lists every language, the hidden ones included. Not a
+ * class, so not in LANGUAGE_FILTER_IDS: it narrows nothing, and validLanguages
+ * drops it on the way to SQL.
+ */
+export const ANY_LANGUAGE = 'any';
 
 const NO_FILTERS: SearchFilters = { types: [], capabilities: [] };
 
@@ -580,15 +599,28 @@ function searchWhere(q: string, filters: SearchFilters = NO_FILTERS, mode: Searc
              OR ${repository.fullName} ilike ${`%${escapeLikeOperand(q)}%`})`
       : sql`${packageTable.searchVector} @@ ${tsQuery(q, mode)}`;
   const cjk = cjkSubstring(q, mode);
+  const matched = q === '' ? undefined : cjk ? sql`(${text} OR ${cjk})` : text;
+  const hidden =
+    languages.length === 0 && filters.hiddenLanguages?.length
+      ? visibleLanguage(filters.hiddenLanguages)
+      : undefined;
   return and(
     isNull(packageTable.delistedAt),
-    q === '' ? undefined : cjk ? sql`(${text} OR ${cjk})` : text,
+    // With words, the default language test is folded into the match as a
+    // CASE, which PostgreSQL evaluates in order: only matching rows are
+    // classified. As a conjunct of its own it reads package columns only, so
+    // the planner ran it in the scan, on every listed row, before the match —
+    // measured 2026-10-26 on production's 19,113 descriptions, the `review`
+    // count 23 → 75 ms that way, 23 → 31 ms this way (report §14).
+    matched && hidden ? sql`(case when ${matched} then ${hidden} else false end)` : matched,
     // The same fragment object as searchPackages' projection — see
     // packages.ts:203-208 for why referencing it twice is safe and
     // computing it in SELECT only is a measured performance trap.
     sql`${NOT_LISTED_BECAUSE} is null`,
     types.length > 0 ? inArray(packageTable.type, types) : undefined,
     languages.length > 0 ? inArray(SUMMARY_LANGUAGE, languages) : undefined,
+    // A named language is the reader's choice and wins, `lang=zh` included.
+    matched ? undefined : hidden,
     ...capabilities.map((id) => CAPABILITY_PREDICATES[id]),
   );
 }

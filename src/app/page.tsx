@@ -12,11 +12,14 @@ import {
   StarIcon,
 } from '@/components/Icon';
 import { IndexFlow } from '@/components/IndexFlow';
+import { LatestRead } from '@/components/LatestRead';
+import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
-import { countPackagesByType, listPackages } from '@/db/queries/packages';
+import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
+import { countVisibleByType, listPackages } from '@/db/queries/packages';
 import { lastSyncSucceededAt } from '@/db/queries/syncState';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
@@ -28,14 +31,21 @@ export const dynamic = 'force-dynamic';
 const LIST_ROWS = 10;
 
 export default async function HomePage() {
-  const [recent, byType, lastSync] = await Promise.all([
-    listPackages({ limit: LIST_ROWS }),
-    countPackagesByType(),
+  // Both the feed and the counts leave out HIDDEN_UNLESS_ASKED, as /artifacts
+  // does with no `lang`, so every number on a chip is the total the page it
+  // links to opens on.
+  const [recent, { visible: byType, hidden }, lastSync] = await Promise.all([
+    listPackages({ limit: LIST_ROWS, hiddenLanguages: HIDDEN_UNLESS_ASKED }),
+    countVisibleByType(HIDDEN_UNLESS_ASKED),
     lastSyncSucceededAt(),
   ]);
   // The listing total is the sum of the per-type counts — one grouped query
   // where countPackages() used to be, so this page still makes three.
   const total = Object.values(byType).reduce((sum, n) => sum + n, 0);
+  // What the index holds, hidden languages included: the flow's count says
+  // "indexed", and these are indexed, only not listed by default.
+  const indexed = total + hidden;
+  const hiddenLabel = HIDDEN_UNLESS_ASKED.map((l) => LANGUAGE_LABELS[l]).join(' and ');
   // Exact rather than approximate: the repository this artifact came from was
   // read on this date. Not "the corpus was read on" — that is a different claim
   // and this page does not have the number for it.
@@ -49,12 +59,12 @@ export default async function HomePage() {
           shared 60-request budget and to put any repository at all into the
           index. Searching is what this page is for now, so that is the control.
 
-          What the hero no longer holds is the pipeline diagram. It sat between
-          the search box and the first artifact, and with it there the first
-          artifact on the page started at y=1,232 on a 1280×800 screen and
-          y=2,236 on a 390×844 phone — no visitor saw a single thing the index
-          held without scrolling (local seed, 2026-10-26). It explains how a
-          repository gets here, so it moved to the section that says so. */}
+          The pipeline diagram is not between the search box and the first
+          artifact any more: there, the first artifact started at y=1,232 on a
+          1280×800 screen and y=2,236 on a 390×844 phone (local seed,
+          2026-10-26). What the hero holds instead, from 64rem up, is that
+          pipeline with the newest artifact run through it, in the column the
+          copy has always left empty — see LatestRead.tsx. */}
       <section className="hero">
         <div className="hero-copy">
           <h1>Find agent artifacts, and see where they came from.</h1>
@@ -95,7 +105,7 @@ export default async function HomePage() {
               how many it lists. Each is the URL the artifacts page's own Type
               chip produces and each count is that page's total on arrival — the
               same grouped query this page already made for the cards further
-              down (countPackagesByType), so this adds no query. The chips are
+              down (countVisibleByType), so this adds no query. The chips are
               the artifacts page's chips, in the same scrolled row on a phone. */}
           <nav aria-label="Artifact types" className="hero-types facet">
             <div className="facet-chips">
@@ -111,6 +121,8 @@ export default async function HomePage() {
             </div>
           </nav>
         </div>
+
+        {recent[0] ? <LatestRead item={recent[0]} /> : null}
 
         {/* Three facts about what AgentDock does. Each is enforced somewhere in
             the codebase — the discovery gate below states the first at length,
@@ -166,45 +178,26 @@ export default async function HomePage() {
             </p>
           ) : null}
         </div>
-        {recent.length === 0 ? (
+        {hidden > 0 ? (
+          <p className="board-scope">
+            Not listed by default: {hidden.toLocaleString('en-US')}{' '}
+            {hidden === 1 ? 'artifact' : 'artifacts'} with a description written in {hiddenLabel}.{' '}
+            <Link href="/artifacts?lang=any">List every language</Link>
+          </p>
+        ) : null}
+        {/* Empty only when nothing is listed in any language: with hidden rows
+            the line above already says where they are. */}
+        {recent.length > 0 ? (
+          <PackageRows items={recent} />
+        ) : hidden === 0 ? (
           <div className="empty">
             <p className="muted">
               Nothing indexed yet. The scheduled sync fills this the next time it runs.
             </p>
           </div>
-        ) : (
-          <PackageRows items={recent} />
-        )}
+        ) : null}
       </section>
 
-      {/* What each kind is, for a reader who knows what they want but not its
-          name. Each card is the same URL as the hero's chip for it; what the
-          card adds is the type's documented definition from usageGuide.ts, the
-          same one its detail pages print: what the kind is, never how good any
-          one of them is. Catalogs have no entry: the search route does not
-          filter on them, so there is no page to send a reader to. */}
-      <section aria-labelledby="types-heading">
-        <div className="section-head">
-          <h2 id="types-heading">Browse by type</h2>
-        </div>
-        <ul className="type-grid">
-          {TYPE_FILTER_IDS.map((id) => (
-            <li key={id}>
-              <Link className="type-card" href={`/artifacts?type=${id}`}>
-                <span className="type-card-head">
-                  <ArtifactBadge type={id} />
-                  <span className="type-count">
-                    {byType[id]
-                      ? `${byType[id].toLocaleString('en-US')} listed`
-                      : 'none listed yet'}
-                  </span>
-                </span>
-                <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
       {/* What used to be the submit form's job — telling a visitor how a
           repository gets in here — stated as the policy it actually is. Every
           number and every condition below is the same one the code enforces:
@@ -220,7 +213,7 @@ export default async function HomePage() {
         </p>
         {/* The pipeline, at the full width of the shell: what happens to a
             repository once it is found, before the conditions for finding it. */}
-        <IndexFlow total={total} />
+        <IndexFlow total={indexed} />
         {/* The four conditions, joined to what they decide.
 
               They used to be four bordered columns with nothing above or below
@@ -297,6 +290,34 @@ export default async function HomePage() {
             about any artifact.
           </span>
         </p>
+      </section>
+      {/* What each kind is, for a reader who knows what they want but not its
+          name. Each card is the same URL as the hero's chip for it; what the
+          card adds is the type's documented definition from usageGuide.ts, the
+          same one its detail pages print: what the kind is, never how good any
+          one of them is. Catalogs have no entry: the search route does not
+          filter on them, so there is no page to send a reader to. */}
+      <section aria-labelledby="types-heading">
+        <div className="section-head">
+          <h2 id="types-heading">Browse by type</h2>
+        </div>
+        <ul className="type-grid">
+          {TYPE_FILTER_IDS.map((id) => (
+            <li key={id}>
+              <Link className="type-card" href={`/artifacts?type=${id}`}>
+                <span className="type-card-head">
+                  <ArtifactBadge type={id} />
+                  <span className="type-count">
+                    {byType[id]
+                      ? `${byType[id].toLocaleString('en-US')} listed`
+                      : 'none listed yet'}
+                  </span>
+                </span>
+                <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
     </>
   );

@@ -266,8 +266,16 @@ commit — but nothing is deleted, and **stars are not consulted at all**.
 - **Typo tolerance** — when full text finds nothing, a trigram pass over name and
   summary offers close matches, labelled as close matches and never as exact
   ones.
-- **Filters** by artifact type and by capability observation, applied in SQL
-  inside the same predicate the count uses.
+- **Filters** by artifact type, by capability observation and by the writing
+  system of the description, applied in SQL inside the same predicate the count
+  uses.
+- **Chinese descriptions are left out by default.** With no language chosen, the
+  home page, browse and search leave out artifacts whose description is written
+  in Chinese, and say so beside the count. Nothing is deleted: they stay indexed,
+  on their repository's page and at their own URL, and `lang=zh` or
+  `lang=any` ("All languages") lists them. Japanese, Korean and bilingual
+  descriptions are listed as before. The policy is one array,
+  `HIDDEN_UNLESS_ASKED` in `src/db/queries/language.ts`.
 - **URL as state.** Query, filters and page are all in the address bar, the form
   is a plain GET with native controls, and the whole page works with JavaScript
   disabled.
@@ -346,11 +354,15 @@ the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
 Back, reload and a shared link.
 
-So is the motion. The index-flow diagram's one reveal, the loading
-placeholder's sweep, and every hover and focus response are CSS — the diagram is
-HTML and CSS rather than an SVG asset, and there is no scroll observer anywhere.
-Decorative motion that looped or replayed on every page (the background drift,
-the connector pulse, block and row entrances) was removed in Phase 57. The
+So is the motion. The home page's one load sequence (the hero's ground fading
+up and the Latest read figure drawing its lane, nodes and card), the
+index-flow diagram's reveal, the loading placeholder's sweep, and every hover
+and focus response are CSS — no animation library and no scroll observer; the
+flow's reveal follows scrolling through CSS `animation-timeline: view()` where
+the browser has it. Every animation ends inside five seconds; none loops but
+the loading sweep. Decorative motion that looped or replayed on every page (the
+background drift, the connector pulse, block and row entrances) was removed in
+Phase 57; Phase 60 brought back the dot grid and the washes as a still ground. The
 typeface is one latin variable file of Schibsted Grotesk (OFL-1.1), served from
 the same origin by `next/font/local`; CJK text falls through to system fonts. Every keyframe animation is
 declared inside one `prefers-reduced-motion: no-preference` block, so for a

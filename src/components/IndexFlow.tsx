@@ -91,15 +91,19 @@ export function IndexFlow({ total }: { total: number }) {
           <CommitIcon /> Filed against the commit it read
         </p>
         <p className="flow-count">
-          {/* The count is the one live number on this page and it is the one the
-              server already had — countPackages(), the same call the "Browse
-              all N artifacts" link below has always used. Nothing new is
-              queried for it. The digits count up once on arrival; see
+          {/* The count is every indexed artifact the listing predicate admits,
+              the languages the listings leave out by default included
+              (page.tsx, `indexed`). It comes from the grouped count the page
+              already makes. Nothing new is queried for it. The digits count
+              up once — as the number scrolls into view where the browser ties
+              animation to scrolling, on load where it does not; see
               globals.css, where the mechanism and its ceiling are written down.
-              Ungrouped, like the "Browse all {total} artifacts" link it
-              restates — CSS counters have no grouping style, so a grouped
-              string here and an ungrouped one two sections down would be the
-              same number spelled two ways on one page. */}
+              Ungrouped, like the "Browse all {total} artifacts" link — CSS
+              counters have no grouping style, and two counts on one page are
+              easier to compare spelled one way. Since Phase 62 the two are
+              different numbers: that link is what the listing shows, this is
+              what is indexed, and the line under "Recently indexed" says what
+              the difference is. */}
           <span className="count" style={{ '--target': total } as CSSProperties}>
             {total}
           </span>{' '}

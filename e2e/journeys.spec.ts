@@ -65,7 +65,8 @@ test('capability filter: toggles on and off, composes with a type, and Clear all
 });
 
 // The corpus's four bilingual descriptions are baoyu-skills' English ones that
-// quote Chinese trigger phrases; nothing in it is Chinese, Japanese or Korean alone.
+// quote Chinese trigger phrases. The only Chinese and Japanese descriptions are
+// e2e/fixtures/language-visibility's two, which the next tests read.
 test('language filter: narrows to a writing system, names it per row, survives paging state, and comes off', async ({
   page,
 }) => {
@@ -92,6 +93,115 @@ test('language filter: narrows to a writing system, names it per row, survives p
   await page.goto('/artifacts?lang=mixed&q=translate');
   await page.click('.rows .row-title a');
   await expect(page.locator('.detail-head')).toContainText('Description language: Mixed languages');
+});
+
+// e2e/fixtures/language-visibility holds wenjian-zhengli, described in Chinese,
+// and bunsho-seiri, described in Japanese (Han and kana). By default (Phase
+// 62) only the Chinese one is left out, until a reader names a language; the
+// Japanese one is always listed.
+test('Chinese descriptions are left out by default, counted out, and one click away', async ({
+  page,
+}) => {
+  await page.goto('/artifacts');
+  const visible = await total(page);
+  await expect(page.locator('.facet .chip[aria-current]').nth(1)).toHaveText('All except Chinese');
+  await expect(page.locator('.result-scope')).toContainText(
+    'Not counting descriptions written in Chinese',
+  );
+
+  await page.goto('/artifacts?q=seiri');
+  await expect(page.locator('.rows .row-title')).toContainText(['bunsho-seiri']);
+
+  // A word only the hidden artifact holds: no result, and the way out names it.
+  await page.goto('/artifacts?q=wenjian');
+  await expect(page.locator('.rows li')).toHaveCount(0);
+  const way = page.locator('.ways a', { hasText: 'Including descriptions written in Chinese' });
+  await expect(page.locator('.ways')).toContainText('1 artifact');
+  await way.click();
+  await page.waitForURL(/\/artifacts\?q=wenjian&lang=any$/);
+  await expect(page.locator('.rows .row-title')).toContainText(['wenjian-zhengli']);
+
+  // Every language: the same listing, one more row, and the count says so.
+  await page.goto('/artifacts');
+  await page.click('.facet .chip:has-text("All languages")');
+  await page.waitForURL(/\/artifacts\?lang=any$/);
+  expect(await total(page)).toBe(visible + 1);
+  await expect(page.locator('.result-scope')).toHaveCount(0);
+  // And it stays chosen through a new query and a new order, like any filter.
+  await page.fill('#q', 'zhengli');
+  await page.press('#q', 'Enter');
+  await page.waitForURL(/\/artifacts\?q=zhengli&lang=any$/);
+  await expect(page.locator('.rows .row-title')).toContainText(['wenjian-zhengli']);
+  await page.click('.sort a:has-text("Name")');
+  await page.waitForURL(/q=zhengli&lang=any&sort=name$/);
+  await expect(page.locator('.applied')).toContainText('Description: All languages');
+
+  // Named explicitly, Chinese is a filter like any other.
+  await page.goto('/artifacts?lang=zh');
+  expect(await total(page)).toBe(1);
+  await expect(page.locator('.rows .row-desc[lang="zh"]')).toHaveCount(1);
+  await page.goto('/artifacts?lang=ja');
+  await expect(page.locator('.rows .row-title')).toContainText(['bunsho-seiri']);
+
+  // Not deleted: its repository lists it and its own page opens.
+  await page.goto('/r/fixture/language-visibility');
+  await expect(page.locator('main')).toContainText('wenjian-zhengli');
+  const res = await page.goto('/r/fixture/language-visibility/skills/wenjian-zhengli');
+  expect(res?.status()).toBe(200);
+});
+
+// The feed's own filter is search.test.ts's (listPackages with
+// hiddenLanguages): the seed puts the Chinese row oldest, so it would not be
+// in the ten newest either way. What this checks is the disclosure and that
+// the counts agree with the page they link to.
+test('home: the type counts leave Chinese out, and the feed says how many it does not list', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const scope = page.locator('.board-scope');
+  await expect(scope).toContainText(
+    'Not listed by default: 1 artifact with a description written in Chinese',
+  );
+  // Every count on a chip is the total the page it links to opens on.
+  const chipAll = Number(
+    (
+      (await page.locator('.hero-types .chip').first().locator('.chip-count').textContent()) ?? ''
+    ).replace(/,/g, ''),
+  );
+  await scope.locator('a').click();
+  await page.waitForURL(/\/artifacts\?lang=any$/);
+  expect(await total(page)).toBe(chipAll + 1);
+  await page.goto('/artifacts');
+  expect(await total(page)).toBe(chipAll);
+});
+
+test('home: the Latest read figure is the newest row, and its motion ends and honours reduced motion', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const trace = page.locator('figure.trace');
+  await expect(trace).toBeInViewport();
+  await expect(trace.locator('.trace-name')).toHaveText(
+    (await page.locator('.board .rows .row-title a').first().textContent()) ?? '',
+  );
+  // Every animation on the page is finite and over inside five seconds, so
+  // nothing here needs the pause control WCAG 2.2.2 asks of longer motion.
+  // The flow's are tied to scrolling, not to time, and are left out.
+  const ends = await page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((a) => a.timeline === document.timeline)
+      .map((a) => a.effect?.getComputedTiming().endTime),
+  );
+  expect(ends.length).toBeGreaterThan(5);
+  for (const end of ends) expect(Number(end)).toBeLessThanOrEqual(5000);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(trace).toBeInViewport();
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 });
 
 test('a new query keeps the applied filters and the chosen sort', async ({ page }) => {
@@ -206,7 +316,7 @@ test('detail, Back and a shared URL', async ({ page, browser }) => {
   await expect(other.locator('#q')).toHaveValue('skill');
   await expect(other.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText([
     'Agent Skills',
-    'Any language',
+    'All except Chinese',
     'No bundled script files',
   ]);
   await expect(other.locator('.sort .chip[aria-current]')).toHaveText('Name');
@@ -414,7 +524,7 @@ test('bad parameters fall back to defaults, and parameterised listings are noind
   await page.goto('/artifacts?page=abc&type=bogus&lang=zz&cap=nope&sort=stars');
   await expect(page.locator('.facet:not(.sort) .chip[aria-current]')).toHaveText([
     'All types',
-    'Any language',
+    'All except Chinese',
   ]);
   await expect(page.locator('.sort .chip[aria-current]')).toHaveText('Recently indexed');
   expect(await page.locator('meta[name=robots]').getAttribute('content')).toContain('noindex');
@@ -700,6 +810,9 @@ test.describe('on a phone', () => {
     await expect(page.locator('#q')).toBeInViewport();
     await expect(page.locator('.hero-types .chip').first()).toBeInViewport();
     expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(844);
+    // The Latest read figure is a desktop column; on a phone it would sit
+    // between the search box and that row.
+    await expect(page.locator('figure.trace')).toBeHidden();
     await noHorizontalOverflow(page);
   });
 

@@ -1,0 +1,21 @@
+{
+  "id": 999002,
+  "node_id": "R_fixture_language_visibility",
+  "name": "language-visibility",
+  "full_name": "fixture/language-visibility",
+  "private": false,
+  "fork": false,
+  "archived": false,
+  "owner": {
+    "login": "fixture"
+  },
+  "description": "Synthetic repository for the browser journeys: one skill described in Chinese, which listings leave out by default, and one described in Japanese, which they keep. Never in production.",
+  "default_branch": "main",
+  "stargazers_count": 321,
+  "pushed_at": "2026-10-01T00:00:00Z",
+  "topics": [],
+  "license": {
+    "spdx_id": "MIT"
+  },
+  "homepage": ""
+}

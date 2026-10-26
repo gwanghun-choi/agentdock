@@ -15,7 +15,9 @@ import {
 } from '@/components/searchState';
 import { TYPE_FILTER_LABELS as SHARED_TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
+import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
 import {
+  ANY_LANGUAGE,
   ARTIFACT_TYPE_IDS,
   CAPABILITY_FILTER_IDS,
   countSearchResults,
@@ -136,14 +138,32 @@ function parseTypeFilter(raw: string | string[] | undefined): (typeof ARTIFACT_T
     : [];
 }
 
-/** As parseTypeFilter: one of LANGUAGE_FILTER_IDS, or none. */
-function parseLanguageFilter(
-  raw: string | string[] | undefined,
-): (typeof LANGUAGE_FILTER_IDS)[number][] {
+/** As parseTypeFilter: one of LANGUAGE_FILTER_IDS, ANY_LANGUAGE, or none. */
+function parseLanguageFilter(raw: string | string[] | undefined): string[] {
   const value = Array.isArray(raw) ? raw[0] : raw;
-  return value !== undefined && (LANGUAGE_FILTER_IDS as readonly string[]).includes(value)
-    ? [value as (typeof LANGUAGE_FILTER_IDS)[number]]
+  return value !== undefined &&
+    (value === ANY_LANGUAGE || (LANGUAGE_FILTER_IDS as readonly string[]).includes(value))
+    ? [value]
     : [];
+}
+
+/**
+ * The filters a request means: its own, plus HIDDEN_UNLESS_ASKED when it names
+ * no language. One function so the page, its count and every relaxed count
+ * below decide it the same way — a total that disagrees with its rows is a
+ * paginator with a dead last page.
+ */
+function withDefaultVisibility(filters: SearchFilters): SearchFilters {
+  return { ...filters, hiddenLanguages: filters.languages?.length ? [] : HIDDEN_UNLESS_ASKED };
+}
+
+/** What the default leaves out, in words: "Chinese". */
+const HIDDEN_LABEL = HIDDEN_UNLESS_ASKED.map((l) => LANGUAGE_LABELS[l]).join(' and ');
+
+function languageLabel(id: string): string | undefined {
+  return id === ANY_LANGUAGE
+    ? 'All languages'
+    : LANGUAGE_LABELS[id as (typeof LANGUAGE_FILTER_IDS)[number]];
 }
 
 /**
@@ -223,7 +243,7 @@ function appliedFilters(
     if (label) out.push({ label, next: withType(state, null) });
   }
   for (const l of filters.languages ?? []) {
-    const label = LANGUAGE_LABELS[l as (typeof LANGUAGE_FILTER_IDS)[number]];
+    const label = languageLabel(l);
     if (label) out.push({ label: `Description: ${label}`, next: withLanguage(state, null) });
   }
   for (const c of filters.capabilities) {
@@ -253,30 +273,46 @@ async function relaxedCounts(
   q: string,
   filters: SearchFilters,
   sort: SearchSort,
-): Promise<{ label: string; href: string; total: number }[]> {
-  const ways = appliedFilters(q, filters, sort).map((f) => ({
-    ...f,
-    label: `Without “${f.label}”`,
-  }));
+): Promise<{ label: string; href: string; total: number; hiddenLanguage?: boolean }[]> {
+  const ways: { label: string; href: string; next: SearchState; hiddenLanguage?: boolean }[] =
+    appliedFilters(q, filters, sort).map((f) => ({
+      ...f,
+      label: `Without “${f.label}”`,
+    }));
   if (q !== '' && ways.length > 0) {
     const next = { ...filters, q: '', page: 1 };
     ways.push({ label: 'Without the search words', href: searchHref(next), next });
   }
-  return Promise.all(
-    ways.map(async ({ label, href, next }) => {
-      const narrowed: SearchFilters = {
+  // The default is a filter the reader did not choose, so it is a way out too:
+  // a search in Chinese otherwise ends here with nothing to follow. Offered
+  // only when it leads somewhere (below) — unlike a filter the reader applied,
+  // "no match either" about one they never saw would be noise on every miss.
+  if (filters.hiddenLanguages?.length) {
+    const next = { ...filters, q, sort, page: 1, languages: [ANY_LANGUAGE] };
+    ways.push({
+      label: `Including descriptions written in ${HIDDEN_LABEL}`,
+      href: searchHref(next),
+      next,
+      hiddenLanguage: true,
+    });
+  }
+  const counted = await Promise.all(
+    ways.map(async ({ label, href, next, hiddenLanguage }) => {
+      const narrowed = withDefaultVisibility({
         types: [...next.types],
         languages: [...(next.languages ?? [])],
         capabilities: [...next.capabilities],
-      };
+      });
       const mode = await searchMode({ q: next.q, filters: narrowed });
       return {
         label,
         href,
+        hiddenLanguage,
         total: await countSearchResults({ q: next.q, filters: narrowed, mode }),
       };
     }),
   );
+  return counted.filter((w) => w.total > 0 || !w.hiddenLanguage);
 }
 
 /**
@@ -438,11 +474,13 @@ export default async function ArtifactsPage({
   const selectedTypes = parseTypeFilter(sp.type);
   const selectedLanguages = parseLanguageFilter(sp.lang);
   const selectedCapabilities = parseCapabilityFilter(sp.cap);
-  const filters: SearchFilters = {
+  const filters = withDefaultVisibility({
     types: selectedTypes,
     capabilities: selectedCapabilities,
     languages: selectedLanguages,
-  };
+  });
+  // The default is in force: say so beside the count, with the way to lift it.
+  const hiding = (filters.hiddenLanguages?.length ?? 0) > 0;
   const hasQuery = q !== '';
   const hasFilters =
     selectedTypes.length > 0 || selectedCapabilities.length > 0 || selectedLanguages.length > 0;
@@ -571,8 +609,9 @@ export default async function ArtifactsPage({
         </div>
       </fieldset>
       {/* The description's writing system, read from its characters
-          (src/db/queries/language.ts). Narrows only: with none chosen every
-          language is listed, in the order it always was. */}
+          (src/db/queries/language.ts). With none chosen the listing leaves out
+          HIDDEN_UNLESS_ASKED, and says so on the first chip; "All languages"
+          lists every row, in the order the listing had before Phase 62. */}
       <fieldset className="facet">
         <legend className="facet-legend">Description</legend>
         <div className="facet-chips">
@@ -581,8 +620,17 @@ export default async function ArtifactsPage({
             className="chip"
             href={searchHref(withLanguage(state, null))}
           >
-            Any language
+            {HIDDEN_UNLESS_ASKED.length > 0 ? `All except ${HIDDEN_LABEL}` : 'Any language'}
           </Link>
+          {HIDDEN_UNLESS_ASKED.length > 0 ? (
+            <Link
+              aria-current={selectedLanguages.includes(ANY_LANGUAGE) ? 'true' : undefined}
+              className="chip"
+              href={searchHref(withLanguage(state, ANY_LANGUAGE))}
+            >
+              All languages
+            </Link>
+          ) : null}
           {LANGUAGE_FILTER_IDS.map((id) => (
             <Link
               aria-current={selectedLanguages.includes(id) ? 'true' : undefined}
@@ -645,6 +693,9 @@ export default async function ArtifactsPage({
           is a directory. The description filter reads which writing system each description uses,
           as its author wrote it — nothing is translated, and the Latin alphabet includes languages
           other than English.
+          {HIDDEN_UNLESS_ASKED.length > 0
+            ? ` Unless you choose a language, artifacts whose description is written in ${HIDDEN_LABEL} are left out of these results; they are still indexed, and choosing ${HIDDEN_LABEL} or All languages lists them.`
+            : null}
         </p>
       </details>
     </div>
@@ -683,7 +734,15 @@ export default async function ArtifactsPage({
   // Checked on q === '' and no filters specifically: a query or filter that
   // happens to match nothing is a different fact (branch 3, below) than
   // "AgentDock holds no artifacts yet".
-  if (!hasQuery && !hasFilters && total === 0) {
+  // Under the default, zero listed can also mean every listed row is in a
+  // hidden language; that is not "nothing indexed", so it falls through to the
+  // zero-result branch, which offers the way to them. One count, only here.
+  const everythingHidden =
+    hiding &&
+    total === 0 &&
+    !hasQuery &&
+    (await countSearchResults({ q: '', filters: { ...filters, hiddenLanguages: [] } })) > 0;
+  if (!hasQuery && !hasFilters && total === 0 && !everythingHidden) {
     return (
       <>
         {pageHead}
@@ -741,10 +800,19 @@ export default async function ArtifactsPage({
             No artifacts matched {q ? `"${q}"` : 'the applied filters'}
             {filterLabels.length > 0 ? ` (${filterLabels.join(', ')})` : ''}.
           </p>
-          {/* Never "does not exist" — the corpus is not the ecosystem (D-38). */}
-          <p className="muted">
-            AgentDock has not indexed a match. That is not the same as the artifact not existing.
-          </p>
+          {/* Never "does not exist" — the corpus is not the ecosystem (D-38).
+              And never "not indexed" when the match is indexed and only left
+              out by the default language policy. */}
+          {ways.some((w) => w.hiddenLanguage) ? (
+            <p className="muted">
+              AgentDock has indexed a match, but its description is written in {HIDDEN_LABEL}, which
+              is left out unless you choose it.
+            </p>
+          ) : (
+            <p className="muted">
+              AgentDock has not indexed a match. That is not the same as the artifact not existing.
+            </p>
+          )}
           {ways.length > 0 ? (
             <ul aria-label="Ways to widen this search" className="notes ways">
               {ways.map((w) => (
@@ -787,6 +855,15 @@ export default async function ArtifactsPage({
             <br />
             <span className="muted">Close matches by name and summary</span>
           </p>
+          {/* The fallback reads the same default, so it says so too, here
+              where an exact match in a hidden language would be the one
+              thing the reader could not otherwise know about. */}
+          {hiding ? (
+            <p className="muted">
+              Not counting descriptions written in {HIDDEN_LABEL}.{' '}
+              <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
+            </p>
+          ) : null}
         </div>
         <PackageRows date={sort} items={items} />
       </>
@@ -821,8 +898,21 @@ export default async function ArtifactsPage({
         </p>
         {/* searchMode relaxed the query, and the reader is told: these match
             some of the words, not all of them. */}
+        {/* With the default in force the claim is narrower: an artifact in a
+            hidden language may have matched every word. Not hidden on a phone,
+            unlike .result-scope, so the narrowing is said there too. */}
         {mode === 'any' ? (
-          <p className="muted">No artifact matched every word; these match at least one.</p>
+          <p className="muted">
+            {hiding
+              ? `No artifact outside descriptions written in ${HIDDEN_LABEL} matched every word; these match at least one.`
+              : 'No artifact matched every word; these match at least one.'}
+          </p>
+        ) : null}
+        {hiding ? (
+          <p className="muted result-scope">
+            Not counting descriptions written in {HIDDEN_LABEL}.{' '}
+            <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
+          </p>
         ) : null}
         <AppliedFilters filters={filters} q={q} sort={sort} />
         <SortLinks filters={filters} q={q} sort={sort} />

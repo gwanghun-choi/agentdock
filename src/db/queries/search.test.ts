@@ -1621,6 +1621,103 @@ describe.skipIf(!DB_URL)('the search query', () => {
       expect(rows.every((x) => x.id === ids.zh)).toBe(true);
     });
 
+    // Phase 62: the default leaves Chinese out until a language is named.
+    it('hides only the hidden classes by default, keeps the rest in order, and a named language wins', async () => {
+      const ids = await multilingual();
+      const hidden = { types: [], capabilities: [], hiddenLanguages: ['zh'] as const };
+      const [all, rows, count] = await Promise.all([
+        search.searchPackages({ q: 'langfilterword' }),
+        search.searchPackages({ q: 'langfilterword', filters: hidden }),
+        search.countSearchResults({ q: 'langfilterword', filters: hidden }),
+      ]);
+      // Same candidates less one, same relative order: nothing re-ranked.
+      expect(rows.map((x) => x.id)).toEqual(all.map((x) => x.id).filter((id) => id !== ids.zh));
+      expect(count).toBe(4);
+      // Mixed (a Latin sentence beside the Chinese), Japanese and the row with no
+      // description all stay.
+      expect(rows.map((x) => x.id)).toEqual(expect.arrayContaining([ids.mixed, ids.ja, ids.none]));
+
+      const named = await search.searchPackages({
+        q: 'langfilterword',
+        filters: { ...hidden, languages: ['zh'] },
+      });
+      expect(named.map((x) => x.id)).toEqual([ids.zh]);
+
+      // The fallback reads the same predicate.
+      const fuzzy = await search.searchPackages({ q: 'langfiltrword', filters: hidden });
+      expect(fuzzy.map((x) => x.id)).not.toContain(ids.zh);
+    });
+
+    // searchMode reads the same predicate, so a query whose every word is
+    // matched only by a hidden row relaxes to `any` and shows the partial
+    // matches, rather than an empty `all` page.
+    it('relaxes the mode when only a hidden row matches every word', async () => {
+      const r = await repo('language-mode');
+      await artifact(r, 'zh/SKILL.md', [{ hash: 'lm1' }], {
+        name: 'xqmodeone-xqmodetwo',
+        summary: '当用户要求数学建模或生成论文时使用。',
+      });
+      const latin = await artifact(r, 'en/SKILL.md', [{ hash: 'lm2' }], {
+        name: 'xqmodeone-only',
+        summary: 'Use when the user asks for a model.',
+      });
+      const q = 'xqmodeone xqmodetwo';
+      const hidden = { types: [], capabilities: [], hiddenLanguages: ['zh'] as const };
+      expect(await search.searchMode({ q })).toBe('all');
+      const mode = await search.searchMode({ q, filters: hidden });
+      expect(mode).toBe('any');
+      const rows = await search.searchPackages({ q, filters: hidden, mode });
+      expect(rows.map((x) => x.id)).toEqual([latin]);
+    });
+
+    it('pages the default set without the hidden rows, the count matching', async () => {
+      const r = await repo('language-default-pages');
+      for (let i = 0; i < 5; i += 1) {
+        await artifact(r, `zh${i}/SKILL.md`, [{ hash: `ldp${i}` }], {
+          name: `langdefaultword-zh-${i}`,
+          summary: '当用户要求数学建模或生成论文时使用。',
+        });
+        await artifact(r, `en${i}/SKILL.md`, [{ hash: `ldq${i}` }], {
+          name: `langdefaultword-en-${i}`,
+          summary: 'Use when the user asks for a model.',
+        });
+      }
+      const filters = { types: [], capabilities: [], hiddenLanguages: ['zh'] as const };
+      const pages = await Promise.all(
+        [0, 2, 4].map((offset) =>
+          search.searchPackages({ q: 'langdefaultword', filters, limit: 2, offset }),
+        ),
+      );
+      const seen = pages.flat().map((x) => x.sourcePath);
+      expect(seen).toHaveLength(5);
+      expect(seen.every((p) => p.startsWith('en'))).toBe(true);
+      expect(await search.countSearchResults({ q: 'langdefaultword', filters })).toBe(5);
+    });
+
+    it('leaves the home listing and its counts in step, and a repository page whole', async () => {
+      const ids = await multilingual();
+      const name = `${PREFIX}-language`;
+      const [listed, whole] = await Promise.all([
+        packages.listPackages({ fullName: name, limit: 50, hiddenLanguages: ['zh'] }),
+        packages.listPackages({ fullName: name, limit: 50 }),
+      ]);
+      expect(listed.map((x) => x.id)).not.toContain(ids.zh);
+      expect(whole.map((x) => x.id)).toContain(ids.zh);
+
+      const [{ visible, hidden }, byType, browse] = await Promise.all([
+        packages.countVisibleByType(['zh']),
+        packages.countPackagesByType(),
+        search.countSearchResults({
+          q: '',
+          filters: { types: [], capabilities: [], hiddenLanguages: ['zh'] },
+        }),
+      ]);
+      const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+      expect(hidden).toBeGreaterThanOrEqual(1);
+      expect(sum(visible) + hidden).toBe(sum(byType));
+      expect(sum(visible)).toBe(browse);
+    });
+
     it('names the language on the listing and on the detail page', async () => {
       const ids = await multilingual();
       const listed = await packages.listPackages({ fullName: `${PREFIX}-language`, limit: 50 });

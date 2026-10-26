@@ -12,7 +12,8 @@
 export type SearchState = {
   q: string;
   types: readonly string[];
-  /** Absent means any language — every caller from before the filter existed. */
+  /** Absent means none named — on the artifacts route, every language but
+   * HIDDEN_UNLESS_ASKED (src/db/queries/language.ts); `any` lists them all. */
   languages?: readonly string[];
   capabilities: readonly string[];
   /** Absent means the default for `q` — see defaultSort. */

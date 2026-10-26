@@ -211,7 +211,8 @@ describe('the animated count', () => {
   });
 
   it('takes the number it counts to from the element, not from the stylesheet', () => {
-    // --target is set by IndexFlow.tsx from countPackages(). A literal here
+    // --target is set by IndexFlow.tsx from page.tsx's `indexed`, the grouped
+    // count (countVisibleByType: visible + hidden). A literal here
     // would be a hardcoded corpus size that rots the moment the corpus grows —
     // the exact failure the scope sentence on /artifacts was rewritten to avoid.
     expect(code).toMatch(/--count:\s*var\(--target\)/);
