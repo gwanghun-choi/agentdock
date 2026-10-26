@@ -30,6 +30,16 @@ export const OPS_APPLICATION_NAME = 'agentdock-ops';
  * itself as a startup parameter, so the setting rides on each new connection
  * rather than on a SET a pooler could drop.
  *
+ * The settings ride inside `options` as `-c` flags, not as parameters of their
+ * own. Measured 2026-10-23 to 2026-10-25: six scheduled runs' checks found
+ * read-only, statement_timeout and search_path all at server defaults, and a
+ * local proxy forwarding only user, database, options and application_name
+ * (what neondatabase/neon#1287 says Neon's proxy forwards) reproduces exactly
+ * that, while the same settings in `options` pass through it. The checks below
+ * still confirm the result on every connection, so a path that drops `options`
+ * too fails closed. A separate parameter is applied after `options`, so one
+ * the URL already carries is removed rather than left to win.
+ *
  * A pooled endpoint is refused outright: PgBouncer either rejects an unknown
  * startup parameter or, listed in ignore_startup_parameters, drops it silently —
  * and the second case would leave the session writable. Neon names its pooled
@@ -51,8 +61,11 @@ export function readOnlyTarget(
   if (url.hostname.toLowerCase().includes('-pooler')) {
     return { refused: 'DATABASE_URL is a pooled endpoint; use the direct one' };
   }
-  url.searchParams.set('default_transaction_read_only', 'on');
-  url.searchParams.set('statement_timeout', String(statementTimeoutMs));
+  const settings = `-c default_transaction_read_only=on -c statement_timeout=${statementTimeoutMs}`;
+  const options = url.searchParams.get('options');
+  url.searchParams.set('options', options ? `${options} ${settings}` : settings);
+  url.searchParams.delete('default_transaction_read_only');
+  url.searchParams.delete('statement_timeout');
   url.searchParams.set('application_name', OPS_APPLICATION_NAME);
   url.searchParams.set('connect_timeout', String(CONNECT_TIMEOUT_S));
   return { url: url.href };

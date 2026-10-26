@@ -61,6 +61,17 @@ function walk(value: unknown, depth: number): string | null {
 }
 
 /**
+ * JSON text with every `\u0000` escape — preceded by an even run of
+ * backslashes, so not itself escaped — rewritten as `�`. A parser decodes
+ * the escape to U+0000, which a jsonb or text column refuses (22021), and it
+ * did that after fetchRawFile's replacement of raw NULs had already run:
+ * measured 2026-10-26, job 771's frontmatter held YAML's `\0`, no raw NUL.
+ */
+export function replaceEscapedNul(json: string): string {
+  return json.replace(/(?<!\\)((?:\\\\)*)\\u0000/g, '$1\\ufffd');
+}
+
+/**
  * Parses an untrusted JSON manifest from a scanned repository.
  *
  * JSON.parse has no code-execution path and no tag mechanism, which is why it
@@ -78,7 +89,7 @@ export function parseJsonManifest(source: string, sourcePath: string): JsonResul
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(source);
+    parsed = JSON.parse(replaceEscapedNul(source));
   } catch (error) {
     return { ok: false, errors: [`${sourcePath} is not valid JSON: ${(error as Error).message}`] };
   }

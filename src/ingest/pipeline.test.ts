@@ -628,6 +628,30 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
     expect(row.frontmatter.note).toBe('a\uFFFDb');
   });
 
+  // Job 771 again, Phase 35: with the raw NUL replaced it still failed 22021.
+  // Its description is a double-quoted YAML string holding the escape `\0`,
+  // which the parser itself decodes to U+0000.
+  it('stores frontmatter whose YAML escape decodes to a NUL', async () => {
+    const original = readFileSync(`${DIR}/files/${encodeURIComponent(ONE)}`, 'utf8');
+    const withEscape = original.replace(
+      /^description: .*$/m,
+      'description: "null byte (shell.php\\0.jpg)"',
+    );
+    stubGitHub({ files: { [ONE]: withEscape } });
+
+    const result = await ingestRepository(FULL_NAME);
+
+    expect(result).toMatchObject({ ok: true, found: 18, stored: 18, failed: 0 });
+    const [row] = await sql<{ summary: string; frontmatter: Record<string, unknown> }[]>`
+      SELECT p.summary, pv.frontmatter FROM package_version pv
+      JOIN package p ON p.id = pv.package_id
+      JOIN repository r ON r.id = p.repository_id
+      WHERE r.github_node_id = ${NODE_ID} AND p.source_path = ${ONE}
+    `;
+    expect(row.summary).toBe('null byte (shell.php\uFFFD.jpg)');
+    expect(row.frontmatter.description).toBe('null byte (shell.php\uFFFD.jpg)');
+  });
+
   it('records incompleteness when the tree itself was cut short', async () => {
     stubGitHub({ tree: treeWith([ONE], { truncated: true }) });
 

@@ -140,3 +140,25 @@ describe('parseFrontmatter — the accepted shapes', () => {
     expect(parsed.ok && parsed.data).toEqual({});
   });
 });
+
+// Job 771 (elementalsouls/claude-bughunter): a double-quoted description
+// carrying the YAML escape `\0` parses to U+0000, which PostgreSQL refuses
+// (22021) — the raw text holds no NUL, so fetchRawFile's replacement never saw it.
+describe('parseFrontmatter — escaped NUL', () => {
+  it('writes every escape YAML decodes to U+0000 as U+FFFD, in keys and values', () => {
+    const parsed = parseFrontmatter(
+      '---\ndescription: "null byte (shell.php\\0.jpg)"\nx: "\\x00 \\u0000 \\U00000000"\n"k\\0": [ "\\0" ]\n---\n',
+      'nul.md',
+    );
+    expect(parsed.ok && parsed.data).toEqual({
+      description: 'null byte (shell.php\uFFFD.jpg)',
+      x: '\uFFFD \uFFFD \uFFFD',
+      'k\uFFFD': ['\uFFFD'],
+    });
+  });
+
+  it('leaves a backslash followed by "u0000" as written', () => {
+    const parsed = parseFrontmatter('---\na: \'\\u0000\'\nb: "\\\\u0000"\n---\n', 'text.md');
+    expect(parsed.ok && parsed.data).toEqual({ a: '\\u0000', b: '\\u0000' });
+  });
+});

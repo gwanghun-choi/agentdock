@@ -207,6 +207,13 @@ The sync runs the web's `assertSchemaIsolation()` before its first stage: a
 written. Check a new value from your terminal first — `bun run ops:preflight`
 over it must print `PASS  connected as agentdock_app`.
 
+`deploy.yml` reads the same `DATABASE_URL`, and its pin
+`AGENTDOCK_TARGET_FINGERPRINT` hashes the URL's `user@host:port/database`. A
+new value with another role or host changes the fingerprint: print the new one
+with `bun --no-env-file scripts/migrate.mjs --fingerprint` (step B) and update
+the variable in the same sitting as the secret, or the next deploy stops at its
+plan step with `fingerprint … does not match the pinned …`.
+
 `deploy.yml` needs one more secret and four variables, all in the `production`
 environment. [Automated deploys](#automated-deploys), step A, lists them.
 

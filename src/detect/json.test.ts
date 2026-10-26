@@ -106,3 +106,17 @@ describe('parseJsonManifest — tolerance', () => {
     expect(result.ok && result.data.someFieldNobodyDocumented).toBe(42);
   });
 });
+
+// The JSON spelling of the escape behind job 771: JSON.parse turns `\u0000`
+// into U+0000, which a jsonb or text column refuses.
+describe('parseJsonManifest — escaped NUL', () => {
+  it('writes \\u0000 as U+FFFD in keys and values', () => {
+    const result = parseJsonManifest('{"name":"a\\u0000b","k\\u0000":["\\u0000"]}', 'p.json');
+    expect(result.ok && result.data).toEqual({ name: 'a\uFFFDb', 'k\uFFFD': ['\uFFFD'] });
+  });
+
+  it('leaves an escaped backslash followed by "u0000" as written', () => {
+    const result = parseJsonManifest('{"a":"\\\\u0000","b":"\\\\\\u0000"}', 'p.json');
+    expect(result.ok && result.data).toEqual({ a: '\\u0000', b: '\\\uFFFD' });
+  });
+});

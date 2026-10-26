@@ -1,4 +1,5 @@
 import yaml from 'js-yaml';
+import { replaceEscapedNul } from './json';
 
 export const FRONTMATTER_CAPS = {
   /** Largest frontmatter block in the 100-file sample is about 1.2 KB. */
@@ -80,5 +81,8 @@ export function parseFrontmatter(source: string, sourcePath: string): Frontmatte
     return { ok: false, errors: ['frontmatter expands beyond the serialized size cap'] };
   }
 
-  return { ok: true, data: parsed as Record<string, unknown>, body: split.body };
+  // YAML's \0, \x00, \u0000 and \U00000000 all decode to U+0000; serialized,
+  // each is the one JSON escape replaceEscapedNul rewrites, keys included.
+  const data = serialized.includes('\\u0000') ? JSON.parse(replaceEscapedNul(serialized)) : parsed;
+  return { ok: true, data: data as Record<string, unknown>, body: split.body };
 }

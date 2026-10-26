@@ -28,26 +28,44 @@ const failing = (checks: { check: string; ok: boolean }[]) =>
   checks.filter((c) => !c.ok).map((c) => c.check);
 
 describe('readOnlyTarget', () => {
-  it('adds the read-only, timeout and name parameters and keeps the rest', () => {
+  it('adds the read-only, timeout and name settings and keeps the rest', () => {
     const url = new URL(
       urlOf(
-        'postgresql://app:pw@db.example.com/agentdock?sslmode=require&default_transaction_read_only=off',
+        'postgresql://app:pw@db.example.com/agentdock?sslmode=require&default_transaction_read_only=off&statement_timeout=0',
       ),
     );
-    expect(url.searchParams.get('default_transaction_read_only')).toBe('on');
-    expect(url.searchParams.get('statement_timeout')).toBe(String(OPS_STATEMENT_TIMEOUT_MS));
+    expect(url.searchParams.get('options')).toBe(
+      `-c default_transaction_read_only=on -c statement_timeout=${OPS_STATEMENT_TIMEOUT_MS}`,
+    );
+    // A separate startup parameter is applied after `options` and would win.
+    expect(url.searchParams.has('default_transaction_read_only')).toBe(false);
+    expect(url.searchParams.has('statement_timeout')).toBe(false);
     expect(url.searchParams.get('application_name')).toBe(OPS_APPLICATION_NAME);
     expect(url.searchParams.get('sslmode')).toBe('require');
   });
 
+  it('appends to an options value the URL already carries, so its own -c cannot win', () => {
+    const url = new URL(
+      urlOf(
+        'postgresql://app:pw@db.example.com/agentdock?options=-c%20default_transaction_read_only%3Doff',
+      ),
+    );
+    expect(url.searchParams.get('options')).toBe(
+      '-c default_transaction_read_only=off -c default_transaction_read_only=on ' +
+        `-c statement_timeout=${OPS_STATEMENT_TIMEOUT_MS}`,
+    );
+  });
+
   // The mechanism the guarantee rests on: postgres.js turns a query parameter
-  // it does not consume into a startup parameter on every connection.
-  // Constructing a client opens no connection.
-  it('reaches postgres.js as startup parameters', () => {
+  // it does not consume into a startup parameter on every connection, and the
+  // settings ride in `options` — the one a proxy that drops the rest of the
+  // startup packet still forwards (Phase 35: six scheduled runs saw the
+  // separate parameters arrive nowhere). Constructing a client opens no
+  // connection.
+  it('reaches postgres.js as the options startup parameter', () => {
     const client = postgres(urlOf('postgresql://app:pw@db.example.com/agentdock'));
     expect(client.options.connection).toMatchObject({
-      default_transaction_read_only: 'on',
-      statement_timeout: String(OPS_STATEMENT_TIMEOUT_MS),
+      options: `-c default_transaction_read_only=on -c statement_timeout=${OPS_STATEMENT_TIMEOUT_MS}`,
       application_name: OPS_APPLICATION_NAME,
     });
     expect(client.options.connect_timeout).toBe(10);
