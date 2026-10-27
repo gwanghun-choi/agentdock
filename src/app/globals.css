@@ -288,6 +288,11 @@ dt {
   position: sticky;
   top: 0;
   z-index: 20;
+  /* Its own view-transition group, held above the page's during a navigation
+     (the motion block): otherwise the departing page's snapshot — content that
+     was scrolled under this bar — is painted over it for the 120ms it takes to
+     fade. */
+  view-transition-name: site-header;
   background: light-dark(rgb(255 255 255 / 85%), rgb(11 13 16 / 85%));
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
@@ -387,6 +392,45 @@ main {
   margin-bottom: var(--s-5);
 }
 
+/* The hero's dot ground, carried to the top of the listing and of every
+   artifact page, faded out by the same kind of mask: one ground for the whole
+   site instead of a home page dressed and the rest plain. Bled the way the
+   hero's is, so it cannot widen the page. */
+.page-head,
+.detail-head {
+  position: relative;
+  isolation: isolate;
+}
+
+.page-head::before,
+.detail-head::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: calc(var(--s-6) * -1) 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background-image:
+    radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px),
+    radial-gradient(40rem 12rem at calc(50% - 24rem) 0%, var(--glow-a), transparent 70%);
+  background-size:
+    22px 22px,
+    auto;
+  mask-image: radial-gradient(60% 100% at 30% 0%, #000 0%, transparent 80%);
+  pointer-events: none;
+}
+
+/* A detail page opens on its breadcrumb, and this ground reaches up over it
+   (it paints after the trail, in the head's own stacking context): faded in
+   from the top, at under a fifth of its strength where it overlaps, so it has
+   no edge across the trail. */
+.detail-head::before {
+  mask-image:
+    radial-gradient(60% 100% at 30% 0%, #000 0%, transparent 80%),
+    linear-gradient(to bottom, transparent, #000 45%);
+  mask-composite: intersect;
+}
+
 .page-head h1 {
   margin-bottom: var(--s-2);
 }
@@ -451,6 +495,117 @@ main {
    search box, the light behind it comes up. Opacity only — no layout moves. */
 .hero:has(.hero-search input:focus)::after {
   opacity: 1;
+}
+
+/* The network (HeroSignal.tsx). Inside the hero's box rather than bled: an
+   absolutely positioned <svg> is a replaced element and does not stretch
+   between two insets the way the pseudo-elements above do, and the nodes
+   belong around the figure, not out at the viewport edge. Up under the header
+   by the same --s-6 as the ground.
+
+   The mask is what keeps it off the copy: transparent across the headline's
+   column, full from where the copy ends. Over text it would be a texture
+   competing with the words; the dot ground is already that texture. */
+.hero-signal {
+  position: absolute;
+  z-index: -1;
+  inset: calc(var(--s-6) * -1) 0 0;
+  width: 100%;
+  height: calc(100% + var(--s-6));
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.8;
+  mask-image:
+    linear-gradient(to right, transparent 52%, #000 64%),
+    linear-gradient(to bottom, #000 78%, transparent);
+  mask-composite: intersect;
+  transition: opacity var(--dur) var(--ease);
+}
+
+/* With the cursor in the search box the network comes up with the light. */
+.hero:has(.hero-search input:focus) .hero-signal {
+  opacity: 1;
+}
+
+.hero-signal :is(path, circle) {
+  vector-effect: non-scaling-stroke;
+}
+
+.sig-far {
+  fill: var(--faint);
+  opacity: 0.55;
+}
+
+.sig-ring {
+  fill: none;
+  stroke: var(--faint);
+  stroke-width: 1;
+  stroke-dasharray: 0.25 0.9;
+  stroke-linecap: round;
+}
+
+.sig-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-opacity: 0.32;
+  stroke-width: 1;
+}
+
+.sig-trace {
+  fill: none;
+  stroke: var(--commit);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.sig-node {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-opacity: 0.7;
+  stroke-width: 1.25;
+}
+
+.sig-hub {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-opacity: 1;
+  stroke-width: 2;
+}
+
+.sig-halo {
+  fill: var(--accent);
+  opacity: 0.12;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* At rest the signals are not there: they are the animation, and under
+   prefers-reduced-motion the animation does not exist. */
+.sig-pulse {
+  fill: none;
+  stroke: var(--commit);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 110;
+  opacity: 0;
+}
+
+/* Below 64rem the figure is not displayed and the right-hand 350 units are
+   what show, around the short ends of the headline's lines: no column of
+   copy to keep clear, so the mask fades down and toward the left instead, and
+   the signals — which run into a figure that is not there — are dropped.
+   `width <` rather than max-width: at exactly 1024px the figure is shown. */
+@media (width < 64rem) {
+  .hero-signal {
+    opacity: 1;
+    mask-image: radial-gradient(90% 75% at 100% 0%, #000 30%, transparent 85%);
+  }
+
+  .sig-trace,
+  .sig-pulse {
+    display: none;
+  }
 }
 
 .hero-copy {
@@ -549,7 +704,9 @@ main {
   font-size: var(--t-base);
   font-weight: 560;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .hero-search button[type="submit"]:hover {
@@ -789,7 +946,11 @@ main {
     box-shadow var(--dur) var(--ease);
 }
 
-.trace-card:hover {
+/* focus-within as well as hover, as on the feed's rows: the card's link is the
+   name stretched over it, and tabbing to that link should lift the card the
+   cursor would. */
+.trace-card:hover,
+.trace-card:focus-within {
   transform: translateY(-2px);
   box-shadow:
     inset 0 0 0 1px var(--commit),
@@ -1074,7 +1235,26 @@ main {
 }
 
 .section-head h2 {
+  position: relative;
   margin: 0;
+}
+
+/* A short rule under each section heading in the two colours the hero's light
+   is made of, so the page's sections are marked by the same ground they open
+   on. Absolutely placed in the section head's bottom margin: no box changes.
+   Static. A scroll-driven draw on it was built and removed: view() on a 2px
+   box has an entry range of 2px of scrolling, so it drew in one frame at the
+   viewport's bottom edge where nobody was looking. */
+.section-head h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  width: 1.75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--accent), var(--commit));
+  transform-origin: left;
 }
 
 .section-head a {
@@ -1193,6 +1373,35 @@ main {
 
 .rows > li:first-child {
   border-top: 0;
+}
+
+/* The kind's light, from the edge the hovered row grows into the row: a second
+   layer over the hover background rather than a gradient on it, because a
+   background-image does not transition and this one fades. Its own stacking
+   context (isolation) keeps the layer under the row's text at rest as well as
+   while the hovered row is raised, so it fades out where it faded in. */
+.rows > li {
+  isolation: isolate;
+}
+
+.rows > li::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hue, var(--accent)) 10%, transparent),
+    transparent 45%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.rows > li:hover::before,
+.rows > li:focus-within::before {
+  opacity: 1;
 }
 
 /* focus-within as well as hover: tabbing through the list must light the same
@@ -1435,12 +1644,15 @@ textarea {
   transition:
     background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 /* The arrow on a primary action leans forward under the cursor. Only the
    glyph moves; the button itself does not grow, lift or tilt, because a
-   control that changes size on hover moves everything laid out beside it. */
+   control that changes size on hover moves everything laid out beside it.
+   (The press below is a transform, which is painted rather than laid out, so
+   it moves nothing beside the control.) */
 .btn svg {
   transition: transform var(--dur) var(--ease);
 }
@@ -1453,6 +1665,22 @@ textarea {
 .submit button:hover,
 .search button[type="submit"]:hover {
   background: var(--accent-hover);
+}
+
+/* The press: every primary control and the pager give way under the pointer
+   by 3%, so a click on a server-rendered page — which may take a moment to
+   answer — is acknowledged on the frame it lands. A transform, so nothing
+   beside the control moves; on the duration tokens, so the reduced-motion
+   block turns it into an instant state. The chips are pressed further down,
+   beside their own selection lift. */
+:is(
+  .btn,
+  .submit button,
+  .search button[type="submit"],
+  .hero-search button[type="submit"],
+  .pager a
+):active:not([disabled]) {
+  transform: scale(0.97);
 }
 
 .btn[disabled],
@@ -1778,6 +2006,16 @@ textarea {
   font-weight: 560;
   box-shadow: 0 0 0 3px var(--accent-soft);
   transform: translateY(-1px);
+}
+
+/* Pressed: the chip gives way, and keeps its one-pixel lift if it is the
+   selected one so the press does not read as a deselection. */
+.facet .chip:active {
+  transform: scale(0.97);
+}
+
+.facet .chip[aria-current]:active {
+  transform: translateY(-1px) scale(0.97);
 }
 
 /* The ring belongs on the chip, not on the 13px control buried inside it —
@@ -2187,7 +2425,8 @@ textarea {
   transition:
     background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .pager a:hover {
@@ -2409,7 +2648,9 @@ details.notice[open] p {
   padding: var(--s-6) var(--s-5);
   border: 1px dashed var(--border-strong);
   border-radius: var(--r-lg);
-  background: var(--surface);
+  /* The hero's blue light, low and centred over the message: an empty result
+     is still a page of this site, not a blank. */
+  background: radial-gradient(28rem 9rem at 50% 0%, var(--glow-a), transparent 70%), var(--surface);
   text-align: center;
 }
 
@@ -2481,19 +2722,46 @@ details.notice[open] p {
   padding: var(--s-4);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
+  /* Three layers at rest: the kind's light at the top-left where its strip
+     and badge are, a fainter answer at the bottom-right, and a hairline of
+     highlight along the top edge — the card is lit from above rather than
+     printed flat. */
   background:
     radial-gradient(
       14rem 6rem at 0% 0%,
       color-mix(in srgb, var(--hue, var(--accent)) 7%, transparent),
       transparent
     ),
+    radial-gradient(
+      12rem 8rem at 100% 100%,
+      color-mix(in srgb, var(--hue, var(--accent)) 4%, transparent),
+      transparent
+    ),
     var(--surface);
+  box-shadow: inset 0 1px 0 light-dark(rgb(255 255 255 / 80%), rgb(255 255 255 / 5%));
   color: var(--fg);
   text-decoration: none;
   transition:
     border-color var(--dur-fast) var(--ease),
     box-shadow var(--dur) var(--ease),
     transform var(--dur) var(--ease);
+}
+
+/* The sweep's band, parked off the card's left edge (the card clips it). It
+   crosses once when the card is hovered or focused — the animation is in the
+   motion block, so at rest and under prefers-reduced-motion it stays parked. */
+.type-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--hue, var(--accent)) 16%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
 }
 
 /* The kind's strip along the top edge. */
@@ -2507,13 +2775,21 @@ details.notice[open] p {
   transition: opacity var(--dur-fast) var(--ease);
 }
 
-.type-card:hover {
+/* focus-visible as well as hover: a keyboard reader tabbing through the seven
+   kinds gets the lift a pointer gets (the ring is the global one, on top).
+   The glow is the kind's own hue, spread under the card rather than around it,
+   the same shape the Latest read card's teal glow has. */
+.type-card:hover,
+.type-card:focus-visible {
   border-color: color-mix(in srgb, var(--hue, var(--accent)) 45%, var(--border));
-  box-shadow: var(--shadow-lift);
+  box-shadow:
+    var(--shadow-lift),
+    0 14px 28px -16px color-mix(in srgb, var(--hue, var(--accent)) 50%, transparent);
   transform: translateY(-2px);
 }
 
-.type-card:hover::before {
+.type-card:hover::before,
+.type-card:focus-visible::before {
   opacity: 1;
 }
 
@@ -3544,6 +3820,148 @@ details.notice[open] p {
     animation: lane-light 1.5s var(--ease) 1.4s 2;
   }
 
+  /* The two washes rise into place with the ground, settling from slightly
+     lower — the light coming up on the stage the figure then draws on. Once:
+     Phase 60 declined an endless drift of these (it would need a pause control
+     under WCAG 2.2.2 and buys little), and this is the part of that idea that
+     ends, at 1.6 s, as the lane light's first pass begins. Its resting opacity
+     is the 0.7 above, so the focus response that raises it to 1 is untouched.
+
+     Vertical only. The wash is exactly as wide as the layout viewport (the
+     -50vw bleed above), so any horizontal scale overshoots it: the first
+     version's scale(1.06) widened a 390px page to 402px for half a second,
+     a sideways jolt on a phone and a flash of horizontal scrollbar on a
+     desktop with classic scrollbars. */
+  @keyframes wash-in {
+    from {
+      opacity: 0;
+      transform: translateY(3%);
+    }
+  }
+
+  .hero::after {
+    animation: wash-in 1.6s var(--ease-emphasized) backwards;
+  }
+
+  /* --- the network (Phase 72) ---
+
+     It draws itself on the ground's beat: the far ring fades up with the dots,
+     the near edges draw out from their nodes, the three hubs bloom once and
+     settle at their resting halo, and then three signals run in along the
+     traces to the figure — leaving at 1.0, 1.2 and 1.4 s, the first reaching
+     the lane at about 2.1 s, while the lane light (from 1.4 s) runs down it;
+     twice, as that light does. Last frame at 4.0 s. Opacity, transform
+     and stroke-dashoffset; nothing here lays anything out. */
+  .sig-far {
+    animation: ground-in 900ms var(--ease) backwards;
+  }
+
+  @keyframes sig-draw {
+    from {
+      stroke-dashoffset: 100;
+    }
+  }
+
+  .sig-edge {
+    stroke-dasharray: 100;
+    animation: sig-draw 1.1s var(--ease-emphasized) 150ms backwards;
+  }
+
+  @keyframes sig-node-in {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+  }
+
+  .sig-node {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: sig-node-in 420ms var(--ease-emphasized) 250ms backwards;
+  }
+
+  @keyframes sig-bloom {
+    0% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    45% {
+      opacity: 0.4;
+    }
+  }
+
+  .sig-halo {
+    animation: sig-bloom 1.4s var(--ease-emphasized) 700ms backwards;
+  }
+
+  /* From just before the path's start (the dash is 10 long) to past its end
+     (it is 100), fading in and out at the ends. */
+  @keyframes sig-run {
+    0% {
+      opacity: 0;
+      stroke-dashoffset: 10;
+    }
+
+    15%,
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      stroke-dashoffset: -100;
+    }
+  }
+
+  .sig-pulse {
+    animation: sig-run 1.3s var(--ease) 1s 2;
+  }
+
+  .sig-pulse:nth-last-of-type(2) {
+    animation-delay: 1.2s;
+  }
+
+  .sig-pulse:nth-last-of-type(1) {
+    animation-delay: 1.4s;
+  }
+
+  /* Focusing the search box sends one more pass, all three at once. Same
+     keyframes under a second name, because a name newly added to the list is
+     what starts an animation in CSS. sig-run stays first in the list: dropped
+     on focus, it would be newly added again on blur and replay the whole
+     entrance (found in review, 2026-10-27). So a reader tabbing in and out gets
+     1.3 s on the way in and nothing on the way out. */
+  @keyframes sig-run-again {
+    0% {
+      opacity: 0;
+      stroke-dashoffset: 10;
+    }
+
+    15%,
+    85% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+      stroke-dashoffset: -100;
+    }
+  }
+
+  .hero:has(.hero-search input:focus) .sig-pulse {
+    animation:
+      sig-run 1.3s var(--ease) 1s 2,
+      sig-run-again 1.3s var(--ease) 1;
+  }
+
+  /* No parallax on the dot ground. Built and measured on 2026-10-27: a
+     scroll-timeline transform on .hero::before (fill: both, so it is never
+     finished) keeps the ground on its own compositor layer, and the headline,
+     lede and search box over it lost subpixel antialiasing for good — 25,436
+     pixels of the 1280×800 hero rendered differently at rest, with the effect
+     itself invisible until the reader scrolls. Readability over depth. */
+
   /* --- the index flow ---
 
      It sits below the feed, a screen or more down, so an entrance on page load
@@ -3693,6 +4111,144 @@ details.notice[open] p {
     }
   }
 
+  /* --- Browse by type ---
+
+     The seven kind cards rise in as they scroll into view, the same mechanism
+     and range as the index flow above them, so the two sections below the
+     feed arrive the same way. Scroll-driven only, with no time-based
+     fallback: these sit two screens down, and a timed entrance would play
+     where nobody is looking — the reason the flow's reveal was tied to
+     scrolling in the first place. `backwards` without `forwards`: once a card
+     is in, the animation holds nothing, so its hover lift is the transition's
+     alone. The feed's rows get no entrance, as since Phase 57: they are what a
+     visitor came to read, and they are on screen at load. */
+  @supports (animation-timeline: view()) {
+    @keyframes card-rise {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+    }
+
+    .type-card {
+      animation: card-rise linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+  }
+
+  /* The light sweep (Phase 72): once across a type card when it is hovered or
+     focused, on the kind's hue. Triggered by the reader, so it plays where they
+     are looking and never on its own. */
+  @keyframes sweep {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  .type-card:is(:hover, :focus-visible)::after {
+    animation: sweep 850ms var(--ease-emphasized);
+  }
+
+  /* --- the page transition (template.tsx) ---
+
+     Leaving fades out fast, arriving fades in and settles 8px up: "something
+     new arrived" in a quarter of a second, opacity and transform only. The
+     header and footer are not inside the boundary and hold still. */
+  @keyframes page-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  ::view-transition-old(.page-exit) {
+    animation: page-out 120ms var(--ease) both;
+  }
+
+  ::view-transition-new(.page-enter) {
+    animation: page-in 240ms var(--ease-emphasized) 60ms both;
+  }
+
+  /* The header is the same on both pages: no crossfade of identical pixels,
+     and it stays on top of the page's snapshots. */
+  ::view-transition-group(site-header) {
+    z-index: 1;
+    animation: none;
+  }
+
+  ::view-transition-old(site-header) {
+    display: none;
+  }
+
+  ::view-transition-new(site-header) {
+    animation: none;
+  }
+
+  /* --- from a row to its page (Phase 72) ---
+
+     The artifact a reader opens carries its badge and its name onto the
+     detail page: the browser morphs the two from where they sat in the row,
+     or in the Latest read card, to the detail heading. The name goes on the
+     link that has focus, because that is the one a reader just clicked or
+     pressed Enter on — Chromium focuses a link on click — and only one
+     element can have focus, so the name is unique by construction. Two
+     elements with one view-transition-name would abort the transition, which
+     is why it is not a name per artifact on every row: the home page's rows
+     and the listing's carry the same artifacts, and moving between those two
+     would have flown ten names at once. The repository page has a
+     .detail-head too, with rows under it; :has(> .badge) keeps its heading
+     out. Where the browser does not focus on click, there is no pair and the
+     page transition plays as before. */
+  :is(.rows > li, .trace-card):has(:is(.row-title a, .trace-name):focus) .badge,
+  .detail-head > .badge {
+    view-transition-name: artifact-badge;
+  }
+
+  :is(.row-title a, .trace-name):focus,
+  .detail-head:has(> .badge) > h1 {
+    view-transition-name: artifact-name;
+  }
+
+  ::view-transition-group(artifact-name),
+  ::view-transition-group(artifact-badge) {
+    z-index: 1;
+    animation-duration: 380ms;
+    animation-timing-function: var(--ease-emphasized);
+  }
+
+  /* Unpaired — arriving on a detail page from anywhere else, or leaving one —
+     the heading moves with its page rather than on its own. */
+  ::view-transition-new(artifact-name):only-child,
+  ::view-transition-new(artifact-badge):only-child {
+    animation: page-in 240ms var(--ease-emphasized) 60ms both;
+  }
+
+  ::view-transition-old(artifact-name):only-child,
+  ::view-transition-old(artifact-badge):only-child {
+    animation: page-out 120ms var(--ease) both;
+  }
+
+  /* The overlay would otherwise swallow a click made during the quarter
+     second the transition runs. */
+  ::view-transition {
+    pointer-events: none;
+  }
+
+  /* A full-document navigation — every search here is a native GET form, and
+     those reload the page — gets the browser's own crossfade between the two
+     documents. Declared in this block, so under the preference there is
+     none. */
+  @view-transition {
+    navigation: auto;
+  }
+
   /* --- the loading placeholder --- */
 
   /* A slow sweep of light, not a pulse: a shimmer that blinks twenty times down
@@ -3764,5 +4320,16 @@ details.notice[open] p {
 
   html {
     scroll-behavior: auto;
+  }
+
+  /* React still opens a view transition on navigation (template.tsx) for a
+     reader with the preference; the page-in/out keyframes do not exist for
+     them, but the browser's own default crossfade of the captured groups
+     would still play. Its duration is the one thing reachable from here, so
+     it goes to the same 0.01ms as every transition: an instant swap. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms;
   }
 }

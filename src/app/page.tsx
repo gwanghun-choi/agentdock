@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
+import { HeroSignal } from '@/components/HeroSignal';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -66,6 +67,7 @@ export default async function HomePage() {
           pipeline with the newest artifact run through it, in the column the
           copy has always left empty — see LatestRead.tsx. */}
       <section className="hero">
+        <HeroSignal />
         <div className="hero-copy">
           <h1>Find agent artifacts, and see where they came from.</h1>
           <p className="lede">

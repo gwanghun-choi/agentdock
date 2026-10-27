@@ -27,8 +27,10 @@
  * the heights the real title, description and metadata lines will be, inside
  * the same two-column grid the real rows use, so the content that arrives lands
  * where the placeholder already was instead of shoving the page down under a
- * reader who has started moving the cursor. Nothing fades or slides in, for the
- * same reason.
+ * reader who has started moving the cursor. Nothing inside it fades or slides
+ * in, for the same reason; arriving from another section, the whole page —
+ * this placeholder included — gets the page transition (template.tsx), which
+ * moves a snapshot and lays out nothing.
  *
  * `aria-hidden` on the list, with one live line beside it: to a screen reader
  * ten identical rows of nothing is worse than silence, and "Loading artifacts"

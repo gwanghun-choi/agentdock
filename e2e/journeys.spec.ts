@@ -204,6 +204,84 @@ test('home: the Latest read figure is the newest row, and its motion ends and ho
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 });
 
+test('home: the entrance never widens a phone page, frame by frame', async ({ page }) => {
+  // Regression. Every other overflow check here runs under reduced motion,
+  // where no animation exists — so a keyframe that overshoots the viewport is
+  // invisible to them. The hero wash's first entrance scaled an element exactly
+  // as wide as the viewport by 1.06 and widened a 390px page to 402px for half
+  // a second. Sampled on every frame through the whole entrance.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    const w = window as unknown as { __widest: number };
+    w.__widest = 0;
+    const sample = () => {
+      w.__widest = Math.max(
+        w.__widest,
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      if (performance.now() < 2500) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.goto('/');
+  await page.waitForTimeout(2600);
+  expect(await page.evaluate(() => (window as unknown as { __widest: number }).__widest)).toBe(0);
+});
+
+test('a row carries its name and badge to the detail heading, and only the row that was opened', async ({
+  page,
+}) => {
+  // Two elements with one view-transition-name abort the whole transition, and
+  // the home page lists the newest artifact twice (figure and first row). The
+  // name follows focus, so at most one element carries it before the click.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  // Hydrated, so the click is a client navigation — the only kind React wraps
+  // in a view transition.
+  await page.waitForSelector('html[data-hotkeys]');
+  const named = () =>
+    page.evaluate(
+      () =>
+        [...document.querySelectorAll('*')].filter(
+          (e) => getComputedStyle(e).viewTransitionName === 'artifact-name',
+        ).length,
+    );
+  expect(await named()).toBe(0);
+  // The Latest read card's link carries it the same way.
+  await page.locator('.trace-name').focus();
+  expect(await named()).toBe(1);
+  const link = page.locator('.board .rows .row-title a').first();
+  await link.focus();
+  expect(await named()).toBe(1);
+
+  // What the transition React starts animates, read once it is ready.
+  await page.evaluate(() => {
+    const w = window as unknown as { __groups: string[] };
+    w.__groups = [];
+    const start = document.startViewTransition.bind(document);
+    document.startViewTransition = ((update: ViewTransitionUpdateCallback) => {
+      const transition = start(update);
+      transition.ready.then(() => {
+        for (const a of document.getAnimations()) {
+          const pseudo = (a.effect as KeyframeEffect | null)?.pseudoElement;
+          if (pseudo) w.__groups.push(pseudo);
+        }
+      });
+      return transition;
+    }) as typeof document.startViewTransition;
+  });
+  const name = ((await link.textContent()) ?? '').trim();
+  await link.click();
+  await page.waitForURL(/\/r\//);
+  await expect(page.locator('h1')).toHaveText(name);
+  const groups = await page.evaluate(() => (window as unknown as { __groups: string[] }).__groups);
+  expect(groups).toContain('::view-transition-old(artifact-name)');
+  expect(groups).toContain('::view-transition-new(artifact-name)');
+  expect(groups).toContain('::view-transition-new(artifact-badge)');
+});
+
 test('a new query keeps the applied filters and the chosen sort', async ({ page }) => {
   await page.goto('/artifacts?type=command&sort=name');
   await page.fill('#q', 'commit');
