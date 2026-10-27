@@ -90,6 +90,13 @@ function counted(text: SQL, ranges: string): SQL {
  * is decided by `~` tests alone. Measured 2026-10-26 over 18,995 production
  * descriptions on the local PG17: five counts on every row took 11.1 s; this
  * shape, which returns the identical class for all 18,995, 75 ms.
+ *
+ * The `offset 0` keeps PostgreSQL from flattening `c` into the CASE, which
+ * pasted each count in at every reference to it: five CJK counts for a zh row.
+ * Measured 2026-10-27 with production's 19,113 descriptions loaded locally:
+ * 0.038 → 0.020 ms per CJK-bearing row (1,132 of them), the browse page
+ * 148.5 → 127.8 ms p50, and the identical class on all 19,113
+ * (docs/analysis/agentdock-phase65-language-sql-optimization.md).
  */
 export function summaryLanguage(text: SQL): SQL<SummaryLanguage | null> {
   return sql<SummaryLanguage | null>`(
@@ -118,6 +125,7 @@ export function summaryLanguage(text: SQL): SQL<SummaryLanguage | null> {
                  ${counted(sql`t.s`, HANGUL)} as hangul,
                  ${only(sql`t.s`, LATIN)} as latin,
                  ${counted(sql`t.s`, OTHER)} as other
+          offset 0
         ) c
       )
     end
@@ -163,14 +171,16 @@ export type CjkLanguage = 'zh' | 'ja' | 'ko' | 'mixed';
  * itself says which of them are Chinese.
  *
  * ponytail: so a listing with no words classifies every CJK-bearing row on
- * every request. Measured at production's 19,113 rows: browse count 87 → 138
- * ms, the home page's feed (listPackages, 10 rows) 93 → 144 ms, its type
- * counts (countVisibleByType against countPackagesByType) 89 → 147 ms
- * (docs/analysis/agentdock-phase60-63-visual-and-language.md §14). A search with
- * words classifies only its matches (search.ts, searchWhere). The upgrade is
- * the STORED generated column named above, which turns this into an indexed
+ * every request. Measured 2026-10-27 at production's 19,113 rows, with the
+ * counts fenced (summaryLanguage): browse count 87 → 121 ms, the home page's
+ * feed (listPackages, 10 rows) 124 ms, its type counts (countVisibleByType)
+ * 125 ms — 138, 144 and 147 ms before the fence
+ * (docs/analysis/agentdock-phase60-63-visual-and-language.md §14,
+ * agentdock-phase65-language-sql-optimization.md §8). A search with words
+ * classifies only its matches (search.ts, searchWhere). The upgrade is the
+ * STORED generated column named above, which turns this into an indexed
  * equality — a migration to approve. Revisit when the browse count passes
- * 200 ms, about 28k listed rows at this rate.
+ * 200 ms, about 32k listed rows at this rate.
  */
 export function visibleLanguage(hidden: readonly CjkLanguage[]): SQL<boolean> {
   // `not in ()` is a syntax error, and an emptied policy hides nothing.

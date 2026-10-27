@@ -1618,7 +1618,7 @@ describe.skipIf(!DB_URL)('the search query', () => {
       const ids = await multilingual();
       const filters = { types: [], capabilities: [], languages: ['zh'] };
       const rows = await search.searchPackages({ q: 'langfiltrword', filters });
-      expect(rows.every((x) => x.id === ids.zh)).toBe(true);
+      expect(rows.map((x) => x.id)).toEqual([ids.zh]);
     });
 
     // Phase 62: the default leaves Chinese out until a language is named.
@@ -1645,6 +1645,7 @@ describe.skipIf(!DB_URL)('the search query', () => {
 
       // The fallback reads the same predicate.
       const fuzzy = await search.searchPackages({ q: 'langfiltrword', filters: hidden });
+      expect(fuzzy.length).toBeGreaterThan(0);
       expect(fuzzy.map((x) => x.id)).not.toContain(ids.zh);
     });
 

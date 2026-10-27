@@ -88,6 +88,33 @@ const CASES: { id: string; text: string | null; expect: string | null }[] = [
     text: 'Dung khi can ke hoach marketing tong the cho mot ky',
     expect: 'latin',
   },
+  // Phase 65: shapes the default hiding (HIDDEN_UNLESS_ASKED) depends on, plus
+  // edge inputs. Each classifies the same with or without the `offset 0` fence.
+  { id: 'korean-with-hanja', text: '大韓民國 憲法 조문을 검색하고 요약합니다', expect: 'ko' },
+  // The ceiling HIDDEN_UNLESS_ASKED names: kana under a tenth of the CJK.
+  {
+    id: 'japanese-mostly-kanji',
+    text: '業務設計書作成支援、要件定義書自動生成機能の提供',
+    expect: 'zh',
+  },
+  { id: 'emoji-english', text: '🚀 Deploy to production 🎉', expect: 'latin' },
+  { id: 'emoji-only', text: '🚀🎉', expect: 'unknown' },
+  { id: 'long-chinese', text: '当用户要求整理会议记录并生成摘要时使用。'.repeat(60), expect: 'zh' },
+  // Each threshold from both sides: these decide where the zh hiding reaches.
+  // Kana at exactly a tenth of 20 CJK, then one short.
+  { id: 'kana-at-a-tenth', text: `${'漢字'.repeat(9)}かか`, expect: 'ja' },
+  { id: 'kana-under-a-tenth', text: `${'漢字'.repeat(9)}漢か`, expect: 'zh' },
+  // Hangul at exactly half the CJK, then one short.
+  { id: 'hangul-at-half', text: '한국中文', expect: 'ko' },
+  { id: 'hangul-under-half', text: '한中文中', expect: 'zh' },
+  { id: 'han-three', text: '测试一', expect: 'unknown' },
+  { id: 'han-four', text: '测试一二', expect: 'zh' },
+  // One CJK beside nine Latin letters is a tenth: CJK-led, too short to name.
+  // Beside ten, under a tenth: latin.
+  { id: 'cjk-at-a-tenth', text: 'abcdefghi测', expect: 'unknown' },
+  { id: 'cjk-under-a-tenth', text: 'abcdefghij测', expect: 'latin' },
+  { id: 'five-latin-words', text: 'one two three four five 中文测试内容', expect: 'zh' },
+  { id: 'six-latin-words', text: 'one two three four five six 中文测试内容', expect: 'mixed' },
 ];
 
 describe.skipIf(!DB_URL)('summaryLanguage', () => {
@@ -109,5 +136,15 @@ describe.skipIf(!DB_URL)('summaryLanguage', () => {
       dsql`select ${summaryLanguage(dsql`${text}::text`)} as lang`,
     );
     expect(row.lang).toBe(expected);
+  });
+
+  // Flattened, the counts subquery is pasted into the CASE at every reference
+  // and a zh row counts its CJK five times (language.ts, `offset 0`). Two rows,
+  // because the planner folds a one-row VALUES into a constant.
+  it('computes each count once: the counts subquery is not flattened', async () => {
+    const plan = await db.execute<{ 'QUERY PLAN': string }>(
+      dsql`explain (verbose, costs off) select ${summaryLanguage(dsql`v.s`)} from (values ('x'::text), ('y')) v(s)`,
+    );
+    expect(plan.map((r) => r['QUERY PLAN']).join('\n')).toContain('Subquery Scan on c');
   });
 });
