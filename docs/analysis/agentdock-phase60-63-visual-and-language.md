@@ -2,6 +2,8 @@
 
 작성일 2026-10-26, 기준 commit `cb9a92e`(develop = origin/develop = 운영 배포 commit). 변경은 모두 미커밋 상태다.
 
+> 2026-10-27 추가: 이 변경은 `048023a`로 커밋·배포됐다. 배포 후 운영 검증과 탐색 응답 시간 분석은 §27에 있다.
+
 표기:
 - FACT: 이번 작업에서 실행·측정한 결과
 - INFERENCE: 근거에서 추론한 판단
@@ -226,7 +228,7 @@
   - 전체 스크롤: 34ms를 넘는 frame 0, p95 16.7ms.
   - 5초 뒤에는 실행 중인 애니메이션이 없어 CPU와 배터리를 계속 쓰지 않는다.
   - 서체는 변경하지 않았다(Phase 57의 46,752B woff2 그대로).
-- **운영 기준선(FACT, 읽기 전용, cb9a92e):** `/` p50 1,235ms, `/artifacts` 1,218, `q=review` 1,106, `lang=zh` 1,356(5회, 네트워크 포함). 변경 후 운영 수치는 **PENDING**이다.
+- **운영 기준선(FACT, 읽기 전용, cb9a92e):** `/` p50 1,235ms, `/artifacts` 1,218, `q=review` 1,106, `lang=zh` 1,356(5회, 네트워크 포함). 변경 후 운영 수치는 §27에 있다.
 
 ## 15. 접근성
 
@@ -370,7 +372,7 @@
 
 ## 22. PENDING / NOT RUN
 
-- PENDING: push 뒤 CI 통과, Deploy, 운영 `x-agentdock-commit` 변경, 운영 응답 시간 재측정, 운영 홈에서 중국어가 빠졌는지 확인.
+- ~~PENDING: push 뒤 CI 통과, Deploy, 운영 `x-agentdock-commit` 변경, 운영 응답 시간 재측정, 운영 홈에서 중국어가 빠졌는지 확인.~~ 모두 확인했다(§27).
 - NOT RUN: 실기기(iOS Safari, Android Chrome), Firefox와 Safari의 scroll-driven fallback 육안 확인, 실제 screen reader 낭독.
 - INFERENCE: 운영 홈의 Recently indexed에서 중국어 연속 노출은 사라진다. 운영 zh 609건이 이 정책의 대상이다.
 
@@ -438,3 +440,153 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 2. 운영 응답 시간을 다시 측정하고 §14의 기준선과 비교한다. browse count가 200ms에 가까워지면 §21의 migration 승인을 요청한다.
 3. 실기기에서 확인한다. iOS Safari는 scroll-driven 지원 여부와 fallback, Android Chrome은 저사양에서의 load 연출을 본다.
 4. 필요하면 상세 페이지에도 hero 언어(lane, commit teal)를 확장한다.
+
+## 27. 운영 검증과 최종 판정 (Phase 64, 2026-10-27)
+
+운영에서는 읽기 전용 HTTP 요청만 보냈다. 운영 DB 접속, 쓰기, migration, sync, Secret 변경은 하지 않았다. 코드는 바꾸지 않았다.
+
+### 27.1 배포 상태 (FACT)
+
+| 항목                      | 값                                                                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 운영 `x-agentdock-commit` | `048023a7bc7c8b2ec6e9616b14631da8fc8b08d1`                                                                                                   |
+| GitHub CI                 | run 40304569852, success, `048023a`                                                                                                          |
+| Deploy                    | run 40304787538, success, `048023a`                                                                                                          |
+| 응답 경로                 | `x-vercel-id: icn1::iad1`. edge는 서울, function은 미국 동부다. `cache-control: private, no-store`이고 모든 응답이 `x-vercel-cache: MISS`다. |
+
+### 27.2 언어 정책 (FACT)
+
+| 경로                  | 첫 페이지의 `lang="zh"` 행 | 비고                                                                          |
+| --------------------- | -------------------------: | ----------------------------------------------------------------------------- |
+| `/`                   |                          — | "Not listed by default: 609 artifacts with a description written in Chinese." |
+| `/artifacts`          |                          0 | 숨김 안내와 "All except Chinese" 칩이 표시된다                                |
+| `/artifacts?lang=any` |                         10 | 모든 언어                                                                     |
+| `/artifacts?lang=zh`  |                         25 | 중국어만                                                                      |
+| `/artifacts?q=review` |                          0 | 숨김 안내가 표시된다                                                          |
+
+### 27.3 응답 시간 재측정 (FACT)
+
+- **방법:** 2026-10-27 로컬(서울)에서 `curl`로 측정했다. 35라운드를 돌았고, 라운드마다 7개 경로를 무작위 순서로 한 번씩 요청했다(총 245회).
+  - 비교 기준으로 edge에서 캐시되는 정적 CSS 하나를 넣었다.
+  - 요청마다 새 TLS 연결을 열었다.
+- **오류율:** 245회 모두 HTTP 200이었고, 오류율은 0%다.
+
+| 경로                             | 전체 p50 |   p95 |  최소 |  최대 | TTFB p50 | 본문(전체−TTFB) p50 |
+| -------------------------------- | -------: | ----: | ----: | ----: | -------: | ------------------: |
+| 정적 CSS(edge HIT)               |    39 ms |    67 |    30 |   337 |       36 |                   4 |
+| `/`                              |    1,426 | 1,629 | 1,230 | 1,659 |    1,243 |                 184 |
+| `/artifacts` (기본, 중국어 제외) |    1,628 | 1,765 | 1,207 | 1,858 |      326 |               1,301 |
+| `/artifacts?page=2`              |    1,414 | 1,670 | 1,218 | 1,806 |      333 |               1,084 |
+| `/artifacts?lang=any`            |    1,204 | 1,361 | 1,007 | 1,443 |      324 |                 878 |
+| `/artifacts?lang=zh`             |    1,341 | 1,436 | 1,155 | 1,913 |      327 |               1,009 |
+| `/artifacts?q=review`            |    1,126 | 1,315 |   934 | 1,649 |      327 |                 793 |
+
+- **같은 라운드 안의 차이(paired median):**
+
+| 비교                      |    차이 | 앞쪽이 더 느렸던 라운드 |
+| ------------------------- | ------: | ----------------------: |
+| `/artifacts` − `lang=any` | +430 ms |                   33/35 |
+| `page=2` − `lang=any`     | +208 ms |                   31/35 |
+| `lang=zh` − `lang=any`    | +129 ms |                   32/35 |
+
+- **page 1과 page 2:** 20라운드를 따로 더 쟀다. `/artifacts`, `?page=1`, `?page=2`, `?lang=any` 4개 경로다.
+  - page 1 − page 2는 +59~+103ms였고, page 1이 느린 라운드는 13~15/20이다. 일관되지 않아 측정 편차로 본다.
+  - 로컬 DB에서는 두 쿼리 시간이 같다(아래 27.4).
+  - 기본 − `lang=any`는 이 측정에서도 +220~+320ms였다.
+- **이전 측정과의 비교**
+
+| 경로         | 배포 전 기준선(소수 회) | 배포 직후(7회) | 이번(35회) |
+| ------------ | ----------------------: | -------------: | ---------: |
+| `/`          |                   1,235 |          1,238 |      1,426 |
+| `/artifacts` |                   1,218 |          1,351 |      1,628 |
+| `q=review`   |                   1,106 |          1,068 |      1,126 |
+| `lang=zh`    |                   1,356 |          1,260 |      1,341 |
+
+- **해석:** 배포 전 `/artifacts`는 지금의 `lang=any`와 같은 조건이었다. 그때 1,218ms이고 지금 `lang=any`는 1,204ms로 거의 같다. 따라서 기본 탐색 목록은 약 +300~430ms(p50 기준 약 +25~35%) 느려졌다. 7회 측정에서 본 +130ms는 이 증가를 과소평가했다.
+  - `q=review`와 `lang=zh`는 배포 전후 차이가 없다.
+  - `/`도 기본 숨김을 적용하고, 기준선보다 약 +190ms 느리다.
+
+### 27.4 원인 분리
+
+| 비용                        | 판단           | 근거                                                                                                                                                                                                    |
+| --------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 네트워크 RTT, TLS           | 원인 아님      | (FACT) TLS p50은 21ms로 모든 경로가 같다. 정적 CSS는 39ms다.                                                                                                                                            |
+| edge → function → 첫 바이트 | 원인 아님      | (FACT) 동적 경로의 TTFB가 경로와 무관하게 323~333ms다. 서울 edge와 미국 동부 function 사이의 왕복과 shell이 여기에 들어간다.                                                                            |
+| 캐시                        | 원인 아님      | (FACT) 모든 응답이 `no-store`이고 MISS다. 경로마다 조건이 같다.                                                                                                                                         |
+| 쿼리 수, DB 왕복 수         | 원인 아님      | (FACT, 코드) 기본과 `lang=any` 모두 `searchMode` 다음에 rows와 count를 병렬로 실행한다(`artifacts/page.tsx:494-498`). 차이는 `hiddenLanguages` 하나다. 추가 count는 결과가 0건일 때만 실행된다(`:744`). |
+| DB 연결 재생성              | 원인 아님      | (INFERENCE) postgres.js pool의 `idle_timeout`은 20초인데, 요청 간격은 약 1.4초다. p95−p50 폭이 140ms 안팎이고 두 덩어리로 갈라지지 않는다. 새 연결이 반복해서 생기는 패턴이 보이지 않는다.              |
+| Pagination                  | 원인 아님      | (FACT) 로컬에서 page 1과 page 2의 rows가 145.4ms와 145.7ms로 같다. 운영 차이는 일관되지 않는다(27.3).                                                                                                   |
+| **언어 분류 SQL**           | **원인**       | 아래 로컬 실행계획 참조                                                                                                                                                                                 |
+| COUNT와 목록 술어           | 공통 바닥 비용 | 아래 참조                                                                                                                                                                                               |
+
+**로컬 재현(FACT):** 로컬 PG17에서 측정했다. 운영 설명 19,113건을 `agentdock_test`에 적재하고 15회 p50을 잰 뒤 삭제했다(잔여 0). 스크립트는 scratchpad `p64/local.ts`다.
+
+| 조건              | 페이지 단위(searchMode + rows∥count) | count |  rows |
+| ----------------- | -----------------------------------: | ----: | ----: |
+| 기본(중국어 제외) |                             147.8 ms | 140.4 | 145.4 |
+| page=2            |                                146.7 | 140.3 | 145.7 |
+| `lang=any`        |                                 92.4 |  86.3 |  90.0 |
+| `lang=zh`         |                                 86.1 |  84.6 |  85.7 |
+| `q=review`(기본)  |                                 36.3 |  31.2 |  36.5 |
+
+`EXPLAIN (ANALYZE, BUFFERS)`로 count를 비교했다.
+
+- `lang=any`
+  - `package` seq scan은 2.9ms다.
+  - 나머지 약 90ms는 `NOT_LISTED_BECAUSE` 행별 subplan이다(SubPlan 1·4, 각 19,113 loops).
+- 기본(중국어 제외)
+  - 같은 seq scan이 58.2ms로 늘어난다.
+  - CJK 사전 필터(`summary !~ [Han·Kana·Hangul]`) 비용은 약 13ms다.
+  - 나머지는 CJK가 들어 있는 1,132행을 분류하는 SubPlan 6이다. 1행에 0.037ms, 합계 약 42ms다.
+- 쿼리 전체는 95.5ms에서 149.4ms로 늘어난다(+54ms, 약 37%).
+
+**운영으로 옮기면(INFERENCE):** 운영 증가폭과 로컬 증가폭의 비율이 비슷하다.
+
+- 운영의 본문 구간: `lang=any` 878ms, 기본 1,301ms, 비율 1.48배.
+- 로컬의 페이지 단위: 92ms, 148ms, 비율 1.6배.
+
+운영 DB의 쿼리 실행이 로컬보다 대략 8배 느리다고 보면 두 결과가 맞는다(+54ms × 8 ≈ +430ms). 이 배율은 운영 DB 실행계획을 직접 보지 않고 추정한 값이다. 운영 DB 접속이 금지되어 있으므로 **PENDING**으로 남긴다.
+
+**결론:**
+
+- 늘어난 시간은 언어 분류 SQL에서 나온다.
+- 경로에 관계없이 깔리는 더 큰 바닥 비용은 목록 술어(`NOT_LISTED_BECAUSE` subplan)이고, 로컬 기준 약 90ms다. 이것은 Phase 60–63 이전부터 있던 비용이다(architecture `listing-cost-linear`).
+
+### 27.5 STORED generated column 검토 (실행하지 않음)
+
+| 항목                     | 검토                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 기대 효과                | 언어 판정이 컬럼 비교 한 번이 된다. 하한은 `lang=any` 실행계획(seq scan 2.9ms)이다. 기본 탐색이 로컬 148ms → 약 92ms, 운영 1.6초 → 약 1.2초(배포 전 수준)로 돌아올 것으로 본다(INFERENCE). 목록 술어 바닥 비용(운영 약 0.9초)은 줄지 않는다.                                                                                                                   |
+| Schema 변경              | `summaryLanguage()`는 scalar subquery를 쓰는데, PostgreSQL generated column 식은 subquery를 허용하지 않는다. 그래서 `agentdock` schema에 IMMUTABLE SQL 함수를 만들고, 컬럼은 그 함수를 호출해야 한다. 그러면 분류 규칙이 TS(`language.ts`)와 SQL 함수 두 곳에 있게 된다. TS 쪽을 컬럼 참조로 바꿔 정의를 하나로 남겨야 한다.                                   |
+| Migration 비용, backfill | `ADD COLUMN … GENERATED ALWAYS AS (…) STORED`는 테이블 전체를 다시 쓰고 ACCESS EXCLUSIVE lock을 잡는다. 19k행이라 짧지만, 그동안 읽기도 막힌다. backfill은 rewrite에 포함된다.                                                                                                                                                                                 |
+| 인덱스                   | 기본 목록은 행 대부분(97%)을 남기므로 seq scan이 유지된다. 인덱스는 `lang=zh`(609행)에만 의미가 있고, 필수가 아니다.                                                                                                                                                                                                                                           |
+| Sync 호환성              | 생성 컬럼은 PostgreSQL이 INSERT/UPDATE 때 계산한다. sync는 `package`에 drizzle `insert(packageTable)` 한 곳으로만 쓰고(FACT, `src/ingest/persist.ts:152`), `SELECT *` 형태의 INSERT는 없다(FACT, `git grep`). schema에서 컬럼을 `generatedAlwaysAs`로 선언하면 insert 목록에서 빠지므로 sync 코드는 바꾸지 않아도 된다(INFERENCE, migration 시 테스트로 확인). |
+| 검색 회귀                | 분류 결과가 지금 식과 행 단위로 같아야 한다. migration 전에 19k행 전체에서 함수 결과와 현재 식을 비교하는 검증이 필요하다. search:eval 54/54와 multilingual 15/15도 다시 돌린다.                                                                                                                                                                               |
+| Rollback                 | `DROP COLUMN`과 `DROP FUNCTION`이다. 둘 다 boundary scanner가 검토를 요구하는 파괴적 동사다. 데이터 손실은 없다(파생 값).                                                                                                                                                                                                                                      |
+
+**판정: 지금은 migration을 하지 않고 현재 구현을 유지한다.**
+
+- 기능은 의도대로 동작한다. 늘어난 시간(운영 p50 약 +0.3~0.4초)은 정책을 적용한 대가로 측정되고 설명된 값이다.
+- 사전에 정한 상한(로컬 browse count 200ms)에 아직 닿지 않았다. 현재는 140ms다.
+- 다만 이번 측정으로 로컬 140ms가 운영 약 1초 이상에 해당한다는 사실이 드러났다. 상한을 운영 체감 기준으로 다시 정할지는 사용자가 결정할 일이다. 결정하면 이 migration을 하나의 Phase로 따로 승인받아 진행한다.
+
+### 27.6 최종 판정
+
+- **(FACT) Phase 60–63은 완료다.** 커밋, CI, 배포, 운영 commit header, 언어 정책(기본 제외 609건, `lang=any`, `lang=zh`)을 모두 확인했다.
+- **(FACT) 탐색 목록의 응답 시간 증가는 재현된다.** p50 기준 +300~430ms이고, 원인은 언어 분류 SQL이다.
+- **(판정) 현재 코드를 유지한다.** migration은 선택 사항이며 승인이 필요하다.
+
+### 27.7 PENDING / NOT RUN
+
+- PENDING: 운영 DB 실행계획(접속 금지)과 운영/로컬 배율 확인. 생성 컬럼과 sync insert의 호환은 migration을 승인하면 테스트로 확인한다.
+- NOT RUN: 실기기(iOS Safari, Android Chrome), Firefox와 Safari 육안 확인, screen reader.
+- Obsidian Stop hook: 2026-10-26 19:14와 19:35(KST)의 배포 후 확인 turn이 `skip:no-turn`으로 기록되지 않았다. 두 turn은 `/loop` 예약 wakeup이었고, prompt entry가 `isMeta: true`, `turnOrigin: scheduled`로 저장된다. hook의 `_is_prompt()`는 `isMeta` entry를 prompt로 보지 않는다(`~/.claude/hooks/obsidian-knowledge/process_turn.py`). hook 코드는 이 Phase의 범위가 아니어서 고치지 않았다. 따로 분석할 대상이다.
+
+### 27.8 Evidence
+
+| ID     | 내용                          | 위치(scratchpad `p64/`)                                         |
+| ------ | ----------------------------- | --------------------------------------------------------------- |
+| E64-01 | 운영 245회 측정 원자료와 집계 | `run.sh`, `prod.tsv`, `stats.py`                                |
+| E64-02 | page 1과 2 추가 측정(80회)    | `run2.sh`, `prod2.tsv`                                          |
+| E64-03 | 로컬 19k 재현, 실행계획, SQL  | `local.ts`, `local.out`                                         |
+| E64-04 | Stop hook 로그                | `~/.claude/hooks/obsidian-knowledge/logs/hooks.log` 1655–1662행 |
