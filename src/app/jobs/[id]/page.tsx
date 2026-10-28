@@ -32,6 +32,14 @@ export default async function JobPage({ params }: Props) {
 
   return (
     <>
+      {/* The run's three stages as a bar — queued, reading, finished — drawn
+          from the status JobPanel states in words below it, so it adds no
+          fact and is hidden from assistive technology. */}
+      <div aria-hidden="true" className="job-track" data-status={job.status}>
+        <span />
+        <span />
+        <span />
+      </div>
       <JobPanel job={job} />
       {/* A plain link to this same page: works with JavaScript off and in a
           background tab, where PollUntilDone deliberately stops asking. */}

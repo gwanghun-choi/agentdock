@@ -3,6 +3,7 @@
 - 작성: 2026-10-27 (UTC 05:30 전후 조사)
 - 범위: A 단계(읽기 전용 조사와 복구 준비)까지다. B 단계(Phase 69 secret 교체, Phase 70 Sync 검증)는 **사용자 승인 전이라 실행하지 않았다.**
 - 표기: FACT(직접 확인), INFERENCE(근거 있는 추정), PENDING(승인·운영 접근이 있어야 확인 가능), NOT RUN(실행하지 않음)
+- **최종 결과(2026-10-28 00:5xZ): Phase 69 교체 완료, Phase 70 PASS.** 교체 뒤 예약 Sync 2회가 모두 COMPLETED로 끝났다(§18.4). §2–§17은 작성 당시 상태 그대로 두었다.
 - 이 문서에는 연결 문자열, 비밀번호, host를 적지 않았다. fingerprint는 `user@host:port/db`의 sha256 앞 16 hex이고, Deploy 공개 로그에도 출력되는 값이다.
 
 ## 1. 기준 HEAD
@@ -432,9 +433,54 @@ Phase 70 (첫 Sync):
 
 위 네 가지를 모두 확인해야 Phase 70 PASS다. 결과는 이 절 아래에 이어서 적는다.
 
+### 18.4 Phase 70 결과 — 교체 후 예약 Sync 2회 (확인 2026-10-28 00:48Z)
+
+읽기 전용으로 확인했다(`gh run list/view`, job log API, 운영 GET). 수동 dispatch, 재enqueue, DB 쓰기는 하지 않았다.
+
+| 항목 | 40494320276 | 40587752418 | 구분 |
+|---|---|---|---|
+| 시작 → 종료 (UTC) | 10-27 11:11:55 → 11:34:36 | 10-27 21:33:20 → 21:56:24 | FACT |
+| event / commit | schedule / `d7622fc` | schedule / `d7622fc` | FACT |
+| conclusion | success (모든 step success) | success | FACT |
+| Schema plan | `11 applied, 0 pending, 11 on disk — UP_TO_DATE` | 같음 | FACT |
+| Guard | `Refusing` 0줄. registry stage 출력으로 바로 진행 | 같음 | FACT |
+| Status (notice) | `COMPLETED`, failed-stages=none | `COMPLETED`, failed-stages=none | FACT |
+| drain | 200 / 최대 200, 남은 queue 0 | 200 / 200, 남은 queue 0 | FACT |
+| 처리 내역 | ingested 91, unchanged 52, no artifacts 28, 정책 제외 28(stars<50 27, archived 1), 읽기 실패 0, rate limit 0, 기타 실패 1(`too_large`, 재시도 0) | ingested 105, unchanged 45, no artifacts 18, 정책 제외 32(stars<50), 읽기 실패 0, rate limit 0, 기타 실패 0 | FACT |
+| artifact 저장 | found 5,372 = stored 5,372, 파일 단위 parse 실패 341 | found 4,933 = stored 4,933, 파일 단위 실패 130 | FACT (ingest 이벤트 200건 합산) |
+| `storage_failed` | 0 | 0 | FACT |
+| fan-out / refresh | 100 / 100 (not-reached 493) | 100 / 100 (not-reached 393) | FACT |
+| listed / held | 20,350 / 23,959 | 21,419 / 25,138 | FACT |
+| duration | 1,343 s | 1,364 s | FACT (기대 범위 1,242–1,506 s 안) |
+| delisted | 25 | 0 | FACT |
+
+**role / search_path.**
+- guard(`src/db/client.ts:67`)는 `current_user = agentdock_app`이고 `search_path`가 `agentdock` 또는 `agentdock_test` 하나일 때만 통과한다. 두 run 모두 통과했다(FACT).
+- ops 단계(`ops:status --markdown`)는 7개 read-only 검사 중 하나라도 실패하면 `ops: FAIL  <검사>`를 stderr로 쓰고 exit 2로 끝난다(`scripts/ops.mjs:118-125`). 그 검사에 `connected as agentdock_app`과 `search_path is exactly agentdock`(`src/db/readOnly.ts:146-147`)이 들어 있다. 두 run의 로그에는 `ops:` 줄이 0줄이다. 교체 전 run 8회(`39940525800`–`40409047009`)에는 같은 위치에 `ops: FAIL  connected as agentdock_app` 줄이 찍혔다(직전 `40409047009`는 role과 search_path 2줄). 따라서 두 검사 모두 PASS다(FACT, 로그 근거).
+- step summary(Markdown 표) 본문은 API로 받을 수 없어 직접 보지 못했다(NOT RUN).
+
+**운영 홈 (GET 2026-10-28 00:48Z).** `last sync without errors 2026-10-27 21:56 UTC`. 40587752418의 종료 시각과 같고, 교체 전 값 `2026-10-25 20:26 UTC`에서 갱신됐다(FACT).
+
+**판정: Phase 70 PASS.** §18.3의 네 조건(교체 후 run, guard 통과·Status ≠ FAILED, ops role/search_path PASS, 홈 시각 갱신)을 모두 확인했다. drain 처리 건수 > 0 조건(§12)도 충족했다. 남은 확인은 Fingerprint 대조 하나다. Sync는 pin을 쓰지 않으므로 다음 Deploy plan 줄에서 `0e4385657437449d`가 나오는지 본다(PENDING).
+
+**Job 771·978 재처리 준비 상태 (GET 00:48Z).**
+
+| 항목 | 771 `elementalsouls/claude-bughunter` | 978 `maxritter/claude-codepro` |
+|---|---|---|
+| job 상태 | failed, Attempt 3 (변화 없음) | failed, Attempt 3 (변화 없음) |
+| `/r/<target>` | 404 | 404 |
+| 같은 저장소의 현재 상태 | corpus에 없음 | GitHub에서 `maxritter/qualitylayer`로 이름이 바뀌었다(API FACT). 40494320276의 job 2207(`maxritter/pilot-shell`로 enqueue, commit `60986fa`)이 `ok`, stored 9(new 9)로 끝났다. `/r/maxritter/qualitylayer`가 200이고 `read 2026-10-27 11:22 UTC`, `At commit 60986fa`, artifact 9개를 보여 준다 |
+| 전제(교체 후 Sync 성공) | 충족 | 충족 |
+| 판단 | **재enqueue 준비 완료.** Phase 35–37 §14 절차로 진행하되 별도 승인이 필요하다 | **재enqueue 불필요로 보인다.** 같은 저장소가 다른 경로로 이미 저장됐다(INFERENCE: 이름 변경 이력과 commit sha가 일치한다). 다시 enqueue해도 `github_node_id` `ON CONFLICT`로 같은 행이 갱신될 뿐이다(코드 FACT) |
+
+- 978의 job 2207에 파일 단위 실패 8건이 있다. 다만 job 전체가 실패한 이전 사례(22021 NUL 저장 실패)와는 다르다. 실패한 파일이 무엇인지는 확인하지 않았다(NOT RUN).
+- 이번 단계에서 재enqueue는 하지 않았다(NOT RUN).
+
 ## Evidence
 
 - Sync run: 40409047009, 40317405590, 40229151309 외 7개. 로그는 scratchpad `p66/sync/*.log`에 있다(이전 Phase에서 받은 것을 재확인)
+- 교체 후 Sync run: 40494320276, 40587752418. job log는 scratchpad `p70/*.log`에 있다(연결 문자열 0건 확인)
+- 운영 GET(2026-10-28 00:48Z): `/` 200, `/jobs/771`·`/jobs/978` 200, `/r/elementalsouls/claude-bughunter`·`/r/maxritter/claude-codepro`·`/r/maxritter/pilot-shell` 404, `/r/maxritter/qualitylayer` 200
 - Deploy run: 40454829318 (`c821102`), 40443671711 (`2c4c7a3`)
 - CI run: 40454674756, 40443524002
 - `gh secret list` / `gh variable list --env production` / `gh api …/environments/production` (이름과 시각만)

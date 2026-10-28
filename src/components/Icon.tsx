@@ -314,3 +314,22 @@ export function AgentIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** The hero's motion control (HeroUniverse.tsx): two bars to stop it, */
+export function PauseIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9 5v14" />
+      <path d="M15 5v14" />
+    </Svg>
+  );
+}
+
+/** and the triangle to start it again. */
+export function PlayIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M7 4.5v15L19 12Z" />
+    </Svg>
+  );
+}

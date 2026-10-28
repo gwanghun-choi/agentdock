@@ -81,6 +81,24 @@ describe('the reduced-motion contract', () => {
     expect(block).toMatch(/--dur:\s*0\.01ms/);
   });
 
+  it('reaches every selector that declares the duration tokens', () => {
+    // Regression (Phase 74). `.hero` re-declares every token so its
+    // color-scheme reaches light-dark(); with the block naming :root alone,
+    // the hero kept 120/180 ms transitions under the preference. Each
+    // selector that declares --dur outside the block must be one the block
+    // redeclares it for.
+    const block = reducedMotionBlock(code);
+    const outside = code.replace(block, ' ');
+    const declaring = [...outside.matchAll(/([^{}]+)\{[^{}]*--dur\s*:/g)].flatMap((m) =>
+      m[1].split(',').map((s) => s.trim()),
+    );
+    const reached = [...block.matchAll(/([^{}]+)\{[^{}]*--dur\s*:/g)].flatMap((m) =>
+      m[1].split(',').map((s) => s.trim()),
+    );
+    expect(declaring).toContain(':root');
+    for (const selector of declaring) expect(reached).toContain(selector);
+  });
+
   it('switches off the one animation whose duration is a literal', () => {
     // The skeleton sweep is a keyframe animation, not a state transition, so it
     // is deliberately not on the duration tokens — which means the token

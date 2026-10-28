@@ -316,7 +316,7 @@ capability 필터는 결과를 좁힐 뿐 ranking 입력값이 아닙니다. sta
 ## Architecture
 
 ```
-Next.js 16 (App Router, 모든 route가 force-dynamic, client component 4개)
+Next.js 16 (App Router, 모든 route가 force-dynamic, client component 6개)
         │
         └── PostgreSQL 16          유일한 datastore. cache 없음, queue 없음
              ├── 검색: tsvector + GIN, 오타 허용은 pg_trgm
@@ -328,11 +328,12 @@ Redis도, OpenSearch도, vector database도, message broker도 없습니다. 큐
 
 프런트엔드도 같은 모양입니다. 모든 페이지는 Server Component이고, 스타일은
 custom property를 쓰는 순수 CSS입니다 — UI kit도, CSS framework도, animation
-library도, icon package도 없습니다. `'use client'`를 가진 component는 4개뿐이며
+library도, icon package도 없습니다. `'use client'`를 가진 component는 6개뿐이며
 어느 것도 데이터를 갖거나 fetch하지 않습니다: job 페이지의 polling effect,
 검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 상세 페이지의
-경로·링크·설정 텍스트 복사 버튼, 그리고 framework가 client component이기를 요구하는 error
-boundary입니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
+경로·링크·설정 텍스트 복사 버튼, framework가 client component이기를 요구하는 error
+boundary, 그리고 Phase 74에서 추가한 홈 hero의 canvas universe(`HeroUniverse`)와
+카드 조명에 포인터 좌표를 넘기는 `PointerGlow`입니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
@@ -340,8 +341,11 @@ boundary입니다. 검색은 GET form이고, type·capability 필터와 페이�
 그림이 lane, 노드, 카드 순서로 그려지는 것), index flow 다이어그램이 펼쳐지는 것,
 로딩 자리표시의 sweep, hover와 focus 반응은 전부 CSS입니다 — 애니메이션
 라이브러리도 scroll observer도 없고, flow가 스크롤에 맞춰 펼쳐지는 것은 지원하는
-브라우저에서 CSS `animation-timeline: view()`로 합니다. 모든 애니메이션은 5초
-안에 끝나고, 로딩 sweep 말고는 반복하지 않습니다. 반복되거나 페이지마다 재생되는
+브라우저에서 CSS `animation-timeline: view()`로 합니다. CSS 애니메이션은 모두 5초
+안에 끝나고(실행 중인 job의 진행 막대도 3회, 4.2초), 로딩 sweep 말고는 반복하지 않습니다.
+계속 움직이는 것은 hero의 universe(canvas, 30fps) 하나뿐이고, 화면에 보이는
+일시정지 버튼(브라우저에 기억됨)이 있으며, 화면 밖이나 숨은 탭에서는 멈추고,
+`prefers-reduced-motion: reduce`에서는 정지된 한 장면만 그립니다. 반복되거나 페이지마다 재생되는
 장식 모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠고,
 Phase 60에서 dot grid와 wash를 움직이지 않는 배경으로 되살렸습니다.
 서체는 Schibsted Grotesk(OFL-1.1) latin variable 파일 하나를 `next/font/local`로

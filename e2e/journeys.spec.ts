@@ -186,9 +186,11 @@ test('home: the Latest read figure is the newest row, and its motion ends and ho
   await expect(trace.locator('.trace-name')).toHaveText(
     (await page.locator('.board .rows .row-title a').first().textContent()) ?? '',
   );
-  // Every animation on the page is finite and over inside five seconds, so
-  // nothing here needs the pause control WCAG 2.2.2 asks of longer motion.
-  // The flow's are tied to scrolling, not to time, and are left out.
+  // Every CSS animation on the page is finite and over inside five seconds,
+  // so none of them needs the pause control WCAG 2.2.2 asks of longer motion.
+  // The flow's are tied to scrolling, not to time, and are left out. The
+  // hero's universe is a canvas, not an animation the document lists, and it
+  // is the one motion that does continue: its pause control is the next test.
   const ends = await page.evaluate(() =>
     document
       .getAnimations()
@@ -202,6 +204,71 @@ test('home: the Latest read figure is the newest row, and its motion ends and ho
   await page.reload();
   await expect(trace).toBeInViewport();
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+});
+
+test('home: the universe pauses, remembers it, and stands still for reduced motion', async ({
+  page,
+}) => {
+  // The one continuous motion on the site (HeroUniverse.tsx), so the one that
+  // must carry a pause control (WCAG 2.2.2). "Still" is asserted on pixels,
+  // not on the attribute alone: a loop that kept drawing behind a paused
+  // label is exactly the failure this guards.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const canvas = page.locator('.universe canvas');
+  const pixels = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await expect(canvas).toHaveAttribute('data-state', 'running');
+  const before = await pixels();
+  await page.waitForTimeout(300);
+  expect(await pixels()).not.toBe(before);
+
+  await page.getByRole('button', { name: 'Pause background animation' }).click();
+  await expect(canvas).toHaveAttribute('data-state', 'paused');
+  const paused = await pixels();
+  await page.mouse.move(200, 200);
+  await page.waitForTimeout(500);
+  expect(await pixels()).toBe(paused);
+
+  // Remembered for this browser, so a reader who stopped it is not asked again.
+  await page.reload();
+  await expect(canvas).toHaveAttribute('data-state', 'paused');
+  await page.getByRole('button', { name: 'Play background animation' }).click();
+  await expect(canvas).toHaveAttribute('data-state', 'running');
+
+  // Under the preference: one still frame, no loop, and no control for
+  // nothing — the pointer moves nothing either.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(canvas).toHaveAttribute('data-state', 'still');
+  await expect(page.locator('.motion-toggle')).toHaveCount(0);
+  const still = await pixels();
+  await page.mouse.move(900, 400);
+  await page.waitForTimeout(400);
+  expect(await pixels()).toBe(still);
+});
+
+test('a card lights where the pointer is, and leans only for a reader who allows motion', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await page.locator('html[data-hotkeys]').waitFor();
+  const card = page.locator('.type-card').first();
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  if (!box) throw new Error('no type card');
+  await page.mouse.move(box.x + 30, box.y + 20);
+  await expect
+    .poll(() => card.evaluate((e) => Number.parseFloat(e.style.getPropertyValue('--gx'))))
+    .toBeCloseTo(30, 0);
+  // Settled lean: a rotation, not the 2px lift alone.
+  await expect.poll(() => card.evaluate((e) => getComputedStyle(e).transform)).toMatch(/^matrix3d/);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.mouse.move(box.x + 60, box.y + 40);
+  await expect(card).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -2)');
 });
 
 test('home: the entrance never widens a phone page, frame by frame', async ({ page }) => {
@@ -276,7 +343,14 @@ test('a row carries its name and badge to the detail heading, and only the row t
   await link.click();
   await page.waitForURL(/\/r\//);
   await expect(page.locator('h1')).toHaveText(name);
-  const groups = await page.evaluate(() => (window as unknown as { __groups: string[] }).__groups);
+  // The new heading is in the DOM before `ready` settles — the new snapshot is
+  // taken after the update — so wait for the collection rather than reading
+  // it once. Failed 2 of 3 full runs in Phase 74 with the hero's canvas
+  // sharing the CPU across workers; 15 of 15 alone. A transition that aborts
+  // still leaves it empty, and fails below.
+  const read = () => page.evaluate(() => (window as unknown as { __groups: string[] }).__groups);
+  await expect.poll(async () => (await read()).length).toBeGreaterThan(0);
+  const groups = await read();
   expect(groups).toContain('::view-transition-old(artifact-name)');
   expect(groups).toContain('::view-transition-new(artifact-name)');
   expect(groups).toContain('::view-transition-new(artifact-badge)');
