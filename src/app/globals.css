@@ -30,63 +30,37 @@
      list that already sat on --surface-2 changed by nothing at all — the state
      was carried entirely by the accent edge and the lift. Splitting them is one
      token and it gives the interactive state its own step on the ladder. */
-  /* The dark scheme is deep navy and graphite (Phase 74), where it was a
-     neutral near-black: every step below kept its place on the ladder and
-     moved toward blue, so the accent and the violet beside it read as light
-     on the ground rather than as colour on grey. */
-  --bg: light-dark(#fcfcfd, #060912);
-  --surface: light-dark(#ffffff, #0c111d);
-  --surface-2: light-dark(#f6f7f9, #111827);
-  --surface-3: light-dark(#eef1f5, #172033);
+  /* The control room (Phase 79): instrument graphite in the dark scheme, a cool
+     paper in the light one, and one signal colour, amber, for what the reader
+     acts on. It was deep navy with a violet second light, the two colours of
+     every generated dark page, and the violet had no meaning of its own.
+     Contrast on --surface, light / dark, computed 2026-11-05: --muted 6.3 / 7.8,
+     --faint 5.8 / 6.2, --accent 6.2 / 9.5, and 4.5 or better on every ground
+     in the ladder. */
+  --bg: light-dark(#f7f8f8, #101315);
+  --surface: light-dark(#ffffff, #161a1d);
+  --surface-2: light-dark(#f0f2f2, #1c2124);
+  --surface-3: light-dark(#e7eaea, #24292d);
   /* The ground a whole section stands on, as opposed to a card sitting on the
      canvas. Between --bg and --surface on purpose: a band that reads as lighter
      than the cards on it turns those cards into holes. */
-  --band: light-dark(#f4f6f9, #090e1a);
-  --fg: light-dark(#16191d, #e4e8f1);
-  --fg-strong: light-dark(#0a0c0f, #f8fafc);
-  --muted: light-dark(#5c636b, #9ba5ba);
-  /* Was light-dark(#878e96, #6b737c), and it failed WCAG AA in both themes:
-     measured 3.31:1 light and 3.81:1 dark against --surface, 3.09:1 and 3.59:1
-     against the footer's --surface-2. This colour carries the row metadata line
-     — path, star count, read date — at 12px, which is normal text and needs
-     4.5:1. These values measure 5.24 / 5.88 on --surface and 4.89 / 5.56 on
-     --surface-2. Nothing else in the palette was below the floor; the badge
-     hues measured 5.89:1 at worst. */
-  --faint: light-dark(#666d75, #8d97ad);
-  --border: light-dark(#e3e6ea, #1a2234);
-  --border-strong: light-dark(#d0d5db, #273149);
-  --accent: light-dark(#1a56b8, #7da7ff);
-  --accent-hover: light-dark(#124291, #a6c2ff);
-  --accent-soft: light-dark(#eef3fc, #121c33);
-  --on-accent: light-dark(#ffffff, #060912);
-  /* The second light (Phase 74): violet, paired with the accent in the
-     hero's ground, the primary button and the section rule. The same violet
-     the plugin badge measured for text, so it is not a new colour to check. */
-  --accent-2: light-dark(#6b2fa0, #b9a0f5);
+  --band: light-dark(#f1f3f3, #13171a);
+  /* The hero's stage, a step under --bg: in either scheme, the dark band. */
+  --stage: #0c0f11;
+  --fg: light-dark(#1a1e20, #e6e8e6);
+  --fg-strong: light-dark(#0b0e0f, #f8f9f7);
+  --muted: light-dark(#59625f, #a8afae);
+  --faint: light-dark(#5e6761, #939b9a);
+  --border: light-dark(#dfe3e3, #272d30);
+  --border-strong: light-dark(#c8cece, #3a4246);
+  --accent: light-dark(#8a5600, #f0b44c);
+  --accent-hover: light-dark(#6d4400, #f7cc7c);
+  --accent-soft: light-dark(#fbf1df, #2a2316);
+  --on-accent: light-dark(#ffffff, #141007);
   /* The commit: the end of every read, and the one place a second hue means
      something — the same teal the MCP badge already uses, so it is a colour
      the palette had measured for text (5.89:1 at worst) rather than a new one. */
   --commit: light-dark(#0b6b58, #6ed4b8);
-
-  /* The hero's ground (Phase 60). A dot grid and two washes, one in the
-     accent and one in the commit teal. Phase 57 removed the grid and a blue and
-     violet pair as decoration that said nothing; the user's verdict on the page
-     without them was "flat and static". They come back as the paper the
-     pipeline is drawn on: the blue wash sits behind the search box and
-     brightens while it has focus, the teal one behind the commit the
-     Latest read figure ends on. All alpha. The grid does run under the
-     headline and the lede: 1.1px dots every 22px, under 1% of the area at 16%
-     alpha, so no glyph meets more than a dot's edge. axe reads the solid --bg
-     for contrast and passed every run (docs/analysis/
-     agentdock-phase60-63-visual-and-language.md §15). */
-  --grid-dot: light-dark(rgb(22 25 29 / 16%), rgb(230 232 235 / 12%));
-  --glow-a: light-dark(rgb(26 86 184 / 14%), rgb(122 167 240 / 16%));
-  --glow-b: light-dark(rgb(11 107 88 / 12%), rgb(110 212 184 / 11%));
-  --glow-c: light-dark(rgb(107 47 160 / 10%), rgb(167 139 250 / 16%));
-  /* A glass surface: the card colour at part strength over whatever light is
-     behind it, with a hairline of highlight on its top edge. */
-  --glass: color-mix(in srgb, var(--surface) 72%, transparent);
-  --glass-edge: inset 0 1px 0 light-dark(rgb(255 255 255 / 70%), rgb(255 255 255 / 6%));
 
   --t-xs: 0.75rem;
   --t-sm: 0.8125rem;
@@ -198,24 +172,6 @@ body {
   font-size: var(--t-base);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-}
-
-/* The room's light (Phase 74): two washes high on the page, fixed to the
-   viewport so they read as the light the whole site sits in rather than as
-   something on the page that scrolls past. A fixed layer of its own is
-   composited once and costs nothing per scrolled frame, which a
-   `background-attachment: fixed` on body does not promise. Bands and cards
-   paint over it; the header, the footer and the gaps between sections let it
-   through. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(60rem 30rem at 85% -10%, var(--glow-c), transparent 70%),
-    radial-gradient(50rem 26rem at 5% -5%, var(--glow-a), transparent 70%);
-  pointer-events: none;
 }
 
 /* ---------- typography ---------- */
@@ -331,10 +287,8 @@ dt {
      was scrolled under this bar — is painted over it for the 120ms it takes to
      fade. */
   view-transition-name: site-header;
-  background: light-dark(rgb(255 255 255 / 78%), rgb(6 9 18 / 70%));
-  backdrop-filter: blur(14px) saturate(160%);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 light-dark(rgb(255 255 255 / 60%), rgb(255 255 255 / 3%));
 }
 
 .site-header .wrap {
@@ -398,25 +352,9 @@ main {
 .site-footer {
   position: relative;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  background: var(--surface-2);
   padding-block: var(--s-5);
   margin-top: var(--s-7);
-}
-
-/* The accent's light along the footer's top edge, brightest at the shell's
-   left where the disclaimer starts. */
-.site-footer::before {
-  content: "";
-  position: absolute;
-  inset: -1px 0 auto;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--accent) 55%, transparent) 30%,
-    color-mix(in srgb, var(--accent-2) 45%, transparent) 60%,
-    transparent
-  );
 }
 
 .site-footer p {
@@ -448,47 +386,6 @@ main {
   margin-bottom: var(--s-5);
 }
 
-/* The hero's dot ground, carried to the top of the listing and of every
-   artifact page, faded out by the same kind of mask: one ground for the whole
-   site instead of a home page dressed and the rest plain. Bled the way the
-   hero's is, so it cannot widen the page. */
-.page-head,
-.detail-head {
-  position: relative;
-  isolation: isolate;
-}
-
-.page-head::before,
-.detail-head::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset-block: calc(var(--s-6) * -1) 0;
-  inset-inline: -50vw;
-  margin-inline: 50%;
-  background-image:
-    radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px),
-    radial-gradient(40rem 12rem at calc(50% - 24rem) 0%, var(--glow-a), transparent 70%),
-    radial-gradient(36rem 14rem at calc(50% + 20rem) 10%, var(--glow-c), transparent 70%);
-  background-size:
-    22px 22px,
-    auto,
-    auto;
-  mask-image: radial-gradient(60% 100% at 30% 0%, #000 0%, transparent 80%);
-  pointer-events: none;
-}
-
-/* A detail page opens on its breadcrumb, and this ground reaches up over it
-   (it paints after the trail, in the head's own stacking context): faded in
-   from the top, at under a fifth of its strength where it overlaps, so it has
-   no edge across the trail. */
-.detail-head::before {
-  mask-image:
-    radial-gradient(60% 100% at 30% 0%, #000 0%, transparent 80%),
-    linear-gradient(to bottom, transparent, #000 45%);
-  mask-composite: intersect;
-}
-
 .page-head h1 {
   margin-bottom: var(--s-2);
 }
@@ -500,254 +397,94 @@ main {
 /* ---------- hero ---------- */
 
 /*
- * The headline, the search box and the type row own the top of the page, and
- * the first artifact is what comes next. From 64rem up the column the copy has
- * always left empty (it is capped at 46rem in a 72rem shell) holds the Latest
- * read figure; below that it is not displayed, so a phone's first screen is
- * unchanged.
+ * The search box owns the left column; the dock board (DockBoard.tsx) stands in
+ * the right one and runs off the edge of the stage. Under 64rem there is one
+ * column and the board is a small still drawing after the type row, so a phone's
+ * first screen is the box, the chips and the first artifact.
  */
 .hero {
   position: relative;
   isolation: isolate;
   display: grid;
-  gap: var(--s-5);
-  /* Section rhythm is carried by these numbers rather than by rules between
-     sections. The bottom was --s-7 while the pipeline closed the hero; with the
-     search box and the type row closing it, the first artifact is what comes
-     next, and 48px of air before it was a screen's worth of nothing on a
-     phone. */
-  /* Grows with a tall window and only with one: 2rem at 800px high, the
-     height the first-screen tests hold the first artifact row to, 3.7rem at
-     1080. */
-  padding-block: clamp(var(--s-6), 9vh - 2.5rem, 5rem) var(--s-6);
-  /* The stage (Phase 74). The hero is dark in either scheme: every token
-     inside it resolves to its dark value, so the copy, the search box, the
-     chips and the figure are the dark theme's on a page that may be light.
-     One declaration, no second palette. */
+  grid-template-columns: minmax(0, 38rem) minmax(0, 1fr);
+  gap: var(--s-4) var(--s-6);
+  /* Grows with a tall window and only with one: the first artifact row stays on
+     an 800px-high first screen. */
+  padding-block: clamp(var(--s-6), 9vh - 2.5rem, 5rem) var(--s-5);
+  /* The stage: every token inside resolves to its dark value, on a page that
+     may be light. One declaration, no second palette. */
   color-scheme: dark;
   color: var(--fg);
+  /* The element's own, as well as the bleed below: it is what a contrast check
+     reads, and the words must never depend on a pseudo-element having painted. */
+  background: var(--stage);
 }
 
-/* The ground, bled to the viewport edges the way .board's band is (see there),
-   and up under the header. Three layers, back to front: the stage and the
-   universe (.universe, below), the coloured light (::after), the dot grid
-   (::before). */
-.hero::before,
-.hero::after {
+/* The stage's flat ground, bled to the viewport edges and up under the header's
+   margin. Clipped by no one: .board's own bleed set the pattern (see there). */
+.hero::before {
   content: "";
   position: absolute;
-  inset-block: calc(var(--s-6) * -1) 0;
-  inset-inline: -50vw;
-  margin-inline: 50%;
-  pointer-events: none;
-}
-
-.hero::before {
-  z-index: -1;
-  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(70% 90% at 50% 0%, #000 0%, transparent 78%);
-  opacity: 0.6;
-}
-
-/* The light: blue behind the search box, violet high on the right over the
-   universe, teal under the figure's commit. */
-.hero::after {
   z-index: -2;
-  background-image:
-    radial-gradient(38rem 24rem at calc(50% - 22rem) 64%, var(--glow-a), transparent 70%),
-    radial-gradient(44rem 30rem at calc(50% + 22rem) 18%, var(--glow-c), transparent 70%),
-    radial-gradient(30rem 22rem at calc(50% + 26rem) 82%, var(--glow-b), transparent 70%);
-  opacity: 0.85;
-  transition: opacity var(--dur) var(--ease);
-}
-
-/* The page answering the one thing a visitor came to do: with the cursor in the
-   search box, the light behind it comes up. Opacity only — no layout moves. */
-.hero:has(.hero-search input:focus)::after {
-  opacity: 1;
-}
-
-/* The stage and the universe (HeroUniverse.tsx). The box carries the stage's
-   own colour, so with JavaScript off, or before the canvas draws, the hero is
-   already the dark band it will be; the canvas is laid over it. Bled like the
-   layers above, and clipped, so it can never widen the page. */
-.universe {
-  position: absolute;
-  z-index: -3;
   inset-block: calc(var(--s-6) * -1) 0;
   inset-inline: -50vw;
   margin-inline: 50%;
-  overflow: hidden;
-  background: linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 82%, #1b2a55));
-  border-bottom: 1px solid var(--border);
+  background: var(--stage);
   pointer-events: none;
-}
-
-/* The mask keeps the universe off the headline's column: transparent across
-   the copy, full from just before the figure. Over text it would be a
-   texture competing with the words. */
-.universe canvas {
-  position: absolute;
-  inset: 0 0 0 auto;
-  /* The right half and a little: everything left of that is masked out, and
-     a canvas is redrawn whole every frame, so it is not drawn at all. */
-  width: calc(50% + 4rem);
-  height: 100%;
-  mask-image:
-    linear-gradient(to right, transparent 5rem, #000 16rem),
-    linear-gradient(to bottom, #000 80%, transparent);
-  mask-composite: intersect;
-}
-
-/* Below 64rem the figure is not displayed and the universe sits high on the
-   right, around the short ends of the headline's lines, faded toward the copy
-   it shares the screen with. `width <` rather than max-width: at exactly
-   1024px the figure is shown. */
-@media (width < 64rem) {
-  /* Only the corner is drawn: a canvas the size of the hero was 2.3 times
-     the pixels for the same picture, and on a phone every pixel of a canvas
-     redrawn thirty times a second is battery. */
-  .universe canvas {
-    inset: 0 0 auto auto;
-    width: min(100%, 26rem);
-    height: 20rem;
-    opacity: 0.65;
-    mask-image: radial-gradient(60% 60% at 66% 40%, #000 30%, transparent 85%);
-  }
-}
-
-/* The universe's pause control: the one continuous motion on the site, so the
-   one control of its kind (WCAG 2.2.2). Quiet, in the hero's top corner, in
-   the band above the content — the first thing in the hero in the tab order,
-   so it is placed first on screen as well. */
-.motion-toggle {
-  position: absolute;
-  top: calc(var(--s-6) * -1 + var(--s-2));
-  right: 0;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-  padding: var(--s-1) var(--s-3);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: blur(8px);
-  color: var(--muted);
-  font: inherit;
-  font-size: var(--t-xs);
-  cursor: pointer;
-  transition:
-    color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
-}
-
-.motion-toggle:hover {
-  border-color: var(--muted);
-  color: var(--fg-strong);
-}
-
-.motion-toggle svg {
-  width: 12px;
-  height: 12px;
 }
 
 .hero-copy {
-  max-width: 46rem;
   /* A grid item's automatic minimum is its content, and the type row's
      content is a scroller as wide as all seven chips: without this the row
      widened the page instead of scrolling (378px of overflow at 390px). */
   min-width: 0;
+  grid-column: 1;
 }
 
-/* 3.5rem at most, 1.875rem at 320px: at the previous 2.25rem floor the
-   headline was three lines and 130px on a 390px phone. */
 .hero h1 {
-  font-size: clamp(1.875rem, 1.1rem + 3.2vw, 3.5rem);
-  /* The one place the type is the design: display size, set tight, at the
-     weight the face draws best at that size. Everything else on the site is
-     quieter so this can be loud. */
+  font-size: clamp(1.875rem, 1.1rem + 3.2vw, 3.25rem);
   font-weight: 700;
   letter-spacing: -0.034em;
   line-height: 1.05;
   margin-bottom: var(--s-3);
-  /* Lit from above: white at the cap line cooling to the accent at the
-     baseline of the last line. The fill is the gradient; `color` stays
-     --fg-strong, which is what a contrast check and a forced-colours mode
-     read, and what shows if background-clip: text is not supported. */
-  background: linear-gradient(
-    180deg,
-    var(--fg-strong) 40%,
-    color-mix(in srgb, var(--accent) 55%, var(--fg-strong))
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-@media (forced-colors: active) {
-  .hero h1 {
-    -webkit-text-fill-color: currentColor;
-  }
+  max-width: 34rem;
 }
 
 .hero .lede {
-  font-size: clamp(var(--t-base), 0.9rem + 0.4vw, 1.25rem);
-  max-width: 42rem;
+  font-size: clamp(var(--t-base), 0.9rem + 0.3vw, var(--t-lg));
+  max-width: 34rem;
   margin-bottom: var(--s-4);
 }
 
 /*
  * The search box, at hero size.
  *
- * It reuses `.search-row` wholesale — the same field, the same magnifier, the
- * same key caps drawn by the same pseudo-elements — so the control a reader
- * meets first and the one on the artifacts page are visibly one control. What
- * changes here is scale: taller box, larger type, a real shadow, because this
- * is the primary action on the page rather than one row inside a filter panel.
+ * It reuses .search-row wholesale — the same field, the same magnifier, the
+ * same key caps — so the control a reader meets first and the one on the
+ * artifacts page are visibly one control. What changes here is scale.
  */
 .hero-search {
-  max-width: 38rem;
-  margin: 0 0 var(--s-4);
+  margin: 0 0 var(--s-3);
 }
 
-/*
- * Written out in full rather than by adding `.hero-search` to the shared control
- * selectors further down this file. Those sit after this block, so joining them
- * would have made the hero depend on its own position in the stylesheet — and
- * every one of those groups would have become a descending-specificity warning.
- * Nine declarations is a smaller price than a cascade that has to be remembered.
- */
 .hero-search input[type="search"] {
   width: 100%;
-  height: 3.25rem;
+  height: 3.5rem;
   padding: 0 var(--s-4) 0 3rem;
   border: 1px solid var(--border-strong);
-  border-radius: var(--r-lg);
-  /* Glass by colour only: a backdrop-filter here made the input its own
-     stacking context and painted it over the magnifier and the key hints. */
-  background: var(--glass);
+  border-radius: var(--r-md);
+  background: var(--surface);
   color: var(--fg);
   font-size: var(--t-lg);
-  box-shadow: var(--glass-edge), var(--shadow-lift);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease);
 }
 
 .hero-search input[type="search"]:hover {
-  border-color: var(--accent);
+  border-color: var(--muted);
 }
 
-/* A halo under the focus ring, not instead of it: the ring is the AA signal on
-   every control on the site, and this is the hero's version of it. */
 .hero-search input[type="search"]:focus {
   border-color: var(--accent);
-  box-shadow:
-    0 0 0 5px color-mix(in srgb, var(--accent) 16%, transparent),
-    0 10px 40px -10px color-mix(in srgb, var(--accent) 55%, transparent),
-    0 0 60px -20px color-mix(in srgb, var(--accent-2) 60%, transparent);
 }
 
 .hero-search .field svg {
@@ -760,30 +497,23 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 3.25rem;
+  height: 3.5rem;
   padding-inline: var(--s-5);
   border: 1px solid transparent;
-  border-radius: var(--r-lg);
-  /* The two lights in one control: the primary action on the site. */
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: var(--r-md);
+  background: var(--accent);
   color: var(--on-accent);
   font-family: inherit;
   font-size: var(--t-base);
   font-weight: 600;
   cursor: pointer;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 35%),
-    0 8px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
   transition:
-    box-shadow var(--dur) var(--ease),
+    background var(--dur-fast) var(--ease),
     transform var(--dur-fast) var(--ease);
 }
 
 .hero-search button[type="submit"]:hover {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 45%),
-    0 10px 32px -8px color-mix(in srgb, var(--accent) 85%, transparent),
-    0 0 40px -12px color-mix(in srgb, var(--accent-2) 80%, transparent);
+  background: var(--accent-hover);
 }
 
 /* The type row under the search box: the artifacts page's chips (the ring is
@@ -792,32 +522,18 @@ main {
   margin: 0;
 }
 
-/* Glass pills on the stage, so the universe's light reads through them. */
-.hero-types .chip {
-  background: var(--glass);
-  backdrop-filter: blur(8px);
-}
-
 .chip-count {
   color: var(--faint);
   font-variant-numeric: tabular-nums;
 }
 
-/*
- * The trust strip.
- *
- * Three facts that used to be sentences inside the diagram. No borders and no
- * card: they are separated by space and by a leading mark, which is the point of
- * §18 — not everything on this page needs a rectangle around it.
- *
- * The mark is a ::before rather than a character in the markup, and it is a
- * dot rather than a tick. A tick reads as "this artifact passed a check", and
- * nothing here is about an artifact.
- */
+/* Three facts about what AgentDock does. Not on a phone, where the same facts
+   are in the indexing section and the first artifact is what comes next. */
 .trust {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-2) var(--s-5);
+  gap: var(--s-1) var(--s-5);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -825,257 +541,177 @@ main {
   font-size: var(--t-sm);
 }
 
-.trust li {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
+@media (max-width: 40rem) {
+  .trust {
+    display: none;
+  }
 }
-
-.trust li::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
-  flex: none;
-}
-
-/* ---------- latest read ---------- */
 
 /*
- * The hero's figure (LatestRead.tsx): a git lane down the left with a node per
- * stage, ending in the artifact itself as a card. The lane runs from the accent
- * to the commit teal, so the colour says where the read starts and where it is
- * filed.
+ * The board. It holds the still drawing and, where it loads, the canvas over it,
+ * in one absolutely placed box, so neither arriving nor failing moves anything.
+ * Nothing in it takes input. It stops at the search column's edge, so it can
+ * never sit under the field; it may run off the viewport on the right, and the
+ * bleed is clipped by its own box.
  */
-.trace {
-  display: none;
-}
-
-@media (min-width: 64rem) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr) 21rem;
-    column-gap: var(--s-7);
-  }
-
-  .hero-copy {
-    grid-column: 1;
-  }
-
-  /* Under both columns: three short facts in one line, not two. */
-  .trust {
-    grid-column: 1 / -1;
-  }
-
-  .trace {
-    display: block;
-    grid-column: 2;
-    grid-row: 1;
-    align-self: center;
-  }
-}
-
-.trace {
-  min-width: 0;
-  margin: 0;
-  padding: var(--s-4) var(--s-5) var(--s-5);
-  border-radius: 16px;
-  /* Glass over the universe (Phase 74): the points and links behind it read
-     through, blurred, so the figure sits inside the picture rather than on
-     top of it. The pointer's light lands on it too (PointerGlow.tsx). */
-  position: relative;
-  isolation: isolate;
-  background:
-    radial-gradient(
-      20rem circle at var(--gx, 50%) var(--gy, 0%),
-      color-mix(in srgb, var(--accent) 10%, transparent),
-      transparent 60%
-    ),
-    color-mix(in srgb, var(--surface) 58%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--border)),
-    var(--glass-edge),
-    0 30px 80px -30px color-mix(in srgb, var(--accent-2) 45%, transparent),
-    var(--shadow-modal);
-}
-
-.trace figcaption {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-2);
-  color: var(--fg-strong);
-  font-size: var(--t-sm);
-  font-weight: 620;
-}
-
-.trace-date {
-  color: var(--muted);
-  font-weight: 450;
-  font-variant-numeric: tabular-nums;
-}
-
-.trace-lane {
-  position: relative;
-  display: grid;
-  gap: var(--s-3);
-  margin: var(--s-4) 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* The lane, behind the nodes: from the first node's centre to the last's. */
-.trace-lane::before,
-.trace-lane::after {
-  content: "";
+.dock-board {
   position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 11px;
-  width: 2px;
+  z-index: -1;
+  inset-block: calc(var(--s-6) * -1) 0;
+  left: calc(38rem + var(--s-4));
+  right: calc((100vw - 100%) / -2);
+  overflow: hidden;
   pointer-events: none;
 }
 
-.trace-lane::before {
-  background: linear-gradient(var(--accent), var(--commit));
-  transform-origin: top;
+.dock-still,
+.dock-board > div {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-/* The light that runs down it after the figure has drawn (the motion block):
-   a tall transparent box with a dot at its top, so the travel is a transform. */
-.trace-lane::after {
-  top: 8px;
-  bottom: 8px;
-  left: 8px;
-  width: 8px;
-  background: radial-gradient(circle at 50% 4px, var(--accent) 0 3px, transparent 4px) no-repeat;
-  filter: drop-shadow(0 0 4px var(--accent));
+.dock-still {
+  transition: opacity var(--dur) var(--ease);
+}
+
+.dock-board > div {
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.dock-board[data-scene="live"] > div {
+  opacity: 1;
+}
+
+.dock-board[data-scene="live"] .dock-still {
   opacity: 0;
 }
 
-.trace-lane li {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--s-3);
-  min-width: 0;
-  font-size: var(--t-sm);
+/* The still drawing's surfaces: one light from the upper left, so a top is the
+   lightest face and the far end the darkest. */
+.dock-slab {
+  fill: #191e21;
 }
 
-/* A node: the stage's glyph in a ring sitting on the lane. */
-.trace-lane li > svg {
-  position: relative;
-  box-sizing: border-box;
-  width: 24px;
-  height: 24px;
-  padding: 5px;
-  border-radius: 999px;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1.5px var(--accent);
-  color: var(--accent);
+.dock-cable {
+  stroke: #3b4449;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
 }
 
-.trace-lane li:last-child > svg {
-  background: var(--commit);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--commit) 22%, transparent);
-  color: var(--surface);
+.dock-hub .dock-top {
+  fill: #2c3338;
 }
 
-.trace-value {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--fg);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.dock-hub .dock-side {
+  fill: #20262a;
 }
 
-.trace-value.path {
-  color: var(--muted);
-  font-size: var(--t-xs);
+.dock-hub .dock-end {
+  fill: #181c1f;
 }
 
-.trace-sha {
-  justify-self: start;
-  color: var(--commit);
-  font-family: var(--mono);
+.dock .dock-top {
+  fill: color-mix(in srgb, var(--dock) 42%, #59646b);
+}
+
+.dock .dock-side {
+  fill: color-mix(in srgb, var(--dock) 30%, #2f373b);
+}
+
+.dock .dock-end {
+  fill: color-mix(in srgb, var(--dock) 22%, #22282b);
+}
+
+.dock text {
+  fill: #0c0f11;
+  font-size: 12px;
   font-weight: 600;
-  text-decoration: none;
+  text-rendering: geometricPrecision;
 }
 
-.trace-sha:hover {
-  text-decoration: underline;
+.dock-glyph {
+  stroke: var(--accent);
+  stroke-width: 4;
+  fill: none;
 }
 
-.trace-aside {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--muted);
-  font-size: var(--t-xs);
+.dock-skill {
+  --dock: #90b8f5;
 }
 
-.trace-aside svg {
-  width: 12px;
-  height: 12px;
+.dock-plugin {
+  --dock: #c9a2f0;
 }
 
-/* The artifact the run produced: the one thing in the figure that is a link
-   to read, so the one thing that lifts. */
-.trace-card {
-  position: relative;
-  display: grid;
-  justify-items: start;
-  gap: var(--s-2);
-  padding: var(--s-4);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, var(--border)),
-    var(--shadow-lift);
-  color: var(--fg);
-  text-decoration: none;
-  transition:
-    transform var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
+.dock-mcp_server {
+  --dock: #6ed4b8;
 }
 
-/* focus-within as well as hover, as on the feed's rows: the card's link is the
-   name stretched over it, and tabbing to that link should lift the card the
-   cursor would. */
-.trace-card:hover,
-.trace-card:focus-within {
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 0 0 1px var(--commit),
-    0 14px 30px -14px color-mix(in srgb, var(--commit) 55%, transparent);
+.dock-command {
+  --dock: #f0b678;
 }
 
-/* The card's hit area: the name's link stretched over the whole card. */
-.trace-name::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-lg);
+.dock-hook {
+  --dock: #f293ad;
 }
 
-.trace-name {
-  color: var(--fg-strong);
-  text-decoration: none;
-  font-size: var(--t-base);
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
+.dock-agent {
+  --dock: #a8b6f2;
 }
 
-.trace-desc {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  color: var(--muted);
-  font-size: var(--t-sm);
-  line-height: 1.5;
+/* A chip lights its dock in the drawing, with no script. In the scene it is
+   DockScene's listener; the two never show at once. */
+.hero:has(a[href$="type=skill"]:is(:hover, :focus-visible)) .dock-skill .dock-top,
+.hero:has(a[href$="type=plugin"]:is(:hover, :focus-visible)) .dock-plugin .dock-top,
+.hero:has(a[href$="type=mcp_server"]:is(:hover, :focus-visible)) .dock-mcp_server .dock-top,
+.hero:has(a[href$="type=command"]:is(:hover, :focus-visible)) .dock-command .dock-top,
+.hero:has(a[href$="type=hook"]:is(:hover, :focus-visible)) .dock-hook .dock-top,
+.hero:has(a[href$="type=agent"]:is(:hover, :focus-visible)) .dock-agent .dock-top {
+  fill: var(--dock);
+}
+
+/* One column: the drawing follows the type row, small and in the flow, and only
+   as tall as a phone's first screen can spare. */
+@media (width < 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dock-board {
+    position: relative;
+    inset: auto;
+    z-index: 0;
+    height: 12rem;
+    order: 2;
+  }
+
+  .trust {
+    order: 3;
+  }
+}
+
+/* A phone: what is above the first artifact is the box and the chips. The
+   drawing gets what is left, and its print is too small to read there. */
+@media (max-width: 40rem) {
+  .hero {
+    padding-block: var(--s-4);
+    row-gap: var(--s-2);
+  }
+
+  .hero .lede {
+    margin-bottom: var(--s-3);
+  }
+
+  .dock-board {
+    height: 6rem;
+  }
+
+  .dock text {
+    display: none;
+  }
 }
 
 /* ---------- index flow ---------- */
@@ -1104,19 +740,6 @@ main {
   isolation: isolate;
 }
 
-/* The hero's paper under the run, so the pipeline in the hero's figure and
-   this one read as one drawing at two sizes. */
-.flow::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: calc(var(--s-5) * -1) calc(var(--s-4) * -1);
-  background-image: radial-gradient(var(--grid-dot) 1.1px, transparent 1.2px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(closest-side, #000 40%, transparent);
-  pointer-events: none;
-}
-
 /*
  * A stage.
  *
@@ -1133,21 +756,14 @@ main {
   min-width: 0;
   padding: var(--s-4);
   border-radius: var(--r-lg);
-  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
 /* The last stage holds the count and is where the run arrives, so it is the one
    that is lit. */
 .flow > li:last-child {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--commit) 10%, var(--surface)) 0%,
-    var(--surface-2) 100%
-  );
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, transparent),
-    0 12px 28px -18px color-mix(in srgb, var(--commit) 60%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, transparent);
 }
 
 .flow > li:last-child .flow-title svg {
@@ -1333,25 +949,6 @@ main {
   margin: 0;
 }
 
-/* A short rule under each section heading in the two colours the hero's light
-   is made of, so the page's sections are marked by the same ground they open
-   on. Absolutely placed in the section head's bottom margin: no box changes.
-   Static. A scroll-driven draw on it was built and removed: view() on a 2px
-   box has an entry range of 2px of scrolling, so it drew in one frame at the
-   viewport's bottom edge where nobody was looking. */
-.section-head h2::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -7px;
-  width: 1.75rem;
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
-  transform-origin: left;
-}
-
 .section-head a {
   font-size: var(--t-sm);
   font-weight: 500;
@@ -1365,7 +962,7 @@ main {
   align-items: center;
   gap: var(--s-1);
   padding: 0.125rem var(--s-2);
-  border-radius: 999px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--muted);
@@ -1432,16 +1029,7 @@ main {
   padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  /* A surface lit from above (Phase 74): a breath of the accent at the top
-     edge, the plain card colour by the second row. */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 4%, var(--surface)),
-    var(--surface) 12rem
-  );
-  box-shadow:
-    var(--glass-edge),
-    0 24px 60px -36px light-dark(rgb(16 24 40 / 25%), rgb(0 0 0 / 70%));
+  background: var(--surface);
   overflow: hidden;
 }
 
@@ -1471,73 +1059,20 @@ main {
   border-top: 1px solid var(--border);
   transition:
     background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--ease);
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 .rows > li:first-child {
   border-top: 0;
 }
 
-/* The kind's light, from the edge the hovered row grows into the row: a second
-   layer over the hover background rather than a gradient on it, because a
-   background-image does not transition and this one fades. Its own stacking
-   context (isolation) keeps the layer under the row's text at rest as well as
-   while the hovered row is raised, so it fades out where it faded in. */
-.rows > li {
-  isolation: isolate;
-}
-
-.rows > li::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  /* The kind's light under the pointer (PointerGlow.tsx sets --gx/--gy).
-     Without a pointer — keyboard focus, a touch screen, JavaScript off — it
-     sits at the left edge, where the row's hue edge is: the light this layer
-     drew before Phase 74. */
-  background: radial-gradient(
-    30rem circle at var(--gx, 0%) var(--gy, 50%),
-    color-mix(in srgb, var(--hue, var(--accent)) 13%, transparent),
-    transparent 60%
-  );
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur) var(--ease);
-}
-
-.rows > li:hover::before,
-.rows > li:focus-within::before {
-  opacity: 1;
-}
-
 /* focus-within as well as hover: tabbing through the list must light the same
-   row the cursor would, or keyboard navigation loses the reading position that
-   pointer navigation gets for free.
-
-   The edge — the kind's own --hue since Phase 60, the accent where a row has
-   none — is an inset shadow, not a border or a left padding change,
-   because both of those change the row's box and reflow the text inside it —
-   a whole list nudging sideways under the cursor. A shadow paints inside the
-   box and reflows nothing.
-
-   The lift is one pixel, and it is a transform for the same reason: a transform
-   is painted, not laid out, so the row moves without the twenty rows below it
-   moving with it. One pixel plus the outer shadow is what separates the row
-   from the list; two would be a card popping out of a table. z-index puts the
-   lifted row's shadow over its neighbours instead of under them, which is the
-   difference between depth and a smudge. The list's own `overflow: hidden`
-   clips the spill at the very top and bottom edges, which is correct — the
-   list is not lifting, one row inside it is. */
+   row the cursor would. The edge is the kind's own --hue, as an inset shadow:
+   a border or a padding change would reflow the text inside the row. */
 .rows > li:hover,
 .rows > li:focus-within {
-  z-index: 1;
-  background: var(--surface-3);
-  box-shadow:
-    inset 3px 0 0 var(--hue, var(--accent)),
-    var(--shadow-lift);
-  transform: translateY(-1px);
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--hue, var(--accent));
 }
 
 /* The badge's hue, lifted to the row and the type card that hold it, so the
@@ -1582,8 +1117,8 @@ main {
 }
 
 .row-title a {
-  font-weight: 600;
-  font-size: var(--t-base);
+  font-weight: 620;
+  font-size: 1rem;
   color: var(--fg-strong);
   text-decoration: none;
 }
@@ -1610,7 +1145,8 @@ main {
 
 .row-desc {
   margin: 0 0 var(--s-2);
-  color: var(--muted);
+  /* What the artifact is for: the line a reader chooses by, in the full ink. */
+  color: var(--fg);
   font-size: var(--t-sm);
   max-width: var(--prose);
   display: -webkit-box;
@@ -1864,34 +1400,15 @@ textarea {
   display: grid;
   gap: var(--s-3);
   padding: var(--s-4);
-  /* The listing's control panel, lit like a card (Phase 74): the pointer's
-     light, and a wash of the two accents along the top. */
-  background:
-    radial-gradient(
-      26rem circle at var(--gx, 50%) var(--gy, -20%),
-      color-mix(in srgb, var(--accent) 8%, transparent),
-      transparent 60%
-    ),
-    linear-gradient(
-      100deg,
-      color-mix(in srgb, var(--accent) 5%, var(--surface)),
-      color-mix(in srgb, var(--accent-2) 4%, var(--surface))
-    );
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  box-shadow: var(--glass-edge), var(--shadow);
   margin-bottom: var(--s-3);
-  transition:
-    border-color var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .search:focus-within {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 3px var(--accent-soft),
-    0 16px 44px -20px color-mix(in srgb, var(--accent-2) 55%, transparent),
-    var(--shadow-lift);
+  border-color: var(--border-strong);
 }
 
 .search label[for="q"] {
@@ -2087,9 +1604,9 @@ textarea {
   gap: var(--s-2);
   padding: var(--s-1) var(--s-3);
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
+  border-radius: var(--r-md);
   background: var(--surface);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   color: var(--muted);
   text-decoration: none;
   white-space: nowrap;
@@ -2098,8 +1615,7 @@ textarea {
     background var(--dur-fast) var(--ease),
     border-color var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease),
-    box-shadow var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
+    transform var(--dur-fast) var(--ease);
 }
 
 .facet .chip:hover {
@@ -2107,40 +1623,20 @@ textarea {
   color: var(--fg-strong);
 }
 
-/* Selection is carried on six channels now, not one, and none of them is hue:
-   the control's own filled shape, the background, the border, the text colour,
-   the weight — and the two that move, a ring growing out of the chip and a
-   one-pixel lift.
- *
- * The two that move are what makes changing a filter legible as a change. A
- * sliding indicator that travels between chips was the other candidate and was
- * dropped: the chips are six different widths, so a shared bar needs each chip's
- * measured position, which in CSS means either equal-width columns (six labels
- * from "All types" to "Hook Configurations", so the grid would be as wide as
- * the longest and mostly empty) or anchor positioning, which Firefox does not
- * ship. A ring that grows where the selection landed says the same thing and
- * says it at every width. */
+/* Selection is a filled control, a fill and a weight, so it is told apart by
+   luminance and by shape, never by hue alone. A sliding indicator was the other
+   candidate: the chips are different widths, so a shared bar needs each chip's
+   measured position, which in CSS means anchor positioning, which Firefox does
+   not ship. */
 .facet .chip[aria-current] {
-  background: linear-gradient(
-    135deg,
-    var(--accent-soft),
-    color-mix(in srgb, var(--accent-2) 14%, var(--accent-soft))
-  );
+  background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 560;
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  transform: translateY(-1px);
+  color: var(--fg-strong);
+  font-weight: 600;
 }
 
-/* Pressed: the chip gives way, and keeps its one-pixel lift if it is the
-   selected one so the press does not read as a deselection. */
 .facet .chip:active {
   transform: scale(0.97);
-}
-
-.facet .chip[aria-current]:active {
-  transform: translateY(-1px) scale(0.97);
 }
 
 /* The ring belongs on the chip, not on the 13px control buried inside it —
@@ -2168,8 +1664,8 @@ textarea {
 }
 
 .facet .chip[aria-current]::before {
-  background: currentColor;
-  box-shadow: inset 0 0 0 2px var(--accent-soft);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 /* The home page's type row is the same chips as links to a type rather than as
@@ -2206,6 +1702,94 @@ textarea {
   .hero-types .facet-chips {
     margin-inline: calc(-1 * var(--s-4));
     padding-inline: var(--s-4);
+  }
+}
+
+/* From 64rem up the listing is a control panel: the field across the top, the
+   filters in a rail that stays put, the results beside it. The rows after the
+   rail's are auto; the last takes the slack, so a short result set does not
+   stretch them. The markup is one order, so a phone gets the same controls above
+   its results. */
+@media (min-width: 64rem) {
+  .listing {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto 1fr;
+    column-gap: var(--s-6);
+    align-items: start;
+  }
+
+  .listing > * {
+    grid-column: 2;
+  }
+
+  .listing > .search {
+    display: contents;
+  }
+
+  .search form {
+    grid-column: 1 / -1;
+    margin-bottom: var(--s-5);
+  }
+
+  .search label[for="q"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .search-rail {
+    grid-column: 1;
+    grid-row: 2 / -1;
+    position: sticky;
+    top: 4.5rem;
+    display: grid;
+    gap: var(--s-4);
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+    /* The focus ring's room inside the scroller. */
+    padding: 3px;
+    margin: -3px;
+  }
+
+  .search-rail .facets {
+    gap: var(--s-4);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .search-rail .facet-legend {
+    float: none;
+    display: block;
+    padding: 0 0 var(--s-1);
+    color: var(--fg-strong);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .search-rail .facet-chips {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .search-rail .facet .chip {
+    border-color: transparent;
+    background: transparent;
+    white-space: normal;
+  }
+
+  .search-rail .facet .chip:hover {
+    background: var(--surface-2);
+  }
+
+  .search-rail .facet .chip[aria-current] {
+    background: var(--accent-soft);
+    border-color: transparent;
   }
 }
 
@@ -2297,7 +1881,6 @@ textarea {
 
 .launcher::backdrop {
   background: light-dark(rgb(16 24 40 / 28%), rgb(0 0 0 / 55%));
-  backdrop-filter: blur(2px);
   transition: background var(--dur) var(--ease);
 }
 
@@ -2441,14 +2024,19 @@ textarea {
 .result-bar {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-3);
+  gap: var(--s-1) var(--s-3);
   flex-wrap: wrap;
   margin-bottom: var(--s-3);
 }
 
 .result-bar p {
   margin: 0;
+}
+
+/* The count and the slice read together; what the default leaves out is at the
+   far end of the line. */
+.result-scope {
+  margin-inline-start: auto;
 }
 
 /* Not on a phone. The line took a row of its own above the first result there
@@ -2773,12 +2361,7 @@ details.notice[open] p {
   padding: var(--s-6) var(--s-5);
   border: 1px dashed var(--border-strong);
   border-radius: var(--r-lg);
-  /* The hero's blue light, low and centred over the message: an empty result
-     is still a page of this site, not a blank. */
-  background:
-    radial-gradient(28rem 9rem at 35% 0%, var(--glow-a), transparent 70%),
-    radial-gradient(24rem 9rem at 65% 0%, var(--glow-c), transparent 70%), var(--surface);
-  box-shadow: var(--glass-edge);
+  background: var(--surface);
   text-align: center;
 }
 
@@ -2821,13 +2404,11 @@ details.notice[open] p {
 .job-track span:nth-child(1),
 .job-track:is([data-status="running"], [data-status="succeeded"]) span:nth-child(2),
 .job-track[data-status="succeeded"] span:nth-child(3) {
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent);
 }
 
 .job-track[data-status="failed"] span {
   background: var(--muted);
-  box-shadow: none;
 }
 
 .job-track span::after {
@@ -2894,104 +2475,20 @@ details.notice[open] p {
   padding: var(--s-4);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  /* Three layers at rest: the kind's light at the top-left where its strip
-     and badge are, a fainter answer at the bottom-right, and a hairline of
-     highlight along the top edge — the card is lit from above rather than
-     printed flat. */
-  background:
-    radial-gradient(
-      14rem 6rem at 0% 0%,
-      color-mix(in srgb, var(--hue, var(--accent)) 7%, transparent),
-      transparent
-    ),
-    radial-gradient(
-      12rem 8rem at 100% 100%,
-      color-mix(in srgb, var(--hue, var(--accent)) 4%, transparent),
-      transparent
-    ),
-    var(--surface);
-  /* The kind's strip along the top edge, and the top hairline of highlight.
-     The strip was a ::before until Phase 74 gave both pseudo-elements to the
-     pointer's light. */
-  box-shadow:
-    inset 0 3px 0 color-mix(in srgb, var(--hue, var(--accent)) 55%, transparent),
-    var(--glass-edge);
+  background: var(--surface);
+  /* The kind's strip along the top edge. */
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--hue, var(--accent)) 55%, transparent);
   color: var(--fg);
   text-decoration: none;
   transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
-/* The pointer's light, in the kind's hue (PointerGlow.tsx sets --gx/--gy;
-   without them it lights from the top centre, which is what keyboard focus
-   gets): a pool across the card (::after) and the stretch of border nearest
-   the pointer (::before, the same light masked to a one-pixel ring). Both
-   fade in with the hover; at rest there is no pointer to follow. Phase 72's
-   one-off sweep was here and is replaced by this. */
-.type-card::before,
-.type-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur) var(--ease);
-}
-
-.type-card::after {
-  background: radial-gradient(
-    18rem circle at var(--gx, 50%) var(--gy, 0%),
-    color-mix(in srgb, var(--hue, var(--accent)) 15%, transparent),
-    transparent 65%
-  );
-}
-
-.type-card::before {
-  padding: 1px;
-  background: radial-gradient(
-    12rem circle at var(--gx, 50%) var(--gy, 0%),
-    var(--hue, var(--accent)),
-    transparent 70%
-  );
-  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  mask-clip: content-box, border-box;
-  mask-composite: exclude;
-}
-
-/* focus-visible as well as hover: a keyboard reader tabbing through the seven
-   kinds gets the lift a pointer gets (the ring is the global one, on top).
-   The glow is the kind's own hue, spread under the card rather than around it,
-   the same shape the Latest read card's teal glow has. */
 .type-card:hover,
 .type-card:focus-visible {
-  border-color: color-mix(in srgb, var(--hue, var(--accent)) 35%, var(--border));
-  box-shadow:
-    inset 0 3px 0 var(--hue, var(--accent)),
-    var(--glass-edge),
-    var(--shadow-lift),
-    0 18px 36px -18px color-mix(in srgb, var(--hue, var(--accent)) 55%, transparent);
-  transform: translateY(-2px);
-}
-
-.type-card:hover::before,
-.type-card:focus-visible::before,
-.type-card:hover::after,
-.type-card:focus-visible::after {
-  opacity: 1;
-}
-
-/* A few degrees of tilt toward the pointer (PointerGlow.tsx sets --nx/--ny,
-   -0.5 to 0.5): at most 3° either way, so the card leans rather than turns,
-   and never on a touch screen or for a reader who asked for less motion.
-   Seven cards in a grid and only the one under the pointer moves. */
-@media (prefers-reduced-motion: no-preference) and (hover: hover) {
-  .type-card:hover {
-    transform: perspective(50rem) rotateX(calc(var(--ny, 0) * -6deg))
-      rotateY(calc(var(--nx, 0) * 6deg)) translateY(-2px);
-  }
+  background: var(--surface-2);
+  box-shadow: inset 0 3px 0 var(--hue, var(--accent));
 }
 
 .type-card-head {
@@ -3018,7 +2515,7 @@ details.notice[open] p {
   position: relative;
   isolation: isolate;
   padding-block: var(--s-6);
-  margin-block: var(--s-4);
+  margin-block: 0 var(--s-4);
 }
 
 /* The band's own padding is the space above the heading. With the section
@@ -3269,23 +2766,6 @@ details.notice[open] p {
   line-height: 1.1;
 }
 
-/* The light along the head's bottom edge, from the accent to the violet,
-   brightest under the heading. */
-.detail-head::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent) 70%, transparent),
-    color-mix(in srgb, var(--accent-2) 50%, transparent) 40%,
-    transparent 80%
-  );
-}
-
 .detail-head .badge {
   margin-bottom: var(--s-3);
 }
@@ -3359,16 +2839,7 @@ details.notice[open] p {
   padding: var(--s-4) var(--s-5);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  /* The artifact's metadata, on a lit surface (Phase 74): the pointer's light,
-     and the accent's breath along the top edge as on the lists. */
-  background:
-    radial-gradient(
-      24rem circle at var(--gx, 0%) var(--gy, 0%),
-      color-mix(in srgb, var(--accent) 7%, transparent),
-      transparent 60%
-    ),
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface)), var(--surface));
-  box-shadow: var(--glass-edge);
+  background: var(--surface);
   font-size: var(--t-sm);
 }
 
@@ -3492,10 +2963,10 @@ details.notice[open] p {
   min-height: 28px;
   padding: 0 var(--s-3);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--r-md);
   background: var(--surface);
   color: var(--muted);
-  font-size: var(--t-xs);
+  font-size: var(--t-sm);
   text-decoration: none;
 }
 
@@ -3928,12 +3399,12 @@ details.notice[open] p {
  * they animate to, and there is nothing to switch off. motion.test.ts asserts
  * that this block is the only place an `animation` or an `@keyframes` appears.
  *
- * Every animation here runs once, on arrival — the hero's lane light twice —
+ * Every animation here runs once, on arrival,
  * except the loading sweep, which lasts as long as the placeholder it sits on;
  * a running job's progress bar takes three passes of the same sweep, 4.2 s.
- * Nothing else here loops. The one continuous motion on the site is
- * not CSS: the hero's universe is a canvas (HeroUniverse.tsx, Phase 74), and
- * it carries its own pause control and its own reduced-motion still frame. The one thing tied to scrolling is the index flow's
+ * Nothing else here loops, and nothing on the site moves continuously: the
+ * hero's board (DockScene.tsx) draws its entrance and then only answers the
+ * reader. The one thing tied to scrolling is the index flow's
  * reveal, and only where CSS can do it (`animation-timeline: view()`): an
  * IntersectionObserver reveal on every section is the pattern that makes a
  * page feel like it is performing rather than loading, and it would also be
@@ -3969,132 +3440,14 @@ details.notice[open] p {
  * effect is not one.
  */
 @media (prefers-reduced-motion: no-preference) {
-  /* --- the hero (Phase 60) ---
+  /* --- the hero ---
 
-     Phase 57 removed the page-wide entrance, the hero's grid fade and orb
-     drift, the connector beam and the last stage's glow, and the row stagger,
-     and the page that was left read as static. What comes back is one
-     orchestrated moment rather than scattered effects: the hero's ground fades
-     up, and the Latest read figure draws itself in the order a read happens —
-     the lane, its four nodes, then the artifact — in 1.5 s. A light then runs
-     down the lane twice and stops. Nothing loops: every animation here ends
-     inside five seconds (WCAG 2.2.2 asks for a pause control past that), and
-     each moves only opacity and transform. */
-  @keyframes ground-in {
-    from {
-      opacity: 0;
-    }
-  }
-
-  .hero::before {
-    animation: ground-in 900ms var(--ease) backwards;
-  }
-
-  @keyframes lane-draw {
-    from {
-      transform: scaleY(0);
-    }
-  }
-
-  .trace-lane::before {
-    animation: lane-draw 900ms var(--ease-emphasized) 200ms backwards;
-  }
-
-  @keyframes node-in {
-    from {
-      opacity: 0;
-      transform: translateX(-8px);
-    }
-  }
-
-  .trace-lane li {
-    animation: node-in var(--dur-slow) var(--ease-emphasized) backwards;
-  }
-
-  .trace-lane li:nth-child(1) {
-    animation-delay: 250ms;
-  }
-
-  .trace-lane li:nth-child(2) {
-    animation-delay: 450ms;
-  }
-
-  .trace-lane li:nth-child(3) {
-    animation-delay: 650ms;
-  }
-
-  .trace-lane li:nth-child(4) {
-    animation-delay: 850ms;
-  }
-
-  @keyframes card-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px) scale(0.98);
-    }
-  }
-
-  .trace-card {
-    animation: card-in 520ms var(--ease-emphasized) 1000ms backwards;
-  }
-
-  /* From the top node to the bottom one: the box runs from 4px above the first
-     node's centre to 4px below the last's, the dot is its top 8px, so 100%
-     less 8px lands the dot's centre on the commit's. */
-  @keyframes lane-light {
-    0% {
-      opacity: 0;
-      transform: translateY(0);
-    }
-
-    15%,
-    85% {
-      opacity: 1;
-    }
-
-    100% {
-      opacity: 0;
-      transform: translateY(calc(100% - 8px));
-    }
-  }
-
-  .trace-lane::after {
-    animation: lane-light 1.5s var(--ease) 1.4s 2;
-  }
-
-  /* The two washes rise into place with the ground, settling from slightly
-     lower — the light coming up on the stage the figure then draws on. Once:
-     Phase 60 declined an endless drift of these (it would need a pause control
-     under WCAG 2.2.2 and buys little), and this is the part of that idea that
-     ends, at 1.6 s, as the lane light's first pass begins. Its resting opacity
-     is the 0.7 above, so the focus response that raises it to 1 is untouched.
-
-     Vertical only. The wash is exactly as wide as the layout viewport (the
-     -50vw bleed above), so any horizontal scale overshoots it: the first
-     version's scale(1.06) widened a 390px page to 402px for half a second,
-     a sideways jolt on a phone and a flash of horizontal scrollbar on a
-     desktop with classic scrollbars. */
-  @keyframes wash-in {
-    from {
-      opacity: 0;
-      transform: translateY(3%);
-    }
-  }
-
-  .hero::after {
-    animation: wash-in 1.6s var(--ease-emphasized) backwards;
-  }
-
-  /* --- the universe (Phase 74) ---
-     Not here: it is a canvas drawn by HeroUniverse.tsx, which reads the same
-     preference itself and draws one still frame under it. Phase 72's SVG
-     network, whose entrance was here, was deleted with the component. */
-  /* No parallax on the dot ground. Built and measured on 2026-10-27: a
-     scroll-timeline transform on .hero::before (fill: both, so it is never
-     finished) keeps the ground on its own compositor layer, and the headline,
-     lede and search box over it lost subpixel antialiasing for good — 25,436
-     pixels of the 1280×800 hero rendered differently at rest, with the effect
-     itself invisible until the reader scrolls. Readability over depth. */
+     Not here: the board's one orchestrated moment, the plates dropping into
+     their docks, is DockScene.tsx, which DockBoard.tsx does not load under the
+     preference. It ends in 1.5 s and nothing on the home page loops. No parallax
+     on the stage, measured 2026-10-27: a scroll-timeline transform kept the
+     ground on its own layer, and the headline, lede and search box over it lost
+     subpixel antialiasing for good. */
 
   /* --- the index flow ---
 
@@ -4315,8 +3668,8 @@ details.notice[open] p {
   /* --- from a row to its page (Phase 72) ---
 
      The artifact a reader opens carries its badge and its name onto the
-     detail page: the browser morphs the two from where they sat in the row,
-     or in the Latest read card, to the detail heading. The name goes on the
+     detail page: the browser morphs the two from where they sat in the row to
+     the detail heading. The name goes on the
      link that has focus, because that is the one a reader just clicked or
      pressed Enter on — Chromium focuses a link on click — and only one
      element can have focus, so the name is unique by construction. Two
@@ -4327,12 +3680,12 @@ details.notice[open] p {
      .detail-head too, with rows under it; :has(> .badge) keeps its heading
      out. Where the browser does not focus on click, there is no pair and the
      page transition plays as before. */
-  :is(.rows > li, .trace-card):has(:is(.row-title a, .trace-name):focus) .badge,
+  .rows > li:has(.row-title a:focus) .badge,
   .detail-head > .badge {
     view-transition-name: artifact-badge;
   }
 
-  :is(.row-title a, .trace-name):focus,
+  .row-title a:focus,
   .detail-head:has(> .badge) > h1 {
     view-transition-name: artifact-name;
   }

@@ -332,22 +332,22 @@ library도, icon package도 없습니다. `'use client'`를 가진 component는 
 어느 것도 데이터를 갖거나 fetch하지 않습니다: job 페이지의 polling effect,
 검색 입력에 커서를 놓는 keyboard shortcut(`/` 또는 Ctrl/Cmd+K), 상세 페이지의
 경로·링크·설정 텍스트 복사 버튼, framework가 client component이기를 요구하는 error
-boundary, 그리고 Phase 74에서 추가한 홈 hero의 canvas universe(`HeroUniverse`)와
-카드 조명에 포인터 좌표를 넘기는 `PointerGlow`입니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
+boundary, 그리고 Phase 79에서 추가한 홈 hero의 dock board입니다: 장면을 불러올지 정하는
+`DockBoard`와 지연 로딩되는 WebGL 장면 `DockScene`(React Three Fiber, three.js)입니다.
+이 둘은 별도 chunk이고 넓은 화면에서 모션을 허용하고 WebGL이 있을 때만 받으며, 그 밖에는
+서버가 그린 같은 모양의 SVG가 남습니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
-모션도 마찬가지입니다. 홈의 load 연출 한 번(hero 배경이 떠오르고 Latest read
-그림이 lane, 노드, 카드 순서로 그려지는 것), index flow 다이어그램이 펼쳐지는 것,
-로딩 자리표시의 sweep, hover와 focus 반응은 전부 CSS입니다 — 애니메이션
+모션도 마찬가지입니다. index flow 다이어그램이 펼쳐지는 것, 로딩 자리표시의 sweep,
+hover와 focus 반응은 전부 CSS입니다 — 애니메이션
 라이브러리도 scroll observer도 없고, flow가 스크롤에 맞춰 펼쳐지는 것은 지원하는
 브라우저에서 CSS `animation-timeline: view()`로 합니다. CSS 애니메이션은 모두 5초
 안에 끝나고(실행 중인 job의 진행 막대도 3회, 4.2초), 로딩 sweep 말고는 반복하지 않습니다.
-계속 움직이는 것은 hero의 universe(canvas, 30fps) 하나뿐이고, 화면에 보이는
-일시정지 버튼(브라우저에 기억됨)이 있으며, 화면 밖이나 숨은 탭에서는 멈추고,
-`prefers-reduced-motion: reduce`에서는 정지된 한 장면만 그립니다. 반복되거나 페이지마다 재생되는
-장식 모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠고,
-Phase 60에서 dot grid와 wash를 움직이지 않는 배경으로 되살렸습니다.
+계속 움직이는 것은 없습니다. hero의 board는 판이 내려앉는 1.5초의 등장과 포인터·칩에
+대한 반응 때만 프레임을 그리고(`frameloop="demand"`), `prefers-reduced-motion: reduce`에서는
+장면을 받지 않고 SVG만 보여 줍니다. 반복되거나 페이지마다 재생되는
+장식 모션(배경 drift, 연결선 pulse, 블록·행 등장 효과)은 Phase 57에서 지웠습니다.
 서체는 Schibsted Grotesk(OFL-1.1) latin variable 파일 하나를 `next/font/local`로
 같은 origin에서 제공하고, CJK 글자는 시스템 서체로 넘어갑니다. keyframe animation은 전부 `prefers-reduced-motion: no-preference`
 블록 하나 안에만 선언되어 있어서, 모션을 줄여 달라고 한 사용자에게는 끌 것이

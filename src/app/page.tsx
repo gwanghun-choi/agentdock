@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
-import { HeroUniverse } from '@/components/HeroUniverse';
+import { DockBoard } from '@/components/DockBoard';
+import { DockBoardStatic } from '@/components/DockBoardStatic';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -13,7 +14,6 @@ import {
   StarIcon,
 } from '@/components/Icon';
 import { IndexFlow } from '@/components/IndexFlow';
-import { LatestRead } from '@/components/LatestRead';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
@@ -63,16 +63,15 @@ export default async function HomePage() {
           The pipeline diagram is not between the search box and the first
           artifact any more: there, the first artifact started at y=1,232 on a
           1280×800 screen and y=2,236 on a 390×844 phone (local seed,
-          2026-10-26). What the hero holds instead, from 64rem up, is that
-          pipeline with the newest artifact run through it, in the column the
-          copy has always left empty — see LatestRead.tsx. */}
+          2026-10-26). The Latest read figure that followed it drew the first
+          row below it a second time; the column holds the dock board instead,
+          whose stacks are the same counts the chips print. */}
       <section className="hero">
-        <HeroUniverse />
         <div className="hero-copy">
           <h1>Find agent artifacts, and see where they came from.</h1>
           <p className="lede">
-            An open index of skills, plugins, marketplaces, MCP servers, commands, hooks and
-            subagents — read from established public repositories, linked back to the exact commit.
+            Skills, plugins, MCP servers, commands, hooks and subagents, read from established
+            public repositories and linked to the exact commit.
           </p>
 
           {/* The search box, not a button that goes to one.
@@ -124,7 +123,9 @@ export default async function HomePage() {
           </nav>
         </div>
 
-        {recent[0] ? <LatestRead item={recent[0]} /> : null}
+        <DockBoard counts={byType}>
+          <DockBoardStatic counts={byType} />
+        </DockBoard>
 
         {/* Three facts about what AgentDock does. Each is enforced somewhere in
             the codebase — the discovery gate below states the first at length,

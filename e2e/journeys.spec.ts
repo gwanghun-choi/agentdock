@@ -175,100 +175,200 @@ test('home: the type counts leave Chinese out, and the feed says how many it doe
   expect(await total(page)).toBe(chipAll);
 });
 
-test('home: the Latest read figure is the newest row, and its motion ends and honours reduced motion', async ({
+test('home: the page has no motion past five seconds, and none under reduced motion', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
-  const trace = page.locator('figure.trace');
-  await expect(trace).toBeInViewport();
-  await expect(trace.locator('.trace-name')).toHaveText(
-    (await page.locator('.board .rows .row-title a').first().textContent()) ?? '',
-  );
-  // Every CSS animation on the page is finite and over inside five seconds,
-  // so none of them needs the pause control WCAG 2.2.2 asks of longer motion.
-  // The flow's are tied to scrolling, not to time, and are left out. The
-  // hero's universe is a canvas, not an animation the document lists, and it
-  // is the one motion that does continue: its pause control is the next test.
+  // WCAG 2.2.2 asks for a pause control past five seconds, and there is none.
+  // The flow's animations are tied to scrolling, not to time, and are left out.
   const ends = await page.evaluate(() =>
     document
       .getAnimations()
       .filter((a) => a.timeline === document.timeline)
       .map((a) => a.effect?.getComputedTiming().endTime),
   );
-  expect(ends.length).toBeGreaterThan(5);
   for (const end of ends) expect(Number(end)).toBeLessThanOrEqual(5000);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  await expect(trace).toBeInViewport();
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 });
 
-test('home: the universe pauses, remembers it, and stands still for reduced motion', async ({
-  page,
-}) => {
-  // The one continuous motion on the site (HeroUniverse.tsx), so the one that
-  // must carry a pause control (WCAG 2.2.2). "Still" is asserted on pixels,
-  // not on the attribute alone: a loop that kept drawing behind a paused
-  // label is exactly the failure this guards.
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.goto('/');
-  const canvas = page.locator('.universe canvas');
-  const pixels = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
-  await expect(canvas).toHaveAttribute('data-state', 'running');
-  const before = await pixels();
-  await page.waitForTimeout(300);
-  expect(await pixels()).not.toBe(before);
+// The hero's board (DockBoard.tsx). The journeys' browser has no GPU, so the
+// scene runs on SwiftShader (playwright.config.ts); every test here is about
+// what the page does with the scene, not how it looks.
+test.describe('the dock board', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-  await page.getByRole('button', { name: 'Pause background animation' }).click();
-  await expect(canvas).toHaveAttribute('data-state', 'paused');
-  const paused = await pixels();
-  await page.mouse.move(200, 200);
-  await page.waitForTimeout(500);
-  expect(await pixels()).toBe(paused);
+  /** Counts every WebGL draw call, from before the page's own script runs. */
+  const countDraws = (page: Page) =>
+    page.addInitScript(() => {
+      const w = window as unknown as { __draws: number };
+      w.__draws = 0;
+      const proto = WebGL2RenderingContext.prototype as unknown as Record<
+        string,
+        (...args: unknown[]) => unknown
+      >;
+      for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced']) {
+        const draw = proto[name];
+        proto[name] = function (this: unknown, ...args: unknown[]) {
+          w.__draws++;
+          return draw.apply(this, args);
+        };
+      }
+    });
+  const draws = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __draws: number }).__draws);
+  const board = (page: Page) => page.locator('.dock-board');
 
-  // Remembered for this browser, so a reader who stopped it is not asked again.
-  await page.reload();
-  await expect(canvas).toHaveAttribute('data-state', 'paused');
-  await page.getByRole('button', { name: 'Play background animation' }).click();
-  await expect(canvas).toHaveAttribute('data-state', 'running');
+  test('arrives without moving anything, takes no input, and stops drawing at rest', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await countDraws(page);
+    await page.goto('/');
+    const field = page.locator('#q');
+    const before = await field.boundingBox();
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    expect(await field.boundingBox()).toEqual(before);
 
-  // Under the preference: one still frame, no loop, and no control for
-  // nothing — the pointer moves nothing either.
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.reload();
-  await expect(canvas).toHaveAttribute('data-state', 'still');
-  await expect(page.locator('.motion-toggle')).toHaveCount(0);
-  const still = await pixels();
-  await page.mouse.move(900, 400);
-  await page.waitForTimeout(400);
-  expect(await pixels()).toBe(still);
-});
+    // The entrance ends and the loop stops: no frame at all while nothing moves.
+    await page.waitForTimeout(2500);
+    const rested = await draws(page);
+    expect(rested).toBeGreaterThan(0);
+    await page.waitForTimeout(600);
+    expect(await draws(page)).toBe(rested);
 
-test('a card lights where the pointer is, and leans only for a reader who allows motion', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.goto('/');
-  await page.locator('html[data-hotkeys]').waitFor();
-  const card = page.locator('.type-card').first();
-  await card.scrollIntoViewIfNeeded();
-  const box = await card.boundingBox();
-  if (!box) throw new Error('no type card');
-  await page.mouse.move(box.x + 30, box.y + 20);
-  await expect
-    .poll(() => card.evaluate((e) => Number.parseFloat(e.style.getPropertyValue('--gx'))))
-    .toBeCloseTo(30, 0);
-  // Settled lean: a rotation, not the 2px lift alone.
-  await expect.poll(() => card.evaluate((e) => getComputedStyle(e).transform)).toMatch(/^matrix3d/);
+    // A chip answers, and the loop stops again.
+    const chip = page.locator('.hero-types a[href$="type=hook"]');
+    await chip.hover();
+    await expect.poll(() => draws(page)).toBeGreaterThan(rested);
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(1500);
+    const settled = await draws(page);
+    await page.waitForTimeout(400);
+    expect(await draws(page)).toBe(settled);
 
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.mouse.move(box.x + 60, box.y + 40);
-  await expect(card).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -2)');
+    // Nothing over the scene's box hits the canvas, and the box stops short of the field.
+    const box = await board(page).boundingBox();
+    if (!box || !before) throw new Error('no box');
+    expect(box.x).toBeGreaterThanOrEqual(before.x + before.width);
+    expect(
+      await page.evaluate(
+        ([x, y]) => document.elementFromPoint(x, y)?.closest('.dock-board') ?? null,
+        [box.x + box.width / 2, box.y + box.height / 2],
+      ),
+    ).toBeNull();
+    await field.click();
+    await page.keyboard.type('review');
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/q=review$/);
+    expect(errors).toEqual([]);
+  });
+
+  test('with no WebGL the drawing stays and no 3D is downloaded', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.addInitScript(() => {
+      const real = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (
+        this: HTMLCanvasElement,
+        kind: string,
+        ...rest: unknown[]
+      ) {
+        return kind.startsWith('webgl') ? null : real.call(this, kind as '2d', ...(rest as []));
+      } as typeof real;
+    });
+    const scripts: number[] = [];
+    page.on('response', async (r) => {
+      // A response still in flight when the test ends has no body to read.
+      if (r.url().endsWith('.js')) scripts.push((await r.body().catch(() => '')).length);
+    });
+    await page.goto('/');
+    await page.locator('html[data-hotkeys]').waitFor();
+    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page).locator('canvas')).toHaveCount(0);
+    await expect(board(page).locator('svg')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    // The scene's chunk is three.js: the largest script on the page by far.
+    expect(Math.max(...scripts)).toBeLessThan(400_000);
+    await page.fill('#q', 'review');
+    await page.press('#q', 'Enter');
+    await page.waitForURL(/q=review$/);
+    expect(errors).toEqual([]);
+  });
+
+  test('a lost GPU context falls back to the drawing and leaves the page working', async ({
+    page,
+  }) => {
+    const errors = collectErrors(page);
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await page.evaluate(() => {
+      const canvas = document.querySelector('.dock-board canvas') as HTMLCanvasElement;
+      canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    });
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(board(page).locator('canvas')).toHaveCount(0);
+    await expect(board(page).locator('svg')).toBeVisible();
+    await expect(page.locator('h1')).toBeVisible();
+    await page.fill('#q', 'review');
+    await page.press('#q', 'Enter');
+    await page.waitForURL(/q=review$/);
+    expect(errors.filter((e) => !e.includes('Context Lost'))).toEqual([]);
+  });
+
+  test('a scene that will not load leaves the page as it was', async ({ page }) => {
+    const errors = collectErrors(page);
+    // Only the scene's chunk: three.js is the one that names WebGLRenderer.
+    await page.route('**/_next/static/chunks/*.js', async (route) => {
+      const response = await route.fetch();
+      if ((await response.text()).includes('WebGLRenderer')) return route.abort();
+      return route.fulfill({ response });
+    });
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(page.locator('h1')).toHaveText(/Find agent artifacts/);
+    await expect(board(page).locator('svg')).toBeVisible();
+    await page.fill('#q', 'review');
+    await page.press('#q', 'Enter');
+    await page.waitForURL(/q=review$/);
+    // The aborted chunk reports itself. So, in 2 of 3 runs, does the browser skip
+    // the decorative cross-document transition of the search that follows; the
+    // navigation still lands (above). Not seen in 20 ordinary navigations.
+    expect(
+      errors.filter(
+        (e) =>
+          !/Failed to load resource|ChunkLoadError|Loading chunk|ViewTransition opt-in disabled/.test(
+            e,
+          ),
+      ),
+    ).toEqual([]);
+  });
+
+  test('under reduced motion it never loads, and a chip still lights its dock', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.locator('html[data-hotkeys]').waitFor();
+    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page).locator('canvas')).toHaveCount(0);
+    const top = board(page).locator('.dock-hook .dock-top').first();
+    const rest = await top.evaluate((e) => getComputedStyle(e).fill);
+    await page.locator('.hero-types a[href$="type=hook"]').focus();
+    expect(await top.evaluate((e) => getComputedStyle(e).fill)).not.toBe(rest);
+  });
+
+  test('the listing and the detail pages load no scene', async ({ page }) => {
+    for (const path of ['/artifacts?q=review', '/r/fixture/ui-edge-cases']) {
+      await page.goto(path);
+      await expect(page.locator('main h1')).toBeVisible();
+      await expect(page.locator('.dock-board')).toHaveCount(0);
+      await expect(page.locator('canvas')).toHaveCount(0);
+    }
+  });
 });
 
 test('home: the entrance never widens a phone page, frame by frame', async ({ page }) => {
@@ -299,9 +399,8 @@ test('home: the entrance never widens a phone page, frame by frame', async ({ pa
 test('a row carries its name and badge to the detail heading, and only the row that was opened', async ({
   page,
 }) => {
-  // Two elements with one view-transition-name abort the whole transition, and
-  // the home page lists the newest artifact twice (figure and first row). The
-  // name follows focus, so at most one element carries it before the click.
+  // Two elements with one view-transition-name abort the whole transition, so
+  // the name follows focus: at most one element carries it before the click.
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
@@ -316,9 +415,6 @@ test('a row carries its name and badge to the detail heading, and only the row t
         ).length,
     );
   expect(await named()).toBe(0);
-  // The Latest read card's link carries it the same way.
-  await page.locator('.trace-name').focus();
-  expect(await named()).toBe(1);
   const link = page.locator('.board .rows .row-title a').first();
   await link.focus();
   expect(await named()).toBe(1);
@@ -962,9 +1058,10 @@ test.describe('on a phone', () => {
     await expect(page.locator('#q')).toBeInViewport();
     await expect(page.locator('.hero-types .chip').first()).toBeInViewport();
     expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(844);
-    // The Latest read figure is a desktop column; on a phone it would sit
-    // between the search box and that row.
-    await expect(page.locator('figure.trace')).toBeHidden();
+    // A still drawing, not the scene: nothing 3D on a phone, and its chunk is
+    // not requested (DockBoard.tsx).
+    await expect(page.locator('.dock-board')).toHaveAttribute('data-scene', 'still');
+    await expect(page.locator('.dock-board canvas')).toHaveCount(0);
     await noHorizontalOverflow(page);
   });
 

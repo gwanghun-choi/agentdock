@@ -23,6 +23,8 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     baseURL: `http://127.0.0.1:${PORT}`,
     contextOptions: { reducedMotion: 'reduce' },
+    // WebGL in a browser with no GPU, for the hero's scene: software, and slow.
+    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
     trace: 'retain-on-failure',
   },
   webServer: {

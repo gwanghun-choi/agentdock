@@ -192,13 +192,13 @@ export default async function PackagePage({ params }: Props) {
   // The page is long — nine sections on a skill, the file itself last — so its
   // sections are named once at the top, as plain fragment links.
   const sections = [
+    // The six types with a usage guide are the six SetupPanel renders for.
+    guide ? ['setup', 'Setup'] : null,
+    guide ? ['usage', 'Using it'] : null,
     ['details', 'Details'],
     detail.files.length > 0 ? ['files', 'Files'] : null,
     ['observed', 'Capabilities'],
     ['related', 'Related'],
-    // The six types with a usage guide are the six SetupPanel renders for.
-    guide ? ['setup', 'Setup'] : null,
-    guide ? ['usage', 'Using it'] : null,
     ['versions', 'Versions'],
     ['file', 'File'],
   ].filter((entry) => entry !== null);
@@ -274,6 +274,42 @@ export default async function PackagePage({ params }: Props) {
           ))}
         </ul>
       </nav>
+
+      {/* What a reader came for first: how to use it. The page's facts and the
+          record of what was observed follow. */}
+      {guide ? setup : null}
+
+      {guide ? (
+        <>
+          <h2 id="usage">Using this kind of artifact</h2>
+          <p className="muted">
+            About the type, from its documentation — not about this file. AgentDock does not install
+            or run anything; read the file at the linked commit first.
+          </p>
+          <dl className="facts install">
+            <dt>What it is</dt>
+            <dd>{guide.what}</dd>
+            <dt>Format documented by</dt>
+            <dd>
+              {guide.documentedFor} —{' '}
+              <a href={guide.docs} rel="noopener noreferrer" target="_blank">
+                <ExternalIcon /> documentation
+              </a>
+            </dd>
+            {guide.places?.map((place) => (
+              <div key={place.scope} style={{ display: 'contents' }}>
+                <dt>{place.scope} copy</dt>
+                <dd>
+                  <code>{place.path(detail.slug)}</code>{' '}
+                  <CopyButton label="Copy path" value={place.path(detail.slug)} />
+                </dd>
+              </div>
+            ))}
+            <dt>Before you copy it</dt>
+            <dd>{guide.note}</dd>
+          </dl>
+        </>
+      ) : null}
 
       <dl className="facts" id="details">
         <dt>Type</dt>
@@ -495,40 +531,6 @@ export default async function PackagePage({ params }: Props) {
           </>
         ) : null}
       </p>
-
-      {guide ? setup : null}
-
-      {guide ? (
-        <>
-          <h2 id="usage">Using this kind of artifact</h2>
-          <p className="muted">
-            About the type, from its documentation — not about this file. AgentDock does not install
-            or run anything; read the file at the linked commit first.
-          </p>
-          <dl className="facts install">
-            <dt>What it is</dt>
-            <dd>{guide.what}</dd>
-            <dt>Format documented by</dt>
-            <dd>
-              {guide.documentedFor} —{' '}
-              <a href={guide.docs} rel="noopener noreferrer" target="_blank">
-                <ExternalIcon /> documentation
-              </a>
-            </dd>
-            {guide.places?.map((place) => (
-              <div key={place.scope} style={{ display: 'contents' }}>
-                <dt>{place.scope} copy</dt>
-                <dd>
-                  <code>{place.path(detail.slug)}</code>{' '}
-                  <CopyButton label="Copy path" value={place.path(detail.slug)} />
-                </dd>
-              </div>
-            ))}
-            <dt>Before you copy it</dt>
-            <dd>{guide.note}</dd>
-          </dl>
-        </>
-      ) : null}
 
       <h2 id="versions">Versions</h2>
       <p className="muted">

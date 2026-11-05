@@ -2,7 +2,6 @@ import localFont from 'next/font/local';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DockIcon, SearchIcon } from '@/components/Icon';
-import { PointerGlow } from '@/components/PointerGlow';
 import { SearchHotkey } from '@/components/SearchHotkey';
 import { SearchLauncher } from '@/components/SearchLauncher';
 import './globals.css';
@@ -96,10 +95,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             pieces of JavaScript this layout loads, and every page is complete
             without it. */}
         <SearchHotkey />
-
-        {/* Renders nothing either: it tells the card under a mouse where the
-            pointer is, for the light that follows it (Phase 74). */}
-        <PointerGlow />
 
         {/* The skip link's destination, and the one main landmark per page. */}
         <main id="main" className="wrap">

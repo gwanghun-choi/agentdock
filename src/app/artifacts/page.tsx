@@ -677,27 +677,33 @@ export default async function ArtifactsPage({
   const searchControls = (
     <div className="search">
       {searchForm}
-      {facets}
-      <details
-        className="notice"
-        open={selectedCapabilities.length > 0 || selectedLanguages.length > 0}
-      >
-        <summary>
-          <InfoIcon />
-          What these filters mean
-        </summary>
-        <p>
-          These filters describe what AgentDock observed while reading the files, not everything an
-          artifact can do. The network and Bash filters list only skills and commands whose text
-          AgentDock has analyzed; the script filter lists only skills and plugins, whose file list
-          is a directory. The description filter reads which writing system each description uses,
-          as its author wrote it — nothing is translated, and the Latin alphabet includes languages
-          other than English.
-          {HIDDEN_UNLESS_ASKED.length > 0
-            ? ` Unless you choose a language, artifacts whose description is written in ${HIDDEN_LABEL} are left out of these results; they are still indexed, and choosing ${HIDDEN_LABEL} or All languages lists them.`
-            : null}
-        </p>
-      </details>
+      {/* From 64rem up the rail beside the results, so the first result is on the
+          first screen with every filter still legible. It was 320px of panel
+          above the results at 1440×900, and the first screen held two rows
+          (Phase 74 baseline). */}
+      <div className="search-rail">
+        {facets}
+        <details
+          className="notice"
+          open={selectedCapabilities.length > 0 || selectedLanguages.length > 0}
+        >
+          <summary>
+            <InfoIcon />
+            What these filters mean
+          </summary>
+          <p>
+            These filters describe what AgentDock observed while reading the files, not everything
+            an artifact can do. The network and Bash filters list only skills and commands whose
+            text AgentDock has analyzed; the script filter lists only skills and plugins, whose file
+            list is a directory. The description filter reads which writing system each description
+            uses, as its author wrote it — nothing is translated, and the Latin alphabet includes
+            languages other than English.
+            {HIDDEN_UNLESS_ASKED.length > 0
+              ? ` Unless you choose a language, artifacts whose description is written in ${HIDDEN_LABEL} are left out of these results; they are still indexed, and choosing ${HIDDEN_LABEL} or All languages lists them.`
+              : null}
+          </p>
+        </details>
+      </div>
     </div>
   );
 
@@ -746,19 +752,21 @@ export default async function ArtifactsPage({
     return (
       <>
         {pageHead}
-        {searchControls}
-        <div className="empty">
-          {/* No "submit a repository" link any more: there is nothing to submit
-              to. The honest next step is the policy that decides what arrives
-              here, which the home page states. */}
-          <p className="muted">
-            No artifacts indexed yet. The scheduled sync fills this the next time it runs.
-          </p>
-          <p className="actions">
-            <Link className="btn btn-quiet" href="/">
-              How a repository gets indexed
-            </Link>
-          </p>
+        <div className="listing">
+          {searchControls}
+          <div className="empty">
+            {/* No "submit a repository" link any more: there is nothing to submit
+                to. The honest next step is the policy that decides what arrives
+                here, which the home page states. */}
+            <p className="muted">
+              No artifacts indexed yet. The scheduled sync fills this the next time it runs.
+            </p>
+            <p className="actions">
+              <Link className="btn btn-quiet" href="/">
+                How a repository gets indexed
+              </Link>
+            </p>
+          </div>
         </div>
       </>
     );
@@ -770,16 +778,18 @@ export default async function ArtifactsPage({
     return (
       <>
         {pageHead}
-        {searchControls}
-        <div className="empty">
-          <p className="muted">
-            There is no page {page}. This result set has {total} artifacts.
-          </p>
-          <p className="actions">
-            <Link className="btn btn-quiet" href={hrefFor(q, 1, filters, sort)}>
-              <ArrowLeftIcon /> Back to the first page
-            </Link>
-          </p>
+        <div className="listing">
+          {searchControls}
+          <div className="empty">
+            <p className="muted">
+              There is no page {page}. This result set has {total} artifacts.
+            </p>
+            <p className="actions">
+              <Link className="btn btn-quiet" href={hrefFor(q, 1, filters, sort)}>
+                <ArrowLeftIcon /> Back to the first page
+              </Link>
+            </p>
+          </div>
         </div>
       </>
     );
@@ -794,41 +804,44 @@ export default async function ArtifactsPage({
     return (
       <>
         {pageHead}
-        {searchControls}
-        <div className="empty">
-          <p>
-            No artifacts matched {q ? `"${q}"` : 'the applied filters'}
-            {filterLabels.length > 0 ? ` (${filterLabels.join(', ')})` : ''}.
-          </p>
-          {/* Never "does not exist" — the corpus is not the ecosystem (D-38).
-              And never "not indexed" when the match is indexed and only left
-              out by the default language policy. */}
-          {ways.some((w) => w.hiddenLanguage) ? (
-            <p className="muted">
-              AgentDock has indexed a match, but its description is written in {HIDDEN_LABEL}, which
-              is left out unless you choose it.
+        <div className="listing">
+          {searchControls}
+          <div className="empty">
+            <p>
+              No artifacts matched {q ? `"${q}"` : 'the applied filters'}
+              {filterLabels.length > 0 ? ` (${filterLabels.join(', ')})` : ''}.
             </p>
-          ) : (
-            <p className="muted">
-              AgentDock has not indexed a match. That is not the same as the artifact not existing.
-            </p>
-          )}
-          {ways.length > 0 ? (
-            <ul aria-label="Ways to widen this search" className="notes ways">
-              {ways.map((w) => (
-                <li key={w.href}>
-                  {w.total > 0 ? <Link href={w.href}>{w.label}</Link> : w.label}
-                  <span className="muted">
-                    {' — '}
-                    {w.total > 0
-                      ? `${w.total.toLocaleString('en-US')} ${w.total === 1 ? 'artifact' : 'artifacts'}`
-                      : 'no match either'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {nextSteps}
+            {/* Never "does not exist" — the corpus is not the ecosystem (D-38).
+                And never "not indexed" when the match is indexed and only left
+                out by the default language policy. */}
+            {ways.some((w) => w.hiddenLanguage) ? (
+              <p className="muted">
+                AgentDock has indexed a match, but its description is written in {HIDDEN_LABEL},
+                which is left out unless you choose it.
+              </p>
+            ) : (
+              <p className="muted">
+                AgentDock has not indexed a match. That is not the same as the artifact not
+                existing.
+              </p>
+            )}
+            {ways.length > 0 ? (
+              <ul aria-label="Ways to widen this search" className="notes ways">
+                {ways.map((w) => (
+                  <li key={w.href}>
+                    {w.total > 0 ? <Link href={w.href}>{w.label}</Link> : w.label}
+                    <span className="muted">
+                      {' — '}
+                      {w.total > 0
+                        ? `${w.total.toLocaleString('en-US')} ${w.total === 1 ? 'artifact' : 'artifacts'}`
+                        : 'no match either'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {nextSteps}
+          </div>
         </div>
       </>
     );
@@ -846,26 +859,28 @@ export default async function ArtifactsPage({
     return (
       <>
         {pageHead}
-        {searchControls}
-        {/* DIS-04 made legible: the heading states the miss, the subheading
-            names what is being shown instead. Never a bare "0 results". */}
-        <div className="result-bar">
-          <p>
-            <strong>No exact match for &quot;{q}&quot;</strong>
-            <br />
-            <span className="muted">Close matches by name and summary</span>
-          </p>
-          {/* The fallback reads the same default, so it says so too, here
-              where an exact match in a hidden language would be the one
-              thing the reader could not otherwise know about. */}
-          {hiding ? (
-            <p className="muted">
-              Not counting descriptions written in {HIDDEN_LABEL}.{' '}
-              <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
+        <div className="listing">
+          {searchControls}
+          {/* DIS-04 made legible: the heading states the miss, the subheading
+              names what is being shown instead. Never a bare "0 results". */}
+          <div className="result-bar">
+            <p>
+              <strong>No exact match for &quot;{q}&quot;</strong>
+              <br />
+              <span className="muted">Close matches by name and summary</span>
             </p>
-          ) : null}
+            {/* The fallback reads the same default, so it says so too, here
+                where an exact match in a hidden language would be the one
+                thing the reader could not otherwise know about. */}
+            {hiding ? (
+              <p className="muted">
+                Not counting descriptions written in {HIDDEN_LABEL}.{' '}
+                <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
+              </p>
+            ) : null}
+          </div>
+          <PackageRows date={sort} items={items} />
         </div>
-        <PackageRows date={sort} items={items} />
       </>
     );
   }
@@ -877,48 +892,51 @@ export default async function ArtifactsPage({
   return (
     <>
       {pageHead}
-      {searchControls}
-      {/* The result set is the state of the search, so it is stated as one
-          rather than tucked into a metadata line: the size of the set, then the
-          slice of it on this page. Same three numbers as before — `total`,
-          `offset` and `items.length` — and the same pagination arithmetic; only
-          the sentence they are read in changed. */}
-      <div className="result-bar">
-        <p className="result-count">
-          <strong>{total.toLocaleString('en-US')}</strong> {total === 1 ? 'artifact' : 'artifacts'}
-          {q ? (
-            <>
-              {' '}
-              for <span className="result-q">{q}</span>
-            </>
-          ) : null}
-        </p>
-        <p className="muted">
-          Showing {offset + 1}–{offset + items.length}
-        </p>
-        {/* searchMode relaxed the query, and the reader is told: these match
-            some of the words, not all of them. */}
-        {/* With the default in force the claim is narrower: an artifact in a
-            hidden language may have matched every word. Not hidden on a phone,
-            unlike .result-scope, so the narrowing is said there too. */}
-        {mode === 'any' ? (
+      <div className="listing">
+        {searchControls}
+        {/* The result set is the state of the search, so it is stated as one
+            rather than tucked into a metadata line: the size of the set, then the
+            slice of it on this page. Same three numbers as before — `total`,
+            `offset` and `items.length` — and the same pagination arithmetic; only
+            the sentence they are read in changed. */}
+        <div className="result-bar">
+          <p className="result-count">
+            <strong>{total.toLocaleString('en-US')}</strong>{' '}
+            {total === 1 ? 'artifact' : 'artifacts'}
+            {q ? (
+              <>
+                {' '}
+                for <span className="result-q">{q}</span>
+              </>
+            ) : null}
+          </p>
           <p className="muted">
-            {hiding
-              ? `No artifact outside descriptions written in ${HIDDEN_LABEL} matched every word; these match at least one.`
-              : 'No artifact matched every word; these match at least one.'}
+            Showing {offset + 1}–{offset + items.length}
           </p>
-        ) : null}
-        {hiding ? (
-          <p className="muted result-scope">
-            Not counting descriptions written in {HIDDEN_LABEL}.{' '}
-            <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
-          </p>
-        ) : null}
-        <AppliedFilters filters={filters} q={q} sort={sort} />
-        <SortLinks filters={filters} q={q} sort={sort} />
+          {/* searchMode relaxed the query, and the reader is told: these match
+              some of the words, not all of them. */}
+          {/* With the default in force the claim is narrower: an artifact in a
+              hidden language may have matched every word. Not hidden on a phone,
+              unlike .result-scope, so the narrowing is said there too. */}
+          {mode === 'any' ? (
+            <p className="muted">
+              {hiding
+                ? `No artifact outside descriptions written in ${HIDDEN_LABEL} matched every word; these match at least one.`
+                : 'No artifact matched every word; these match at least one.'}
+            </p>
+          ) : null}
+          {hiding ? (
+            <p className="muted result-scope">
+              Not counting descriptions written in {HIDDEN_LABEL}.{' '}
+              <Link href={searchHref({ ...state, languages: [ANY_LANGUAGE] })}>Include them</Link>
+            </p>
+          ) : null}
+          <AppliedFilters filters={filters} q={q} sort={sort} />
+          <SortLinks filters={filters} q={q} sort={sort} />
+        </div>
+        <PackageRows date={sort} items={items} pathQuery={pathQuery} />
+        <Pager filters={filters} last={last} page={page} q={q} sort={sort} />
       </div>
-      <PackageRows date={sort} items={items} pathQuery={pathQuery} />
-      <Pager filters={filters} last={last} page={page} q={q} sort={sort} />
     </>
   );
 }

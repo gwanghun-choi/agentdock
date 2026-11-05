@@ -95,16 +95,17 @@ not replace `bun run ci`.
   job page, a keyboard shortcut that focuses the search field or opens the
   launcher, a copy-to-clipboard button on the detail page (the Clipboard API has
   no markup equivalent), the error boundary, which the framework requires to
-  be one, and since Phase 74 the hero's canvas universe (HeroUniverse) and the
-  pointer position for the cards' light (PointerGlow) — CSS has no pointer
-  coordinates and no 3D projection. None of them holds data and none of them
-  fetches. A package that ships
+  be one, and since Phase 79 the hero's board: DockBoard, which decides whether
+  the scene loads, and DockScene, the lazily loaded WebGL scene itself — CSS has
+  no 3D projection. None of them holds data and none of them fetches. A package
+  that ships
   `'use client'` turns every import site into a client component; measure before
   adopting one. The measurement that rejected `lucide-react` is written up in
   `src/components/Icon.tsx`, the one that rejected `motion` in
-  `src/app/globals.css`'s motion block, and the one that rejected three.js,
-  React Three Fiber, motion and GSAP for the hero in
-  `src/components/HeroUniverse.tsx`.
+  `src/app/globals.css`'s motion block, and the one that kept three.js and React
+  Three Fiber off every first load, in their own chunk behind DockBoard, in
+  `docs/analysis/agentdock-phase79-dock-board.md`. Nothing but `DockScene.tsx`
+  may import them.
 - **Motion has two mechanisms and neither is optional.** A transition takes its
   duration from `--dur` or `--dur-fast`, which the `prefers-reduced-motion:
   reduce` block redefines. A keyframe animation is declared inside the single

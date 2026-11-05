@@ -345,24 +345,28 @@ queue is a table, the scheduler is cron, and the lock manager is PostgreSQL.
 
 The front end is the same shape. Every page is a Server Component rendering
 plain CSS with custom properties — no UI kit, no CSS framework, no animation
-library and no icon package. Four components carry `'use client'`, none of
+library and no icon package. Six components carry `'use client'`, none of
 them holds data or fetches anything: a polling effect on the job page, a
 keyboard shortcut that puts the cursor in the search field (`/`, or Ctrl/Cmd+K),
-a copy button for paths, links and setup text on the detail page, and the error boundary,
-which the framework requires to be a client component. Search is a GET form;
+a copy button for paths, links and setup text on the detail page, the error boundary,
+which the framework requires to be a client component, and since Phase 79 the
+home hero's board: `DockBoard`, which decides whether the scene loads, and
+`DockScene`, the WebGL scene (React Three Fiber and three.js) in a chunk of its
+own. It downloads only on a wide screen with motion allowed and WebGL present;
+otherwise a server-drawn SVG of the same board stays. Search is a GET form;
 the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
 Back, reload and a shared link.
 
-So is the motion. The home page's one load sequence (the hero's ground fading
-up and the Latest read figure drawing its lane, nodes and card), the
-index-flow diagram's reveal, the loading placeholder's sweep, and every hover
+So is the motion. The index-flow diagram's reveal, the loading placeholder's sweep, and every hover
 and focus response are CSS — no animation library and no scroll observer; the
 flow's reveal follows scrolling through CSS `animation-timeline: view()` where
 the browser has it. Every animation ends inside five seconds; none loops but
-the loading sweep. Decorative motion that looped or replayed on every page (the
+the loading sweep. Nothing moves continuously: the hero's board draws frames only
+for its 1.5 s entrance and in answer to the pointer or a chip
+(`frameloop="demand"`), and under reduced motion it does not load. Decorative motion that looped or replayed on every page (the
 background drift, the connector pulse, block and row entrances) was removed in
-Phase 57; Phase 60 brought back the dot grid and the washes as a still ground. The
+Phase 57. The
 typeface is one latin variable file of Schibsted Grotesk (OFL-1.1), served from
 the same origin by `next/font/local`; CJK text falls through to system fonts. Every keyframe animation is
 declared inside one `prefers-reduced-motion: no-preference` block, so for a
