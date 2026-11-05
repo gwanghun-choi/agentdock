@@ -223,7 +223,54 @@ test.describe('the dock board', () => {
     page.evaluate(() => (window as unknown as { __draws: number }).__draws);
   const board = (page: Page) => page.locator('.dock-board');
 
-  test('arrives without moving anything, takes no input, and stops drawing at rest', async ({
+  /** A stage that holds still: Pause is stored, so there is no entrance and no drift. */
+  const stillStage = (page: Page) =>
+    page.addInitScript(() => localStorage.setItem('agentdock:motion-paused', '1'));
+  /**
+   * Sweeps the pointer over the free half of the stage until a dock lights, then
+   * waits for the camera's answer to that pointer to settle before trusting the spot.
+   */
+  const findDock = async (page: Page) => {
+    await expect(page.locator('.dock-panel')).toHaveCount(0);
+    const box = await board(page).boundingBox();
+    if (!box) throw new Error('no board');
+    const over = page.locator('.hero[data-over]');
+    for (let y = box.y + box.height * 0.3; y < box.y + box.height * 0.9; y += 40) {
+      for (let x = box.x + box.width * 0.6; x < box.x + box.width * 0.98; x += 50) {
+        await page.mouse.move(x, y);
+        await page.waitForTimeout(30);
+        if (!(await over.count())) continue;
+        await page.waitForTimeout(1500);
+        await page.mouse.move(x + 1, y);
+        await page.waitForTimeout(100);
+        if (await over.count()) return { x: x + 1, y };
+      }
+    }
+    throw new Error('no dock under the sweep');
+  };
+  const pause = (page: Page) => page.getByRole('button', { name: 'Pause motion' });
+  /** The loop has stopped when no draw call lands in two windows running. */
+  const expectAtRest = async (page: Page) => {
+    await expect
+      .poll(
+        async () => {
+          const before = await draws(page);
+          await page.waitForTimeout(1000);
+          return (await draws(page)) - before;
+        },
+        { timeout: 15_000, intervals: [0] },
+      )
+      .toBe(0);
+    const before = await draws(page);
+    await page.waitForTimeout(1000);
+    expect(await draws(page)).toBe(before);
+  };
+
+  // Changed in Phase 80, on purpose. The canvas now spans the stage, so "the box
+  // stops short of the field" became "the field is on top of it", and "no frame at
+  // rest" is still asserted but of the three things that bring rest: Pause (here),
+  // leaving the screen and twenty seconds without input (both below).
+  test('arrives without moving anything, takes no input, and stops drawing when paused', async ({
     page,
   }) => {
     const errors = collectErrors(page);
@@ -234,38 +281,261 @@ test.describe('the dock board', () => {
     await expect(board(page)).toHaveAttribute('data-scene', 'live');
     expect(await field.boundingBox()).toEqual(before);
 
-    // The entrance ends and the loop stops: no frame at all while nothing moves.
-    await page.waitForTimeout(2500);
+    await pause(page).click();
+    await expect(pause(page)).toHaveAttribute('aria-pressed', 'true');
+    await expectAtRest(page);
     const rested = await draws(page);
     expect(rested).toBeGreaterThan(0);
-    await page.waitForTimeout(600);
-    expect(await draws(page)).toBe(rested);
 
-    // A chip answers, and the loop stops again.
+    // A chip still answers while paused: that is the reader's own motion, not the
+    // page's. And the loop stops again.
     const chip = page.locator('.hero-types a[href$="type=hook"]');
     await chip.hover();
     await expect.poll(() => draws(page)).toBeGreaterThan(rested);
     await page.mouse.move(5, 5);
-    await page.waitForTimeout(1500);
-    const settled = await draws(page);
-    await page.waitForTimeout(400);
-    expect(await draws(page)).toBe(settled);
+    await expectAtRest(page);
 
-    // Nothing over the scene's box hits the canvas, and the box stops short of the field.
-    const box = await board(page).boundingBox();
-    if (!box || !before) throw new Error('no box');
-    expect(box.x).toBeGreaterThanOrEqual(before.x + before.width);
-    expect(
-      await page.evaluate(
-        ([x, y]) => document.elementFromPoint(x, y)?.closest('.dock-board') ?? null,
-        [box.x + box.width / 2, box.y + box.height / 2],
-      ),
-    ).toBeNull();
+    // Everything with a job sits above the scene, and the scene never hits: not
+    // over a control, and not over the open stage either.
+    if (!before) throw new Error('no field');
+    const stage = await board(page).boundingBox();
+    if (!stage) throw new Error('no board');
+    const open = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.className,
+      [stage.x + stage.width * 0.75, stage.y + stage.height * 0.5],
+    );
+    expect(open).toContain('hero');
+    for (const selector of ['#q', '.hero-search button', '.hero-types a[href$="type=hook"]']) {
+      const box = await page.locator(selector).boundingBox();
+      if (!box) throw new Error(`no ${selector}`);
+      expect(
+        await page.evaluate(
+          ([x, y]) => document.elementFromPoint(x, y)?.closest('.dock-board') ?? null,
+          [box.x + box.width / 2, box.y + box.height / 2],
+        ),
+      ).toBeNull();
+    }
     await field.click();
     await page.keyboard.type('review');
     await page.keyboard.press('Enter');
     await page.waitForURL(/q=review$/);
     expect(errors).toEqual([]);
+  });
+
+  test('a paused reader stays paused on the next visit, with no entrance', async ({ page }) => {
+    await countDraws(page);
+    await page.goto('/');
+    await pause(page).click();
+    await page.reload();
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(pause(page)).toHaveAttribute('aria-pressed', 'true');
+    // It comes to rest with nobody touching it. That the plates landed with no
+    // entrance to place them: seen in docs/images/phase80-82/paused-return-1920.png.
+    await expectAtRest(page);
+    await pause(page).click();
+    await expect(pause(page)).toHaveAttribute('aria-pressed', 'false');
+    await page.reload();
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(pause(page)).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('the drift stops off screen and after twenty seconds alone', async ({ page }) => {
+    test.slow();
+    await countDraws(page);
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+
+    // It is moving, past the entrance, with nobody touching anything.
+    await page.waitForTimeout(5000);
+    const early = await draws(page);
+    await expect.poll(() => draws(page)).toBeGreaterThan(early);
+
+    await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+    await expectAtRest(page);
+    await page.evaluate(() => scrollTo(0, 0));
+    // Back on screen it runs again, and not only for the scroll's own easing.
+    await page.waitForTimeout(3000);
+    const back = await draws(page);
+    await expect.poll(() => draws(page)).toBeGreaterThan(back);
+
+    await page.waitForTimeout(20_000);
+    await expectAtRest(page);
+    // A pointer wakes it.
+    const rested = await draws(page);
+    const box = await board(page).boundingBox();
+    if (!box) throw new Error('no board');
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.5);
+    await expect.poll(() => draws(page)).toBeGreaterThan(rested);
+  });
+
+  test('a dock in the scene is hovered, picked, followed and closed', async ({ page }) => {
+    const errors = collectErrors(page);
+    await stillStage(page);
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+
+    const panel = page.locator('.dock-panel');
+    const close = panel.getByRole('button', { name: 'Close' });
+    const { x, y } = await findDock(page);
+    // Hovered, it only lights: a panel opened here could land under the pointer.
+    await expect(panel).toHaveCount(0);
+
+    await page.mouse.click(x, y);
+    await expect(close).toBeVisible();
+
+    // Its number is the chip's, and its link is the chip's.
+    const link = panel.getByRole('link');
+    const href = (await link.getAttribute('href')) as string;
+    const shown = (await panel.locator('strong').textContent()) as string;
+    const chip = page.locator(`.hero-types a[href="${href}"]`);
+    await expect(chip.locator('.chip-count')).toHaveText(shown);
+
+    // Close closes, and hands the focus to that chip so it stays in the page.
+    await page.mouse.move(5, 5);
+    await close.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel).toHaveCount(0);
+    await expect(chip).toBeFocused();
+    await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+
+    // Escape lets go of a pick by itself, and so does a click on the open stage.
+    await page.waitForTimeout(2500); // the camera back from the dock
+    let spot = await findDock(page);
+    await page.mouse.click(spot.x, spot.y);
+    await expect(close).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.mouse.move(5, 5);
+    await expect(panel).toHaveCount(0);
+
+    await page.waitForTimeout(2500);
+    spot = await findDock(page);
+    await page.mouse.click(spot.x, spot.y);
+    await expect(close).toBeVisible();
+    const stage = await board(page).boundingBox();
+    if (!stage) throw new Error('no board');
+    await page.mouse.click(stage.x + stage.width - 8, stage.y + 8);
+    await expect(close).toHaveCount(0);
+
+    // The words are the words: a click on the headline picks nothing.
+    await page.mouse.move(5, 5);
+    await expect(panel).toHaveCount(0);
+    await page.waitForTimeout(2500);
+    await page.locator('.hero h1').click();
+    await expect(panel).toHaveCount(0);
+
+    // Picked again, the link goes where the chip goes, and Back comes home.
+    spot = await findDock(page);
+    await page.mouse.click(spot.x, spot.y);
+    await panel.getByRole('link').click();
+    await page.waitForURL(/\/artifacts\?type=/);
+    await expect(page.locator('canvas')).toHaveCount(0);
+    await page.goBack();
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    expect(errors).toEqual([]);
+  });
+
+  test('by keyboard: a chip opens its panel, Tab reaches the link, Escape closes', async ({
+    page,
+  }) => {
+    await countDraws(page);
+    await stillStage(page);
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expectAtRest(page);
+    const rested = await draws(page);
+    const panel = page.locator('.dock-panel');
+    await page.locator('.hero-types a[href$="type=agent"]').focus();
+    await expect(panel).toContainText('Subagents');
+    // The loop was stopped and no pointer moved: the key alone has to wake it.
+    await expect.poll(() => draws(page)).toBeGreaterThan(rested);
+    await page.keyboard.press('Tab');
+    await expect(panel.getByRole('link')).toBeFocused();
+    await expect(panel.getByRole('link')).toHaveAttribute('href', '/artifacts?type=agent');
+    // Escape from the link: the panel goes, and the focus goes back to the chip.
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(page.locator('.hero-types a[href$="type=agent"]')).toBeFocused();
+  });
+
+  test('narrowed to the drawing and widened again, the scene comes back', async ({ page }) => {
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await page.setViewportSize({ width: 800, height: 800 });
+    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page).locator('canvas')).toHaveCount(0);
+    await page.waitForTimeout(800); // R3F's own context loss comes after the unmount
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page).locator('canvas')).toHaveCount(1);
+  });
+
+  test('a shader that will not link falls back to the drawing', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.addInitScript(() => {
+      const real = WebGL2RenderingContext.prototype.getProgramParameter;
+      WebGL2RenderingContext.prototype.getProgramParameter = function (
+        this: WebGL2RenderingContext,
+        program: WebGLProgram,
+        name: number,
+      ) {
+        return name === this.LINK_STATUS ? false : real.call(this, program, name);
+      };
+    });
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(board(page).locator('canvas')).toHaveCount(0);
+    await expect(board(page).locator('svg')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause motion' })).toHaveCount(0);
+    await page.fill('#q', 'review');
+    await page.press('#q', 'Enter');
+    await page.waitForURL(/q=review$/);
+    expect(errors.filter((e) => !/did not link|Context Lost/.test(e))).toEqual([]);
+  });
+
+  test('the field in focus turns the scene to the hub, and every key answers', async ({ page }) => {
+    await countDraws(page);
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await pause(page).click();
+    await expectAtRest(page);
+    const rested = await draws(page);
+    await page.locator('#q').focus();
+    await expect.poll(() => draws(page)).toBeGreaterThan(rested);
+    await expectAtRest(page);
+    const focused = await draws(page);
+    await page.keyboard.type('r');
+    await expect.poll(() => draws(page)).toBeGreaterThan(focused);
+  });
+
+  test('no second WebGL warning: the shadow type is one three still has', async ({ page }) => {
+    const warnings: string[] = [];
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text());
+    });
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await page.waitForTimeout(500);
+    // R3F 9.8.2's own `new THREE.Clock()` is the one warning left, and it is not ours.
+    expect(warnings.filter((w) => w.startsWith('THREE.') && !w.includes('THREE.Clock'))).toEqual(
+      [],
+    );
+  });
+
+  test('axe finds nothing with the panel open', async ({ page }) => {
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await page.locator('.hero-types a[href$="type=skill"]').focus();
+    await expect(page.locator('.dock-panel')).toBeVisible();
+    await page.addScriptTag({ content: AXE });
+    const violations = await page.evaluate(async () => {
+      const { violations } = await (
+        window as unknown as {
+          axe: { run: (c: unknown) => Promise<{ violations: { id: string }[] }> };
+        }
+      ).axe.run({ include: ['.hero'] });
+      return violations.map((v) => v.id);
+    });
+    expect(violations).toEqual([]);
   });
 
   test('with no WebGL the drawing stays and no 3D is downloaded', async ({ page }) => {
@@ -359,6 +629,10 @@ test.describe('the dock board', () => {
     const rest = await top.evaluate((e) => getComputedStyle(e).fill);
     await page.locator('.hero-types a[href$="type=hook"]').focus();
     expect(await top.evaluate((e) => getComputedStyle(e).fill)).not.toBe(rest);
+    // The panel needs no scene: the definition and the count are here too, and
+    // there is nothing to pause.
+    await expect(page.locator('.dock-panel')).toContainText('Hook Configurations');
+    await expect(pause(page)).toHaveCount(0);
   });
 
   test('the listing and the detail pages load no scene', async ({ page }) => {

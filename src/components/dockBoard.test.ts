@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cablePath, DOCKS, plates } from '@/components/dockBoard';
+import { cablePath, DOCKS, MOTE_CAP, motes, nearestTurn, plates } from '@/components/dockBoard';
 
 describe('the stack a count draws', () => {
   it('is an empty socket at zero, and never empty above it', () => {
@@ -13,6 +13,32 @@ describe('the stack a count draws', () => {
     expect(plates(19_113)).toBe(15);
     expect(plates(10_000_000)).toBe(16);
     expect(plates(3)).toBeLessThan(plates(4));
+  });
+});
+
+describe('the swarm a count draws', () => {
+  it('is one mote per artifact, and stops at the cap', () => {
+    expect(motes(undefined)).toBe(0);
+    expect(motes(194)).toBe(194);
+    expect(motes(19_113)).toBe(MOTE_CAP);
+  });
+});
+
+describe('turning a dock to the front', () => {
+  const front = Math.PI / 2;
+  const place = (angle: number, turn: number) => {
+    const at = angle - turn - front;
+    return Math.atan2(Math.sin(at), Math.cos(at));
+  };
+
+  it('ends with the dock at the front, by the short way, from any drift', () => {
+    for (const dock of DOCKS) {
+      for (const drift of [0, 1, -2.5, 3.1, 40, -400]) {
+        const turn = nearestTurn(drift, dock.angle);
+        expect(place(dock.angle, turn)).toBeCloseTo(0);
+        expect(Math.abs(turn - drift)).toBeLessThanOrEqual(Math.PI + 1e-9);
+      }
+    }
   });
 });
 

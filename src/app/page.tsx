@@ -123,7 +123,12 @@ export default async function HomePage() {
           </nav>
         </div>
 
-        <DockBoard counts={byType}>
+        <DockBoard
+          blurbs={Object.fromEntries(
+            TYPE_FILTER_IDS.map((id) => [id, USAGE_GUIDES[id]?.what ?? '']),
+          )}
+          counts={byType}
+        >
           <DockBoardStatic counts={byType} />
         </DockBoard>
 

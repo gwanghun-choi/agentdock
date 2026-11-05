@@ -397,20 +397,24 @@ main {
 /* ---------- hero ---------- */
 
 /*
- * The search box owns the left column; the dock board (DockBoard.tsx) stands in
- * the right one and runs off the edge of the stage. Under 64rem there is one
- * column and the board is a small still drawing after the type row, so a phone's
- * first screen is the box, the chips and the first artifact.
+ * The whole stage is the orbital dock (DockBoard.tsx): the words stand in the left
+ * column over a scrim, the ring fills what they leave and runs off the right edge.
+ * Tall enough to be a first screen and no taller: `min-height` stops 13rem short
+ * of the window, so the first artifact row stays on an 800px-high first screen
+ * (e2e: y < 800) and a 1440px-high screen gets a stage rather than a band. Under
+ * 64rem there is one column and the board is a small still drawing after the type
+ * row, so a phone's first screen is the box, the chips and the first artifact.
  */
 .hero {
+  --copy: min(46rem, 50vw);
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 38rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, var(--copy)) minmax(0, 1fr);
+  align-content: center;
   gap: var(--s-4) var(--s-6);
-  /* Grows with a tall window and only with one: the first artifact row stays on
-     an 800px-high first screen. */
-  padding-block: clamp(var(--s-6), 9vh - 2.5rem, 5rem) var(--s-5);
+  min-height: calc(100svh - 13rem);
+  padding-block: clamp(var(--s-5), 9vh - 3rem, 5rem) var(--s-5);
   /* The stage: every token inside resolves to its dark value, on a page that
      may be light. One declaration, no second palette. */
   color-scheme: dark;
@@ -420,8 +424,11 @@ main {
   background: var(--stage);
 }
 
-/* The stage's flat ground, bled to the viewport edges and up under the header's
-   margin. Clipped by no one: .board's own bleed set the pattern (see there). */
+/* The stage's ground, bled to the viewport edges and up under the header's margin.
+   Two lights a long way off, painted once: where the hub's amber falls on the dark
+   and where the ring's far side recedes. They are what the still drawing stands in
+   too, and they cost nothing per frame. Clipped by no one: .board's own bleed set
+   the pattern (see there). */
 .hero::before {
   content: "";
   position: absolute;
@@ -429,8 +436,11 @@ main {
   inset-block: calc(var(--s-6) * -1) 0;
   inset-inline: -50vw;
   margin-inline: 50%;
-  background: var(--stage);
-  pointer-events: none;
+  background:
+    radial-gradient(55vw 70% at 72% 44%, rgb(240 180 76 / 15%), transparent 70%),
+    radial-gradient(40vw 60% at 96% 92%, rgb(110 212 184 / 9%), transparent 70%), var(--stage);
+  /* It takes the pointer, unlike the board: an event here is the hero's, and that
+     is how a dock out over the side gutter hears the listeners in DockScene.tsx. */
 }
 
 .hero-copy {
@@ -442,18 +452,20 @@ main {
 }
 
 .hero h1 {
-  font-size: clamp(1.875rem, 1.1rem + 3.2vw, 3.25rem);
+  /* 9.06 × its size wide on its longest line, measured: the top of this range
+     still sets "Find agent artifacts," whole in --copy, at every width above. */
+  font-size: clamp(1.875rem, 1rem + 3.4vw, 5rem);
   font-weight: 700;
   letter-spacing: -0.034em;
-  line-height: 1.05;
-  margin-bottom: var(--s-3);
-  max-width: 34rem;
+  line-height: 1.03;
+  margin-bottom: var(--s-4);
+  text-shadow: 0 2px 28px rgb(0 0 0 / 60%);
 }
 
 .hero .lede {
   font-size: clamp(var(--t-base), 0.9rem + 0.3vw, var(--t-lg));
-  max-width: 34rem;
-  margin-bottom: var(--s-4);
+  max-width: 36rem;
+  margin-bottom: var(--s-5);
 }
 
 /*
@@ -461,10 +473,12 @@ main {
  *
  * It reuses .search-row wholesale — the same field, the same magnifier, the
  * same key caps — so the control a reader meets first and the one on the
- * artifacts page are visibly one control. What changes here is scale.
+ * artifacts page are visibly one control. What changes here is scale, and that
+ * in focus it takes the stage's amber, as the scene turns to the hub behind it.
  */
 .hero-search {
   margin: 0 0 var(--s-3);
+  max-width: 40rem;
 }
 
 .hero-search input[type="search"] {
@@ -476,7 +490,9 @@ main {
   background: var(--surface);
   color: var(--fg);
   font-size: var(--t-lg);
-  transition: border-color var(--dur-fast) var(--ease);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .hero-search input[type="search"]:hover {
@@ -485,6 +501,9 @@ main {
 
 .hero-search input[type="search"]:focus {
   border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 44px -6px rgb(240 180 76 / 55%);
 }
 
 .hero-search .field svg {
@@ -527,10 +546,11 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-/* Three facts about what AgentDock does. Not on a phone, where the same facts
-   are in the indexing section and the first artifact is what comes next. */
+/* Three facts about what AgentDock does, under the words, not across the ring.
+   Not on a phone, where the same facts are in the indexing section and the first
+   artifact is what comes next. */
 .trust {
-  grid-column: 1 / -1;
+  grid-column: 1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-1) var(--s-5);
@@ -549,18 +569,32 @@ main {
 
 /*
  * The board. It holds the still drawing and, where it loads, the canvas over it,
- * in one absolutely placed box, so neither arriving nor failing moves anything.
- * Nothing in it takes input. It stops at the search column's edge, so it can
- * never sit under the field; it may run off the viewport on the right, and the
- * bleed is clipped by its own box.
+ * in one absolutely placed box the width of the window, so neither arriving nor
+ * failing moves anything. Nothing in it takes input: it sits under the words, and
+ * clicks reach the scene through the hero's listeners (DockScene.tsx). The scrim
+ * is what the words stand on, whatever drifts behind them.
  */
 .dock-board {
   position: absolute;
   z-index: -1;
   inset-block: calc(var(--s-6) * -1) 0;
-  left: calc(38rem + var(--s-4));
-  right: calc((100vw - 100%) / -2);
+  inset-inline: calc((100vw - 100%) / -2);
   overflow: hidden;
+  pointer-events: none;
+}
+
+.dock-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to right,
+      var(--stage) calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy) * 0.72),
+      rgb(12 15 17 / 55%) calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy)),
+      transparent calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy) + 7rem)
+    ),
+    linear-gradient(to top, var(--stage), transparent 16%);
   pointer-events: none;
 }
 
@@ -572,7 +606,11 @@ main {
   height: 100%;
 }
 
+/* The drawing stands where the ring will: the free space, not the middle. */
 .dock-still {
+  left: auto;
+  right: -4vw;
+  width: calc(100% - (100vw - min(100vw, var(--wrap))) / 2 - var(--copy) + 8vw);
   transition: opacity var(--dur) var(--ease);
 }
 
@@ -589,53 +627,89 @@ main {
   opacity: 0;
 }
 
+/* A dock under the pointer in the scene. */
+.hero[data-over] {
+  cursor: pointer;
+}
+
 /* The still drawing's surfaces: one light from the upper left, so a top is the
    lightest face and the far end the darkest. */
-.dock-slab {
-  fill: #191e21;
+.dock-orbit {
+  fill: none;
+  stroke: #2a3135;
+  stroke-width: 1;
+}
+
+.dock-deck-under {
+  fill: #0d1012;
+  stroke: #1d2326;
+  stroke-width: 1;
+}
+
+.dock-deck {
+  fill: #2a3136;
+  stroke: #59646b;
+  stroke-width: 3;
+  stroke-dasharray: 3 7;
+}
+
+.dock-rail {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.dock-well {
+  fill: #0e1214;
 }
 
 .dock-cable {
-  stroke: #3b4449;
+  stroke: color-mix(in srgb, var(--dock, #59646b) 38%, #2f373b);
   stroke-width: 2.5;
   stroke-linejoin: round;
 }
 
+.dock-core-glow {
+  fill: var(--accent);
+  opacity: 0.1;
+}
+
 .dock-hub .dock-top {
-  fill: #2c3338;
+  fill: #434e55;
 }
 
 .dock-hub .dock-side {
-  fill: #20262a;
+  fill: #2c3338;
 }
 
 .dock-hub .dock-end {
-  fill: #181c1f;
+  fill: #20262a;
 }
 
 .dock .dock-top {
-  fill: color-mix(in srgb, var(--dock) 42%, #59646b);
+  fill: color-mix(in srgb, var(--dock) 62%, #59646b);
 }
 
 .dock .dock-side {
-  fill: color-mix(in srgb, var(--dock) 30%, #2f373b);
+  fill: color-mix(in srgb, var(--dock) 38%, #2f373b);
 }
 
 .dock .dock-end {
-  fill: color-mix(in srgb, var(--dock) 22%, #22282b);
+  fill: color-mix(in srgb, var(--dock) 24%, #22282b);
 }
 
 .dock text {
-  fill: #0c0f11;
+  fill: var(--fg-strong);
   font-size: 12px;
   font-weight: 600;
   text-rendering: geometricPrecision;
+  paint-order: stroke;
+  stroke: #0c0f11;
+  stroke-width: 3px;
 }
 
 .dock-glyph {
-  stroke: var(--accent);
-  stroke-width: 4;
-  fill: none;
+  fill: var(--accent);
 }
 
 .dock-skill {
@@ -663,7 +737,7 @@ main {
 }
 
 /* A chip lights its dock in the drawing, with no script. In the scene it is
-   DockScene's listener; the two never show at once. */
+   DockScene's frame loop; the two never show at once. */
 .hero:has(a[href$="type=skill"]:is(:hover, :focus-visible)) .dock-skill .dock-top,
 .hero:has(a[href$="type=plugin"]:is(:hover, :focus-visible)) .dock-plugin .dock-top,
 .hero:has(a[href$="type=mcp_server"]:is(:hover, :focus-visible)) .dock-mcp_server .dock-top,
@@ -673,11 +747,111 @@ main {
   fill: var(--dock);
 }
 
+/* What the reader has picked: the kind's definition, count and the way in. In the
+   free space, opposite the words, on a solid ground so nothing behind it can lower
+   its contrast. The hue is only the edge: the words are the ladder's. */
+.dock-panel {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: min(21rem, 26vw);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--border-strong);
+  border-inline-start: 3px solid var(--dock);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: 0 24px 70px -20px rgb(0 0 0 / 80%);
+}
+
+.dock-panel-kind,
+.dock-panel-count,
+.dock-panel-what {
+  margin: 0;
+}
+
+.dock-panel-kind {
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+.dock-panel-count {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.dock-panel-count strong {
+  color: var(--fg-strong);
+  font-size: var(--t-2xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dock-panel .dock-panel-what {
+  margin-top: var(--s-3);
+  color: var(--fg);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+.dock-panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+  font-size: var(--t-sm);
+}
+
+.dock-panel-actions a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The drawing cannot turn a dock out of the way, so here the panel keeps off the hub. */
+.dock-board:not([data-scene="live"]) ~ .dock-panel {
+  top: auto;
+  bottom: var(--s-4);
+  translate: none;
+}
+
+/* The one control the drift needs: WCAG 2.2.2, it can run past five seconds. */
+.dock-controls {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.dock-controls p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+  text-shadow:
+    0 0 10px #000,
+    0 0 3px #000;
+}
+
+.dock-controls button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* One column: the drawing follows the type row, small and in the flow, and only
-   as tall as a phone's first screen can spare. */
+   as tall as a phone's first screen can spare. No scene, so no panel either: a
+   chip here is a link and a tap goes through it. */
 @media (width < 64rem) {
   .hero {
+    --copy: 100%;
     grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    padding-block: clamp(var(--s-6), 9vh - 2.5rem, 5rem) var(--s-5);
   }
 
   .dock-board {
@@ -686,6 +860,20 @@ main {
     z-index: 0;
     height: 12rem;
     order: 2;
+  }
+
+  .dock-board::after {
+    display: none;
+  }
+
+  .dock-still {
+    right: 0;
+    width: 100%;
+  }
+
+  .dock-panel,
+  .dock-controls {
+    display: none;
   }
 
   .trust {
@@ -711,6 +899,27 @@ main {
 
   .dock text {
     display: none;
+  }
+}
+
+/* A large screen is more room, not a wider gutter: at 2560px this page sat in the
+   middle 45% with 52px headings and 13px metadata (measured 2026-11-05). Every
+   size here is in rem, so one number scales all of it, a reader's own font setting
+   included, and the column grows with it. */
+@media (min-width: 120rem) {
+  html {
+    font-size: 112.5%;
+  }
+
+  :root,
+  .hero {
+    --wrap: 84rem;
+  }
+}
+
+@media (min-width: 160rem) {
+  html {
+    font-size: 131.25%;
   }
 }
 
@@ -1247,6 +1456,25 @@ select,
 button,
 textarea {
   font: inherit;
+}
+
+.dock-panel-actions button,
+.dock-controls button {
+  min-height: 2rem;
+  padding-inline: var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--t-xs);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.dock-panel-actions button:hover,
+.dock-controls button:hover {
+  border-color: var(--muted);
 }
 
 .input,
@@ -3402,9 +3630,9 @@ details.notice[open] p {
  * Every animation here runs once, on arrival,
  * except the loading sweep, which lasts as long as the placeholder it sits on;
  * a running job's progress bar takes three passes of the same sweep, 4.2 s.
- * Nothing else here loops, and nothing on the site moves continuously: the
- * hero's board (DockScene.tsx) draws its entrance and then only answers the
- * reader. The one thing tied to scrolling is the index flow's
+ * Nothing else here loops. The hero's board (DockScene.tsx) is the one thing on
+ * the site that moves without being asked; it is on a canvas, it stops by itself
+ * and it has a Pause button. The one thing here tied to scrolling is the index flow's
  * reveal, and only where CSS can do it (`animation-timeline: view()`): an
  * IntersectionObserver reveal on every section is the pattern that makes a
  * page feel like it is performing rather than loading, and it would also be
@@ -3442,12 +3670,43 @@ details.notice[open] p {
 @media (prefers-reduced-motion: no-preference) {
   /* --- the hero ---
 
-     Not here: the board's one orchestrated moment, the plates dropping into
-     their docks, is DockScene.tsx, which DockBoard.tsx does not load under the
-     preference. It ends in 1.5 s and nothing on the home page loops. No parallax
-     on the stage, measured 2026-10-27: a scroll-timeline transform kept the
-     ground on its own layer, and the headline, lede and search box over it lost
-     subpixel antialiasing for good. */
+     Not here: the board's entrance and its drift, which are DockScene.tsx and which
+     DockBoard.tsx does not load under the preference. The drift stops by itself
+     after 20 s without input and has a Pause button. No parallax on the DOM stage,
+     measured 2026-10-27: a scroll-timeline transform kept the ground on its own
+     layer, and the headline, lede and search box over it lost subpixel antialiasing
+     for good; the scene's own depth does that job, in the canvas.
+
+     The headline rises with the ring, by transform alone: the word is there and
+     measurable from the first paint, so LCP does not wait for it. Not the search
+     box, whose place on the page never moves. */
+  @keyframes hero-rise {
+    from {
+      transform: translateY(14px);
+    }
+  }
+
+  .hero h1,
+  .hero .lede {
+    animation: hero-rise 700ms var(--ease-emphasized) backwards;
+  }
+
+  .hero .lede {
+    animation-delay: 70ms;
+  }
+
+  /* A panel comes from the dock's side, and its centring is the `translate`
+     property, so this keyframe's `transform` adds to it. */
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(16px) perspective(800px) rotateY(-9deg);
+    }
+  }
+
+  .dock-panel {
+    animation: panel-in 240ms var(--ease-emphasized) backwards;
+  }
 
   /* --- the index flow ---
 
@@ -3610,10 +3869,12 @@ details.notice[open] p {
      alone. The feed's rows get no entrance, as since Phase 57: they are what a
      visitor came to read, and they are on screen at load. */
   @supports (animation-timeline: view()) {
+    /* Each card swings up out of the page's depth as it scrolls in: the hero's
+       space carried one section further, and only while the card is arriving. */
     @keyframes card-rise {
       from {
         opacity: 0;
-        transform: translateY(14px);
+        transform: perspective(900px) translateY(26px) rotateX(16deg);
       }
     }
 

@@ -1,29 +1,36 @@
 import { TYPE_FILTER_IDS } from '@/components/typeFilters';
 
 /**
- * The hero's picture, as numbers: one dock per artifact kind around one hub, the
- * index. The 3D scene (DockScene.tsx) and its still drawing (DockBoardStatic.tsx)
- * both draw this, so what a reader sees does not depend on which one they got.
+ * The hero's picture, as numbers: one dock per artifact kind on a ring around one
+ * hub, the index. The 3D scene (DockScene.tsx) and its still drawing
+ * (DockBoardStatic.tsx) both draw this, so what a reader sees does not depend on
+ * which one they got.
  *
- * What is data and what is not. The stack on each dock is the kind's real listed
- * count, the same number its chip prints. The cables are decoration: every kind
- * reaches the index, but no cable stands for a relation between two artifacts,
- * and nothing here is a live status.
+ * What is data and what is not. The stack on each dock and the motes around it
+ * are the kind's real listed count, the same number its chip prints. The cables
+ * and what travels along them are decoration: every kind reaches the index, but
+ * no cable stands for a relation between two artifacts, and nothing here is a
+ * live status. A pulse is not a sync running.
  */
 
-export type DockCounts = Partial<Record<(typeof TYPE_FILTER_IDS)[number], number>>;
+export type DockKind = (typeof TYPE_FILTER_IDS)[number];
+export type DockCounts = Partial<Record<DockKind, number>>;
 
-const AT: Record<(typeof TYPE_FILTER_IDS)[number], { label: string; x: number; z: number }> = {
-  skill: { label: 'Skills', x: -3.3, z: -1.45 },
-  plugin: { label: 'Plugins', x: 0, z: -2.05 },
-  mcp_server: { label: 'MCP servers', x: 3.3, z: -1.45 },
-  command: { label: 'Commands', x: -3.3, z: 1.45 },
-  hook: { label: 'Hooks', x: 0, z: 2.05 },
-  agent: { label: 'Subagents', x: 3.3, z: 1.45 },
+/** The ring's centre line, in the scene's units. */
+export const RING = 5.2;
+
+/** Degrees round the ring, with 90 nearest the camera. */
+const AT: Record<DockKind, { label: string; degrees: number }> = {
+  skill: { label: 'Skills', degrees: 210 },
+  plugin: { label: 'Plugins', degrees: 270 },
+  mcp_server: { label: 'MCP servers', degrees: 330 },
+  agent: { label: 'Subagents', degrees: 30 },
+  hook: { label: 'Hooks', degrees: 90 },
+  command: { label: 'Commands', degrees: 150 },
 };
 
 // The badges' dark hues (globals.css): the hero is the dark stage in either scheme.
-const HUES: Record<(typeof TYPE_FILTER_IDS)[number], string> = {
+const HUES: Record<DockKind, string> = {
   skill: '#90b8f5',
   plugin: '#c9a2f0',
   mcp_server: '#6ed4b8',
@@ -32,7 +39,17 @@ const HUES: Record<(typeof TYPE_FILTER_IDS)[number], string> = {
   agent: '#a8b6f2',
 };
 
-export const DOCKS = TYPE_FILTER_IDS.map((id) => ({ id, hue: HUES[id], ...AT[id] }));
+export const DOCKS = TYPE_FILTER_IDS.map((id) => {
+  const angle = (AT[id].degrees * Math.PI) / 180;
+  return {
+    id,
+    hue: HUES[id],
+    label: AT[id].label,
+    angle,
+    x: RING * Math.cos(angle),
+    z: RING * Math.sin(angle),
+  };
+});
 
 export const PLATE_HEIGHT = 0.1;
 export const DOCK_WIDTH = 1.5;
@@ -48,17 +65,33 @@ export function plates(count = 0): number {
   return count < 1 ? 0 : Math.min(16, 1 + Math.floor(Math.log2(count)));
 }
 
-/** A cable's way from a dock to the hub: out of the dock, along the board, in. */
+/**
+ * Motes round a dock: one per listed artifact, up to the point where they stop
+ * reading as separate things. Above the cap the swarm stops growing; the exact
+ * count is on the chip, on the panel and on the dock's label, so the picture
+ * never has to carry it alone.
+ */
+export const MOTE_CAP = 900;
+export function motes(count = 0): number {
+  return Math.min(MOTE_CAP, Math.max(0, Math.floor(count)));
+}
+
+/** A cable's way from a dock to the hub. Decoration: see the top of this file. */
 export function cablePath(x: number, z: number): [number, number][] {
-  if (x === 0)
-    return [
-      [0, z],
-      [0, Math.sign(z) * 0.55],
-    ];
-  const side = Math.sign(x);
+  const reach = Math.hypot(x, z);
   return [
     [x, z],
-    [x, 0],
-    [side * 0.55, 0],
+    [(x / reach) * 0.55, (z / reach) * 0.55],
   ];
+}
+
+/**
+ * The turn of the ring that brings a dock to the front, nearest to where the ring
+ * is now. A turn of θ moves a dock from `angle` to `angle − θ`, and the shortest
+ * way matters: the ring has been drifting, so θ can be many revolutions along.
+ */
+export function nearestTurn(current: number, angle: number, front = Math.PI / 2): number {
+  const tau = Math.PI * 2;
+  const goal = angle - front;
+  return current + ((((goal - current + Math.PI) % tau) + tau) % tau) - Math.PI;
 }
