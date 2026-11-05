@@ -118,6 +118,11 @@ not replace `bun run ci`.
   correct to whoever wrote it. The page under the hero is CSS alone (`:has()`,
   `animation-timeline`, sticky) and added no client JavaScript:
   `docs/analysis/agentdock-phase83-85-discovery-experience.md`.
+- **The scene frees what three will not.** Three keeps a few objects per page, not
+  per renderer (the Sprite geometry, the standard materials' lookup table), and each
+  renderer that uses one is held by its `dispose` listener. `DockScene.tsx` disposes both
+  on unmount, and a journey counts the live WebGL contexts after coming back four times.
+  An element handle in a measuring script holds the canvas too: use a locator.
 
 ## Before you call it done
 

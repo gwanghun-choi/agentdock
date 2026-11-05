@@ -6,8 +6,9 @@ import { TYPE_FILTER_IDS } from '@/components/typeFilters';
  * (DockBoardStatic.tsx) both draw this, so what a reader sees does not depend on
  * which one they got.
  *
- * What is data and what is not. The stack on each dock and the motes around it
- * are the kind's real listed count, the same number its chip prints. The cables
+ * What is data and what is not. The plates of each figure (leaves, modules, rack
+ * units, steps, coil turns, nodes) and the motes around it are the kind's real
+ * listed count, the same number its chip prints. The cables
  * and what travels along them are decoration: every kind reaches the index, but
  * no cable stands for a relation between two artifacts, and nothing here is a
  * live status. A pulse is not a sync running.

@@ -142,6 +142,10 @@
   /* One column width for everything, so the header rule, the content and the
      footer rule all align. */
   --wrap: 72rem;
+  /* One left edge for the header, the hero, every section and the footer (Phase 86–90).
+     The hero's words stood at x=231 and the sections under them at x=60 at 1920, and
+     the listing and the detail page each had a third opinion. */
+  --gutter: var(--s-5);
   /* Prose is capped far below the shell: unbounded line length is the single
      biggest readability problem the previous stylesheet had. */
   --prose: 46rem;
@@ -280,9 +284,15 @@ dt {
 
 .wrap {
   width: 100%;
-  max-width: var(--wrap);
-  margin-inline: auto;
-  padding-inline: var(--s-5);
+  padding-inline: var(--gutter);
+}
+
+@media (min-width: 64rem) {
+  :root,
+  .hero,
+  .stage {
+    --gutter: max(2rem, (100vw - 100rem) / 2);
+  }
 }
 
 .site-header {
@@ -405,7 +415,8 @@ main {
  * row, so a phone's first screen is the box, the chips and the first artifact.
  */
 .hero {
-  --copy: min(46rem, 50vw);
+  /* 29rem at the narrow end: under it "Find agent artifacts," breaks at 1024. */
+  --copy: clamp(29rem, 42vw, 46rem);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -589,9 +600,9 @@ main {
   background:
     linear-gradient(
       to right,
-      var(--stage) calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy) * 0.72),
-      rgb(12 15 17 / 55%) calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy)),
-      transparent calc((100vw - min(100vw, var(--wrap))) / 2 + var(--copy) + 7rem)
+      var(--stage) calc(var(--gutter) + var(--copy) * 0.72),
+      rgb(12 15 17 / 55%) calc(var(--gutter) + var(--copy)),
+      transparent calc(var(--gutter) + var(--copy) + 7rem)
     ),
     linear-gradient(to top, var(--stage), transparent 16%);
   pointer-events: none;
@@ -609,7 +620,7 @@ main {
 .dock-still {
   left: auto;
   right: -4vw;
-  width: calc(100% - (100vw - min(100vw, var(--wrap))) / 2 - var(--copy) + 8vw);
+  width: calc(100% - var(--gutter) - var(--copy) + 8vw);
   transition: opacity var(--dur) var(--ease);
 }
 
@@ -624,6 +635,46 @@ main {
 
 .dock-board[data-scene="live"] .dock-still {
   opacity: 0;
+}
+
+/* Each figure's name and count, in the page's type, moved by DockScene.tsx per frame:
+   always in front of the scene and always on the stage. */
+.dock-tags {
+  z-index: 1;
+}
+
+.dock-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: 2px var(--s-2);
+  border: 1px solid color-mix(in srgb, var(--dock) 35%, var(--border));
+  border-radius: var(--r-sm);
+  background: rgb(12 15 17 / 78%);
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  will-change: transform;
+}
+
+.dock-tag b {
+  color: var(--muted);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+
+.dock-tag[data-lit="true"] {
+  border-color: var(--dock);
+}
+
+.dock-tag[data-lit="true"] b {
+  color: var(--dock);
 }
 
 /* A dock under the pointer in the scene. */
@@ -695,6 +746,42 @@ main {
 
 .dock .dock-end {
   fill: color-mix(in srgb, var(--dock) 24%, #22282b);
+}
+
+.dock-led,
+.dock-node {
+  fill: var(--dock);
+}
+
+.dock-line {
+  stroke: color-mix(in srgb, var(--dock) 45%, #59646b);
+  stroke-width: 1.2;
+}
+
+.dock-screen {
+  fill: #0c0f11;
+}
+
+.dock-prompt {
+  stroke: var(--dock);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dock-turn {
+  stroke: color-mix(in srgb, var(--dock) 70%, #59646b);
+  stroke-width: 3.2;
+}
+
+.dock-thin {
+  stroke-width: 1.2;
+}
+
+.dock-hook-shape {
+  stroke: var(--dock);
+  stroke-width: 6;
+  stroke-linecap: round;
 }
 
 .dock text {
@@ -908,12 +995,6 @@ main {
 @media (min-width: 120rem) {
   html {
     font-size: 112.5%;
-  }
-
-  :root,
-  .hero,
-  .stage {
-    --wrap: 84rem;
   }
 }
 
@@ -2951,8 +3032,10 @@ details.notice[open] p {
     --t-2xl: 1.625rem;
   }
 
-  .wrap {
-    padding-inline: var(--s-4);
+  :root,
+  .hero,
+  .stage {
+    --gutter: var(--s-4);
   }
 
   main {
@@ -3126,27 +3209,15 @@ details.notice[open] p {
  *
  * Measured before (2026-11-05, HEAD dc01ebe): 1764 of 2560px used, a 23.6px h2
  * under a 105px h1, ten identical rows, then two light sections with the same
- * rectangles. `--wide` takes the lower page to 82% at 2560 and 94% at 1920, and it
- * only ever widens: under 64rem each section is simply the shell's width.
+ * rectangles. `--gutter` takes the lower page to 82% at 2560 and 94% at 1920.
  */
 .board,
 .pipeline,
 .conditions,
 .types {
-  --wide: max(100%, min(100vw - 4rem, 100rem));
   position: relative;
   isolation: isolate;
   padding-block: clamp(var(--s-7), 9vh, 7rem);
-}
-
-@media (min-width: 64rem) {
-  .board,
-  .pipeline,
-  .conditions,
-  .types {
-    width: var(--wide);
-    margin-inline: calc((100% - var(--wide)) / 2);
-  }
 }
 
 /* The bleed is a pseudo-element at inset 50% / -50vw rather than a negative margin,
@@ -3268,6 +3339,7 @@ details.notice[open] p {
   @media (min-width: 64rem) and (hover: hover) {
     .board {
       --pane: 44%;
+      --aim: 140ms;
       display: grid;
       grid-template-columns: minmax(0, 1fr) var(--pane);
       column-gap: var(--s-6);
@@ -3340,11 +3412,20 @@ details.notice[open] p {
       border-radius: 0 var(--r-lg) var(--r-lg) 0;
       background: color-mix(in srgb, var(--hue, var(--accent)) 9%, var(--surface));
       opacity: 0;
-      pointer-events: none;
       transform: translateY(6px);
+      /* Hover intent, in CSS. On the diagonal from a row to its pane the pointer
+         crosses the rows between, and each took the pane for itself: a reader aiming
+         at "source on GitHub" arrived on some other row's. So a pane answers only
+         after --aim and leaves only after it, and which pane takes the pointer flips
+         with it, the old one holding it until the new one has it. `allow-discrete`,
+         because an opacity-0 pane must stay in the tab order (see above) and
+         pointer-events is the one thing that can move without taking it out. A browser
+         without it drops this whole list and swaps panes at once, as it did before. */
+      pointer-events: none;
       transition:
-        opacity var(--dur) var(--ease),
-        transform var(--dur) var(--ease);
+        opacity var(--dur) var(--ease) var(--aim),
+        transform var(--dur) var(--ease) var(--aim),
+        pointer-events var(--dur-fast) step-start var(--aim) allow-discrete;
     }
 
     /* The name again at the size of a heading, from the stylesheet: decoration, with
@@ -3372,8 +3453,8 @@ details.notice[open] p {
       max-width: none;
       font-size: clamp(var(--t-base), 0.8rem + 0.4vw, var(--t-lg));
       line-height: 1.55;
-      -webkit-line-clamp: 8;
-      line-clamp: 8;
+      -webkit-line-clamp: 7;
+      line-clamp: 7;
     }
 
     .board .row-detail .row-meta {
@@ -3386,9 +3467,17 @@ details.notice[open] p {
       overflow-wrap: anywhere;
     }
 
+    .board .row-detail .row-open {
+      flex: 1 0 100%;
+      margin-top: var(--s-2);
+      color: var(--accent);
+      font-size: var(--t-base);
+      font-weight: 560;
+    }
+
     .board .row-detail .row-source {
       flex: 1 0 100%;
-      margin: var(--s-2) 0 0;
+      margin: 0;
       color: var(--fg-strong);
       font-size: var(--t-base);
       font-weight: 560;
@@ -3407,9 +3496,11 @@ details.notice[open] p {
       transform: none;
     }
 
-    /* The keyboard's pane wins over a pointer that has been left on another row. */
+    /* The keyboard's pane wins over a pointer left on another row, and has no aim to wait
+       for: a key means this one, now. */
     .board .rows > li:has(:focus-visible) .row-detail {
       z-index: 2;
+      transition-delay: 0s;
     }
 
     .board .rows > li:is(:hover, :has(:focus-visible)),
@@ -3456,7 +3547,18 @@ details.notice[open] p {
   inset-inline: 0;
   height: 3px;
   border-radius: 3px;
-  background: var(--border-strong);
+}
+
+/* The track is .flow's own ground, so ::before is free to be what travels on it. */
+.flow {
+  container-type: inline-size;
+  background:
+    linear-gradient(var(--border-strong), var(--border-strong)) 0 calc(var(--node) / 2 - 1px) / 100%
+    3px no-repeat;
+}
+
+.flow::before {
+  display: none;
 }
 
 .flow::after {
@@ -3532,7 +3634,7 @@ details.notice[open] p {
    marketplace has a hue but no dock: the ring's six are the filterable kinds). */
 .flow-files {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
   gap: var(--s-2);
   margin: 0;
   padding: 0;
@@ -3586,7 +3688,11 @@ details.notice[open] p {
     padding: 0 0 0 calc(var(--node) + var(--s-4));
   }
 
-  .flow::before,
+  .flow {
+    background-position: calc(var(--node) / 2 - 1px) 0;
+    background-size: 3px 100%;
+  }
+
   .flow::after {
     top: 0;
     bottom: 0;
@@ -3610,60 +3716,14 @@ details.notice[open] p {
   }
 }
 
-/*
- * The count-up.
- *
- * The number in the markup is the real one and is the only one anything but a
- * sighted reader ever sees: the text node says 155 in the first byte of HTML
- * and never changes, so a screen reader reads 155 and a browser with this
- * stylesheet missing shows 155. `color: transparent` hides those digits from
- * the screen and the pseudo-element draws animated ones over them, counting a
- * registered custom property from 0 up to --target.
- *
- * ponytail: the drawn digits are ungrouped. CSS counters have no grouping
- * style, so 12400 cannot be spelled 12,400 here — which is why the markup
- * passes the raw number rather than a localised one, matching the "Browse all N
- * artifacts" link that has always been ungrouped. Revisit at a corpus above ten
- * thousand, where a separator starts to matter; the upgrade is to delete the
- * pseudo-element and animate nothing.
- *
- * Without @property, --count is an unregistered property, the keyframe
- * interpolates it discretely and the reader sees 0 flip straight to the final
- * number instead of counting to it. Nothing vanishes in that case: counter()
- * and counter-reset are CSS 2.1, and the fallback is the end state.
- */
-/* `inherits: true`, and it is load-bearing: the value is animated on .count and
-   read on .count::after, and a pseudo-element inherits from its originating
-   element rather than sharing its declarations. Registered as non-inheriting
-   first, which rendered a permanent 0 — the pseudo-element was falling back to
-   initial-value on every frame. */
-@property --count {
-  syntax: "<integer>";
-  inherits: true;
-  initial-value: 0;
-}
-
 .count {
-  --count: var(--target);
-  position: relative;
-  /* Not inline: an inline box is not a containing block a pseudo-element can
-     cover with inset: 0. */
-  display: inline-block;
   justify-self: start;
-  color: transparent;
-  font-size: clamp(3rem, 1.6rem + 4.2vw, 7.5rem);
+  color: var(--commit);
+  font-size: clamp(3rem, 1.6rem + 3.6vw, 6.5rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   line-height: 1;
-}
-
-.count::after {
-  counter-reset: indexed var(--count);
-  content: counter(indexed);
-  position: absolute;
-  inset: 0;
-  color: var(--commit);
 }
 
 /* --- the conditions --- */
@@ -3845,7 +3905,12 @@ details.notice[open] p {
  *
  * So the bento, with the spans given by the data: the page sorts the kinds by what
  * is listed, the first tile takes the big cell, and each stands on the hero's own
- * stack for its count. 12 columns, three rows: 5×3 beside 4|3, 3|4, 7.
+ * figure for its count. 12 columns, three rows: 5×3 beside 4|3, 3|4, 7.
+ *
+ * A span follows the count, so any kind can land in any cell, and each tile lays
+ * itself out from its own width (`@container`). What stays with the kind is the
+ * figure and how it stands in the tile: six outlines, in six places, rather than
+ * one rectangle six times.
  */
 .type-grid {
   display: grid;
@@ -3897,24 +3962,22 @@ details.notice[open] p {
 }
 
 .type-card {
-  --stack: 7.5rem;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--stack);
-  align-content: start;
-  gap: var(--s-1) var(--s-3);
+  display: block;
   height: 100%;
   padding: var(--s-5);
   border-radius: var(--r-lg);
   background: var(--surface);
   color: var(--fg);
   text-decoration: none;
+  container-type: inline-size;
   view-timeline: --tile block;
+  transition: background var(--dur) var(--ease);
 }
 
-/* The hue comes up from the stack, under the words. */
+/* The hue comes up from the figure, under the words. */
 .type-card::before {
   content: "";
   position: absolute;
@@ -3934,8 +3997,29 @@ details.notice[open] p {
   transform: scale(1);
 }
 
+/* A press on a screen with no hover still answers. */
+.type-card:active::before {
+  transform: scale(1);
+}
+
+/*
+ * The number's room is the tile's own, less the figure beside it where there is one, and
+ * its size is that room over its own length: .6em a character is the widest a digit
+ * sets in this face at this tracking, measured. So a count can reach seven digits and
+ * more without a rule to add, and nothing here reads the count's value.
+ */
+.type-inner {
+  --stack: 6.5rem;
+  --room: 100cqi;
+  --cap: clamp(2.5rem, 1.5rem + 2.4vw, 4.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--s-1) var(--s-3);
+  height: 100%;
+}
+
 .type-name {
-  grid-column: 1;
   color: var(--fg-strong);
   font-size: var(--t-xl);
   font-weight: 650;
@@ -3944,7 +4028,7 @@ details.notice[open] p {
 }
 
 .type-count {
-  grid-column: 1;
+  min-width: 0;
   color: var(--muted);
   font-size: var(--t-base);
 }
@@ -3952,15 +4036,15 @@ details.notice[open] p {
 .type-count strong {
   display: block;
   color: var(--hue);
-  font-size: clamp(2.5rem, 1.5rem + 2.4vw, 4.5rem);
+  font-size: min(var(--cap), var(--room) / (var(--digits, 4) * 0.6));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   line-height: 1.05;
+  white-space: nowrap;
 }
 
 .type-what {
-  grid-column: 1 / -1;
   margin-top: var(--s-3);
   max-width: 62ch;
   color: var(--fg);
@@ -3968,44 +4052,237 @@ details.notice[open] p {
   line-height: 1.5;
 }
 
+/* What the detectors match for this kind, as what they are: file names. */
+.type-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.type-files code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
 .dock-stack {
-  grid-column: 2;
-  grid-row: 1 / span 2;
   width: var(--stack);
   overflow: visible;
 }
 
 .dock-plate {
   transform: translateY(calc(var(--i) * var(--lift, 0px)));
-  transition: transform var(--dur) var(--ease);
+  transition:
+    transform var(--dur) var(--ease),
+    rotate var(--dur) var(--ease),
+    scale var(--dur) var(--ease);
 }
 
+/* Each figure answers as what it is: the modules part, the steps rise, the coil
+   stretches, the fan opens, the nodes swell. */
 .type-card:is(:hover, :focus-visible) .dock-plate {
-  --lift: -3px;
+  --lift: -2.5px;
+}
+
+.dock-skill .dock-plate {
+  rotate: calc((var(--i) - var(--mid)) * var(--open, 0deg));
+}
+
+.type-card:is(:hover, :focus-visible) .dock-skill .dock-plate {
+  --lift: 0px;
+  --open: 2.4deg;
+}
+
+.dock-agent .dock-plate {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.type-card:is(:hover, :focus-visible) .dock-agent .dock-plate {
+  --lift: 0px;
+  scale: 1.45;
+}
+
+.dock-orbit-group {
+  transition: rotate var(--dur) var(--ease);
+}
+
+.type-card:is(:hover, :focus-visible) .dock-orbit-group {
+  rotate: 14deg;
+}
+
+.dock-cursor {
+  transition: opacity var(--dur) var(--ease);
+}
+
+.type-card:is(:hover, :focus-visible) .dock-cursor {
+  opacity: 0.25;
+}
+
+.type-card:is(:hover, :focus-visible) .type-files code {
+  color: var(--fg);
+}
+
+/* Beside the words, wherever there is room. Which side, and how far it stands out of
+   the tile, is the kind's. */
+@container (min-width: 15rem) {
+  .type-inner {
+    --stack: clamp(5rem, 30cqi, 8rem);
+    --room: calc(100cqi - var(--stack) - var(--s-3));
+    grid-template-columns: minmax(0, 1fr) var(--stack);
+  }
+
+  .type-name,
+  .type-count {
+    grid-column: 1;
+  }
+
+  .dock-stack {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
+
+  .type-what,
+  .type-files {
+    grid-column: 1 / -1;
+  }
+
+  /* A plugin leads with its connector. */
+  .hue-plugin .type-inner {
+    grid-template-columns: var(--stack) minmax(0, 1fr);
+  }
+
+  .hue-plugin :is(.type-name, .type-count) {
+    grid-column: 2;
+  }
+
+  .hue-plugin .dock-stack {
+    grid-column: 1;
+  }
+
+  /* A command's first line is its file, so its figure starts beside the name under it. */
+  .hue-command .dock-stack {
+    grid-row: 2 / span 2;
+  }
+
+  /* A rack and a coil stand down in the corner, cut by the tile's own edge. */
+  .hue-mcp_server .dock-stack,
+  .hue-hook .dock-stack {
+    grid-row: 1 / span 3;
+    align-self: end;
+    scale: 1.2;
+    translate: 8% 10%;
+  }
+
+  .hue-mcp_server .type-what,
+  .hue-hook .type-what {
+    grid-column: 1;
+  }
+
+  .hue-mcp_server .type-files,
+  .hue-hook .type-files {
+    grid-column: 1;
+  }
+}
+
+/* A wide tile: name and number, then what it is, then the figure at its full size. */
+@container (min-width: 38rem) {
+  .type-inner {
+    --stack: 13rem;
+    --room: 40cqi;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) var(--stack);
+    column-gap: var(--s-6);
+  }
+
+  .type-inner .type-name,
+  .type-inner .type-count {
+    grid-column: 1;
+  }
+
+  .type-inner .type-what {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-top: 0;
+  }
+
+  .type-inner .type-files {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .type-inner .dock-stack {
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+}
+
+/* A command says its file first, at the top, as the line it is typed at. */
+.hue-command .type-files {
+  order: -1;
+  grid-column: 1 / -1;
+  margin: 0 0 var(--s-2);
+  font-family: var(--mono);
+}
+
+.hue-command .type-files::before {
+  content: ">" / "";
+  color: var(--hue);
+  font-size: var(--t-sm);
+}
+
+/* A hook runs down a rail, as a thing that waits for something to pass. */
+.hue-hook .type-what {
+  padding-inline-start: var(--s-3);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--hue) 55%, transparent);
 }
 
 /* The largest kind gets the big cell, and the room is for scale. */
 @media (min-width: 80rem) {
-  .type-grid > li:first-child .type-card {
-    --stack: min(100%, 22rem);
+  /* Name and number at the top, the words at the foot, the figure at scale between. */
+  .type-grid > li:first-child .type-inner {
+    --stack: min(100%, 34rem);
+    --room: 100cqi;
+    --cap: var(--t-numeral);
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto 1fr auto auto;
+    column-gap: 0;
+  }
+
+  .type-grid > li:first-child :is(.type-name, .type-count, .type-what, .type-files) {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .type-grid > li:first-child .dock-stack {
     grid-column: 1;
+    grid-row: 3;
+    align-self: center;
+    justify-self: center;
+    margin-block: var(--s-4);
+    scale: 1;
+    translate: none;
+  }
+
+  .type-grid > li:first-child .type-what {
     grid-row: 4;
-    align-self: end;
-    justify-self: end;
-    margin-top: var(--s-5);
+    margin-top: 0;
+  }
+
+  .type-grid > li:first-child .type-files {
+    grid-row: 5;
   }
 
   .type-grid > li:first-child .type-name {
+    margin-top: 0;
     font-size: clamp(var(--t-xl), 1rem + 1.5vw, 3rem);
   }
 
   .type-grid > li:first-child .type-count strong {
-    font-size: var(--t-numeral);
     line-height: 0.95;
   }
 }
@@ -4026,10 +4303,6 @@ details.notice[open] p {
 /* The page's last section is already on the stage: no light strip between them. */
 main:has(.types) {
   padding-bottom: 0;
-}
-
-.site-footer .wrap {
-  max-width: min(100vw - 4rem, 100rem);
 }
 
 body:has(.types) .site-footer {
@@ -4120,13 +4393,6 @@ body:has(.types) .site-footer {
 }
 
 @media (min-width: 64rem) {
-  .page-head.stage,
-  .listing {
-    --wide: max(100%, min(100vw - 4rem, 100rem));
-    width: var(--wide);
-    margin-inline: calc((100% - var(--wide)) / 2);
-  }
-
   .listing {
     grid-template-columns: 16rem minmax(0, 1fr);
   }
@@ -4212,6 +4478,448 @@ body:has(.types) .site-footer {
   letter-spacing: -0.02em;
 }
 
+/* ---------- the system, carried through (Phase 86–90) ---------- */
+
+/*
+ * Measured before (2026-11-06, seven widths): 11.7px mono on every path, 12px table heads,
+ * a 2,672px feed at 390 and 2,799px at 360, 1,800px of types on a phone, and a detail page
+ * that was one column of cards, its section links scrolled away by the first screen.
+ */
+
+/* The system monospace is small for its size: at .9em a path measured 11.7px. */
+.path,
+code {
+  font-size: max(0.9em, 0.8125rem);
+}
+
+.row-desc {
+  overflow-wrap: anywhere;
+}
+
+.files th {
+  font-size: var(--t-sm);
+}
+
+/* --- the feed, where there is no pane: a row of cards a thumb can run along --- */
+
+/* It was ten rows down the page, 2,672px of them at 390 before anything else on the
+   page could be reached. Every fact is still on the card. The rows are links and a
+   heading each, so Tab reaches them and the browser scrolls each one in. */
+@media (width < 64rem), (hover: none) {
+  .board .rows {
+    display: flex;
+    gap: var(--s-3);
+    margin-inline: calc(var(--gutter) * -1);
+    padding: var(--s-1) var(--gutter) var(--s-3);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: var(--gutter);
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .board .rows > li {
+    flex: 0 0 min(84vw, 26rem);
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    border: 0;
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: inset 0 3px 0 var(--hue, var(--border));
+    scroll-snap-align: start;
+  }
+
+  .board .row-title a {
+    font-size: var(--t-lg);
+  }
+
+  .board .row-desc {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+
+  .board .row-detail .row-open {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    min-height: 24px;
+    color: var(--accent);
+    font-weight: 560;
+  }
+}
+
+/* A row's name was 22px tall under a thumb, under WCAG 2.5.8's 24 for a link that is
+   not inside a sentence (390, 2026-11-06). */
+@media (pointer: coarse) {
+  .row-title a {
+    display: inline-block;
+    min-height: 24px;
+  }
+}
+
+/* --- a phone's other long sections, with nothing taken out --- */
+
+@media (max-width: 40rem) {
+  .board,
+  .pipeline,
+  .conditions,
+  .types {
+    padding-block: var(--s-6);
+  }
+
+  .board {
+    padding-block-start: var(--s-3);
+  }
+
+  .flow {
+    gap: var(--s-5);
+  }
+
+  .flow-file {
+    padding: var(--s-2);
+  }
+
+  .flow-file code {
+    font-size: var(--t-sm);
+  }
+
+  .stats > div {
+    padding: var(--s-3) var(--s-4);
+  }
+
+  .stats dd {
+    font-size: var(--t-xl);
+  }
+
+  .type-card {
+    padding: var(--s-4);
+  }
+
+  .type-what {
+    margin-top: var(--s-2);
+    font-size: var(--t-base);
+  }
+
+  .site-footer::after {
+    margin-top: var(--s-4);
+  }
+}
+
+/* --- the listing: name and words on the left, where it came from on the right --- */
+
+/* Where there is the width. A row was four lines at 160px, with the facts wrapping under the
+   words; here it is the words beside a column of facts, the same order down every row, so
+   the eye can run down either one. The markup is the phone's, so nothing moves in the
+   accessibility tree: the metadata line lets its children into the row's own grid. */
+@media (min-width: 96rem) {
+  .listing .row-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 13rem;
+    grid-auto-flow: dense;
+    column-gap: var(--s-6);
+  }
+
+  .listing .row-desc {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    margin: 0;
+  }
+
+  .listing .row-meta {
+    display: contents;
+  }
+
+  .listing .row-meta > * {
+    grid-column: 2;
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--t-sm);
+    line-height: 1.6;
+  }
+
+  .listing .row-meta > .path {
+    grid-column: 1;
+    grid-row: 4;
+    align-self: end;
+  }
+
+  .listing .row-meta > .row-why {
+    grid-column: 1;
+    grid-row: 5;
+  }
+
+  .listing .row-meta > .row-source {
+    margin-inline-start: 0;
+  }
+}
+
+/* --- the detail page --- */
+
+.detail-opening {
+  display: grid;
+  gap: var(--s-5);
+}
+
+@media (min-width: 64rem) {
+  .detail-opening {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    align-items: end;
+    gap: var(--s-7);
+  }
+}
+
+/* A name is whatever its author typed, so its size comes down with its length. */
+.detail-top .detail-head h1[data-length="mid"] {
+  font-size: clamp(var(--t-2xl), 1.1rem + 2.2vw, 3.75rem);
+}
+
+.detail-top .detail-head h1[data-length="long"] {
+  font-size: clamp(var(--t-xl), 1rem + 1.2vw, 2.75rem);
+}
+
+.detail-glance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-5);
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--hue, var(--accent)) 10%, var(--surface));
+}
+
+.detail-glance dt {
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 450;
+}
+
+.detail-glance dd {
+  margin: 0;
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.detail-glance code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 1em;
+}
+
+/* The page's sections down a rail that stays, and the reading column beside it. */
+.detail-body {
+  /* Named here so the rail can read each section's place on the page (the motion block). */
+  timeline-scope:
+    --spy-setup, --spy-usage, --spy-details, --spy-files, --spy-observed, --spy-related,
+    --spy-versions, --spy-file;
+}
+
+.detail-main {
+  min-width: 0;
+}
+
+.doc-section {
+  padding-block: var(--s-5);
+  border-top: 1px solid var(--border);
+}
+
+.doc-section:first-child {
+  padding-block-start: 0;
+  border-top: 0;
+}
+
+.doc-section > h2:first-child,
+.doc-section > .setup-head {
+  margin-top: 0;
+}
+
+.spy-setup {
+  view-timeline: --spy-setup block;
+}
+
+.spy-usage {
+  view-timeline: --spy-usage block;
+}
+
+.spy-details {
+  view-timeline: --spy-details block;
+}
+
+.spy-files {
+  view-timeline: --spy-files block;
+}
+
+.spy-observed {
+  view-timeline: --spy-observed block;
+}
+
+.spy-related {
+  view-timeline: --spy-related block;
+}
+
+.spy-versions {
+  view-timeline: --spy-versions block;
+}
+
+.spy-file {
+  view-timeline: --spy-file block;
+}
+
+/* A thin band a third of the way down the window is "where the reader is": exactly one
+   section crosses it at a time. */
+.doc-section {
+  view-timeline-inset: 32% 67%;
+}
+
+.detail-top ~ .detail-body h2:not(.body h2) {
+  font-size: var(--t-xl);
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 64rem) {
+  .detail-body {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--s-7);
+    align-items: start;
+  }
+
+  .detail-main {
+    max-width: 78rem;
+  }
+
+  .toc {
+    position: sticky;
+    top: calc(3.5rem + var(--s-5));
+    margin: 0;
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+  }
+
+  .toc ul {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding-inline-start: 2px;
+    box-shadow: inset 2px 0 0 var(--border);
+  }
+
+  .toc a {
+    display: flex;
+    min-height: 2rem;
+    border: 0;
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    background: transparent;
+    font-size: var(--t-base);
+  }
+
+  .toc a:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* On a phone the rail is one scrolled line that stays under the header. */
+@media (max-width: 63.99rem) {
+  .toc {
+    position: sticky;
+    z-index: 5;
+    top: 3.5rem;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: var(--s-2) var(--gutter);
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--border);
+  }
+
+  /* One line at every width it sticks at: wrapped to two at 680px, it covered the heading
+     a section link landed on. */
+  .toc ul {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .toc li {
+    flex: none;
+  }
+
+  /* The sticky line is another 3rem to clear. */
+  #main [id] {
+    scroll-margin-top: calc(3rem + var(--s-4));
+  }
+}
+
+/* A value a reader copies stands on the stage, in either scheme: the page's dark ground
+   is what says "this is the literal thing". */
+.install code {
+  border-color: transparent;
+  background: var(--stage);
+  color: #e6e8e6;
+}
+
+.install .copy {
+  margin-top: var(--s-2);
+}
+
+.copy-button {
+  min-height: 28px;
+  padding-inline: var(--s-3);
+  transition:
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+/* The file list: the directory quieter than the name. */
+.file-dir {
+  color: var(--faint);
+}
+
+.file-name {
+  color: var(--fg-strong);
+}
+
+/* The versions read as a line through time: the newest at the top, on the rail. */
+.versions tbody td:first-child {
+  position: relative;
+  padding-inline-start: var(--s-5);
+}
+
+.versions tbody td:first-child::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 6px;
+  width: 2px;
+  background: var(--border-strong);
+}
+
+.versions tbody td:first-child::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  translate: 0 -50%;
+}
+
+.versions tbody tr:first-child td:first-child::before {
+  top: 50%;
+}
+
+.versions tbody tr:last-child td:first-child::before {
+  bottom: 50%;
+}
+
+.body {
+  font-size: 1rem;
+}
+
 /* ---------- motion ---------- */
 
 /*
@@ -4225,7 +4933,7 @@ body:has(.types) .site-footer {
  * and motion.test.ts fails on any transition that writes its own duration.
  *
  * An animation is not a state change, so a shorter duration is not a smaller
- * version of it: the flow's stages arriving and a number counting up have no
+ * version of it: the flow's stages arriving and a tracer on the line have no
  * quieter form, only a present one and an absent one. Rather than declare them
  * and then suppress them, they are declared inside a `no-preference` block —
  * under the preference they do not exist, the elements render at the styles
@@ -4243,8 +4951,7 @@ body:has(.types) .site-footer {
  * page feel like it is performing rather than loading, and it would also be
  * the first JavaScript this stylesheet ever required.
  *
- * All of it is opacity and transform, plus one custom property, so no animation can
- * shift the layout. The one layout this block adds is the pipeline's pin (240svh
+ * All of it is opacity, transform and colour, so no animation can shift the layout. The one layout this block adds is the pipeline's pin (190svh
  * and sticky); without the block the section has its natural height. `backwards` fill
  * without `forwards` means every element's resting style is the one written
  * above — an animation that never runs leaves nothing invisible.
@@ -4354,21 +5061,34 @@ body:has(.types) .site-footer {
       }
     }
 
-    /* `backwards`: holds at 0 before its range; the implied `to` is the element's
-       own --count, which is --target. */
-    @keyframes count-up {
+    /* What is travelling: one reader's repository, along the line, as the line fills. */
+    @keyframes flow-tracer {
       from {
-        --count: 0;
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(calc(100cqi - 0.75rem));
       }
     }
 
-    /* The section is 240svh, so the pin holds for about 1.4 screens of scrolling, and
+    /* A stop fills as the line reaches it. */
+    @keyframes flow-stop {
+      to {
+        background: var(--stop, var(--accent));
+        color: var(--on-accent);
+      }
+    }
+
+    /* The section is 190svh, so the pin holds for about 0.9 screens of scrolling, and
        needs a window the whole drawing fits in. 74rem, because under about 1,160px the
        file tiles go to one column and the drawing is 838px high: at 1024×768 the last
        two files sat below the window for the whole hold (found in review). */
     @media (min-width: 74rem) and (min-height: 44rem) {
       .pipeline {
-        height: 240svh;
+        /* 240svh until Phase 86: the same four stops, with a screen of scrolling
+           in which nothing new arrived. */
+        height: 190svh;
         padding-block: 0;
         view-timeline: --pipeline block;
       }
@@ -4389,6 +5109,43 @@ body:has(.types) .site-footer {
         animation: flow-line linear backwards;
         animation-timeline: --pipeline;
         animation-range: contain 2% contain 88%;
+      }
+
+      .flow::before {
+        display: block;
+        top: calc(var(--node) / 2 - 0.375rem);
+        inset-inline: 0 auto;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: var(--fg-strong);
+        box-shadow: 0 0 16px 3px var(--accent);
+        z-index: 0;
+        animation: flow-tracer linear both;
+        animation-timeline: --pipeline;
+        animation-range: contain 2% contain 88%;
+      }
+
+      .pipeline .flow > li::before {
+        animation: flow-stop linear both;
+        animation-timeline: --pipeline;
+      }
+
+      .pipeline .flow > li:nth-child(1)::before {
+        animation-range: contain 0% contain 3%;
+      }
+
+      .pipeline .flow > li:nth-child(2)::before {
+        animation-range: contain 20% contain 23%;
+      }
+
+      .pipeline .flow > li:nth-child(3)::before {
+        animation-range: contain 46% contain 49%;
+      }
+
+      .pipeline .flow > li:nth-child(4)::before {
+        --stop: var(--commit);
+        animation-range: contain 66% contain 69%;
       }
 
       .flow > li {
@@ -4453,30 +5210,17 @@ body:has(.types) .site-footer {
       li:nth-child(9) > .flow-file {
         animation-range: contain 36% contain 42%;
       }
-
-      .count {
-        animation: count-up linear backwards;
-        animation-timeline: --pipeline;
-        animation-range: contain 66% contain 90%;
-      }
     }
 
     /* Too short or too narrow to hold: each stage over its own entry. */
     @media (max-width: 73.99rem), (max-height: 43.99rem) {
-      .flow > li,
-      .count {
+      .flow > li {
         animation-timeline: view();
         animation-range: entry 0% entry 100%;
       }
 
       .flow > li {
         animation-name: flow-lit;
-        animation-timing-function: linear;
-        animation-fill-mode: backwards;
-      }
-
-      .count {
-        animation-name: count-up;
         animation-timing-function: linear;
         animation-fill-mode: backwards;
       }
@@ -4534,6 +5278,65 @@ body:has(.types) .site-footer {
 
     .stats > div:nth-child(4) {
       animation-range: entry 50% cover 36%;
+    }
+
+    /* The detail page's rail: the section a reader is in, and how far down the page they
+       are. Only in the browser that can tie animation to scrolling, and with no client
+       component: elsewhere the rail is plain links, all of which still work. */
+    @keyframes spy-here {
+      0%,
+      100% {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+    }
+
+    .toc a[href="#setup"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-setup;
+      animation-range: cover;
+    }
+
+    .toc a[href="#usage"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-usage;
+      animation-range: cover;
+    }
+
+    .toc a[href="#details"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-details;
+      animation-range: cover;
+    }
+
+    .toc a[href="#files"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-files;
+      animation-range: cover;
+    }
+
+    .toc a[href="#observed"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-observed;
+      animation-range: cover;
+    }
+
+    .toc a[href="#related"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-related;
+      animation-range: cover;
+    }
+
+    .toc a[href="#versions"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-versions;
+      animation-range: cover;
+    }
+
+    .toc a[href="#file"] {
+      animation: spy-here linear;
+      animation-timeline: --spy-file;
+      animation-range: cover;
     }
 
     /* The types: the plates drop onto their docks, as they do on the ring. */

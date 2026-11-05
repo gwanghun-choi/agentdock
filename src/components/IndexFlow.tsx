@@ -1,11 +1,10 @@
-import type { CSSProperties } from 'react';
 import { artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CommitIcon, DockIcon, FileIcon, RepoIcon } from '@/components/Icon';
 
 /** Each declaring file and the kind it declares, in the kind's own hue: the same
  * colours as the hero's docks, so what is read here is what stands on the ring.
  * A catalog has a hue but no dock: the ring's six are the filterable kinds. */
-const DECLARING_FILES = [
+export const DECLARING_FILES = [
   ['SKILL.md', 'skill'],
   ['plugin.json', 'plugin'],
   ['marketplace.json', 'catalog'],
@@ -106,23 +105,14 @@ export function IndexFlow({ total }: { total: number }) {
           <CommitIcon /> Filed against the commit it read
         </p>
         <p className="flow-count">
-          {/* The count is every indexed artifact the listing predicate admits,
-              the languages the listings leave out by default included
-              (page.tsx, `indexed`). It comes from the grouped count the page
-              already makes. Nothing new is queried for it. The digits count
-              up with scrolling where the browser ties animation to scrolling; where
-              it does not, the final number simply stands. See globals.css, where the
-              mechanism and its ceiling are written down.
-              Ungrouped, like the "Browse all {total} artifacts" link — CSS
-              counters have no grouping style, and two counts on one page are
-              easier to compare spelled one way. Since Phase 62 the two are
-              different numbers: that link is what the listing shows, this is
-              what is indexed, and the line under "Recently indexed" says what
-              the difference is. */}
-          <span className="count" style={{ '--target': total } as CSSProperties}>
-            {total}
-          </span>{' '}
-          artifacts indexed right now
+          {/* Every indexed artifact the listing predicate admits, the languages the
+              listings leave out by default included (page.tsx, `indexed`), from the
+              grouped count the page already makes. It counted up on a CSS counter,
+              which has no grouping style; the marker on that said to delete the
+              pseudo-element at a corpus above ten thousand, and production holds
+              44,903 (2026-11-06). Beside "Browse all", which is what the listing
+              shows; the line under "Recently indexed" says what the difference is. */}
+          <span className="count">{total.toLocaleString('en-US')}</span> artifacts indexed right now
         </p>
       </li>
     </ol>

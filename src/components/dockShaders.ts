@@ -1,5 +1,5 @@
 /**
- * The scene's three GLSL programs, as text. Each one moves or lights what would
+ * The scene's GLSL programs, as text. Each one moves or lights what would
  * otherwise cost a JavaScript loop per frame: thousands of motes are one draw
  * call and no buffer upload, because a mote's whole path is a function of uTime.
  */
@@ -93,7 +93,7 @@ export const CABLE_FRAGMENT = /* glsl */ `
     float up = max(uLit, 0.0);
     float gap = 1.0 / (2.0 + up * 3.0 + uBurst * 3.0);
     float phase = fract((vAlong - uTime * (0.16 + up * 0.5 + uBurst * 0.5) + uSeed) / gap);
-    float pulse = smoothstep(0.82, 1.0, phase) * (1.0 - smoothstep(1.0, 1.0, phase));
+    float pulse = smoothstep(0.82, 1.0, phase);
     vec3 line = mix(vec3(0.07, 0.085, 0.095), uHue * 0.55, up);
     vec3 color = line + uHue * pulse * (0.9 + up * 1.4 + uBurst);
     gl_FragColor = vec4(color * (uLit < 0.0 ? 1.0 + uLit * 0.55 : 1.0), 1.0);
@@ -136,6 +136,73 @@ export const FLOOR_FRAGMENT = /* glsl */ `
     vec3 color = mix(uTint, uFocus, uFocusing * 0.8);
     float strength = max(rings, spokes * 0.55) * 0.5 + wave * 1.2;
     gl_FragColor = vec4(color, strength * fade);
+    #include <colorspace_fragment>
+  }
+`;
+
+/** The hub's core and its glass: a rim that faces away, bands that climb inside. */
+export const CORE_VERTEX = /* glsl */ `
+  varying vec3 vNormalView;
+  varying vec3 vToEye;
+  varying vec2 vUv;
+
+  void main() {
+    vec4 view = modelViewMatrix * vec4(position, 1.0);
+    vNormalView = normalize(normalMatrix * normal);
+    vToEye = normalize(-view.xyz);
+    vUv = uv;
+    gl_Position = projectionMatrix * view;
+  }
+`;
+
+export const CORE_FRAGMENT = /* glsl */ `
+  uniform float uTime;
+  uniform vec3 uColor;
+  uniform float uRim;
+  uniform float uFill;
+  uniform float uBands;
+  varying vec3 vNormalView;
+  varying vec3 vToEye;
+  varying vec2 vUv;
+
+  void main() {
+    float facing = abs(dot(normalize(vNormalView), normalize(vToEye)));
+    float rim = pow(1.0 - facing, 2.6) * uRim;
+    float bands = smoothstep(0.72, 1.0, sin(vUv.y * 42.0 - uTime * 2.2)) * uBands * facing;
+    float centre = pow(facing, 3.0) * uFill;
+    gl_FragColor = vec4(uColor * (rim + centre + bands * 0.32), rim + centre + bands * 0.2);
+    #include <colorspace_fragment>
+  }
+`;
+
+/** A column of light: bright at its foot, soft at its edge, gone at its head. */
+export const BEAM_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uStrength;
+  varying vec3 vNormalView;
+  varying vec3 vToEye;
+  varying vec2 vUv;
+
+  void main() {
+    float facing = abs(dot(normalize(vNormalView), normalize(vToEye)));
+    float along = vUv.y * vUv.y;
+    gl_FragColor = vec4(uColor, pow(facing, 2.0) * along * uStrength);
+    #include <colorspace_fragment>
+  }
+`;
+
+/** A far orbit: a hairline with a comet on it. uv.x runs round the ring. */
+export const TRAIL_FRAGMENT = /* glsl */ `
+  uniform float uTime;
+  uniform float uSpeed;
+  uniform float uLaps;
+  uniform vec3 uHue;
+  varying float vAlong;
+
+  void main() {
+    float phase = fract(vAlong * uLaps - uTime * uSpeed);
+    float comet = pow(phase, 14.0);
+    gl_FragColor = vec4(uHue, 0.07 + comet * 0.85);
     #include <colorspace_fragment>
   }
 `;

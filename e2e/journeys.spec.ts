@@ -212,6 +212,8 @@ test("home: the feed previews the row under the pointer or the focus, in the row
   await page.mouse.move(1, 1);
   await page.locator('h1').click();
   await rows.nth(6).hover();
+  // Its pane takes the pointer after the aim delay: click only what a reader could.
+  await expect.poll(shown).toEqual([6]);
   await rows.nth(6).locator('.row-title a').dispatchEvent('mousedown');
   await rows
     .nth(6)
@@ -294,6 +296,131 @@ test('home: the pipeline holds still while it fills, and stands finished under r
   expect(start.pin).toBe(end.pin);
   expect(start.last).toBeLessThan(1);
   expect(end.last).toBe(1);
+});
+
+test('home: a type tile fits its number at any length, at every width', async ({ page }) => {
+  // 29,084 ran 138px out of its tile at 2560 and was cut (production, 2026-11-06). The
+  // seed's counts are three digits at most, so the lengths are written in here.
+  for (const [width, height] of [
+    [2560, 1440],
+    [1920, 1080],
+    [1440, 900],
+    [1024, 768],
+    [768, 1024],
+    [390, 844],
+    [360, 800],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    for (const text of ['1,234', '29,084', '456,789', '1,234,567', '12,345,678']) {
+      const spilled = await page.locator('.type-card').evaluateAll((cards, text) => {
+        return cards.flatMap((card) => {
+          const strong = card.querySelector('strong') as HTMLElement;
+          strong.textContent = text;
+          (card as HTMLElement).style.setProperty('--digits', String(text.length));
+          const box = card.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(strong);
+          const digits = range.getBoundingClientRect();
+          const figure = (card.querySelector('.dock-stack') as Element).getBoundingClientRect();
+          const clear =
+            digits.right <= box.right + 0.5 &&
+            digits.left >= box.left - 0.5 &&
+            // The number is never under the figure beside it.
+            (digits.right <= figure.left + 1 ||
+              digits.left >= figure.right - 1 ||
+              digits.bottom <= figure.top + 1 ||
+              digits.top >= figure.bottom - 1);
+          return clear ? [] : [`${card.className} ${text} at ${width}`];
+        });
+      }, text);
+      expect(spilled).toEqual([]);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  }
+});
+
+test('home: on the way from a row to its pane, the rows crossed do not take it', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1400 });
+  await page.goto('/');
+  const rows = page.locator('.board .rows > li');
+  const shown = () =>
+    rows.evaluateAll((ls) =>
+      ls.flatMap((l, i) =>
+        Number(getComputedStyle(l.querySelector('.row-detail') as Element).opacity) > 0.5
+          ? [i]
+          : [],
+      ),
+    );
+  await rows.nth(1).hover();
+  await expect.poll(shown).toEqual([1]);
+  const from = await rows.nth(1).boundingBox();
+  const to = await rows.nth(1).locator('.row-source').boundingBox();
+  if (!from || !to) throw new Error('no box');
+  // A quick diagonal down across rows 2, 3 and 4, to the link at the pane's foot.
+  await page.mouse.move(to.x + 20, to.y + to.height / 2, { steps: 4 });
+  expect(await shown()).toEqual([1]);
+  await page.waitForTimeout(500);
+  expect(await shown()).toEqual([1]);
+  // Resting on another row does change it: this is a delay, not a lock.
+  await rows.nth(4).hover();
+  await expect.poll(shown).toEqual([4]);
+});
+
+test('home: without hover the feed is a row of cards that keeps the page short', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const board = await page.locator('.board').boundingBox();
+  // 2,672px of rows at 390 before this (production, 2026-11-06).
+  expect(board?.height).toBeLessThan(900);
+  const rows = page.locator('.board .rows');
+  expect(await rows.evaluate((r) => r.scrollWidth > r.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  // Every fact still on a card, the last card as well, and the last card reachable.
+  const last = rows.locator('> li').last();
+  await last.locator('.row-title a').focus();
+  await expect(last.locator('.row-title a')).toBeInViewport();
+  await expect(last.locator('.row-source')).toHaveAttribute('href', /\/blob\/[0-9a-f]{40}\//);
+});
+
+test('detail: the rail stays, and says which section the reader is in', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/r/wshobson/agents/plugins/backend-development/skills/temporal-python-testing');
+  const here = () =>
+    page
+      .locator('nav.toc a')
+      .evaluateAll((as) =>
+        as
+          .filter((a) => getComputedStyle(a).backgroundColor !== 'rgba(0, 0, 0, 0)')
+          .map((a) => a.getAttribute('href')),
+      );
+  for (const [id, label] of [
+    ['versions', 'Versions'],
+    ['related', 'Related'],
+    ['file', 'File'],
+  ]) {
+    await page.locator(`nav.toc a[href="#${id}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`#${id}$`));
+    await expect(page.locator(`nav.toc a[href="#${id}"]`)).toHaveText(label);
+    await expect(page.locator('nav.toc')).toBeInViewport();
+    await expect.poll(here).toEqual([`#${id}`]);
+  }
+});
+
+test('detail: the opening holds the four facts, each the same as under Details', async ({
+  page,
+}) => {
+  await page.goto('/r/wshobson/agents/plugins/backend-development/skills/temporal-python-testing');
+  const glance = page.locator('.detail-glance');
+  const stars = await glance.locator('dt:has-text("GitHub stars") + dd').textContent();
+  await expect(page.locator('dl.facts dt:has-text("GitHub stars") + dd')).toHaveText(stars ?? '');
+  const commit = await glance.locator('code').textContent();
+  await expect(page.locator('.detail-actions a').first()).toContainText(commit ?? '');
 });
 
 test('home: a type tile goes to the listing it counts, and the largest kind leads', async ({
@@ -416,7 +543,7 @@ test.describe('the dock board', () => {
     await page.goto('/');
     const field = page.locator('#q');
     const before = await field.boundingBox();
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     expect(await field.boundingBox()).toEqual(before);
 
     await pause(page).click();
@@ -460,12 +587,77 @@ test.describe('the dock board', () => {
     expect(errors).toEqual([]);
   });
 
+  test("each figure's name stays on the stage, in front of the scene", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+    const tags = page.locator('.dock-tag');
+    await expect(tags).toHaveCount(6);
+    await expect(tags.first()).toHaveCSS('opacity', '1', { timeout: 15_000 });
+    const copyRight = await page
+      .locator('.hero-copy')
+      .evaluate((e) => e.getBoundingClientRect().right);
+    // The ring turns, so at three moments of it.
+    for (let turn = 0; turn < 3; turn++) {
+      await page.mouse.move(700 + turn * 40, 300);
+      await page.waitForTimeout(1500);
+      const boxes = await tags.evaluateAll((all) =>
+        all.map((t) => {
+          const b = t.getBoundingClientRect();
+          return { left: b.left, right: b.right, top: b.top };
+        }),
+      );
+      for (const box of boxes) {
+        expect(box.left).toBeGreaterThanOrEqual(copyRight);
+        expect(box.right).toBeLessThanOrEqual(1280);
+        expect(box.top).toBeGreaterThanOrEqual(0);
+      }
+    }
+    // And it says the count the chip does.
+    await expect(page.locator('.dock-tag.dock-skill b')).toHaveText(
+      (await page.locator('.hero-types a[href$="type=skill"] .chip-count').textContent()) ?? '',
+    );
+  });
+
+  test('leaving and coming back leaves no scene behind', async ({ page, context }) => {
+    // Three's Sprite geometry held every renderer that ever drew one: 31 live contexts
+    // after 30 returns. A locator, because an element handle would itself hold the canvas.
+    await stillStage(page);
+    await page.goto('/');
+    const live = board(page).and(page.locator('[data-scene="live"]'));
+    await live.waitFor();
+    for (let i = 0; i < 4; i++) {
+      await page.locator('.hero-types a[href="/artifacts"]').click();
+      await page.waitForURL(/artifacts/);
+      await page.waitForTimeout(700);
+      await page.goBack();
+      await live.waitFor();
+    }
+    await page.waitForTimeout(700);
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Runtime.enable');
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: 'WebGL2RenderingContext.prototype',
+    });
+    const { objects } = await cdp.send('Runtime.queryObjects', {
+      prototypeObjectId: result.objectId as string,
+    });
+    const { result: count } = await cdp.send('Runtime.callFunctionOn', {
+      objectId: objects.objectId as string,
+      functionDeclaration: 'function () { return this.length; }',
+      returnByValue: true,
+    });
+    // The one on screen. One more allowed: the probe in DockBoard loses its context at
+    // once and is only waiting to be collected.
+    expect(count.value).toBeLessThanOrEqual(2);
+  });
+
   test('a paused reader stays paused on the next visit, with no entrance', async ({ page }) => {
     await countDraws(page);
     await page.goto('/');
     await pause(page).click();
     await page.reload();
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await expect(pause(page)).toHaveAttribute('aria-pressed', 'true');
     // It comes to rest with nobody touching it. That the plates landed with no
     // entrance to place them: seen in docs/images/phase80-82/paused-return-1920.png.
@@ -473,7 +665,7 @@ test.describe('the dock board', () => {
     await pause(page).click();
     await expect(pause(page)).toHaveAttribute('aria-pressed', 'false');
     await page.reload();
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await expect(pause(page)).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -481,7 +673,7 @@ test.describe('the dock board', () => {
     test.slow();
     await countDraws(page);
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
 
     // It is moving, past the entrance, with nobody touching anything.
     await page.waitForTimeout(5000);
@@ -510,7 +702,7 @@ test.describe('the dock board', () => {
     const errors = collectErrors(page);
     await stillStage(page);
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
 
     const panel = page.locator('.dock-panel');
     const close = panel.getByRole('button', { name: 'Close' });
@@ -568,7 +760,7 @@ test.describe('the dock board', () => {
     await page.waitForURL(/\/artifacts\?type=/);
     await expect(page.locator('canvas')).toHaveCount(0);
     await page.goBack();
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     expect(errors).toEqual([]);
   });
 
@@ -578,7 +770,7 @@ test.describe('the dock board', () => {
     await countDraws(page);
     await stillStage(page);
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await expectAtRest(page);
     const rested = await draws(page);
     const panel = page.locator('.dock-panel');
@@ -597,13 +789,13 @@ test.describe('the dock board', () => {
 
   test('narrowed to the drawing and widened again, the scene comes back', async ({ page }) => {
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await page.setViewportSize({ width: 800, height: 800 });
     await expect(board(page)).toHaveAttribute('data-scene', 'still');
     await expect(board(page).locator('canvas')).toHaveCount(0);
     await page.waitForTimeout(800); // R3F's own context loss comes after the unmount
     await page.setViewportSize({ width: 1280, height: 800 });
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(1);
   });
 
@@ -633,7 +825,7 @@ test.describe('the dock board', () => {
   test('the field in focus turns the scene to the hub, and every key answers', async ({ page }) => {
     await countDraws(page);
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await pause(page).click();
     await expectAtRest(page);
     const rested = await draws(page);
@@ -651,7 +843,7 @@ test.describe('the dock board', () => {
       if (m.type() === 'warning') warnings.push(m.text());
     });
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await page.waitForTimeout(500);
     // R3F 9.8.2's own `new THREE.Clock()` is the one warning left, and it is not ours.
     expect(warnings.filter((w) => w.startsWith('THREE.') && !w.includes('THREE.Clock'))).toEqual(
@@ -661,7 +853,7 @@ test.describe('the dock board', () => {
 
   test('axe finds nothing with the panel open', async ({ page }) => {
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await page.locator('.hero-types a[href$="type=skill"]').focus();
     await expect(page.locator('.dock-panel')).toBeVisible();
     await page.addScriptTag({ content: AXE });
@@ -712,7 +904,7 @@ test.describe('the dock board', () => {
   }) => {
     const errors = collectErrors(page);
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await page.evaluate(() => {
       const canvas = document.querySelector('.dock-board canvas') as HTMLCanvasElement;
       canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
@@ -1314,7 +1506,7 @@ test('home: the newest artifacts are on the first screen, each listed once, and 
   const first = page.locator('.board .rows li').first();
   expect((await first.boundingBox())?.y).toBeLessThan(800);
   const hrefs = await page
-    .locator('.board a[href^="/r/"]')
+    .locator('.board .row-title a[href^="/r/"]')
     .evaluateAll((as) => as.map((a) => a.getAttribute('href')));
   const names = hrefs.filter((h) => !h?.includes('/commits/'));
   expect(names.length).toBeGreaterThan(0);

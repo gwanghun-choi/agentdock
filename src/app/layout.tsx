@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to content
         </a>
 
-        <header className="site-header">
+        <header className="site-header stage">
           <div className="wrap">
             <Link href="/" className="brand">
               <DockIcon />

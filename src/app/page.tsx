@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { DockBoard } from '@/components/DockBoard';
 import { DockBoardStatic, DockStack } from '@/components/DockBoardStatic';
 import {
@@ -12,7 +13,7 @@ import {
   SearchIcon,
   StarIcon,
 } from '@/components/Icon';
-import { IndexFlow } from '@/components/IndexFlow';
+import { DECLARING_FILES, IndexFlow } from '@/components/IndexFlow';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
@@ -184,7 +185,7 @@ export default async function HomePage() {
               <Link href="/artifacts?sort=added">Newly added</Link>
               <Link href="/artifacts?sort=changed">Content changed</Link>
               <Link href="/artifacts">
-                Browse all {total} artifacts <ArrowRightIcon />
+                Browse all {total.toLocaleString('en-US')} artifacts <ArrowRightIcon />
               </Link>
             </p>
           ) : null}
@@ -199,7 +200,7 @@ export default async function HomePage() {
         {/* Empty only when nothing is listed in any language: with hidden rows
             the line above already says where they are. */}
         {recent.length > 0 ? (
-          <PackageRows items={recent} />
+          <PackageRows items={recent} preview />
         ) : hidden === 0 ? (
           <div className="empty">
             <p className="muted">
@@ -319,24 +320,41 @@ export default async function HomePage() {
           <h2 id="types-heading">Browse by type</h2>
         </div>
         <ul className="type-grid">
-          {byCount.map((id) => (
-            <li key={id}>
-              <Link className={`type-card hue-${id}`} href={`/artifacts?type=${id}`}>
-                <DockStack count={byType[id] ?? 0} kind={id} />
-                <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
-                <span className="type-count">
-                  {byType[id] ? (
-                    <>
-                      <strong>{byType[id].toLocaleString('en-US')}</strong> listed
-                    </>
-                  ) : (
-                    'None listed yet'
-                  )}
-                </span>
-                <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
-              </Link>
-            </li>
-          ))}
+          {byCount.map((id) => {
+            const listed = (byType[id] ?? 0).toLocaleString('en-US');
+            return (
+              <li key={id}>
+                {/* --digits sizes the number to its tile, whatever the count grows to:
+                    29,084 ran 138px past the edge at 2560 (production, 2026-11-06). */}
+                <Link
+                  className={`type-card hue-${id}`}
+                  href={`/artifacts?type=${id}`}
+                  style={{ '--digits': listed.length } as CSSProperties}
+                >
+                  <span className="type-inner">
+                    <DockStack count={byType[id] ?? 0} kind={id} />
+                    <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
+                    <span className="type-count">
+                      {byType[id] ? (
+                        <>
+                          <strong>{listed}</strong> listed
+                        </>
+                      ) : (
+                        'None listed yet'
+                      )}
+                    </span>
+                    <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
+                    {/* The files the detectors match for this kind: IndexFlow's list. */}
+                    <span className="type-files">
+                      {DECLARING_FILES.filter(([, kind]) => kind === id).map(([file]) => (
+                        <code key={file}>{file}</code>
+                      ))}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </>

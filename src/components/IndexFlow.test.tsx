@@ -66,12 +66,12 @@ describe('IndexFlow', () => {
     }
   });
 
-  it('passes the count through as a number the stylesheet can animate', () => {
-    // The digits in the text node are the real, accessible ones; --target is
-    // what the count-up animates toward. They must agree, and they must both
-    // be the server's number rather than anything computed in the browser.
-    expect(html).toContain('--target:822');
-    expect(html).toContain('>822</span>');
+  it('states the count as grouped text, the one thing anything reads', () => {
+    // No custom property and no pseudo-element since Phase 86: a screen reader and a
+    // screen get the same digits, grouped like every other count on the page.
+    const large = renderToStaticMarkup(<IndexFlow total={1234567} />);
+    expect(large).toContain('>1,234,567</span>');
+    expect(large).not.toContain('--target');
   });
 
   it('is a Server Component', () => {

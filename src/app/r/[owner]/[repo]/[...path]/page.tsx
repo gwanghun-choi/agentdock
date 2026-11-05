@@ -231,126 +231,162 @@ export default async function PackagePage({ params }: Props) {
           the type-conditional parts are further down: the usage guide, which
           reads its type's entry from usageGuide.ts, and the frontmatter row's
           field set. */}
-        <div className="detail-head">
-          <ArtifactBadge type={detail.type} />
-          <h1>{detail.name}</h1>
-          <p className="repo-line">
-            <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
-            <span aria-hidden="true">/</span>
-            <span className="path">{detail.sourcePath}</span>
-          </p>
-          {detail.summary ? (
-            <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
-              {detail.summary}
-            </p>
-          ) : null}
-          {languageNote(detail.summaryLanguage) ? (
-            <p className="muted">
-              Description language: {languageNote(detail.summaryLanguage)}. Shown as the author
-              wrote it; AgentDock does not translate it, and a browser&rsquo;s translate feature
-              can.
-            </p>
-          ) : null}
-          <div className="detail-actions">
-            {/* Both leave AgentDock, and both say so with the same icon — §16's
-              internal/external distinction, made visible rather than implied. */}
-            <a href={source} rel="noopener noreferrer" target="_blank">
-              <ExternalIcon /> View this file at commit {detail.commitSha.slice(0, 7)}
-            </a>
-            <a
-              href={`https://github.com/${detail.fullName}`}
-              rel="noopener noreferrer"
-              target="_blank"
+        <div className="detail-opening">
+          <div className="detail-head">
+            <ArtifactBadge type={detail.type} />
+            {/* The length is what sizes it: a name of 87 characters at the size of one of
+              12 is six lines of heading on a phone. */}
+            <h1
+              data-length={
+                detail.name.length > 48 ? 'long' : detail.name.length > 24 ? 'mid' : undefined
+              }
             >
-              <ExternalIcon /> Repository on GitHub
-            </a>
+              {detail.name}
+            </h1>
+            <p className="repo-line">
+              <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+              <span aria-hidden="true">/</span>
+              <span className="path">{detail.sourcePath}</span>
+            </p>
+            {detail.summary ? (
+              <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
+                {detail.summary}
+              </p>
+            ) : null}
+            {languageNote(detail.summaryLanguage) ? (
+              <p className="muted">
+                Description language: {languageNote(detail.summaryLanguage)}. Shown as the author
+                wrote it; AgentDock does not translate it, and a browser&rsquo;s translate feature
+                can.
+              </p>
+            ) : null}
+            <div className="detail-actions">
+              {/* Both leave AgentDock, and both say so with the same icon — §16's
+              internal/external distinction, made visible rather than implied. */}
+              <a href={source} rel="noopener noreferrer" target="_blank">
+                <ExternalIcon /> View this file at commit {detail.commitSha.slice(0, 7)}
+              </a>
+              <a
+                href={`https://github.com/${detail.fullName}`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <ExternalIcon /> Repository on GitHub
+              </a>
+            </div>
           </div>
+          {/* The four facts a reader checks first, each said in full again under Details:
+            which commit, how recently read, how recently changed upstream, GitHub's
+            number. A record of where this came from, never a rating of it. */}
+          <dl className="detail-glance">
+            <div>
+              <dt>Commit read</dt>
+              <dd>
+                <code>{detail.commitSha.slice(0, 7)}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>Last read</dt>
+              <dd>{detail.scannedAt ? detail.scannedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
+            </div>
+            <div>
+              <dt>Changed upstream</dt>
+              <dd>{detail.pushedAt ? detail.pushedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
+            </div>
+            <div>
+              <dt>GitHub stars</dt>
+              <dd>{detail.stars.toLocaleString('en-US')}</dd>
+            </div>
+          </dl>
         </div>
       </div>
 
-      <nav aria-label="On this page" className="toc">
-        <ul>
-          {sections.map(([id, label]) => (
-            <li key={id}>
-              <a href={`#${id}`}>{label}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* What a reader came for first: how to use it. The page's facts and the
-          record of what was observed follow. */}
-      {guide ? setup : null}
-
-      {guide ? (
-        <>
-          <h2 id="usage">Using this kind of artifact</h2>
-          <p className="muted">
-            About the type, from its documentation — not about this file. AgentDock does not install
-            or run anything; read the file at the linked commit first.
-          </p>
-          <dl className="facts install">
-            <dt>What it is</dt>
-            <dd>{guide.what}</dd>
-            <dt>Format documented by</dt>
-            <dd>
-              {guide.documentedFor} —{' '}
-              <a href={guide.docs} rel="noopener noreferrer" target="_blank">
-                <ExternalIcon /> documentation
-              </a>
-            </dd>
-            {guide.places?.map((place) => (
-              <div key={place.scope} style={{ display: 'contents' }}>
-                <dt>{place.scope} copy</dt>
-                <dd>
-                  <code>{place.path(detail.slug)}</code>{' '}
-                  <CopyButton label="Copy path" value={place.path(detail.slug)} />
-                </dd>
-              </div>
+      <div className="detail-body">
+        <nav aria-label="On this page" className="toc">
+          <ul>
+            {sections.map(([id, label]) => (
+              <li key={id}>
+                <a href={`#${id}`}>{label}</a>
+              </li>
             ))}
-            <dt>Before you copy it</dt>
-            <dd>{guide.note}</dd>
-          </dl>
-        </>
-      ) : null}
+          </ul>
+        </nav>
 
-      <dl className="facts" id="details">
-        <dt>Type</dt>
-        <dd>{artifactTypeLabel(detail.type)}</dd>
+        <div className="detail-main">
+          {/* What a reader came for first: how to use it. The page's facts and the
+          record of what was observed follow. */}
+          {guide ? <section className="doc-section spy-setup">{setup}</section> : null}
 
-        <dt>Source repository</dt>
-        <dd>
-          <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
-        </dd>
+          {guide ? (
+            <section className="doc-section spy-usage">
+              <h2 id="usage">Using this kind of artifact</h2>
+              <p className="muted">
+                About the type, from its documentation — not about this file. AgentDock does not
+                install or run anything; read the file at the linked commit first.
+              </p>
+              <dl className="facts install">
+                <dt>What it is</dt>
+                <dd>{guide.what}</dd>
+                <dt>Format documented by</dt>
+                <dd>
+                  {guide.documentedFor} —{' '}
+                  <a href={guide.docs} rel="noopener noreferrer" target="_blank">
+                    <ExternalIcon /> documentation
+                  </a>
+                </dd>
+                {guide.places?.map((place) => (
+                  <div key={place.scope} style={{ display: 'contents' }}>
+                    <dt>{place.scope} copy</dt>
+                    <dd>
+                      <code>{place.path(detail.slug)}</code>{' '}
+                      <CopyButton label="Copy path" value={place.path(detail.slug)} />
+                    </dd>
+                  </div>
+                ))}
+                <dt>Before you copy it</dt>
+                <dd>{guide.note}</dd>
+              </dl>
+            </section>
+          ) : null}
 
-        <dt>Licence, declared in the file</dt>
-        {/* The measured corpus writes free prose here, not an identifier, so it
+          <section className="doc-section spy-details">
+            <dl className="facts" id="details">
+              <dt>Type</dt>
+              <dd>{artifactTypeLabel(detail.type)}</dd>
+
+              <dt>Source repository</dt>
+              <dd>
+                <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+              </dd>
+
+              <dt>Licence, declared in the file</dt>
+              {/* The measured corpus writes free prose here, not an identifier, so it
             is shown as the author's text and never faceted. */}
-        <dd>{detail.licenseText ?? 'not declared'}</dd>
+              <dd>{detail.licenseText ?? 'not declared'}</dd>
 
-        <dt>Licence, detected by GitHub</dt>
-        {/* Null on the reference repository, so the honest-unknown path is the
+              <dt>Licence, detected by GitHub</dt>
+              {/* Null on the reference repository, so the honest-unknown path is the
             common path rather than the edge case. */}
-        <dd>{detail.licenseSpdx ?? 'not detected'}</dd>
+              <dd>{detail.licenseSpdx ?? 'not detected'}</dd>
 
-        <dt>Declared version</dt>
-        <dd>{detail.declaredVersion ?? 'not declared'}</dd>
+              <dt>Declared version</dt>
+              <dd>{detail.declaredVersion ?? 'not declared'}</dd>
 
-        <dt>Last changed upstream</dt>
-        <dd>{detail.pushedAt ? detail.pushedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
+              <dt>Last changed upstream</dt>
+              <dd>{detail.pushedAt ? detail.pushedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
 
-        <dt>Last read by AgentDock</dt>
-        {/* Deliberately a separate row from the one above. Collapsing the two
+              <dt>Last read by AgentDock</dt>
+              {/* Deliberately a separate row from the one above. Collapsing the two
             would be a false freshness claim. */}
-        <dd>{utc(detail.scannedAt)}</dd>
+              <dd>{utc(detail.scannedAt)}</dd>
 
-        <dt>GitHub stars</dt>
-        {/* GitHub's number, labelled as GitHub's. Never an AgentDock signal.
+              <dt>GitHub stars</dt>
+              {/* GitHub's number, labelled as GitHub's. Never an AgentDock signal.
             Digit-grouped for the same reason the repository page and the
             listing rows group it: it is a number to read, not to parse. */}
-        <dd>{detail.stars.toLocaleString('en-US')}</dd>
+              <dd>{detail.stars.toLocaleString('en-US')}</dd>
 
-        {/* The three long values, together and last.
+              {/* The three long values, together and last.
 
             Above 64rem the short facts sit two to a row; these three carry a
             path, a URL and a sentence, and half a column is not enough for any
@@ -363,269 +399,314 @@ export default async function PackagePage({ params }: Props) {
             Path moved down from beside "Source repository" to join them. It is
             a location, like the permalink under it, and it is the one short-
             looking fact that is routinely long. */}
-        <dt>Path in repository</dt>
-        <dd className="path fact-long">
-          {detail.sourcePath} <CopyButton label="Copy path" value={detail.sourcePath} />
-        </dd>
+              <dt>Path in repository</dt>
+              <dd className="path fact-long">
+                {detail.sourcePath} <CopyButton label="Copy path" value={detail.sourcePath} />
+              </dd>
 
-        <dt>Permalink</dt>
-        <dd className="fact-long">
-          <a href={source} rel="noopener noreferrer" target="_blank" className="path">
-            {source}
-          </a>{' '}
-          <CopyButton label="Copy link" value={source} />
-        </dd>
+              <dt>Permalink</dt>
+              <dd className="fact-long">
+                <a href={source} rel="noopener noreferrer" target="_blank" className="path">
+                  {source}
+                </a>{' '}
+                <CopyButton label="Copy link" value={source} />
+              </dd>
 
-        <dt>Frontmatter fields</dt>
-        <dd className="fact-long">
-          {extras.length === 0
-            ? 'Uses only specification fields.'
-            : `Also declares ${extras.join(', ')}, which the specification does not define.`}
-        </dd>
-      </dl>
+              <dt>Frontmatter fields</dt>
+              <dd className="fact-long">
+                {extras.length === 0
+                  ? 'Uses only specification fields.'
+                  : `Also declares ${extras.join(', ')}, which the specification does not define.`}
+              </dd>
+            </dl>
 
-      {detail.parseErrors.length > 0 ? (
-        <>
-          <h2>What AgentDock observed while reading this file</h2>
-          <ul className="notes muted">
-            {detail.parseErrors.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+            {detail.parseErrors.length > 0 ? (
+              <>
+                <h2>What AgentDock observed while reading this file</h2>
+                <ul className="notes muted">
+                  {detail.parseErrors.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
 
-      {detail.parseStatus === 'failed' ? (
-        <p className="error">
-          AgentDock could not read this file's frontmatter. The excerpt below is the raw file as it
-          was found.
-        </p>
-      ) : null}
+            {detail.parseStatus === 'failed' ? (
+              <p className="error">
+                AgentDock could not read this file's frontmatter. The excerpt below is the raw file
+                as it was found.
+              </p>
+            ) : null}
+          </section>
 
-      {detail.files.length > 0 ? (
-        <>
-          <h2 id="files">Files</h2>
-          <p className="muted">
-            The files this artifact owns in the tree AgentDock already read — a skill&apos;s or a
-            plugin&apos;s directory, or the single file a command, hook or MCP configuration is. No
-            additional GitHub request. A bundled script is named and never opened.
-          </p>
-          <table className="files">
-            <thead>
-              <tr>
-                <th>Path</th>
-                <th>Size</th>
-                <th>Type</th>
-                <th>Executable</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.files.map((f) => (
-                <tr key={f.path}>
-                  <td className="path">
-                    {f.path}
-                    {isBundledScript(f.path) ? (
-                      <span className="muted"> — not analyzed</span>
-                    ) : null}
-                  </td>
-                  <td>{f.size === null ? 'unknown' : f.size}</td>
-                  <td>{f.kind}</td>
-                  <td>{f.executable ? 'yes' : 'no'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {detail.files.length >= ANALYZE_CAPS.maxInventoryEntries ? (
-            <p className="muted">
-              Only the first {ANALYZE_CAPS.maxInventoryEntries} files are listed; the rest were not
-              recorded.
-            </p>
+          {detail.files.length > 0 ? (
+            <section className="doc-section spy-files">
+              <h2 id="files">Files</h2>
+              <p className="muted">
+                The files this artifact owns in the tree AgentDock already read — a skill&apos;s or
+                a plugin&apos;s directory, or the single file a command, hook or MCP configuration
+                is. No additional GitHub request. A bundled script is named and never opened.
+              </p>
+              <table className="files">
+                <thead>
+                  <tr>
+                    <th>Path</th>
+                    <th>Size</th>
+                    <th>Type</th>
+                    <th>Executable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.files.map((f) => (
+                    <tr key={f.path}>
+                      <td className="path">
+                        {/* The whole path, as stored: the directory quieter than the name. */}
+                        <span className="file-dir">
+                          {f.path.slice(0, f.path.lastIndexOf('/') + 1)}
+                        </span>
+                        <span className="file-name">
+                          {f.path.slice(f.path.lastIndexOf('/') + 1)}
+                        </span>
+                        {isBundledScript(f.path) ? (
+                          <span className="muted"> — not analyzed</span>
+                        ) : null}
+                      </td>
+                      <td>{f.size === null ? 'unknown' : f.size}</td>
+                      <td>{f.kind}</td>
+                      <td>{f.executable ? 'yes' : 'no'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {detail.files.length >= ANALYZE_CAPS.maxInventoryEntries ? (
+                <p className="muted">
+                  Only the first {ANALYZE_CAPS.maxInventoryEntries} files are listed; the rest were
+                  not recorded.
+                </p>
+              ) : null}
+            </section>
           ) : null}
-        </>
-      ) : null}
 
-      <div className="anchor" id="observed" />
-      <CapabilityPanel
-        findings={observedFindings}
-        analyzedAt={detail.analyzedAt}
-        permalinkFor={(f) =>
-          permalinkAtLine(detail.fullName, detail.commitSha, f.sourcePath, f.startLine)
-        }
-      />
+          <section className="doc-section spy-observed">
+            <div className="anchor" id="observed" />
+            <CapabilityPanel
+              findings={observedFindings}
+              analyzedAt={detail.analyzedAt}
+              permalinkFor={(f) =>
+                permalinkAtLine(detail.fullName, detail.commitSha, f.sourcePath, f.startLine)
+              }
+            />
 
-      <HiddenContentPanel
-        findings={hiddenFindings}
-        permalinkFor={(f) =>
-          permalinkAtLine(detail.fullName, detail.commitSha, f.sourcePath, f.startLine)
-        }
-      />
+            <HiddenContentPanel
+              findings={hiddenFindings}
+              permalinkFor={(f) =>
+                permalinkAtLine(detail.fullName, detail.commitSha, f.sourcePath, f.startLine)
+              }
+            />
 
-      <h2>What AgentDock does not check</h2>
-      <p className="muted">{CAPABILITY_INTRO}</p>
-      <ul className="notes muted">
-        {CAPABILITY_NOT_CHECKED.map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
+            <h2>What AgentDock does not check</h2>
+            <p className="muted">{CAPABILITY_INTRO}</p>
+            <ul className="notes muted">
+              {CAPABILITY_NOT_CHECKED.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
 
-      {/* Every relation here is a stored fact, said as what it is — a
+          <section className="doc-section spy-related">
+            {/* Every relation here is a stored fact, said as what it is — a
           directory under a plugin root, or the same repository — and never a
           similarity score. The last line hands the name to the search route,
           which already has a measured ranking (search.eval.test.ts), rather
           than ranking "similar" artifacts with a second, unmeasured one. */}
-      <h2 id="related">Related artifacts</h2>
-      {related.container || related.components.length > 0 || related.siblings.length > 0 ? (
-        <p className="muted">
-          Linked by directory: an artifact whose path sits under a plugin&apos;s root. A plugin.json
-          that points a component somewhere else is not followed, so such a component is not listed
-          here.
-        </p>
-      ) : null}
-      {related.container || related.components.length > 0 ? (
-        <ul className="notes">
-          {related.container ? (
-            <li>
-              Inside the plugin{' '}
-              <Link href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}>
-                {related.container.name}
-              </Link>
-            </li>
-          ) : null}
-          {related.components.map((c) => (
-            <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
-          ))}
-        </ul>
-      ) : null}
-      {related.siblings.length > 0 ? (
-        <>
-          <h3>Other components of the same plugin</h3>
-          <ul className="notes">
-            {related.siblings.map((c) => (
-              <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
-            ))}
-          </ul>
-        </>
-      ) : null}
-      {related.elsewhere.length > 0 ? (
-        <>
-          <h3>Elsewhere in {detail.fullName}</h3>
-          <ul className="notes">
-            {related.elsewhere.map((c) => (
-              <RelatedRow fullName={detail.fullName} item={c} key={`${c.type}:${c.sourcePath}`} />
-            ))}
-          </ul>
-        </>
-      ) : null}
-      <p className="muted">
-        {othersShown < othersTotal
-          ? `Showing ${othersShown} of the ${othersTotal} other listed artifacts in this repository, by type and name. `
-          : othersTotal === 0 && related.components.length === 0 && !related.container
-            ? 'No other listed artifact in this repository. '
-            : ''}
-        <Link href={`/r/${detail.fullName}`}>Every artifact in {detail.fullName}</Link>
-        {typeListing ? (
-          <>
-            {' · '}
-            <Link
-              href={searchHref({ q: detail.name, types: [detail.type], capabilities: [], page: 1 })}
-            >
-              Search {typeListing} for &ldquo;{detail.name}&rdquo;
-            </Link>
-          </>
-        ) : null}
-      </p>
+            <h2 id="related">Related artifacts</h2>
+            {related.container || related.components.length > 0 || related.siblings.length > 0 ? (
+              <p className="muted">
+                Linked by directory: an artifact whose path sits under a plugin&apos;s root. A
+                plugin.json that points a component somewhere else is not followed, so such a
+                component is not listed here.
+              </p>
+            ) : null}
+            {related.container || related.components.length > 0 ? (
+              <ul className="notes">
+                {related.container ? (
+                  <li>
+                    Inside the plugin{' '}
+                    <Link
+                      href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}
+                    >
+                      {related.container.name}
+                    </Link>
+                  </li>
+                ) : null}
+                {related.components.map((c) => (
+                  <RelatedRow
+                    fullName={detail.fullName}
+                    item={c}
+                    key={`${c.type}:${c.sourcePath}`}
+                  />
+                ))}
+              </ul>
+            ) : null}
+            {related.siblings.length > 0 ? (
+              <>
+                <h3>Other components of the same plugin</h3>
+                <ul className="notes">
+                  {related.siblings.map((c) => (
+                    <RelatedRow
+                      fullName={detail.fullName}
+                      item={c}
+                      key={`${c.type}:${c.sourcePath}`}
+                    />
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {related.elsewhere.length > 0 ? (
+              <>
+                <h3>Elsewhere in {detail.fullName}</h3>
+                <ul className="notes">
+                  {related.elsewhere.map((c) => (
+                    <RelatedRow
+                      fullName={detail.fullName}
+                      item={c}
+                      key={`${c.type}:${c.sourcePath}`}
+                    />
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            <p className="muted">
+              {othersShown < othersTotal
+                ? `Showing ${othersShown} of the ${othersTotal} other listed artifacts in this repository, by type and name. `
+                : othersTotal === 0 && related.components.length === 0 && !related.container
+                  ? 'No other listed artifact in this repository. '
+                  : ''}
+              <Link href={`/r/${detail.fullName}`}>Every artifact in {detail.fullName}</Link>
+              {typeListing ? (
+                <>
+                  {' · '}
+                  <Link
+                    href={searchHref({
+                      q: detail.name,
+                      types: [detail.type],
+                      capabilities: [],
+                      page: 1,
+                    })}
+                  >
+                    Search {typeListing} for &ldquo;{detail.name}&rdquo;
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          </section>
 
-      <h2 id="versions">Versions</h2>
-      <p className="muted">
-        One row per distinct content AgentDock stored for this file, latest first. Content that
-        returns to an earlier version moves that row back to the top, so this is what the file has
-        been, not every commit that touched it. GitHub keeps that list:{' '}
-        <a
-          href={historyHref(detail.fullName, detail.commitSha, detail.sourcePath)}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <ExternalIcon /> commits to this file, up to the one shown
-        </a>
-        .
-      </p>
-      <table className="files">
-        <thead>
-          <tr>
-            <th>Commit</th>
-            <th>Content</th>
-            <th>Recorded</th>
-            <th>Declared version</th>
-            <th>Read</th>
-            <th>Analyzed</th>
-          </tr>
-        </thead>
-        <tbody>
-          {history.versions.map((v) => (
-            <tr key={v.id}>
-              <td className="path">
-                <a
-                  href={permalink(detail.fullName, v.commitSha, detail.sourcePath)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {v.commitSha.slice(0, 7)}
-                </a>
-                {v.id === detail.packageVersionId ? <span className="muted"> — shown</span> : null}
-              </td>
-              {/* The value that makes this row distinct, shortened as a commit is. */}
-              <td className="path" title={v.contentHash}>
-                {v.contentHash.slice(0, 12)}
-              </td>
-              <td>{utc(v.ingestedAt)}</td>
-              <td>{v.declaredVersion ?? 'not declared'}</td>
-              <td>{v.parseStatus}</td>
-              <td>{v.analyzedAt ? 'yes' : 'not analyzed'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {history.total > history.versions.length ? (
-        <p className="muted">
-          Showing the latest {VERSION_HISTORY_LIMIT} of {history.total}; the rest are not listed.
-        </p>
-      ) : null}
+          <section className="doc-section spy-versions">
+            <h2 id="versions">Versions</h2>
+            <p className="muted">
+              One row per distinct content AgentDock stored for this file, latest first. Content
+              that returns to an earlier version moves that row back to the top, so this is what the
+              file has been, not every commit that touched it. GitHub keeps that list:{' '}
+              <a
+                href={historyHref(detail.fullName, detail.commitSha, detail.sourcePath)}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <ExternalIcon /> commits to this file, up to the one shown
+              </a>
+              .
+            </p>
+            <table className="files versions">
+              <thead>
+                <tr>
+                  <th>Commit</th>
+                  <th>Content</th>
+                  <th>Recorded</th>
+                  <th>Declared version</th>
+                  <th>Read</th>
+                  <th>Analyzed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.versions.map((v) => (
+                  <tr key={v.id}>
+                    <td className="path">
+                      <a
+                        href={permalink(detail.fullName, v.commitSha, detail.sourcePath)}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {v.commitSha.slice(0, 7)}
+                      </a>
+                      {v.id === detail.packageVersionId ? (
+                        <span className="muted"> — shown</span>
+                      ) : null}
+                    </td>
+                    {/* The value that makes this row distinct, shortened as a commit is. */}
+                    <td className="path" title={v.contentHash}>
+                      {v.contentHash.slice(0, 12)}
+                    </td>
+                    <td>{utc(v.ingestedAt)}</td>
+                    <td>{v.declaredVersion ?? 'not declared'}</td>
+                    <td>{v.parseStatus}</td>
+                    <td>{v.analyzedAt ? 'yes' : 'not analyzed'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {history.total > history.versions.length ? (
+              <p className="muted">
+                Showing the latest {VERSION_HISTORY_LIMIT} of {history.total}; the rest are not
+                listed.
+              </p>
+            ) : null}
+          </section>
 
-      <h2 id="file">File</h2>
-      <p className="muted">
-        An excerpt of{' '}
-        <a href={source} rel="noopener noreferrer" target="_blank">
-          {detail.sourcePath}
-        </a>{' '}
-        as published by {detail.fullName}, at commit {detail.commitSha.slice(0, 7)}.{' '}
-        {FILE_DISCLAIMER}
-      </p>
-      {/* The file is last on a long page and is itself long — a sample of 52
+          <section className="doc-section spy-file">
+            <h2 id="file">File</h2>
+            <p className="muted">
+              An excerpt of{' '}
+              <a href={source} rel="noopener noreferrer" target="_blank">
+                {detail.sourcePath}
+              </a>{' '}
+              as published by {detail.fullName}, at commit {detail.commitSha.slice(0, 7)}.{' '}
+              {FILE_DISCLAIMER}
+            </p>
+            {/* The file is last on a long page and is itself long — a sample of 52
           production artifacts had a median of 7 headings and a quarter had 14
           or more (2026-10-26) — and "how do I use it" is usually one of its
           sections, under the author's own title. Its headings, then, as links;
           below three there is nothing to navigate. AgentDock composes no install
           command from the text: 4 of those 52 bodies held a command, and none
           of the four was the artifact's own install. */}
-      {bodySections.length >= 3 ? (
-        <nav aria-label="Sections in this file" className="file-outline">
-          <p className="muted">Sections in this file, as its author titled them</p>
-          <ol>
-            {bodySections.map((h) => (
-              <li
-                className={
-                  h.depth > topDepth ? `outline-sub-${Math.min(h.depth - topDepth, 2)}` : undefined
-                }
-                key={h.href}
-              >
-                <a href={h.href}>{h.text}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      ) : null}
-      <div className="body">
-        {detail.body ? <SkillBody markdown={detail.body} /> : <p className="muted">No body.</p>}
+            {bodySections.length >= 3 ? (
+              <nav aria-label="Sections in this file" className="file-outline">
+                <p className="muted">Sections in this file, as its author titled them</p>
+                <ol>
+                  {bodySections.map((h) => (
+                    <li
+                      className={
+                        h.depth > topDepth
+                          ? `outline-sub-${Math.min(h.depth - topDepth, 2)}`
+                          : undefined
+                      }
+                      key={h.href}
+                    >
+                      <a href={h.href}>{h.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            ) : null}
+            <div className="body">
+              {detail.body ? (
+                <SkillBody markdown={detail.body} />
+              ) : (
+                <p className="muted">No body.</p>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </>
   );

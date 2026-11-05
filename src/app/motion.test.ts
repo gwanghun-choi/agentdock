@@ -212,27 +212,14 @@ describe('every keyframe animation is inside the no-preference block', () => {
 });
 
 /**
- * The count-up reads a value the browser interpolates, and it reads it from a
- * pseudo-element. A pseudo-element inherits from its originating element rather
- * than sharing its declarations, so `inherits: false` — the registration a
- * reader reaches for first, and the one this file had — leaves `--count` at its
- * initial value on every frame and the page renders a permanent 0. Measured
- * exactly that way in Chromium before the fix.
+ * The count-up was a CSS counter, which has no grouping style, and its own marker said
+ * to delete it above ten thousand artifacts: production passed forty thousand, and read
+ * 44903 beside every other number on the page with a comma. Gone rather than off: the
+ * number is the text in the markup (IndexFlow.test.tsx), and nothing may draw over it.
  */
-describe('the animated count', () => {
-  it('registers --count as inheriting', () => {
-    const rule = atRuleBody(code, '@property --count');
-
-    expect(rule).not.toBe('');
-    expect(rule).toMatch(/inherits:\s*true/);
-    expect(rule).toMatch(/syntax:\s*"<integer>"/);
-  });
-
-  it('takes the number it counts to from the element, not from the stylesheet', () => {
-    // --target is set by IndexFlow.tsx from page.tsx's `indexed`, the grouped
-    // count (countVisibleByType: visible + hidden). A literal here
-    // would be a hardcoded corpus size that rots the moment the corpus grows —
-    // the exact failure the scope sentence on /artifacts was rewritten to avoid.
-    expect(code).toMatch(/--count:\s*var\(--target\)/);
+describe('the indexed count', () => {
+  it('is not drawn by the stylesheet', () => {
+    expect(code).not.toMatch(/@property --count/);
+    expect(code).not.toMatch(/counter\(indexed\)/);
   });
 });

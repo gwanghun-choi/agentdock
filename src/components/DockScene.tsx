@@ -19,9 +19,12 @@ import {
   CanvasTexture,
   CatmullRomCurve3,
   Color,
+  CylinderGeometry,
   type DirectionalLight,
+  DoubleSide,
   ExtrudeGeometry,
   type Group,
+  IcosahedronGeometry,
   type InstancedMesh,
   LatheGeometry,
   Mesh,
@@ -37,6 +40,8 @@ import {
   Scene,
   Shape,
   type Sprite,
+  type Texture,
+  TorusGeometry,
   TubeGeometry,
   Vector2,
   Vector3,
@@ -55,13 +60,17 @@ import {
   RING,
 } from '@/components/dockBoard';
 import {
+  BEAM_FRAGMENT,
   CABLE_FRAGMENT,
   CABLE_VERTEX,
+  CORE_FRAGMENT,
+  CORE_VERTEX,
   DUST_VERTEX,
   FLOOR_FRAGMENT,
   FLOOR_VERTEX,
   MOTE_VERTEX,
   POINT_FRAGMENT,
+  TRAIL_FRAGMENT,
 } from '@/components/dockShaders';
 
 /**
@@ -94,6 +103,7 @@ const PIXEL_BUDGET = 3_700_000; // about 2560×1440: past it the cost is pixels,
 const ease = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
 const approach = (rate: number, delta: number) => 1 - Math.exp(-rate * delta);
 const scratch = new Object3D();
+type LutUniforms = { dfgLUT?: { value?: Texture | null } };
 
 /** A flat rounded rectangle, lying on the board, its top at y = height. */
 function plate(width: number, depth: number, radius: number, height: number) {
@@ -144,35 +154,6 @@ function haloTexture() {
   return new CanvasTexture(canvas);
 }
 
-/** The kind's name and real count, in the page's own face. */
-function labelTexture(text: string, count: number) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 768;
-  canvas.height = 192;
-  const context = canvas.getContext('2d');
-  if (context) {
-    const face = getComputedStyle(document.body).fontFamily;
-    const number = count.toLocaleString('en-US');
-    context.textBaseline = 'middle';
-    context.font = `600 84px ${face}`;
-    const nameWidth = context.measureText(text).width;
-    context.font = `400 84px ${face}`;
-    const numberWidth = context.measureText(number).width;
-    const start = 384 - (nameWidth + 30 + numberWidth) / 2;
-    context.shadowColor = 'rgba(0,0,0,0.9)';
-    context.shadowBlur = 16;
-    context.fillStyle = '#ffffff';
-    context.font = `600 84px ${face}`;
-    context.fillText(text, start, 98);
-    context.fillStyle = 'rgba(255,255,255,0.72)';
-    context.font = `400 84px ${face}`;
-    context.fillText(number, start + nameWidth + 30, 98);
-  }
-  const texture = new CanvasTexture(canvas);
-  texture.anisotropy = 4;
-  return texture;
-}
-
 /**
  * What metal reflects: a dark room with one panel per kind and a strip overhead.
  * No HDR file to download and license; the hues on the ring are the page's own.
@@ -200,100 +181,281 @@ function environmentScene() {
   return room;
 }
 
-/** Each kind's own silhouette, on top of its stack, so six docks read as six things. */
+/**
+ * One plate of a kind's figure. The plates are still the count (dockBoard.ts,
+ * plates()): one and one per doubling, in every figure. What differs is what a
+ * plate is, so six kinds read as six things by outline alone, with the colour off:
+ * a skill's plates are the leaves of a fanned book, a plugin's the hex modules of a
+ * connector, a server's the units of a rack, a command's the steps up to a terminal,
+ * a hook's the turns of a coil, a subagent's the nodes of a cluster.
+ */
+function plateGeometry(kind: DockKind) {
+  switch (kind) {
+    case 'skill': {
+      const leaf = new BoxGeometry(0.03, 1.12, 1.02);
+      leaf.translate(0, 0.56, 0);
+      return leaf;
+    }
+    case 'plugin':
+      return new CylinderGeometry(0.58, 0.58, PLATE_HEIGHT * 0.72, 6);
+    case 'mcp_server':
+      return plate(0.98, 0.72, 0.04, PLATE_HEIGHT * 0.72);
+    case 'command':
+      return plate(1.3, 0.22, 0.03, 0.06);
+    case 'hook': {
+      const turn = new TorusGeometry(0.46, 0.042, 8, 36);
+      turn.rotateX(Math.PI / 2);
+      return turn;
+    }
+    case 'agent':
+      return new IcosahedronGeometry(0.13, 1);
+  }
+}
+
+const FIGURE_FLOOR = DECK_TOP + 0.05;
+const AGENT_CENTRE = 1.05;
+const COMMAND_STEP = 0.075;
+/** Figures stand a size over their sockets, so a figure and not the deck is what is seen. */
+const FIGURE_SCALE = 1.2;
+
+/** A cluster's nodes on a sphere, evenly, at any count: the golden-angle spiral. */
+function agentNode(i: number, n: number, reach: number) {
+  const rise = 1 - (2 * (i + 0.5)) / n;
+  const round = Math.sqrt(1 - rise * rise);
+  const turn = i * 2.399963;
+  return [Math.cos(turn) * round * reach, rise * reach, Math.sin(turn) * round * reach] as const;
+}
+
+/**
+ * Where plate i of n stands, into `scratch`. `open` is the dock's answer to a reader
+ * (0 to 1): the fan spreads, the modules part, the steps rise, the coil stretches,
+ * the cluster opens. `drop` is its height above that during the entrance.
+ */
+function placePlate(kind: DockKind, i: number, n: number, open: number, drop: number) {
+  const along = n > 1 ? i / (n - 1) : 0.5;
+  scratch.rotation.set(0, 0, 0);
+  scratch.scale.setScalar(1);
+  switch (kind) {
+    case 'skill':
+      scratch.position.set(0, FIGURE_FLOOR + drop, 0);
+      scratch.rotation.z = (along - 0.5) * (2.1 + open * 0.7);
+      break;
+    case 'plugin': {
+      const narrow = i % 2 ? 0.8 : 1;
+      scratch.position.set(0, FIGURE_FLOOR + 0.04 + i * PLATE_HEIGHT * (1 + open * 0.5) + drop, 0);
+      scratch.rotation.y = (i * Math.PI) / 6;
+      scratch.scale.set(narrow, 1, narrow);
+      break;
+    }
+    case 'mcp_server':
+      scratch.position.set(0, FIGURE_FLOOR + i * PLATE_HEIGHT + drop, 0);
+      break;
+    case 'command':
+      scratch.position.set(
+        0,
+        FIGURE_FLOOR + i * COMMAND_STEP * (1 + open * 0.3) + drop,
+        0.52 - along,
+      );
+      break;
+    case 'hook':
+      scratch.position.set(
+        Math.sin(i * 0.9) * 0.03,
+        FIGURE_FLOOR + 0.05 + i * PLATE_HEIGHT * (1 + open * 0.6) + drop,
+        0,
+      );
+      scratch.rotation.x = i % 2 ? 0.09 : -0.09;
+      break;
+    case 'agent': {
+      const [x, y, z] = agentNode(i, n, 0.78 + open * 0.22);
+      scratch.position.set(x, AGENT_CENTRE + y + drop, z);
+      break;
+    }
+  }
+}
+
+/** The height the fixed parts of a figure stand on, given how far it has opened. */
+function crownBase(kind: DockKind, n: number, open: number) {
+  switch (kind) {
+    case 'plugin':
+      return FIGURE_FLOOR + 0.04 + n * PLATE_HEIGHT * (1 + open * 0.5);
+    case 'mcp_server':
+      return FIGURE_FLOOR + n * PLATE_HEIGHT;
+    case 'command':
+      return FIGURE_FLOOR + n * COMMAND_STEP * (1 + open * 0.3);
+    case 'hook':
+      return FIGURE_FLOOR + 0.05 + n * PLATE_HEIGHT * (1 + open * 0.6);
+    default:
+      return FIGURE_FLOOR;
+  }
+}
+
+/** The figure's highest point above its crown base: where its label stands. */
+const CROWN_REACH: Record<DockKind, number> = {
+  skill: 1.75,
+  plugin: 0.62,
+  mcp_server: 0.55,
+  command: 0.95,
+  hook: 1.02,
+  agent: 2.15,
+};
+
+/** The fixed parts each kind stands on or wears, with what turns in `spin`. */
 function Crown({
   kind,
+  count,
   paint,
+  glow,
+  spin,
 }: {
   kind: DockKind;
+  count: number;
   paint: (material: MeshStandardMaterial | null) => void;
+  glow: (material: MeshStandardMaterial | null) => void;
+  spin: (group: Group | null) => void;
 }) {
-  const material = (
+  const metal = (
     <meshStandardMaterial
       color="#ffffff"
       emissiveIntensity={0}
-      metalness={0.55}
+      metalness={0.6}
       ref={paint}
-      roughness={0.32}
+      roughness={0.3}
     />
   );
+  const light = <meshStandardMaterial color="#14181b" metalness={0.2} ref={glow} roughness={0.4} />;
+  // A cluster's spokes, at the same spiral as its nodes: one draw for all of them.
+  const spokes = useMemo(() => {
+    const ends = new Float32Array(count * 6);
+    for (let i = 0; i < count; i++) {
+      const [x, y, z] = agentNode(i, count, 0.8);
+      ends.set([0, 0, 0, x, y, z], i * 6);
+    }
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(ends, 3));
+    return geometry;
+  }, [count]);
+  useEffect(() => () => spokes.dispose(), [spokes]);
+
   const parts: Record<DockKind, ReactNode> = {
-    // An open book.
+    // The fan's spine, and what it holds turning above it.
     skill: (
       <>
-        <mesh castShadow position={[-0.27, 0.13, 0]} rotation-z={0.42}>
-          <boxGeometry args={[0.58, 0.05, 0.72]} />
-          {material}
+        <mesh castShadow position-y={0.05}>
+          <boxGeometry args={[0.13, 0.1, 1.14]} />
+          {metal}
         </mesh>
-        <mesh castShadow position={[0.27, 0.13, 0]} rotation-z={-0.42}>
-          <boxGeometry args={[0.58, 0.05, 0.72]} />
-          {material}
-        </mesh>
+        <group position-y={1.5} ref={spin}>
+          <mesh rotation={[0.5, 0, 0.3]}>
+            <octahedronGeometry args={[0.17, 0]} />
+            {light}
+          </mesh>
+        </group>
       </>
     ),
-    // A connector: a hex body and two pins.
+    // The connector's two pins, and a socket on either side of the column.
     plugin: (
       <>
-        <mesh castShadow position-y={0.14}>
-          <cylinderGeometry args={[0.36, 0.36, 0.28, 6]} />
-          {material}
-        </mesh>
-        <mesh castShadow position={[-0.14, 0.42, 0]}>
-          <boxGeometry args={[0.09, 0.3, 0.09]} />
-          {material}
-        </mesh>
-        <mesh castShadow position={[0.14, 0.42, 0]}>
-          <boxGeometry args={[0.09, 0.3, 0.09]} />
-          {material}
-        </mesh>
-      </>
-    ),
-    // A rack of three units.
-    mcp_server: (
-      <>
-        {[0.08, 0.27, 0.46].map((y) => (
-          <mesh castShadow key={y} position-y={y}>
-            <boxGeometry args={[0.72, 0.14, 0.48]} />
-            {material}
+        {[-0.15, 0.15].map((x) => (
+          <mesh castShadow key={x} position={[x, 0.24, 0]}>
+            <boxGeometry args={[0.11, 0.44, 0.11]} />
+            {metal}
           </mesh>
+        ))}
+        {[-0.66, 0.66].map((x) => (
+          <group key={x} position={[x, -count * PLATE_HEIGHT * 0.45, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[0.28, 0.34, 0.36]} />
+              {metal}
+            </mesh>
+            <mesh position-x={Math.sign(x) * 0.15}>
+              <boxGeometry args={[0.02, 0.2, 0.2]} />
+              {light}
+            </mesh>
+          </group>
         ))}
       </>
     ),
-    // A prompt: a chevron and its cursor, standing up.
-    command: (
+    // The rack's lit edges, and what it serves: three nodes on arms, turning overhead.
+    mcp_server: (
       <>
-        <mesh castShadow position={[-0.14, 0.42, 0]} rotation-z={-0.72}>
-          <boxGeometry args={[0.42, 0.1, 0.14]} />
-          {material}
-        </mesh>
-        <mesh castShadow position={[-0.14, 0.17, 0]} rotation-z={0.72}>
-          <boxGeometry args={[0.42, 0.1, 0.14]} />
-          {material}
-        </mesh>
-        <mesh castShadow position={[0.27, 0.08, 0]}>
-          <boxGeometry args={[0.36, 0.1, 0.14]} />
-          {material}
-        </mesh>
+        {[-0.38, 0.38].map((x) => (
+          <mesh key={x} position={[x, (-count * PLATE_HEIGHT) / 2, 0.37]}>
+            <boxGeometry args={[0.05, Math.max(0.1, count * PLATE_HEIGHT - 0.04), 0.02]} />
+            {light}
+          </mesh>
+        ))}
+        <group position-y={0.26} ref={spin}>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.05, 0.08, 0.5, 8]} />
+            {metal}
+          </mesh>
+          {[0, 1, 2].map((i) => {
+            const angle = (i * Math.PI * 2) / 3;
+            return (
+              <group key={i} rotation-y={angle}>
+                <mesh position={[0.36, 0.2, 0]} rotation-z={Math.PI / 2}>
+                  <cylinderGeometry args={[0.014, 0.014, 0.72, 5]} />
+                  {metal}
+                </mesh>
+                <mesh position={[0.74, 0.2, 0]}>
+                  <sphereGeometry args={[0.09, 12, 8]} />
+                  {light}
+                </mesh>
+              </group>
+            );
+          })}
+        </group>
       </>
     ),
-    // A hook on its shank.
+    // What the steps lead up to: a screen, leaning back, showing a prompt.
+    command: (
+      <group position={[0, 0.42, -0.5]} rotation-x={-0.14}>
+        <mesh castShadow>
+          <boxGeometry args={[1.28, 0.86, 0.06]} />
+          {metal}
+        </mesh>
+        <mesh position-z={0.035}>
+          <boxGeometry args={[1.16, 0.74, 0.01]} />
+          <meshStandardMaterial color="#0c0f11" metalness={0.1} roughness={0.25} />
+        </mesh>
+        <mesh position={[-0.3, 0.1, 0.05]} rotation-z={-0.72}>
+          <boxGeometry args={[0.3, 0.07, 0.015]} />
+          {light}
+        </mesh>
+        <mesh position={[-0.3, -0.08, 0.05]} rotation-z={0.72}>
+          <boxGeometry args={[0.3, 0.07, 0.015]} />
+          {light}
+        </mesh>
+        <mesh position={[0.08, -0.2, 0.05]}>
+          <boxGeometry args={[0.3, 0.07, 0.015]} />
+          {light}
+        </mesh>
+      </group>
+    ),
+    // The hook itself, over the coil, and an event ring running up through it.
     hook: (
       <>
-        <mesh castShadow position-y={0.33} rotation-z={Math.PI * 0.95}>
-          <torusGeometry args={[0.26, 0.07, 10, 28, Math.PI * 1.35]} />
-          {material}
+        <mesh castShadow position={[0, 0.4, 0]} rotation-z={Math.PI * 0.95}>
+          <torusGeometry args={[0.28, 0.075, 10, 28, Math.PI * 1.35]} />
+          {metal}
         </mesh>
-        <mesh castShadow position={[0.26, 0.58, 0]}>
-          <boxGeometry args={[0.13, 0.5, 0.13]} />
-          {material}
+        <mesh castShadow position={[0.28, 0.72, 0]}>
+          <boxGeometry args={[0.14, 0.56, 0.14]} />
+          {metal}
         </mesh>
+        <group ref={spin}>
+          <mesh rotation-x={Math.PI / 2}>
+            <torusGeometry args={[0.56, 0.016, 6, 40]} />
+            {light}
+          </mesh>
+        </group>
       </>
     ),
-    // A body of its own, with its own orbit.
+    // The cluster's core, the spokes to its nodes, and one orbit round all of them.
     agent: (
-      <>
-        <mesh castShadow position-y={0.32}>
-          <icosahedronGeometry args={[0.28, 0]} />
+      <group position-y={AGENT_CENTRE - FIGURE_FLOOR} ref={spin}>
+        <mesh castShadow>
+          <icosahedronGeometry args={[0.3, 0]} />
           <meshStandardMaterial
             color="#ffffff"
             flatShading
@@ -302,11 +464,14 @@ function Crown({
             roughness={0.3}
           />
         </mesh>
-        <mesh position-y={0.32} rotation-x={1.25}>
-          <torusGeometry args={[0.45, 0.022, 8, 48]} />
-          {material}
+        <lineSegments geometry={spokes}>
+          <lineBasicMaterial color="#8f9ba1" />
+        </lineSegments>
+        <mesh rotation-x={1.25}>
+          <torusGeometry args={[0.98, 0.016, 6, 56]} />
+          {light}
         </mesh>
-      </>
+      </group>
     ),
   };
   return <>{parts[kind]}</>;
@@ -327,10 +492,12 @@ function Station({
   counts,
   want,
   changed,
+  tags,
 }: {
   counts: DockCounts;
   want: RefObject<Want>;
   changed: string;
+  tags: RefObject<(HTMLElement | null)[]>;
 }) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
@@ -399,7 +566,7 @@ function Station({
 
     return {
       socket: plate(DOCK_WIDTH + 0.3, DOCK_DEPTH + 0.3, 0.1, 0.05),
-      stack: plate(DOCK_WIDTH, DOCK_DEPTH, 0.08, PLATE_HEIGHT * 0.72),
+      figures: DOCKS.map((dock) => plateGeometry(dock.id)),
       deck: turned(
         [
           [OUTER - 2, -0.12],
@@ -426,12 +593,12 @@ function Station({
         48,
       ),
       plusBar: plate(1.3, 0.34, 0.05, 0.3),
+      lattice: new IcosahedronGeometry(0.84, 1),
       swarm,
       dust: dustCloud(1000, 8, 42, 2.6),
       near: dustCloud(42, 2, 12, 3.8),
       cables,
       halo: haloTexture(),
-      labels: DOCKS.map((dock) => labelTexture(dock.label, counts[dock.id] ?? 0)),
     };
   }, [counts]);
 
@@ -473,6 +640,48 @@ function Station({
       })),
     [],
   );
+  const coreUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uColor: { value: new Color(SIGNAL) },
+      uRim: { value: 0.9 },
+      uFill: { value: 0.45 },
+      uBands: { value: 0.9 },
+    }),
+    [],
+  );
+  const shellUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uColor: { value: new Color(SIGNAL) },
+      uRim: { value: 0.7 },
+      uFill: { value: 0 },
+      uBands: { value: 0 },
+    }),
+    [],
+  );
+  const beamUniforms = useMemo(
+    () => ({ uColor: { value: new Color(SIGNAL) }, uStrength: { value: 0 } }),
+    [],
+  );
+  const pickUniforms = useMemo(
+    () => ({ uColor: { value: new Color(SIGNAL) }, uStrength: { value: 0 } }),
+    [],
+  );
+  const trailUniforms = useMemo(
+    () =>
+      [
+        { hue: '#8fa3ad', speed: 0.05, laps: 1 },
+        { hue: SIGNAL, speed: -0.035, laps: 2 },
+        { hue: '#6ed4b8', speed: 0.028, laps: 1 },
+      ].map(({ hue, speed, laps }) => ({
+        uTime: { value: 0 },
+        uSpeed: { value: speed },
+        uLaps: { value: laps },
+        uHue: { value: new Color(hue) },
+      })),
+    [],
+  );
   const quiet = useMemo(
     () => DOCKS.map((dock) => new Color('#454f55').lerp(new Color(dock.hue), 0.5)),
     [],
@@ -480,6 +689,10 @@ function Station({
   const hue = useMemo(() => DOCKS.map((dock) => new Color(dock.hue)), []);
   const dim = useMemo(() => new Color('#262c30'), []);
   const goal = useMemo(() => new Color(), []);
+  const signal = useMemo(() => new Color(SIGNAL), []);
+  const tint = useMemo(() => new Color(SIGNAL), []);
+  const anchor = useMemo(() => new Vector3(), []);
+  const shade = useMemo(() => new Color(), []);
   const ray = useMemo(() => new Raycaster(), []);
   const lightPlane = useMemo(() => new Plane(new Vector3(0, 1, 0), -2), []);
 
@@ -487,7 +700,9 @@ function Station({
   const plus = useRef<Group>(null);
   const gyroA = useRef<Mesh>(null);
   const gyroB = useRef<Mesh>(null);
-  const farRing = useRef<Mesh>(null);
+  const gyroC = useRef<Group>(null);
+  const lattice = useRef<Group>(null);
+  const pick = useRef<Mesh>(null);
   const far = useRef<Group>(null);
   const nearDust = useRef<Group>(null);
   const key = useRef<DirectionalLight>(null);
@@ -500,8 +715,9 @@ function Station({
   const stacks = useRef<(InstancedMesh | null)[]>([]);
   const stackPaint = useRef<(MeshStandardMaterial | null)[]>([]);
   const crownPaint = useRef<MeshStandardMaterial[][]>(DOCKS.map(() => []));
+  const crownGlow = useRef<MeshStandardMaterial[][]>(DOCKS.map(() => []));
+  const spins = useRef<(Group | null)[]>([]);
   const halos = useRef<(Sprite | null)[]>([]);
-  const labels = useRef<(Sprite | null)[]>([]);
   const hit = useRef<(Mesh | null)[]>([]);
 
   // What the reader is doing, written by the listeners and read per frame.
@@ -529,6 +745,7 @@ function Station({
     zoom: 0,
     focusLit: 0,
     lit: DOCKS.map(() => 0),
+    opened: DOCKS.map(() => -1),
     shift: 0,
     light: new Vector3(3, 2, 3),
     frames: 0,
@@ -538,7 +755,7 @@ function Station({
     looping: false,
     drawn: 0,
   });
-  const frame = useRef({ distance: 30, shift: 0, pickedShift: 0, closeIn: 0 });
+  const frame = useRef({ distance: 30, shift: 0, pickedShift: 0, closeIn: 0, edge: 0 });
 
   // Removed on unmount, because R3F then forces a context loss of its own, and a
   // scene closed by narrowing the window must be able to come back when it widens.
@@ -568,6 +785,22 @@ function Station({
     [parts],
   );
 
+  // Two things in three are one object per page, not per renderer: the geometry every
+  // Sprite shares, and the lookup table every standard material samples. Each renderer
+  // that uses one hangs a `dispose` listener on it holding its GL context, and nothing
+  // disposes either, so each visit to this page kept its renderer for good: 31 live WebGL
+  // contexts and 8 MB more heap after 30 returns (measured 2026-11-06, heap snapshot).
+  // The next scene uploads them again, and there is only ever one canvas.
+  useEffect(() => {
+    const sprites = coreHalo.current?.geometry;
+    const metal = gyroA.current?.material;
+    return () => {
+      sprites?.dispose();
+      const compiled = metal && (gl.properties.get(metal) as { uniforms?: LutUniforms });
+      compiled?.uniforms?.dfgLUT?.value?.dispose();
+    };
+  }, [gl]);
+
   // A paused or returning reader skips the entrance: it is motion they refused.
   useLayoutEffect(() => {
     if (want.current.paused) now.current.enter = ENTRANCE;
@@ -575,10 +808,15 @@ function Station({
     scratch.updateMatrix();
     for (const stack of stacks.current) {
       if (!stack) continue;
-      for (let i = 0; i < stack.count; i++) stack.setMatrixAt(i, scratch.matrix);
+      for (let i = 0; i < stack.count; i++) {
+        stack.setMatrixAt(i, scratch.matrix);
+        // Each plate a step apart in tone, or a fan of them reads as one solid block.
+        shade.setScalar(0.62 + (0.38 * (i + 1)) / stack.count);
+        stack.setColorAt(i, shade);
+      }
     }
     scratch.scale.setScalar(1);
-  }, [want]);
+  }, [want, shade]);
 
   useEffect(() => {
     const pmrem = new PMREMGenerator(gl);
@@ -710,7 +948,9 @@ function Station({
     const hero = gl.domElement.closest('.hero');
     const edge = hero?.querySelector('.hero-copy')?.getBoundingClientRect().right ?? size.width / 2;
     const free = size.width - edge;
-    const radiusPixels = Math.min(free * 0.5, size.height * 0.62);
+    // 0.44 of the free width, not half: perspective draws the near side wider than the
+    // ring's radius, and at 0.5 the dock turning past the right edge was cut in half.
+    const radiusPixels = Math.min(free * 0.44, size.height * 0.56);
     const tangent = Math.tan((STAGE_FOV * Math.PI) / 360);
     // Picked, the dock stands between the words and the panel, and comes only as
     // close as that gap allows: the panel must never cover what it describes.
@@ -723,6 +963,7 @@ function Station({
       shift: edge + free * 0.5 - size.width / 2,
       pickedShift: panelLeft - 8.5 * rem - size.width / 2,
       closeIn: 0.34 * Math.min(1, gap / (14 * rem)),
+      edge,
     };
     camera.fov = STAGE_FOV;
     invalidate();
@@ -813,17 +1054,14 @@ function Station({
       nearDust.current.position.y = state.y * 0.7;
       nearDust.current.rotation.y = state.time * 0.02;
     }
-    if (farRing.current) {
-      farRing.current.rotation.z = state.time * -0.06;
-      farRing.current.rotation.x = Math.PI / 2 + 0.1 + state.y * 0.02;
-    }
+    for (const uniforms of trailUniforms) uniforms.uTime.value = state.time;
 
     // The hub: the one thing always in the signal colour.
     const glow = arrival * (1 + state.searching * 0.8 + reader.burst * 0.7);
     if (plus.current) {
       plus.current.rotation.y = state.time * 0.35 + (1 - arrival) * 2.6;
       plus.current.position.y = HUB_Y + Math.sin(state.time * 0.8) * 0.06;
-      plus.current.scale.setScalar(arrival * (1 + state.searching * 0.12));
+      plus.current.scale.setScalar(0.7 * arrival * (1 + state.searching * 0.12));
     }
     if (gyroA.current) {
       gyroA.current.rotation.x = 1.15 + state.time * 0.3;
@@ -833,6 +1071,26 @@ function Station({
       gyroB.current.rotation.x = -0.6 - state.time * 0.22;
       gyroB.current.rotation.z = state.time * 0.26;
     }
+    if (gyroC.current) {
+      gyroC.current.rotation.y = -state.time * 0.14 - reader.burst * 0.5;
+      gyroC.current.rotation.x = 0.16 + state.y * 0.04;
+    }
+    if (lattice.current) {
+      lattice.current.rotation.y = state.time * 0.22;
+      lattice.current.rotation.x = state.time * 0.11;
+    }
+    // The core takes the colour of whatever the reader has lit, and gives it back.
+    const tinted = Math.max(flownIndex, litIndex);
+    tint.lerp(tinted >= 0 ? hue[tinted] : signal, approach(4, delta));
+    coreUniforms.uColor.value.copy(tint);
+    shellUniforms.uColor.value.copy(tint);
+    beamUniforms.uColor.value.copy(tint);
+    coreUniforms.uTime.value = state.time;
+    shellUniforms.uTime.value = state.time;
+    coreUniforms.uFill.value = 0.4 + reader.burst * 0.7 + state.searching * 0.35;
+    beamUniforms.uStrength.value = arrival * (0.1 + state.searching * 0.42 + reader.burst * 0.6);
+    if (coreHalo.current) coreHalo.current.material.color.copy(tint);
+    if (coreLight.current) coreLight.current.color.copy(tint);
     if (coreHalo.current) {
       coreHalo.current.scale.setScalar(5.5 + glow * 3.4);
       coreHalo.current.material.opacity = 0.46 * glow;
@@ -848,36 +1106,46 @@ function Station({
     DOCKS.forEach((dock, i) => {
       const stack = stacks.current[i];
       const delay = i * 0.1 + 0.5;
-      if (entering && stack) {
-        for (let p = 0; p < stack.count; p++) {
-          const t = ease((state.enter - delay - p * 0.04) / 0.6);
-          scratch.position.set(0, DECK_TOP + 0.05 + p * PLATE_HEIGHT + (1 - t) * 1.6, 0);
-          scratch.scale.setScalar(t > 0 ? 1 : 0);
-          scratch.updateMatrix();
-          stack.setMatrixAt(p, scratch.matrix);
-        }
-        stack.instanceMatrix.needsUpdate = true;
-      }
       const arrived = ease((state.enter - delay - 0.5) / 0.6);
       const target = litIndex === i ? 1 : litIndex < 0 ? 0 : -1;
       state.lit[i] += (target - state.lit[i]) * approach(9, delta);
       const value = state.lit[i];
       litMax = Math.max(litMax, value);
       const up = Math.max(0, value);
+      const n = plates(counts[dock.id]);
+
+      // The plates move only while they arrive or answer: at most 16 matrices, and none
+      // at all on a frame where nothing about this figure changed.
+      if (stack && (entering || Math.abs(state.opened[i] - up) > 0.001)) {
+        for (let p = 0; p < stack.count; p++) {
+          const t = ease((state.enter - delay - p * 0.04) / 0.6);
+          placePlate(dock.id, p, stack.count, up, (1 - t) * 1.6);
+          if (t <= 0) scratch.scale.setScalar(0);
+          scratch.updateMatrix();
+          stack.setMatrixAt(p, scratch.matrix);
+        }
+        stack.instanceMatrix.needsUpdate = true;
+        state.opened[i] = up;
+      }
 
       const lift = docks.current[i];
-      if (lift) lift.position.y = up * 0.16;
+      // Scaled about the deck's level, so a figure's foot stays on its socket.
+      if (lift) lift.position.y = DECK_TOP * (1 - FIGURE_SCALE) + up * 0.12;
       const crown = crowns.current[i];
+      const base = crownBase(dock.id, n, up);
       if (crown) {
-        crown.rotation.y = state.time * 0.3 + i + up * 0.7;
-        crown.position.y =
-          DECK_TOP +
-          0.05 +
-          plates(counts[dock.id]) * PLATE_HEIGHT +
-          0.1 +
-          Math.sin(state.time * 0.9 + i) * 0.04 +
-          (1 - arrived) * 1.6;
-        crown.scale.setScalar(arrived * (1 + up * 0.28));
+        crown.position.y = base + (1 - arrived) * 1.6;
+        crown.scale.setScalar(arrived);
+      }
+      const spin = spins.current[i];
+      if (spin) {
+        if (dock.id === 'hook') {
+          // Up through the coil, from the socket to the hook, on the drift's clock.
+          spin.position.y = (((state.time * 0.3 + i * 0.2) % 1) - 1) * (base - FIGURE_FLOOR);
+        } else {
+          spin.rotation.y = state.time * 0.45 + i + up * 1.1;
+        }
+        if (dock.id === 'agent' && stack) stack.rotation.y = spin.rotation.y;
       }
       goal.copy(quiet[i]);
       if (value > 0) goal.lerp(hue[i], value);
@@ -894,16 +1162,40 @@ function Station({
         material.emissive.copy(hue[i]);
         material.emissiveIntensity = 0.06 + up * 0.28;
       }
+      for (const material of crownGlow.current[i]) {
+        material.emissive.copy(hue[i]);
+        material.emissiveIntensity = value < 0 ? 0.5 + value * 0.42 : 0.9 + up * 0.9;
+      }
       const halo = halos.current[i];
       if (halo) {
         halo.scale.setScalar(2.6 + up * 2.6);
         halo.material.opacity = arrived * (0.08 + up * 0.42) * (value < 0 ? 1 + value * 0.8 : 1);
       }
-      const label = labels.current[i];
-      if (label) {
-        const high = DECK_TOP + plates(counts[dock.id]) * PLATE_HEIGHT + 1.32;
-        label.position.y = high + up * 0.28;
-        label.material.opacity = arrived * (value < 0 ? 1 + value * 0.68 : 1);
+      // The name stands over the figure in the page's own type, always in front of the
+      // scene and never off the side of the stage: as a sprite it went behind whatever
+      // turned past it (measured 2026-11-06: "Hooks 495" under its own hook, "Subagents
+      // 4,79" cut by the window at 1920).
+      const tag = tags.current[i];
+      if (tag) {
+        const c = Math.cos(state.theta);
+        const s = Math.sin(state.theta);
+        const reach = 0.72 + 0.28 * arrival;
+        anchor
+          .set(
+            (dock.x * c + dock.z * s) * reach,
+            ((base + CROWN_REACH[dock.id]) * FIGURE_SCALE + up * 0.12) * reach,
+            (-dock.x * s + dock.z * c) * reach,
+          )
+          .project(camera);
+        const half = tag.offsetWidth / 2;
+        const x = Math.min(
+          size.width - half - 8,
+          Math.max(frameNow.edge + half + 8, ((anchor.x + 1) / 2) * size.width),
+        );
+        const y = Math.max(tag.offsetHeight + 8, ((1 - anchor.y) / 2) * size.height);
+        tag.style.transform = `translate3d(${x - half}px, ${y - tag.offsetHeight - 6}px, 0)`;
+        tag.style.opacity = String(arrived * (value < 0 ? 1 + value * 0.68 : 1));
+        tag.dataset.lit = up > 0.5 ? 'true' : 'false';
       }
       moteUniforms.uLit.value[i] = value;
       const cable = cableUniforms[i];
@@ -917,7 +1209,18 @@ function Station({
       state.focusLit += (litMax - state.focusLit) * approach(6, delta);
       const dock = DOCKS[Math.max(flownIndex, litIndex)] ?? DOCKS[0];
       focusLight.current.position.set(dock.x, 2.2, dock.z);
-      focusLight.current.intensity = state.focusLit * 9;
+      focusLight.current.intensity = state.focusLit * 5;
+    }
+
+    // One beam, on whichever dock the reader has: in the ring, so it turns with it.
+    if (pick.current) {
+      const at = DOCKS[Math.max(flownIndex, litIndex)];
+      if (at) {
+        pick.current.position.set(at.x, DECK_TOP + 2.2, at.z);
+        pickUniforms.uColor.value.copy(hue[Math.max(flownIndex, litIndex)]);
+      }
+      pickUniforms.uStrength.value = state.focusLit * 0.5;
+      pick.current.visible = state.focusLit > 0.01;
     }
 
     moteUniforms.uTime.value = state.time;
@@ -975,7 +1278,11 @@ function Station({
 
   return (
     <>
+      {/* Depth: the far side of the ring falls a step back into the stage's own ground. */}
+      <fogExp2 args={['#0c0f11', 0.0135]} attach="fog" />
       <hemisphereLight args={['#c9d6dc', '#0a0c0d', 0.55]} />
+      {/* The rim: a cool edge from behind, so the figures stand off the dark. No shadow. */}
+      <directionalLight color="#a9c7ff" intensity={0.8} position={[4, 5, -14]} />
       <directionalLight
         castShadow
         intensity={1.7}
@@ -1010,10 +1317,23 @@ function Station({
             transparent
           />
         </points>
-        <mesh ref={farRing}>
-          <torusGeometry args={[OUTER + 3.4, 0.014, 6, 180]} />
-          <meshBasicMaterial color="#59646b" />
-        </mesh>
+        {/* Three orbits a long way out, each with a light on it. */}
+        {trailUniforms.map((uniforms, i) => (
+          <mesh
+            key={uniforms.uSpeed.value}
+            rotation={[Math.PI / 2 + [0.1, -0.26, 0.34][i], [0, 0.2, -0.3][i], 0]}
+          >
+            <torusGeometry args={[OUTER + 3.4 + i * 2.6, 0.018, 6, 180]} />
+            <shaderMaterial
+              blending={AdditiveBlending}
+              depthWrite={false}
+              fragmentShader={TRAIL_FRAGMENT}
+              transparent
+              uniforms={uniforms}
+              vertexShader={CABLE_VERTEX}
+            />
+          </mesh>
+        ))}
       </group>
       <mesh position-y={-3} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[38, 64]} />
@@ -1031,6 +1351,9 @@ function Station({
         <mesh castShadow geometry={parts.hub} receiveShadow>
           <meshStandardMaterial color="#39434a" metalness={0.92} roughness={0.28} />
         </mesh>
+        {/* The index, as a machine: the sign inside a lit core, inside a glass shell,
+            inside a lattice and three gimbals, over a column of light. Geometry and two
+            small shaders, nothing downloaded. */}
         <group ref={plus}>
           <mesh geometry={parts.plusBar} position-y={-0.15}>
             <meshStandardMaterial
@@ -1053,6 +1376,34 @@ function Station({
             />
           </mesh>
         </group>
+        <mesh position-y={HUB_Y} renderOrder={1}>
+          <sphereGeometry args={[0.62, 32, 20]} />
+          <shaderMaterial
+            blending={AdditiveBlending}
+            depthWrite={false}
+            fragmentShader={CORE_FRAGMENT}
+            transparent
+            uniforms={coreUniforms}
+            vertexShader={CORE_VERTEX}
+          />
+        </mesh>
+        <mesh position-y={HUB_Y} renderOrder={2}>
+          <sphereGeometry args={[1.02, 40, 24]} />
+          <shaderMaterial
+            blending={AdditiveBlending}
+            depthWrite={false}
+            fragmentShader={CORE_FRAGMENT}
+            transparent
+            uniforms={shellUniforms}
+            vertexShader={CORE_VERTEX}
+          />
+        </mesh>
+        <group position-y={HUB_Y} ref={lattice}>
+          <lineSegments>
+            <edgesGeometry args={[parts.lattice]} />
+            <lineBasicMaterial color="#c9b58c" opacity={0.42} transparent />
+          </lineSegments>
+        </group>
         <mesh position-y={HUB_Y} ref={gyroA}>
           <torusGeometry args={[1.32, 0.024, 8, 96]} />
           <meshStandardMaterial color="#d8dee0" metalness={1} roughness={0.2} />
@@ -1060,6 +1411,21 @@ function Station({
         <mesh position-y={HUB_Y} ref={gyroB}>
           <torusGeometry args={[1.62, 0.016, 8, 96]} />
           <meshStandardMaterial color="#8d979c" metalness={1} roughness={0.25} />
+        </mesh>
+        <group position-y={HUB_Y} ref={gyroC}>
+          <Teeth count={60} radius={1.92} />
+        </group>
+        <mesh position-y={HUB_Y + 3.4} renderOrder={3}>
+          <cylinderGeometry args={[0.22, 0.5, 6.8, 24, 1, true]} />
+          <shaderMaterial
+            blending={AdditiveBlending}
+            depthWrite={false}
+            fragmentShader={BEAM_FRAGMENT}
+            side={DoubleSide}
+            transparent
+            uniforms={beamUniforms}
+            vertexShader={CORE_VERTEX}
+          />
         </mesh>
         <sprite position-y={HUB_Y} ref={coreHalo}>
           <spriteMaterial
@@ -1101,6 +1467,18 @@ function Station({
             />
           </mesh>
         ))}
+        <mesh ref={pick} renderOrder={3} visible={false}>
+          <cylinderGeometry args={[0.5, 1, 4.4, 24, 1, true]} />
+          <shaderMaterial
+            blending={AdditiveBlending}
+            depthWrite={false}
+            fragmentShader={BEAM_FRAGMENT}
+            side={DoubleSide}
+            transparent
+            uniforms={pickUniforms}
+            vertexShader={CORE_VERTEX}
+          />
+        </mesh>
         <points frustumCulled={false} geometry={parts.swarm}>
           <shaderMaterial
             fragmentShader={POINT_FRAGMENT}
@@ -1126,10 +1504,13 @@ function Station({
                 ref={(group) => {
                   docks.current[i] = group;
                 }}
+                scale={FIGURE_SCALE}
               >
                 {count > 0 ? (
                   <instancedMesh
-                    args={[parts.stack, undefined, count]}
+                    args={[parts.figures[i], undefined, count]}
+                    // Three sizes an instanced mesh once, here at scale 0, for the entrance.
+                    frustumCulled={false}
                     castShadow
                     ref={(mesh) => {
                       stacks.current[i] = mesh;
@@ -1152,11 +1533,20 @@ function Station({
                   }}
                 >
                   <Crown
+                    count={count}
+                    glow={(material) => {
+                      if (material && !crownGlow.current[i].includes(material)) {
+                        crownGlow.current[i].push(material);
+                      }
+                    }}
                     kind={dock.id}
                     paint={(material) => {
                       if (material && !crownPaint.current[i].includes(material)) {
                         crownPaint.current[i].push(material);
                       }
+                    }}
+                    spin={(group) => {
+                      spins.current[i] = group;
                     }}
                   />
                 </group>
@@ -1176,18 +1566,10 @@ function Station({
                   />
                 </sprite>
               </group>
-              <sprite
-                ref={(sprite) => {
-                  labels.current[i] = sprite;
-                }}
-                scale={[2.08, 0.52, 1]}
-              >
-                <spriteMaterial depthWrite={false} map={parts.labels[i]} opacity={0} transparent />
-              </sprite>
               {/* What a pointer hits. Bigger than the dock on purpose, invisible,
                   and three's raycaster does not ask whether a mesh is visible. */}
               <mesh
-                position-y={0.9}
+                position-y={1.1}
                 ref={(mesh) => {
                   hit.current[i] = mesh;
                 }}
@@ -1246,6 +1628,31 @@ function Ribs() {
   );
 }
 
+/** The outer gimbal: a ring of teeth, one draw call, that reads as machined. */
+function Teeth({ count, radius }: { count: number; radius: number }) {
+  const teeth = useRef<InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const mesh = teeth.current;
+    if (!mesh) return;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      scratch.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      scratch.rotation.set(0, -angle, 0);
+      scratch.scale.setScalar(1);
+      scratch.updateMatrix();
+      mesh.setMatrixAt(i, scratch.matrix);
+    }
+    scratch.rotation.set(0, 0, 0);
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [count, radius]);
+  return (
+    <instancedMesh args={[undefined, undefined, count]} ref={teeth}>
+      <boxGeometry args={[0.1, 0.035, 0.07]} />
+      <meshStandardMaterial color="#b9c2c6" metalness={0.85} roughness={0.3} />
+    </instancedMesh>
+  );
+}
+
 export default function DockScene({
   counts,
   lit,
@@ -1282,30 +1689,46 @@ export default function DockScene({
   };
   const want = useRef<Want>(handlers);
   want.current = handlers;
+  const tags = useRef<(HTMLElement | null)[]>([]);
   return (
-    <Canvas
-      camera={{ fov: STAGE_FOV, near: 0.5, far: 140 }}
-      dpr={dpr}
-      frameloop="demand"
-      gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
-      onCreated={({ gl }) => {
-        // three only logs a shader that will not link, and draws nothing with it. A
-        // blank stage with the drawing already faded is the one failure a reader
-        // could not recover from, so this one ends at the drawing as well.
-        gl.debug.onShaderError = (context, program) => {
-          console.error('DockScene: a shader did not link', context.getProgramInfoLog(program));
-          onLost();
-        };
-      }}
-      // Not the bare `shadows`: R3F reads that as PCFSoftShadowMap, which three
-      // r182 removed and warns about on every load. "percentage" is PCFShadowMap,
-      // what three was already substituting.
-      shadows="percentage"
-      // Inline, because Canvas writes `pointer-events: auto` on its own wrapper and
-      // the stylesheet's `none` on the parent does not reach through it.
-      style={{ pointerEvents: 'none' }}
-    >
-      <Station changed={`${lit} ${flown} ${paused}`} counts={counts} want={want} />
-    </Canvas>
+    <>
+      <Canvas
+        camera={{ fov: STAGE_FOV, near: 0.5, far: 140 }}
+        dpr={dpr}
+        frameloop="demand"
+        gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
+        onCreated={({ gl }) => {
+          // three only logs a shader that will not link, and draws nothing with it. A
+          // blank stage with the drawing already faded is the one failure a reader
+          // could not recover from, so this one ends at the drawing as well.
+          gl.debug.onShaderError = (context, program) => {
+            console.error('DockScene: a shader did not link', context.getProgramInfoLog(program));
+            onLost();
+          };
+        }}
+        // Not the bare `shadows`: R3F reads that as PCFSoftShadowMap, which three
+        // r182 removed and warns about on every load. "percentage" is PCFShadowMap,
+        // what three was already substituting.
+        shadows="percentage"
+        // Inline, because Canvas writes `pointer-events: auto` on its own wrapper and
+        // the stylesheet's `none` on the parent does not reach through it.
+        style={{ pointerEvents: 'none' }}
+      >
+        <Station changed={`${lit} ${flown} ${paused}`} counts={counts} tags={tags} want={want} />
+      </Canvas>
+      <div className="dock-tags">
+        {DOCKS.map((dock, i) => (
+          <span
+            className={`dock-tag dock-${dock.id}`}
+            key={dock.id}
+            ref={(tag) => {
+              tags.current[i] = tag;
+            }}
+          >
+            {dock.label} <b>{(counts[dock.id] ?? 0).toLocaleString('en-US')}</b>
+          </span>
+        ))}
+      </div>
+    </>
   );
 }

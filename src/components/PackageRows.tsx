@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
 import { detailHref, permalink } from '@/components/hrefs';
-import { ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
+import { ArrowRightIcon, ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
 import { htmlLang, languageNote } from '@/components/language';
 import { Marked, markSubstring } from '@/components/Marked';
 import type { PackageListItem } from '@/db/queries/packages';
@@ -81,6 +81,7 @@ export function PackageRows({
   showRepo = true,
   pathQuery,
   date,
+  preview = false,
 }: {
   items: (PackageListItem & Partial<SearchResultItem>)[];
   showRepo?: boolean;
@@ -88,6 +89,8 @@ export function PackageRows({
   pathQuery?: string;
   /** The result order; a date order adds the date it sorted by, named. */
   date?: string;
+  /** The home feed: a row's pane cuts its description, so it links to all of it. */
+  preview?: boolean;
 }) {
   return (
     <ul className="rows">
@@ -166,6 +169,19 @@ export function PackageRows({
                   <span title={p.commitSha}>
                     commit <code>{p.commitSha.slice(0, 7)}</code>
                   </span>
+                ) : null}
+                {preview ? (
+                  // The row's name is the same address and the keyboard's way there: a second
+                  // tab stop in each of ten rows would only slow it down.
+                  <Link
+                    className="row-open"
+                    href={detailHref(p.fullName, p.sourcePath, p.type)}
+                    tabIndex={-1}
+                  >
+                    Read all of it
+                    <span className="sr-only">: {p.name}</span>
+                    <ArrowRightIcon />
+                  </Link>
                 ) : null}
                 {p.commitSha ? (
                   <a
