@@ -175,6 +175,144 @@ test('home: the type counts leave Chinese out, and the feed says how many it doe
   expect(await total(page)).toBe(chipAll);
 });
 
+// The feed's preview is the stylesheet's (`:has()`, no script), so nothing but a
+// browser can say it works.
+test("home: the feed previews the row under the pointer or the focus, in the row's own order", async ({
+  page,
+}) => {
+  await page.goto('/');
+  const rows = page.locator('.board .rows > li');
+  const shown = () =>
+    rows.evaluateAll((ls) =>
+      ls.flatMap((l, i) =>
+        getComputedStyle(l.querySelector('.row-detail') as Element).opacity === '1' ? [i] : [],
+      ),
+    );
+  // At rest, the newest. One pane at a time, whichever row.
+  await expect.poll(shown).toEqual([0]);
+  await rows.nth(3).hover();
+  await expect.poll(shown).toEqual([3]);
+  // Straight across to the pane: the row stays hovered and its link can be reached.
+  const row = await rows.nth(3).boundingBox();
+  const pane = await rows.nth(3).locator('.row-detail').boundingBox();
+  if (!row || !pane) throw new Error('no box');
+  await page.mouse.move(pane.x + 30, row.y + row.height / 2, { steps: 20 });
+  await expect.poll(shown).toEqual([3]);
+  await rows.nth(3).locator('.row-source').click({ trial: true });
+  // The keyboard reaches the same pane, and the tab order is the row's.
+  await page.mouse.move(1, 1);
+  await expect.poll(shown).toEqual([0]);
+  await rows.nth(5).locator('.row-title a').focus();
+  await expect.poll(shown).toEqual([5]);
+  await page.keyboard.press('Tab');
+  await expect(rows.nth(5).locator('.row-source')).toBeFocused();
+  await expect.poll(shown).toEqual([5]);
+  // A mouse click leaves focus on a link, and that row's pane must not lie over the
+  // next row hovered: a click there would open the wrong source.
+  await page.mouse.move(1, 1);
+  await page.locator('h1').click();
+  await rows.nth(6).hover();
+  await rows.nth(6).locator('.row-title a').dispatchEvent('mousedown');
+  await rows
+    .nth(6)
+    .locator('.row-source')
+    .evaluate((a: HTMLElement) => {
+      a.addEventListener('click', (e) => e.preventDefault());
+    });
+  await rows.nth(6).locator('.row-source').click();
+  await rows.nth(2).hover();
+  await expect.poll(shown).toEqual([2]);
+  // Every row keeps its description and its permalink at the commit, shown or not.
+  expect(await page.locator('.board .row-source').count()).toBe(await rows.count());
+  for (const href of await page
+    .locator('.board .row-source')
+    .evaluateAll((as) => as.map((a) => a.getAttribute('href')))) {
+    expect(href).toMatch(/\/blob\/[0-9a-f]{40}\//);
+  }
+});
+
+test('home: the first row stays on an 800px first screen at the narrowest two-column width', async ({
+  page,
+}) => {
+  // 808 at first: the head beside the list wraps to more lines at 1024 than at 1280.
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto('/');
+  expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(800);
+});
+
+test('home: without hover every row shows its own description, in the flow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const positions = await page
+    .locator('.board .row-detail')
+    .evaluateAll((ds) =>
+      ds.map((d) => [getComputedStyle(d).position, getComputedStyle(d).opacity]),
+    );
+  // 390 is what Desktop Chrome's emulation reports here; the rule asks for 64rem too.
+  for (const [position, opacity] of positions) {
+    expect(position).toBe('static');
+    expect(opacity).toBe('1');
+  }
+});
+
+test('home: the pipeline holds still while it fills, and stands finished under reduced motion', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  // Under the preference (this suite's default): no hold, nothing dim.
+  const still = await page.evaluate(() => ({
+    position: getComputedStyle(document.querySelector('.pipeline-pin') as Element).position,
+    dim: [...document.querySelectorAll('.flow > li')].filter(
+      (l) => Number(getComputedStyle(l).opacity) < 1,
+    ).length,
+    height: (document.querySelector('.pipeline') as HTMLElement).offsetHeight,
+  }));
+  expect(still.position).not.toBe('sticky');
+  expect(still.dim).toBe(0);
+  expect(still.height).toBeLessThan(1600);
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.reload();
+  const at = (f: number) =>
+    page.evaluate(async (f) => {
+      const s = document.querySelector('.pipeline') as HTMLElement;
+      const top = s.getBoundingClientRect().top + scrollY;
+      window.scrollTo({ top: top + (s.offsetHeight - innerHeight) * f, behavior: 'instant' });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return {
+        pin: Math.round(
+          (document.querySelector('.pipeline-pin') as Element).getBoundingClientRect().top,
+        ),
+        last: Number(
+          getComputedStyle(document.querySelector('.flow > li:last-child') as Element).opacity,
+        ),
+      };
+    }, f);
+  const start = await at(0.05);
+  const end = await at(0.97);
+  expect(start.pin).toBe(end.pin);
+  expect(start.last).toBeLessThan(1);
+  expect(end.last).toBe(1);
+});
+
+test('home: a type tile goes to the listing it counts, and the largest kind leads', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const tiles = page.locator('.type-card');
+  await expect(tiles).toHaveCount(6);
+  const counts = await tiles.evaluateAll((ts) =>
+    ts.map((t) => Number(t.querySelector('strong')?.textContent?.replace(/,/g, '') ?? 0)),
+  );
+  expect(counts).toEqual([...counts].sort((a, b) => b - a));
+  const tile = page.locator('.type-card.hue-hook');
+  const shown = Number(((await tile.locator('strong').textContent()) ?? '').replace(/,/g, ''));
+  await tile.click();
+  await page.waitForURL(/\/artifacts\?type=hook$/);
+  expect(await total(page)).toBe(shown);
+});
+
 test('home: the page has no motion past five seconds, and none under reduced motion', async ({
   page,
 }) => {

@@ -7,22 +7,25 @@ servers, slash commands, hooks and subagents — discovered from established pub
 repositories, parsed, and linked back to the exact file at the exact commit
 AgentDock read.
 
-![The whole AgentDock home page, top to bottom: a search field with a row of per-type chips and counts, a list of the ten most recently read artifacts, a card per artifact type saying what it is, and a horizontal pipeline from repository to artifact index above the discovery gate that decides which repositories get read](docs/images/agentdock-home.png)
+![The AgentDock home page, top to bottom: a search field with per-type chips beside the orbital dock board, the ten most recently read artifacts as a list with a preview, the four numbered stages of the indexing pipeline, the four discovery conditions, and a tile per artifact type](docs/images/agentdock-home.png)
 
-That image is the whole page, not a crop of it. The home page is in four parts.
+The home page is in five parts.
 
 - **Search.** The search field is the control the page opens with. Under it, a
   chip per artifact type goes straight to that type's listing and says how many
   it lists.
 - **Recently indexed.** The ten most recently read artifacts, as a list, on the
-  first screen.
-- **Browse by type.** A card per type saying what that kind of artifact is.
-- **How a repository gets indexed.** Four stages running left to right — a
+  first screen. On a wide screen with a pointer, the names stand beside a preview
+  of the row under the pointer or the focus.
+- **How a repository gets indexed.** Four numbered stages along one line — a
   repository, the files that declare an artifact, AgentDock reading them, and
-  the result filed against the commit it read — then the four discovery
-  conditions and what they decide.
+  the result filed against the commit it read.
+- **What decides which repositories it reads.** The four discovery conditions, the
+  star floor largest and beside the sentence that says what it is not.
+- **Browse by type.** A tile per type, sized by how many are listed, saying what
+  that kind of artifact is.
 
-The chip and card counts come from one grouped query, the same totals the
+The chip and tile counts come from one grouped query, the same totals the
 listing shows on arrival. The home page makes three queries.
 
 **AgentDock reads files and reports what it read. It does not run them, and it
@@ -360,10 +363,10 @@ the type and capability filters and the pager are plain links whose URLs carry
 the whole search state, so all three work with JavaScript disabled and survive
 Back, reload and a shared link.
 
-So is the motion. The index-flow diagram's reveal, the loading placeholder's sweep, and every hover
-and focus response are CSS — no animation library and no scroll observer; the
-flow's reveal follows scrolling through CSS `animation-timeline: view()` where
-the browser has it. Every animation ends inside five seconds; none loops but
+So is the motion. The pipeline's hold, the feed's preview, the loading placeholder's sweep, and every
+hover and focus response are CSS — no animation library and no scroll observer;
+the pipeline, the conditions and the types' plates follow scrolling through CSS
+`animation-timeline` where the browser has it. Every timed animation ends inside five seconds; none loops but
 the loading sweep. Nothing moves continuously: the hero's board draws frames only
 for its 1.5 s entrance and in answer to the pointer or a chip
 (`frameloop="demand"`), and under reduced motion it does not load. Decorative motion that looped or replayed on every page (the

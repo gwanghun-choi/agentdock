@@ -73,17 +73,19 @@ export default async function RepositoryPage({ params }: Props) {
 
   return (
     <>
-      <div className="detail-head">
-        <h1>{repository.fullName}</h1>
-        {repository.description ? <p className="lede">{repository.description}</p> : null}
-        <div className="detail-actions">
-          <a
-            href={`https://github.com/${repository.fullName}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <ExternalIcon /> Repository on GitHub
-          </a>
+      <div className="detail-top stage">
+        <div className="detail-head">
+          <h1>{repository.fullName}</h1>
+          {repository.description ? <p className="lede">{repository.description}</p> : null}
+          <div className="detail-actions">
+            <a
+              href={`https://github.com/${repository.fullName}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <ExternalIcon /> Repository on GitHub
+            </a>
+          </div>
         </div>
       </div>
 

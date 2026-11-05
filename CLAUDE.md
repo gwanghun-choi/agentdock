@@ -115,7 +115,9 @@ not replace `bun run ci`.
   duration and on an `animation` or `@keyframes` written anywhere else in the
   file. Both rules are one line to satisfy and silent to break — a reader who
   asked for less motion sees the same page as everyone else, and it looks
-  correct to whoever wrote it.
+  correct to whoever wrote it. The page under the hero is CSS alone (`:has()`,
+  `animation-timeline`, sticky) and added no client JavaScript:
+  `docs/analysis/agentdock-phase83-85-discovery-experience.md`.
 
 ## Before you call it done
 

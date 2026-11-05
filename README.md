@@ -7,20 +7,23 @@ Hook, Subagent — 를 모아 놓은 공개 index입니다. 자리를 잡은 공
 artifact를 discovery하고, 파일을 직접 읽어 선언 내용을 기록하고, 읽은 시점의
 정확한 commit에 있는 정확한 파일로 다시 링크합니다.
 
-![AgentDock 홈 화면 전체. 위에서부터 검색창과 유형별 개수 칩, 최근에 읽은 artifact 10개의 목록, 유형별 설명 카드, 그리고 repository에서 artifact index까지의 가로 pipeline과 repository 수집 조건을 보여주는 discovery gate](docs/images/agentdock-home.png)
+![AgentDock 홈 화면. 위에서부터 유형별 칩이 있는 검색창과 궤도 도크, 최근에 읽은 artifact 10개의 목록과 미리보기, 번호가 붙은 네 단계의 수집 pipeline, discovery 조건 네 가지, 유형별 타일](docs/images/agentdock-home.png)
 
-위 이미지는 잘라낸 화면이 아니라 홈 페이지 전체입니다. 홈은 네 부분입니다.
+홈은 다섯 부분입니다.
 
 - **검색.** 검색창이 페이지가 여는 컨트롤이고, 그 아래 칩이 유형마다 목록에
   있는 개수와 함께 그 유형의 목록으로 바로 연결합니다.
 - **Recently indexed.** 가장 최근에 읽은 artifact 10개의 목록입니다. 첫 화면에서
-  보입니다.
-- **Browse by type.** 유형마다 무엇인지 설명하는 카드입니다.
+  보입니다. 포인터가 있는 넓은 화면에서는 이름 목록 옆에 포인터나 포커스가 있는
+  행의 미리보기가 나옵니다.
 - **How a repository gets indexed.** repository → 선언 파일 → 읽기 → commit에
-  기록까지 네 단계가 가로로 흐르는 pipeline과, discovery 조건 네 가지와 그것이
-  정하는 것.
+  기록까지 번호가 붙은 네 단계의 pipeline입니다.
+- **What decides which repositories it reads.** discovery 조건 네 가지입니다. star
+  기준이 가장 크고, 그것이 무엇을 뜻하지 않는지 말하는 문장이 옆에 있습니다.
+- **Browse by type.** 유형마다 무엇인지 설명하는 타일입니다. 크기는 목록에 있는
+  개수를 따릅니다.
 
-칩과 카드의 개수는 목록 페이지에 도착했을 때의 total과 같은 grouped query
+칩과 타일의 개수는 목록 페이지에 도착했을 때의 total과 같은 grouped query
 하나에서 나옵니다. 홈의 query는 세 개입니다.
 
 **AgentDock은 파일을 읽고 읽은 내용을 보고합니다. 실행하지 않으며, 어떤
@@ -341,10 +344,10 @@ Fiber, three.js)입니다. 장면은 별도 chunk이고 넓은 화면에서 모�
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로
 고침·링크 공유에서도 상태가 유지됩니다.
 
-모션도 마찬가지입니다. index flow 다이어그램이 펼쳐지는 것, 로딩 자리표시의 sweep,
+모션도 마찬가지입니다. pipeline의 고정, Feed의 미리보기, 로딩 자리표시의 sweep,
 hover와 focus 반응은 전부 CSS입니다 — 애니메이션
-라이브러리도 scroll observer도 없고, flow가 스크롤에 맞춰 펼쳐지는 것은 지원하는
-브라우저에서 CSS `animation-timeline: view()`로 합니다. CSS 애니메이션은 모두 5초
+라이브러리도 scroll observer도 없고, pipeline·조건·타일의 판이 스크롤에 맞춰 움직이는
+것은 지원하는 브라우저에서 CSS `animation-timeline`으로 합니다. 시간 기반 CSS 애니메이션은 모두 5초
 안에 끝나고(실행 중인 job의 진행 막대도 3회, 4.2초), 로딩 sweep 말고는 반복하지 않습니다.
 계속 움직이는 것은 없습니다. hero의 board는 판이 내려앉는 1.5초의 등장과 포인터·칩에
 대한 반응 때만 프레임을 그리고(`frameloop="demand"`), `prefers-reduced-motion: reduce`에서는

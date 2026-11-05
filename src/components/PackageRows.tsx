@@ -31,6 +31,10 @@ import type { MatchField, SearchResultItem } from '@/db/queries/search';
  * it is the one item in the metadata line at a predictable position on every
  * row. Its href still comes from `permalink()`, unchanged — the commit-SHA
  * provenance invariant is not a presentation concern.
+ *
+ * On the home feed, on a wide screen with hover, the same markup becomes an index
+ * and a preview: name and badge per line, `.row-detail` laid beside the list, where
+ * the permalink takes a line of its own. See globals.css, the feed.
  */
 /**
  * 12,400 -> "12.4k". One decimal below a hundred thousand, none above, so the
@@ -99,33 +103,38 @@ export function PackageRows({
               </Link>
               {showRepo ? <span className="repo">{p.fullName}</span> : null}
             </p>
-            {p.summary ? (
-              <p className="row-desc" lang={htmlLang(p.summaryLanguage)}>
-                <Marked plain={p.summary} value={p.summaryMarked} />
-              </p>
-            ) : null}
-            <p className="row-meta">
-              <MatchWhy fields={p.matchedIn} />
-              <span className="path">
-                <FileIcon />{' '}
-                <Marked
-                  plain={p.sourcePath}
-                  value={
-                    pathQuery && p.matchedIn?.includes('path')
-                      ? markSubstring(p.sourcePath, pathQuery)
-                      : null
-                  }
-                />
-              </span>
-              {/* The description's writing system, for the classes an English
+            {/* One box, so the home feed can lay the whole of it beside the list as
+                the row's preview. `data-name` is what that preview heads itself
+                with, from the stylesheet: the link above stays the only name in
+                the accessibility tree. */}
+            <div className="row-detail" data-name={p.name}>
+              {p.summary ? (
+                <p className="row-desc" lang={htmlLang(p.summaryLanguage)}>
+                  <Marked plain={p.summary} value={p.summaryMarked} />
+                </p>
+              ) : null}
+              <p className="row-meta">
+                <MatchWhy fields={p.matchedIn} />
+                <span className="path">
+                  <FileIcon />{' '}
+                  <Marked
+                    plain={p.sourcePath}
+                    value={
+                      pathQuery && p.matchedIn?.includes('path')
+                        ? markSubstring(p.sourcePath, pathQuery)
+                        : null
+                    }
+                  />
+                </span>
+                {/* The description's writing system, for the classes an English
                   page would not lead a reader to expect. Said once, in words:
                   the description beside it is the author's, untranslated. */}
-              {languageNote(p.summaryLanguage) ? (
-                <span title="The description's writing system. AgentDock shows it as written and does not translate it.">
-                  {languageNote(p.summaryLanguage)}
-                </span>
-              ) : null}
-              {/* The repository's star count, in the metadata line beside the
+                {languageNote(p.summaryLanguage) ? (
+                  <span title="The description's writing system. AgentDock shows it as written and does not translate it.">
+                    {languageNote(p.summaryLanguage)}
+                  </span>
+                ) : null}
+                {/* The repository's star count, in the metadata line beside the
                   path and the read date — the register of "facts about where
                   this came from", never a rank or a score. It is not a sort
                   key, not a badge, and not styled to compete with the name:
@@ -134,33 +143,42 @@ export function PackageRows({
                   that rendered at a different size and baseline in every font
                   the icons beside it did not. src/db/queries/search.ts consults
                   it for nothing. */}
-              <span className="row-stars" title={`${p.stars.toLocaleString('en-US')} GitHub stars`}>
-                <StarIcon /> {compactStars(p.stars)}
-              </span>
-              {p.scannedAt ? (
-                <span>
-                  <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}
-                </span>
-              ) : null}
-              {/* The order's own date beside the read date, each in its own
-                  words, so "added", "changed" and "read" are never one number. */}
-              {date === 'added' && p.addedAt ? (
-                <span>first indexed {p.addedAt.toISOString().slice(0, 10)}</span>
-              ) : null}
-              {date === 'changed' && p.changedAt ? (
-                <span>content changed {p.changedAt.toISOString().slice(0, 10)}</span>
-              ) : null}
-              {p.commitSha ? (
-                <a
-                  className="row-source"
-                  href={permalink(p.fullName, p.commitSha, p.sourcePath)}
-                  rel="noopener noreferrer"
-                  target="_blank"
+                <span
+                  className="row-stars"
+                  title={`${p.stars.toLocaleString('en-US')} GitHub stars`}
                 >
-                  <ExternalIcon /> source on GitHub
-                </a>
-              ) : null}
-            </p>
+                  <StarIcon /> {compactStars(p.stars)}
+                </span>
+                {p.scannedAt ? (
+                  <span>
+                    <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}
+                  </span>
+                ) : null}
+                {/* The order's own date beside the read date, each in its own
+                  words, so "added", "changed" and "read" are never one number. */}
+                {date === 'added' && p.addedAt ? (
+                  <span>first indexed {p.addedAt.toISOString().slice(0, 10)}</span>
+                ) : null}
+                {date === 'changed' && p.changedAt ? (
+                  <span>content changed {p.changedAt.toISOString().slice(0, 10)}</span>
+                ) : null}
+                {p.commitSha ? (
+                  <span title={p.commitSha}>
+                    commit <code>{p.commitSha.slice(0, 7)}</code>
+                  </span>
+                ) : null}
+                {p.commitSha ? (
+                  <a
+                    className="row-source"
+                    href={permalink(p.fullName, p.commitSha, p.sourcePath)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalIcon /> source on GitHub
+                  </a>
+                ) : null}
+              </p>
+            </div>
           </div>
         </li>
       ))}

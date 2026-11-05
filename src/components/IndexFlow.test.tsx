@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { IndexFlow } from './IndexFlow';
 
 /**
- * The hero's diagram is the one place on the site where a picture carries the
+ * The pipeline diagram is the one place on the site where a picture carries the
  * product's claim about itself, which makes it the one place a picture could
  * quietly start saying something the code does not do. These check that what it
  * draws is what is true.
@@ -16,7 +16,7 @@ describe('IndexFlow', () => {
     // Not a decorative div stack: the order is real, and a screen reader that
     // gets "list of 4 items" gets the shape of the content.
     expect(html).toMatch(/^<ol class="flow">/);
-    expect(html.match(/<li>/g)?.length).toBe(4 + 8); // four steps, eight filenames
+    expect(html.match(/<li>/g)?.length).toBe(4 + 9); // four steps, nine filenames
   });
 
   it('is legible with no CSS and no JavaScript at all', () => {
@@ -43,6 +43,7 @@ describe('IndexFlow', () => {
       ['.mcp.json', 'src/detect/mcp.ts'],
       ['server.json', 'src/detect/mcp.ts'],
       ['settings.json', 'src/detect/hook.ts'],
+      ['hooks.json', 'src/detect/hook.ts'],
     ] as const;
 
     for (const [filename, source] of detectors) {

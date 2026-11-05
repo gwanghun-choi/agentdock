@@ -101,7 +101,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
 
-        <footer className="site-footer">
+        <footer className="site-footer stage">
           <div className="wrap">
             <p>{FOOTER_DISCLAIMER}</p>
           </div>

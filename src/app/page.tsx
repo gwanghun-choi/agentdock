@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { ArtifactBadge } from '@/components/ArtifactBadge';
 import { DockBoard } from '@/components/DockBoard';
-import { DockBoardStatic } from '@/components/DockBoardStatic';
+import { DockBoardStatic, DockStack } from '@/components/DockBoardStatic';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -51,6 +50,10 @@ export default async function HomePage() {
   // read on this date. Not "the corpus was read on" — that is a different claim
   // and this page does not have the number for it.
   const newestRead = recent[0]?.scannedAt?.toISOString().slice(0, 10) ?? null;
+  // The bento's largest tile goes to the kind with the most listed. A stable sort:
+  // kinds with the same count stay in the chips' order. This sizes a picture of
+  // the corpus; no artifact is ordered by it.
+  const byCount = [...TYPE_FILTER_IDS].sort((a, b) => (byType[b] ?? 0) - (byType[a] ?? 0));
 
   return (
     <>
@@ -105,7 +108,7 @@ export default async function HomePage() {
           {/* The other way in, beside the box: every kind the index holds, with
               how many it lists. Each is the URL the artifacts page's own Type
               chip produces and each count is that page's total on arrival — the
-              same grouped query this page already made for the cards further
+              same grouped query this page already made for the tiles further
               down (countVisibleByType), so this adds no query. The chips are
               the artifacts page's chips, in the same scrolled row on a phone. */}
           <nav aria-label="Artifact types" className="hero-types facet">
@@ -156,7 +159,7 @@ export default async function HomePage() {
           The window figures beside the card (distinct repositories and kinds
           among the 18) described a window, not the corpus, and the
           per-type counts the page does have are in the hero. */}
-      <section aria-labelledby="recent-heading" className="board">
+      <section aria-labelledby="recent-heading" className="board stage">
         <div className="section-head">
           <h2 id="recent-heading">Recently indexed</h2>
           {recent.length > 0 ? (
@@ -207,53 +210,69 @@ export default async function HomePage() {
       </section>
 
       {/* What used to be the submit form's job — telling a visitor how a
-          repository gets in here — stated as the policy it actually is. Every
-          number and every condition below is the same one the code enforces:
-          the star floor is imported, not retyped, and the other three come
-          straight from discoveryRejection's own ordering. */}
-      <section aria-labelledby="policy-heading">
-        <div className="section-head">
-          <h2 id="policy-heading">How a repository gets indexed</h2>
+          repository gets in here — stated as the policy it actually is. */}
+      <section aria-labelledby="policy-heading" className="pipeline stage">
+        {/* Pinned while the reader scrolls through it, where the browser can tie
+            animation to scrolling and the window is at least 64×44rem. Everything is on screen and lit without that. */}
+        <div className="pipeline-pin">
+          <div className="section-head">
+            <h2 id="policy-heading">How a repository gets indexed</h2>
+            <p className="section-lede">
+              AgentDock discovers repositories on its own, twice a day. There is no submission form:
+              nothing is added by request.
+            </p>
+          </div>
+          {/* The pipeline: what happens to a repository once it is found, before
+              the conditions for finding it. */}
+          <IndexFlow total={indexed} />
         </div>
-        <p className="section-lede">
-          AgentDock discovers repositories on its own, twice a day. There is no submission form:
-          nothing is added by request.
-        </p>
-        {/* The pipeline, at the full width of the shell: what happens to a
-            repository once it is found, before the conditions for finding it. */}
-        <IndexFlow total={indexed} />
-        {/* The four conditions, joined to what they decide.
+      </section>
 
-              They used to be four bordered columns with nothing above or below
-              them, which left a reader to work out for themselves what the four
-              were conditions *for*. The rail names both ends: a repository
-              AgentDock has found goes in, and a repository AgentDock reads
-              comes out.
+      {/* The four conditions, joined to what they decide.
 
-              The rail is a bracket, not an arrow, and the line under it says so
-              in words. All four have to hold; there is no first one, no order
-              between them, and nothing here is a stage a repository passes
-              through — src/corpus/policy.ts evaluates them as one predicate,
-              and a chain of arrows would have drawn a pipeline that does not
-              exist.
+          The two ends are named: a repository AgentDock has found goes in, and a
+          repository AgentDock reads comes out. The rail between them is a bracket,
+          not an arrow, and the line under it says so in words. All four have to
+          hold; there is no first one, no order between them, and nothing here is
+          a stage a repository passes through: src/corpus/policy.ts evaluates them
+          as one predicate, and a chain of arrows would draw a pipeline that does
+          not exist.
 
-              One glyph per condition, so four conditions read as four kinds of
-              thing at a glance instead of as four short paragraphs. Each is the
-              ordinary sign for the noun it labels and none of them is a status
-              light: no tick, no cross, no green, no red. Nothing here says a
-              repository that fails a condition is worse than one that passes —
-              only that AgentDock did not read it. */}
+          The stars are drawn larger than the other three because they are a
+          different kind of condition: a fork, an archive and a private repository
+          are facts GitHub reports, the floor is AgentDock's own budget decision
+          (policy.ts). The sentence that keeps it from reading as a quality claim
+          stands beside the number. Size here is not rank.
+
+          One glyph per condition, each the ordinary sign for its noun and none of
+          them a status light: no tick, no cross, no green, no red. Nothing says a
+          repository that fails a condition is worse than one that passes, only
+          that AgentDock did not read it. Every number and condition is the one
+          the code enforces: the star floor is imported, not retyped, and the other
+          three come straight from discoveryRejection (policy.ts). */}
+      <section aria-labelledby="gate-heading" className="conditions">
+        <div className="section-head">
+          <h2 id="gate-heading">What decides which repositories it reads</h2>
+        </div>
         <div className="gate">
           <p className="gate-end">
             <RepoIcon /> A repository AgentDock has found
           </p>
           <dl className="stats">
-            <div>
+            <div className="floor stage">
               <dt>
                 <StarIcon /> Stars
               </dt>
               <dd>
                 {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
+              </dd>
+              <dd className="notice">
+                <InfoIcon />
+                <span>
+                  The star floor decides which unread repositories AgentDock spends its small GitHub
+                  request budget on first. It is a popularity signal used for scheduling, not a
+                  statement about any artifact.
+                </span>
               </dd>
             </div>
             <div>
@@ -286,40 +305,33 @@ export default async function HomePage() {
           </p>
           <p className="gate-note">All four hold at once. They are conditions, not steps.</p>
         </div>
-        {/* The one sentence that keeps the star floor from reading as a
-              quality claim. It is a scheduling rule about a small request
-              budget, and src/corpus/policy.ts says the same thing to the next
-              person who reads the code. */}
-        <p className="notice">
-          <InfoIcon />
-          <span>
-            The star floor decides which unread repositories AgentDock spends its small GitHub
-            request budget on first. It is a popularity signal used for scheduling, not a statement
-            about any artifact.
-          </span>
-        </p>
       </section>
+
       {/* What each kind is, for a reader who knows what they want but not its
-          name. Each card is the same URL as the hero's chip for it; what the
-          card adds is the type's documented definition from usageGuide.ts, the
-          same one its detail pages print: what the kind is, never how good any
-          one of them is. Catalogs have no entry: the search route does not
-          filter on them, so there is no page to send a reader to. */}
-      <section aria-labelledby="types-heading">
+          name. Each tile is the same URL as the hero's chip for it, and its stack
+          is the hero's stack for the same count (dockBoard.ts, plates()). What the
+          tile adds is the type's documented definition from usageGuide.ts, the
+          same one its detail pages print: what the kind is, never how good any one
+          of them is. Catalogs have no entry: the search route does not filter on
+          them, so there is no page to send a reader to. */}
+      <section aria-labelledby="types-heading" className="types stage">
         <div className="section-head">
           <h2 id="types-heading">Browse by type</h2>
         </div>
         <ul className="type-grid">
-          {TYPE_FILTER_IDS.map((id) => (
+          {byCount.map((id) => (
             <li key={id}>
-              <Link className="type-card" href={`/artifacts?type=${id}`}>
-                <span className="type-card-head">
-                  <ArtifactBadge type={id} />
-                  <span className="type-count">
-                    {byType[id]
-                      ? `${byType[id].toLocaleString('en-US')} listed`
-                      : 'none listed yet'}
-                  </span>
+              <Link className={`type-card hue-${id}`} href={`/artifacts?type=${id}`}>
+                <DockStack count={byType[id] ?? 0} kind={id} />
+                <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
+                <span className="type-count">
+                  {byType[id] ? (
+                    <>
+                      <strong>{byType[id].toLocaleString('en-US')}</strong> listed
+                    </>
+                  ) : (
+                    'None listed yet'
+                  )}
                 </span>
                 <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
               </Link>

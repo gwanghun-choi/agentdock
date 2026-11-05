@@ -730,7 +730,7 @@ export default async function ArtifactsPage({
   );
 
   const pageHead = (
-    <div className="page-head">
+    <div className="page-head stage">
       <h1>Artifacts</h1>
       <p className="muted">{SCOPE_SENTENCE}</p>
     </div>

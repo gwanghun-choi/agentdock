@@ -11,14 +11,15 @@
  * Every class the components already used is still here. New work is additive.
  */
 
-/* `.hero` re-declares every token, so the hero's `color-scheme: dark` (see
+/* `.hero` and `.stage` re-declare every token, so their `color-scheme: dark` (see
    there) reaches them — and so every media query that overrides a token on
-   :root must name .hero as well, or the override stops at the hero's edge. Chromium resolves light-dark() inside a custom property
+   :root must name both as well, or the override stops at their edge. Chromium resolves light-dark() inside a custom property
    where the property is declared, not where it is used: declared on :root
    alone, every token inside the hero was the light one on a light page
    (measured 2026-10-28, --fg #16191d under a dark color-scheme). */
 :root,
-.hero {
+.hero,
+.stage {
   color-scheme: light dark;
 
   /* Surfaces climb away from the page: --bg is the canvas, --surface is a card
@@ -68,11 +69,12 @@
   --t-lg: 1.125rem;
   --t-xl: 1.5rem;
   --t-2xl: 2rem;
-  /* A number that is the answer to a question, not a word in a sentence:
-     the count at the end of the index flow. It is the one size in this scale
-     that is set in tabular figures — see .count — because a number that changes width as it counts is a number that jitters
-     the layout around it. */
-  --t-metric: 1.75rem;
+  /* The lower page's three steps above the body (Phase 83–85): a section's heading,
+     an artifact's name in the feed, and the one number a section is about. Each
+     is fluid, because the page they are on now grows with the window. */
+  --t-display: clamp(2rem, 1.2rem + 2.6vw, 4.25rem);
+  --t-feed: clamp(var(--t-lg), 0.95rem + 0.55vw, 1.75rem);
+  --t-numeral: clamp(5rem, 2rem + 10vw, 13rem);
 
   /* The focus ring, in one place. It was the same two declarations written out
      at four call sites, which is three chances for one of them to drift to a
@@ -152,6 +154,11 @@
 }
 
 html {
+  /* Every bleed below is as wide as 100vw, and a classic scrollbar makes that wider
+     than the page: 15px of sideways scroll at 1280 (found in review, 2026-11-05).
+     clip, not hidden: it makes no scroll container, so the sticky header and the
+     pipeline's pin keep the window as theirs. */
+  overflow-x: clip;
   /* The header is sticky and 3.5rem tall, and every in-page jump — the section
      links, the file outline, a shared #file-L12 — landed its heading at 24px,
      under it (measured at 1280 and 390, all six jumps, Phase 57). The margin on
@@ -349,22 +356,6 @@ main {
   padding-block: var(--s-6) var(--s-7);
 }
 
-.site-footer {
-  position: relative;
-  border-top: 1px solid var(--border);
-  background: var(--surface-2);
-  padding-block: var(--s-5);
-  margin-top: var(--s-7);
-}
-
-.site-footer p {
-  margin: 0;
-  max-width: var(--prose);
-  color: var(--faint);
-  font-size: var(--t-xs);
-  line-height: 1.6;
-}
-
 .skip-link {
   position: absolute;
   left: -9999px;
@@ -378,6 +369,14 @@ main {
   background: var(--accent);
   color: var(--on-accent);
   border-radius: var(--r-md);
+}
+
+/* The hero's scheme on any other section (Phase 83–85): every token inside resolves
+   to its dark value, on a page that may be light. */
+.stage {
+  color-scheme: dark;
+  color: var(--fg);
+  background: var(--stage);
 }
 
 /* ---------- page header ---------- */
@@ -427,8 +426,8 @@ main {
 /* The stage's ground, bled to the viewport edges and up under the header's margin.
    Two lights a long way off, painted once: where the hub's amber falls on the dark
    and where the ring's far side recedes. They are what the still drawing stands in
-   too, and they cost nothing per frame. Clipped by no one: .board's own bleed set
-   the pattern (see there). */
+   too, and they cost nothing per frame. Clipped by no one: the bleed's reasoning
+   is at `:is(.board, .pipeline, …)::before`. */
 .hero::before {
   content: "";
   position: absolute;
@@ -912,7 +911,8 @@ main {
   }
 
   :root,
-  .hero {
+  .hero,
+  .stage {
     --wrap: 84rem;
   }
 }
@@ -921,217 +921,6 @@ main {
   html {
     font-size: 131.25%;
   }
-}
-
-/* ---------- index flow ---------- */
-
-/*
- * The pipeline: four stages, left to right, at the full width of the shell.
- *
- * It was a vertical git graph in the hero's sidebar. A pipeline is a horizontal
- * object in every tool that draws one, and at this width the four stages are the
- * widest thing on the page rather than the narrowest — which is the right
- * relative size for the picture that states what the product does.
- *
- * The middle stage is 1.7 tracks because it carries seven filename chips and the
- * others carry one short line. Equal tracks would have wrapped those chips into
- * seven rows and made the whole run as tall as its tallest column for no reason.
- */
-.flow {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1.7fr 1fr 1.1fr;
-  gap: var(--s-6);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: stage;
-  isolation: isolate;
-}
-
-/*
- * A stage.
- *
- * No border. The stages are told apart by their own surface and by the
- * connectors between them, which is one fewer rectangle in a page that had too
- * many — see §18. The surface is a step above the canvas rather than a card on
- * it, so the run reads as one object with four parts.
- */
-.flow > li {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  min-width: 0;
-  padding: var(--s-4);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-
-/* The last stage holds the count and is where the run arrives, so it is the one
-   that is lit. */
-.flow > li:last-child {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--commit) 40%, transparent);
-}
-
-.flow > li:last-child .flow-title svg {
-  color: var(--commit);
-}
-
-/*
- * The connector, drawn in the gap to the left of every stage but the first.
- *
- * A 2px rule with an arrowhead, centred vertically. It is on ::after so that
- * ::before is free to carry the stage number, and it is `pointer-events: none`
- * because it overhangs into a neighbour's box at small widths.
- */
-.flow > li + li::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 100%;
-  width: var(--s-6);
-  height: 2px;
-  margin-right: 1px;
-  background: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
-  pointer-events: none;
-}
-
-.flow-title {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  max-width: none;
-  color: var(--fg-strong);
-  font-size: var(--t-sm);
-  font-weight: 620;
-  letter-spacing: -0.008em;
-}
-
-.flow-title svg {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  color: var(--accent);
-}
-
-.flow-note {
-  margin: 0;
-  max-width: none;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  line-height: 1.5;
-  text-wrap: pretty;
-}
-
-/* The declaring filenames, in the same monospace the rest of the page uses for
-   a path, because that is what they are. */
-.flow-files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-1);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.flow-files li {
-  padding: 0.0625rem var(--s-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  line-height: 1.7;
-  white-space: nowrap;
-}
-
-.flow-count {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 var(--s-2);
-  margin: auto 0 0;
-  max-width: none;
-  color: var(--muted);
-  font-size: var(--t-xs);
-}
-
-/* Below the point where four stages stop fitting, the run turns vertical and the
-   connectors turn with it. */
-@media (max-width: 64rem) {
-  .flow {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--s-5);
-  }
-
-  .flow > li + li::after {
-    top: auto;
-    right: auto;
-    bottom: 100%;
-    left: var(--s-5);
-    width: 2px;
-    height: var(--s-5);
-    margin-right: 0;
-  }
-}
-
-/*
- * The count-up.
- *
- * The number in the markup is the real one and is the only one anything but a
- * sighted reader ever sees: the text node says 155 in the first byte of HTML
- * and never changes, so a screen reader reads 155 and a browser with this
- * stylesheet missing shows 155. `color: transparent` hides those digits from
- * the screen and the pseudo-element draws animated ones over them, counting a
- * registered custom property from 0 up to --target.
- *
- * ponytail: the drawn digits are ungrouped. CSS counters have no grouping
- * style, so 12400 cannot be spelled 12,400 here — which is why the markup
- * passes the raw number rather than a localised one, matching the "Browse all N
- * artifacts" link that has always been ungrouped. Revisit at a corpus above ten
- * thousand, where a separator starts to matter; the upgrade is to delete the
- * pseudo-element and animate nothing.
- *
- * Without @property, --count is an unregistered property, the keyframe
- * interpolates it discretely and the reader sees 0 flip straight to the final
- * number instead of counting to it. Nothing vanishes in that case: counter()
- * and counter-reset are CSS 2.1, and the fallback is the end state.
- */
-/* `inherits: true`, and it is load-bearing: the value is animated on .count and
-   read on .count::after, and a pseudo-element inherits from its originating
-   element rather than sharing its declarations. Registered as non-inheriting
-   first, which rendered a permanent 0 — the pseudo-element was falling back to
-   initial-value on every frame. */
-@property --count {
-  syntax: "<integer>";
-  inherits: true;
-  initial-value: 0;
-}
-
-.count {
-  --count: var(--target);
-  position: relative;
-  /* Not inline: an inline box is not a containing block a pseudo-element can
-     cover with inset: 0. */
-  display: inline-block;
-  color: transparent;
-  font-size: var(--t-metric);
-  font-weight: 660;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.count::after {
-  counter-reset: indexed var(--count);
-  content: counter(indexed);
-  position: absolute;
-  inset: 0;
-  color: var(--fg-strong);
 }
 
 /* ---------- cards & sections ---------- */
@@ -1284,31 +1073,41 @@ main {
   box-shadow: inset 3px 0 0 var(--hue, var(--accent));
 }
 
-/* The badge's hue, lifted to the row and the type card that hold it, so the
-   edge a hovered row grows and the strip on a type card are the kind's own
-   colour. Identity, as on the badges: no hue here means better or worse. */
-:is(.rows > li, .type-card):has(.badge-skill) {
+/* The badge's hue, lifted to the row, the type tile and the declaring file that
+   hold it, so the edge a hovered row grows and the light that comes up in a tile
+   are the kind's own colour. Identity, as on the badges: no hue here means better or worse. */
+.rows > li:has(.badge-skill),
+.hue-skill {
   --hue: light-dark(#1a56b8, #90b8f5);
 }
 
-:is(.rows > li, .type-card):has(.badge-command) {
+.rows > li:has(.badge-command),
+.hue-command {
   --hue: light-dark(#7a3d00, #f0b678);
 }
 
-:is(.rows > li, .type-card):has(.badge-plugin) {
+.rows > li:has(.badge-plugin),
+.hue-plugin {
   --hue: light-dark(#6b2fa0, #c9a2f0);
 }
 
-:is(.rows > li, .type-card):has(.badge-mcp_server) {
+.rows > li:has(.badge-mcp_server),
+.hue-mcp_server {
   --hue: light-dark(#0b6b58, #6ed4b8);
 }
 
-:is(.rows > li, .type-card):has(.badge-hook) {
+.rows > li:has(.badge-hook),
+.hue-hook {
   --hue: light-dark(#9a2340, #f293ad);
 }
 
-:is(.rows > li, .type-card):has(.badge-agent) {
+.rows > li:has(.badge-agent),
+.hue-agent {
   --hue: light-dark(#3d4f9e, #a8b6f2);
+}
+
+.hue-catalog {
+  --hue: light-dark(#4a5560, #a9b4c0);
 }
 
 .row-type {
@@ -2647,295 +2446,11 @@ details.notice[open] p {
   transform: translateX(-100%);
 }
 
-/* ---------- stats ---------- */
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--s-1);
-  padding: 0;
-  margin: 0;
-}
-
-.stats > div {
-  padding: var(--s-3) var(--s-4);
-  border-left: 2px solid var(--border);
-}
-
-/* ---------- section rhythm & banding ---------- */
-
-/*
- * The page was flat: every section had the same padding, the same canvas and a
- * 1px rectangle around its content, so the eye had no reason to stop anywhere.
- * Three things fix that, and none of them is a colour change.
- *
- * Rhythm. The hero gets the largest vertical space on the page (set on .hero
- * itself), the board is dense, the gate sits between them. A reader scrolling
- * feels the page change pace.
- *
- * Banding. The board sits on a band a step above the canvas, bled to the full
- * width of the viewport rather than stopping at the shell. Sections are told
- * apart by the ground they stand on instead of by a border around them.
- *
- * The bleed is a pseudo-element at inset 50% / -50vw rather than a negative
- * margin, because a negative inline margin on a flow element is a horizontal
- * scrollbar waiting for a narrow viewport. `100vw` would be one too when a
- * classic scrollbar is present; this measures from the element's own centre and
- * cannot overshoot the layout viewport.
- */
-/* ---------- browse by type ---------- */
-
-.type-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
-  gap: var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.type-card {
-  position: relative;
-  overflow: hidden;
-  display: grid;
-  gap: var(--s-2);
-  height: 100%;
-  padding: var(--s-4);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  /* The kind's strip along the top edge. */
-  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--hue, var(--accent)) 55%, transparent);
-  color: var(--fg);
-  text-decoration: none;
-  transition:
-    background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
-}
-
-.type-card:hover,
-.type-card:focus-visible {
-  background: var(--surface-2);
-  box-shadow: inset 0 3px 0 var(--hue, var(--accent));
-}
-
-.type-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  flex-wrap: wrap;
-}
-
-.type-count {
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.type-what {
-  color: var(--muted);
-  font-size: var(--t-sm);
-  line-height: 1.5;
-}
-
-.board {
-  position: relative;
-  isolation: isolate;
-  padding-block: var(--s-6);
-  margin-block: 0 var(--s-4);
-}
-
-/* The band's own padding is the space above the heading. With the section
-   head's top margin added to it the heading sat 64px into the band, which on a
-   phone was most of the gap between the search box and the first artifact. */
-.board .section-head {
-  margin-top: 0;
-}
-
-.board::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset-block: 0;
-  inset-inline: -50vw;
-  margin-inline: 50%;
-  background: var(--band);
-  border-block: 1px solid var(--border);
-  pointer-events: none;
-}
-
 /* What the feed above leaves out, and the way to list it. */
 .board-scope {
   margin: 0 0 var(--s-3);
   color: var(--muted);
   font-size: var(--t-sm);
-}
-
-/* The gate section stands on the plain canvas, which is what makes the band
-   above it read as a band. */
-.board + section {
-  padding-block: var(--s-5) var(--s-2);
-}
-
-/* One sentence under a section heading, at reading size rather than at
-   metadata size. Replaces the paragraph that used to open the big card. */
-.section-lede {
-  margin: calc(var(--s-2) * -1) 0 var(--s-4);
-  max-width: var(--prose);
-  color: var(--muted);
-}
-
-/* ---------- discovery gate ---------- */
-
-/*
- * The four discovery conditions, joined to what they decide.
- *
- * They used to be four bordered columns floating between two paragraphs, which
- * left a reader to work out what the four were conditions *for*. This names
- * both ends — a repository AgentDock found goes in, a repository AgentDock
- * reads comes out — and draws the four as a manifold hanging off one rail
- * between them.
- *
- * A manifold and not a chain, deliberately. src/corpus/policy.ts evaluates the
- * four as a single predicate; there is no first condition and no order between
- * them, so there are no arrowheads anywhere in here and .gate-note says as much
- * in words. A row of chevrons would have drawn a pipeline that does not exist.
- *
- * Everything lines up on one x, the same way the flow does: dots are 10px wide
- * at left 1px, every stem and tick is 1px at left 6px, and every label clears
- * them with a 1.5rem indent.
- */
-.gate {
-  display: grid;
-  gap: var(--s-3);
-  margin-top: var(--s-4);
-}
-
-.gate-end {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  padding-left: var(--s-5);
-  max-width: none;
-  color: var(--fg-strong);
-  font-size: var(--t-sm);
-  font-weight: 560;
-}
-
-.gate-end::before {
-  content: "";
-  position: absolute;
-  left: 1px;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  margin-top: -5px;
-  border-radius: 999px;
-  border: 2px solid var(--border-strong);
-  background: var(--surface);
-}
-
-/* The outcome end is filled, like the flow's last node, for the same reason:
-   it is the state the rest of the drawing arrives at. */
-.gate-out::before {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.gate-end svg {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  color: var(--accent);
-}
-
-/* The stems into and out of the rail. Each is exactly the height of .gate's
-   own row gap, so it spans the space between two rows and nothing else. */
-.gate-end::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  width: 1px;
-  height: var(--s-3);
-  background: var(--border-strong);
-}
-
-.gate-end:not(.gate-out)::after {
-  top: 100%;
-}
-
-.gate-out::after {
-  bottom: 100%;
-}
-
-/* The rail is the four columns' shared top border: with no gap between them
-   the four borders meet and read as one line. When the grid wraps to two
-   columns on a narrow window each row grows its own rail, which is still the
-   correct drawing. */
-.gate .stats {
-  gap: 0;
-}
-
-.gate .stats > div {
-  position: relative;
-  padding: var(--s-4) var(--s-4) var(--s-2) var(--s-5);
-  border-left: 0;
-  border-top: 1px solid var(--border-strong);
-}
-
-.gate .stats > div::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 0;
-  width: 1px;
-  height: var(--s-3);
-  background: var(--border-strong);
-}
-
-.gate-note {
-  margin: 0;
-  padding-left: var(--s-5);
-  max-width: none;
-  color: var(--faint);
-  font-size: var(--t-xs);
-}
-
-.stats dt {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  font-size: var(--t-xs);
-  color: var(--faint);
-}
-
-/* One glyph per condition, so the four read as four kinds of thing rather than
-   four paragraphs. Each is the ordinary sign for what it labels — a star for
-   stars, a globe for public, a branch for a fork, a box for an archive — and
-   none of them is a status light: there is no green, no red, and no tick. */
-.stats dt svg {
-  flex: none;
-  width: 13px;
-  height: 13px;
-}
-
-.stats dd {
-  margin: var(--s-1) 0 0;
-  font-size: var(--t-lg);
-  font-weight: 600;
-  color: var(--fg-strong);
-  font-variant-numeric: tabular-nums;
-}
-
-.stats dd small {
-  display: block;
-  font-size: var(--t-xs);
-  font-weight: 400;
-  color: var(--muted);
 }
 
 /* ---------- activity board ---------- */
@@ -3431,7 +2946,8 @@ details.notice[open] p {
   /* .hero as well, wherever :root is overridden: it re-declares every token
      (top of file), so an override on :root alone stops at its edge. */
   :root,
-  .hero {
+  .hero,
+  .stage {
     --t-2xl: 1.625rem;
   }
 
@@ -3566,13 +3082,6 @@ details.notice[open] p {
   .launcher {
     margin-top: 6vh;
   }
-
-  /* The four conditions are one column here, so each grows its own rail and its
-     own tick — which is the same drawing, one condition per row. The bottom
-     padding closes the gap the stacked rails would otherwise leave. */
-  .gate .stats > div {
-    padding-bottom: var(--s-3);
-  }
 }
 
 /* ---------- coarse pointers ---------- */
@@ -3607,6 +3116,1102 @@ details.notice[open] p {
   }
 }
 
+/* ---------- discovery: the page under the hero (Phase 83–85) ---------- */
+
+/*
+ * Three stretches of ground, in order: the hero's stage carries on through the feed and the
+ * pipeline, the conditions turn to the page's own scheme for one section, and the
+ * stage comes back for the types and the footer. The turn is what makes a long
+ * dark page read as sections, and it is a change of ground rather than a border.
+ *
+ * Measured before (2026-11-05, HEAD dc01ebe): 1764 of 2560px used, a 23.6px h2
+ * under a 105px h1, ten identical rows, then two light sections with the same
+ * rectangles. `--wide` takes the lower page to 82% at 2560 and 94% at 1920, and it
+ * only ever widens: under 64rem each section is simply the shell's width.
+ */
+.board,
+.pipeline,
+.conditions,
+.types {
+  --wide: max(100%, min(100vw - 4rem, 100rem));
+  position: relative;
+  isolation: isolate;
+  padding-block: clamp(var(--s-7), 9vh, 7rem);
+}
+
+@media (min-width: 64rem) {
+  .board,
+  .pipeline,
+  .conditions,
+  .types {
+    width: var(--wide);
+    margin-inline: calc((100% - var(--wide)) / 2);
+  }
+}
+
+/* The bleed is a pseudo-element at inset 50% / -50vw rather than a negative margin,
+   because a negative inline margin on a flow element is a horizontal scrollbar
+   waiting for a narrow viewport. It measures from the element's own centre; what it
+   overshoots by under a classic scrollbar, html's overflow-x clips. */
+:is(.board, .pipeline, .conditions, .types)::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background: var(--stage);
+  pointer-events: none;
+}
+
+:is(.board, .pipeline, .types) h2,
+.conditions h2 {
+  margin: 0;
+  font-size: var(--t-display);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+:is(.pipeline, .conditions, .types) .section-head {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0 0 clamp(var(--s-6), 5vh, var(--s-7));
+}
+
+.section-lede {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: var(--t-lg);
+}
+
+/* --- the feed --- */
+
+/*
+ * The hero's floor carries on under its edge: rings in the same place on the page
+ * as the scene's polar floor, drawn here in CSS and painted once. An echo, not a
+ * continuation of the canvas: it does not move with the scene.
+ */
+.board {
+  /* Space above is the hero's own; the row must stay on an 800px first screen. */
+  padding-block: var(--s-3) clamp(var(--s-7), 9vh, 7rem);
+}
+
+.board::before {
+  background:
+    linear-gradient(var(--stage), transparent 9rem),
+    repeating-radial-gradient(
+      circle at 72% -34rem,
+      transparent 0 calc(9rem - 1px),
+      rgb(255 255 255 / 5%) calc(9rem - 1px) 9rem
+    ),
+    radial-gradient(55vw 36rem at 72% 0, rgb(240 180 76 / 9%), transparent 70%), var(--stage);
+}
+
+.board .section-head {
+  align-items: start;
+  margin: 0 0 var(--s-4);
+}
+
+.board-meta,
+.board-scope {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.board .rows {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.board .rows > li {
+  padding-inline: var(--s-3);
+  background: transparent;
+}
+
+.board .row-title a {
+  font-size: var(--t-feed);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.board .row-desc {
+  font-size: var(--t-base);
+}
+
+/*
+ * Where there is a pointer and the room: the small index and the large preview.
+ *
+ * The ten names, in the feed's own order, are the list a reader scans, and the
+ * right-hand pane is the row under the pointer or the focus. Each pane is that
+ * row's own description and facts, laid over the same box, so nothing is fetched,
+ * the tab order is the row's and a screen reader reads every one where it always
+ * did: opacity, never `display`. A link in a pane that is not showing takes the
+ * focus and brings its pane with it. Pointer off the list, the newest row shows.
+ *
+ * A row's pane is its child and the row runs right up to it, so moving straight
+ * across keeps the row hovered and "source on GitHub" stays reachable. With a gap
+ * between them the hover dropped on the way (journey 2b, 2026-11-05). Without hover (a phone, a touch
+ * tablet) none of this applies and every row shows its own description inline.
+ *
+ * Above the rows the heading takes the list's column and everything else the
+ * pane's, which is what lets a heading at --t-display above the rows keep the first row on
+ * an 800px first screen (e2e, y < 800).
+ */
+/* Behind @supports: without :has() the rule that shows a pane would be dropped whole
+   and every pane would stay at opacity 0, so such a browser keeps the inline rows. */
+@supports selector(:has(*)) {
+  @media (min-width: 64rem) and (hover: hover) {
+    .board {
+      --pane: 44%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--pane);
+      column-gap: var(--s-6);
+      align-items: start;
+    }
+
+    .board .section-head {
+      display: contents;
+    }
+
+    .board h2 {
+      grid-column: 1;
+      grid-row: 1 / span 3;
+      margin-bottom: var(--s-4);
+    }
+
+    .board-meta,
+    .board-actions,
+    .board-scope {
+      grid-column: 2;
+      margin: 0;
+    }
+
+    .board-actions {
+      margin-inline-start: 0;
+      margin-block: var(--s-1);
+    }
+
+    .board-scope {
+      margin-bottom: var(--s-3);
+    }
+
+    .board .rows {
+      grid-column: 1 / -1;
+      position: relative;
+      min-height: 26rem;
+      padding-inline-end: var(--pane);
+    }
+
+    .board .rows > li {
+      position: static;
+      grid-template-columns: 8.75rem minmax(0, 1fr);
+      align-items: center;
+      padding-block: clamp(0.7rem, 1.7vh, 1.5rem);
+    }
+
+    .board .row-type {
+      padding-top: 0;
+    }
+
+    .board .row-title {
+      margin: 0;
+      column-gap: var(--s-3);
+      row-gap: 0;
+    }
+
+    .row-detail {
+      min-width: 0;
+    }
+
+    .board .row-detail {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      width: var(--pane);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-4);
+      padding: clamp(var(--s-5), 3vw, var(--s-7));
+      border-radius: 0 var(--r-lg) var(--r-lg) 0;
+      background: color-mix(in srgb, var(--hue, var(--accent)) 9%, var(--surface));
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition:
+        opacity var(--dur) var(--ease),
+        transform var(--dur) var(--ease);
+    }
+
+    /* The name again at the size of a heading, from the stylesheet: decoration, with
+     an empty alternative, because the row's own link already said it. */
+    .board .row-detail::before {
+      content: attr(data-name) / "";
+      color: var(--fg-strong);
+      font-size: clamp(var(--t-xl), 1rem + 1.7vw, 3.25rem);
+      font-weight: 680;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      overflow-wrap: anywhere;
+      /* The full name is in the row's link. Three lines leave the description room
+       beside a 95-character name and a short list. */
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: none;
+    }
+
+    .board .row-detail .row-desc {
+      margin: 0;
+      max-width: none;
+      font-size: clamp(var(--t-base), 0.8rem + 0.4vw, var(--t-lg));
+      line-height: 1.55;
+      -webkit-line-clamp: 8;
+      line-clamp: 8;
+    }
+
+    .board .row-detail .row-meta {
+      margin-top: auto;
+      font-size: var(--t-sm);
+    }
+
+    .board .row-detail .row-meta .path {
+      flex: 1 0 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .board .row-detail .row-source {
+      flex: 1 0 100%;
+      margin: var(--s-2) 0 0;
+      color: var(--fg-strong);
+      font-size: var(--t-base);
+      font-weight: 560;
+    }
+
+    /* The row in the pane. The first selector is the reader's; the second is the
+     rest position. :focus-visible, not :focus-within: a mouse click on a row's link
+     left its focus there, and that row's pane then lay over whichever row the
+     pointer went to next, so a click on what looked like row 2 opened row 6's
+     source (found in review, 2026-11-05; e2e). */
+    .board .rows > li:is(:hover, :has(:focus-visible)) .row-detail,
+    .board .rows:not(:has(> li:hover, :focus-visible)) > li:first-child .row-detail {
+      z-index: 1;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+    }
+
+    /* The keyboard's pane wins over a pointer that has been left on another row. */
+    .board .rows > li:has(:focus-visible) .row-detail {
+      z-index: 2;
+    }
+
+    .board .rows > li:is(:hover, :has(:focus-visible)),
+    .board .rows:not(:has(> li:hover, :focus-visible)) > li:first-child {
+      background: color-mix(in srgb, var(--hue, var(--accent)) 9%, var(--surface));
+      box-shadow: inset 3px 0 0 var(--hue, var(--accent));
+    }
+
+    .board .rows > li:is(:hover, :has(:focus-visible)) .row-title a,
+    .board .rows:not(:has(> li:hover, :focus-visible)) > li:first-child .row-title a {
+      color: var(--hue, var(--accent));
+    }
+  }
+}
+
+/* --- the pipeline --- */
+
+/*
+ * One line across the whole width with four stops, a repository going in on the
+ * left and a commit coming out on the right: amber, the page's signal, turning to
+ * the commit's teal at the far end. The stops are numbered because the order is
+ * real and load-bearing (see IndexFlow.tsx). No boxes: a stage is its stop on the
+ * line and what stands under it.
+ */
+.flow {
+  --node: 2.75rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.9fr 1.7fr 1fr 1.1fr;
+  gap: var(--s-6);
+  margin: 0;
+  padding: calc(var(--node) + var(--s-5)) 0 0;
+  list-style: none;
+  counter-reset: stage;
+  isolation: isolate;
+}
+
+.flow::before,
+.flow::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(var(--node) / 2 - 1px);
+  inset-inline: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--border-strong);
+}
+
+.flow::after {
+  background: linear-gradient(90deg, var(--accent) 55%, var(--commit));
+  transform-origin: left;
+}
+
+.flow > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-width: 0;
+  counter-increment: stage;
+}
+
+.pipeline .flow > li::before {
+  content: counter(stage);
+  position: absolute;
+  z-index: 1;
+  top: calc((var(--node) + var(--s-5)) * -1);
+  inset-inline-start: 0;
+  display: grid;
+  place-items: center;
+  width: var(--node);
+  height: var(--node);
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: var(--stage);
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 680;
+}
+
+.pipeline .flow > li:last-child::before {
+  border-color: var(--commit);
+}
+
+.flow-title {
+  margin: 0;
+  max-width: none;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-lg), 0.9rem + 0.75vw, var(--t-2xl));
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.flow-title svg {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--s-2);
+  color: var(--accent);
+}
+
+.flow > li:last-child .flow-title svg {
+  color: var(--commit);
+}
+
+.flow-note {
+  margin: 0;
+  max-width: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* What is read, and the kind each one declares. Each name is a file and in the
+   monospace a file gets; its bar is the hue of that kind's dock on the ring (a
+   marketplace has a hue but no dock: the ring's six are the filterable kinds). */
+.flow-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-file {
+  display: grid;
+  height: 100%;
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--hue);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.35;
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.flow-file code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-strong);
+  font-size: var(--t-base);
+  overflow-wrap: anywhere;
+}
+
+.flow-file:hover {
+  background: color-mix(in srgb, var(--hue) 18%, var(--surface));
+  transform: translateX(3px);
+}
+
+.flow-count {
+  display: grid;
+  margin: auto 0 0;
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-base);
+}
+
+/* A stage down the left under 64rem: the line turns with the run. 63.99, because at
+   exactly 1024px a 64rem maximum also matched the pin's minimum, and the vertical
+   run was held in a window it did not fit (measured 2,150px of section). */
+@media (max-width: 63.99rem) {
+  .flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    padding: 0 0 0 calc(var(--node) + var(--s-4));
+  }
+
+  .flow::before,
+  .flow::after {
+    top: 0;
+    bottom: 0;
+    inset-inline: calc(var(--node) / 2 - 1px) auto;
+    width: 3px;
+    height: auto;
+  }
+
+  .flow::after {
+    background: linear-gradient(180deg, var(--accent) 55%, var(--commit));
+    transform-origin: top;
+  }
+
+  .pipeline .flow > li::before {
+    top: 0;
+    inset-inline-start: calc((var(--node) + var(--s-4)) * -1);
+  }
+
+  .flow-title svg {
+    margin-top: 0.5rem;
+  }
+}
+
+/*
+ * The count-up.
+ *
+ * The number in the markup is the real one and is the only one anything but a
+ * sighted reader ever sees: the text node says 155 in the first byte of HTML
+ * and never changes, so a screen reader reads 155 and a browser with this
+ * stylesheet missing shows 155. `color: transparent` hides those digits from
+ * the screen and the pseudo-element draws animated ones over them, counting a
+ * registered custom property from 0 up to --target.
+ *
+ * ponytail: the drawn digits are ungrouped. CSS counters have no grouping
+ * style, so 12400 cannot be spelled 12,400 here — which is why the markup
+ * passes the raw number rather than a localised one, matching the "Browse all N
+ * artifacts" link that has always been ungrouped. Revisit at a corpus above ten
+ * thousand, where a separator starts to matter; the upgrade is to delete the
+ * pseudo-element and animate nothing.
+ *
+ * Without @property, --count is an unregistered property, the keyframe
+ * interpolates it discretely and the reader sees 0 flip straight to the final
+ * number instead of counting to it. Nothing vanishes in that case: counter()
+ * and counter-reset are CSS 2.1, and the fallback is the end state.
+ */
+/* `inherits: true`, and it is load-bearing: the value is animated on .count and
+   read on .count::after, and a pseudo-element inherits from its originating
+   element rather than sharing its declarations. Registered as non-inheriting
+   first, which rendered a permanent 0 — the pseudo-element was falling back to
+   initial-value on every frame. */
+@property --count {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.count {
+  --count: var(--target);
+  position: relative;
+  /* Not inline: an inline box is not a containing block a pseudo-element can
+     cover with inset: 0. */
+  display: inline-block;
+  justify-self: start;
+  color: transparent;
+  font-size: clamp(3rem, 1.6rem + 4.2vw, 7.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.count::after {
+  counter-reset: indexed var(--count);
+  content: counter(indexed);
+  position: absolute;
+  inset: 0;
+  color: var(--commit);
+}
+
+/* --- the conditions --- */
+
+/*
+ * The one section on the page's own scheme. The number is the largest thing below
+ * the hero, on a panel of the stage, the other three stand beside it as words, and a bracket runs down the
+ * left from "found" to "reads it", with no arrowhead on it anywhere.
+ */
+.conditions::before {
+  background: var(--band);
+}
+
+.gate {
+  --rail: 0.75rem;
+  position: relative;
+  display: grid;
+  gap: var(--s-5);
+  padding-inline-start: calc(var(--rail) + var(--s-5));
+}
+
+.gate::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.75rem 3.25rem;
+  inset-inline-start: calc(var(--rail) / 2 - 1px);
+  width: 2px;
+  background: var(--border-strong);
+}
+
+.gate-end {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  max-width: none;
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 620;
+}
+
+.gate-end::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc((var(--rail) + var(--s-5)) * -1);
+  width: var(--rail);
+  height: var(--rail);
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--band);
+}
+
+.gate-out::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.gate-end svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--accent);
+}
+
+.gate-note {
+  margin: calc(var(--s-3) * -1) 0 0;
+  max-width: none;
+  color: var(--muted);
+}
+
+.stats {
+  display: grid;
+  gap: var(--s-2) var(--s-6);
+  margin: 0 0 0 calc(var(--s-5) * -1);
+  padding: 0;
+}
+
+@media (min-width: 52rem) {
+  .stats {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-rows: repeat(3, auto);
+  }
+
+  .stats > div:first-child {
+    grid-row: 1 / span 3;
+  }
+}
+
+.stats > div {
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.stats > .floor {
+  padding: clamp(var(--s-5), 3vw, var(--s-7));
+  border-radius: var(--r-lg);
+}
+
+.stats > div:not(:first-child):hover {
+  background: var(--surface-3);
+}
+
+.stats dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-base);
+  font-weight: 560;
+}
+
+.stats dt svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  transition: transform var(--dur) var(--ease);
+}
+
+.stats > div:hover dt svg {
+  transform: scale(1.25);
+}
+
+.stats dd {
+  margin: var(--s-1) 0 0;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-xl), 1.2rem + 1.5vw, 3.25rem);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stats dd small {
+  display: block;
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-base);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+/* Tabular figures would space the plus like a digit. */
+.stats > div:first-child dd:not(.notice) {
+  color: var(--accent);
+  font-size: var(--t-numeral);
+  font-weight: 720;
+  letter-spacing: -0.055em;
+  line-height: 0.95;
+  transform-origin: left bottom;
+}
+
+.stats dd.notice {
+  display: flex;
+  align-items: start;
+  gap: var(--s-2);
+  margin-top: var(--s-5);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font-size: var(--t-base);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+/* --- the types --- */
+
+/*
+ * Compared on the real counts (194, 29, 16, 8, 3, 1 in the seed; production has one
+ * kind far ahead too):
+ *
+ * A bento with fixed spans would draw whichever kind came first as the largest.
+ * A category wall of equal tiles is the six rectangles this replaced. A spatial
+ * explorer, in 3D, is the hero again, at the hero's cost.
+ *
+ * So the bento, with the spans given by the data: the page sorts the kinds by what
+ * is listed, the first tile takes the big cell, and each stands on the hero's own
+ * stack for its count. 12 columns, three rows: 5×3 beside 4|3, 3|4, 7.
+ */
+.type-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .type-grid > li:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .type-grid > li:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 80rem: at 1024 a 3-of-12 tile was 220px, and "Configurations" ran under the stack. */
+@media (min-width: 80rem) {
+  .type-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .type-grid > li:first-child {
+    grid-column: span 5;
+    grid-row: span 3;
+  }
+
+  .type-grid > li:nth-child(2),
+  .type-grid > li:nth-child(5) {
+    grid-column: span 4;
+  }
+
+  .type-grid > li:nth-child(3),
+  .type-grid > li:nth-child(4) {
+    grid-column: span 3;
+  }
+
+  .type-grid > li:last-child {
+    grid-column: span 7;
+  }
+}
+
+.type-card {
+  --stack: 7.5rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stack);
+  align-content: start;
+  gap: var(--s-1) var(--s-3);
+  height: 100%;
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+  view-timeline: --tile block;
+}
+
+/* The hue comes up from the stack, under the words. */
+.type-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -60%;
+  right: -30%;
+  width: 180%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hue) 17%, var(--surface));
+  transform: scale(0);
+  transform-origin: 72% 40%;
+  transition: transform var(--dur) var(--ease);
+}
+
+.type-card:is(:hover, :focus-visible)::before {
+  transform: scale(1);
+}
+
+.type-name {
+  grid-column: 1;
+  color: var(--fg-strong);
+  font-size: var(--t-xl);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.type-count {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: var(--t-base);
+}
+
+.type-count strong {
+  display: block;
+  color: var(--hue);
+  font-size: clamp(2.5rem, 1.5rem + 2.4vw, 4.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.type-what {
+  grid-column: 1 / -1;
+  margin-top: var(--s-3);
+  max-width: 62ch;
+  color: var(--fg);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dock-stack {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: var(--stack);
+  overflow: visible;
+}
+
+.dock-plate {
+  transform: translateY(calc(var(--i) * var(--lift, 0px)));
+  transition: transform var(--dur) var(--ease);
+}
+
+.type-card:is(:hover, :focus-visible) .dock-plate {
+  --lift: -3px;
+}
+
+/* The largest kind gets the big cell, and the room is for scale. */
+@media (min-width: 80rem) {
+  .type-grid > li:first-child .type-card {
+    --stack: min(100%, 22rem);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+  }
+
+  .type-grid > li:first-child .dock-stack {
+    grid-column: 1;
+    grid-row: 4;
+    align-self: end;
+    justify-self: end;
+    margin-top: var(--s-5);
+  }
+
+  .type-grid > li:first-child .type-name {
+    font-size: clamp(var(--t-xl), 1rem + 1.5vw, 3rem);
+  }
+
+  .type-grid > li:first-child .type-count strong {
+    font-size: var(--t-numeral);
+    line-height: 0.95;
+  }
+}
+
+/* --- the close --- */
+
+/* The name again at the width of the page, cut by the edge of the window, under
+   the sentence every page ends on. From the stylesheet: the brand link at the top
+   of the page is the name, this is the sign on the building. */
+.site-footer {
+  overflow: hidden;
+  margin-top: var(--s-7);
+  padding-block: var(--s-7) 0;
+  border-top: 0;
+  background: var(--stage);
+}
+
+/* The page's last section is already on the stage: no light strip between them. */
+main:has(.types) {
+  padding-bottom: 0;
+}
+
+.site-footer .wrap {
+  max-width: min(100vw - 4rem, 100rem);
+}
+
+body:has(.types) .site-footer {
+  margin-top: 0;
+}
+
+.site-footer p {
+  color: var(--fg);
+  font-size: var(--t-lg);
+  line-height: 1.45;
+}
+
+.site-footer::after {
+  content: "AgentDock" / "";
+  display: block;
+  margin-top: var(--s-6);
+  margin-bottom: -0.04em;
+  color: var(--surface-3);
+  font-size: min(19.5vw, 24rem);
+  font-weight: 760;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* --- the listing and the detail page --- */
+
+/* The same stage opening the listing, the field straddling its edge. */
+.page-head.stage {
+  position: relative;
+  isolation: isolate;
+  margin-top: calc(var(--s-6) * -1);
+  margin-bottom: 0;
+  padding-block: clamp(var(--s-6), 6vh, 5rem) 3.5rem;
+}
+
+.page-head.stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background:
+    repeating-radial-gradient(
+      circle at 72% -30rem,
+      transparent 0 calc(9rem - 1px),
+      rgb(255 255 255 / 5%) calc(9rem - 1px) 9rem
+    ),
+    radial-gradient(55vw 100% at 72% 0, rgb(240 180 76 / 12%), transparent 70%), var(--stage);
+}
+
+.page-head.stage h1 {
+  font-size: var(--t-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin-bottom: var(--s-3);
+}
+
+.page-head.stage p {
+  max-width: var(--prose);
+  color: var(--muted);
+  font-size: var(--t-base);
+}
+
+/* A phone's first result stays on its first screen (e2e: y < 625 at 375). */
+@media (max-width: 40rem) {
+  .page-head.stage {
+    padding-block: var(--s-5) 3rem;
+    margin-top: calc(var(--s-5) * -1);
+  }
+}
+
+/* Only where the field's label is hidden: between these two widths it is visible
+   above the field, and would have stood on the dark band in dark ink. */
+@media (max-width: 40rem), (min-width: 64rem) {
+  .page-head.stage + .listing .search form {
+    position: relative;
+    z-index: 1;
+    margin-top: -1.5rem;
+  }
+}
+
+.listing .search-row input[type="search"] {
+  box-shadow: var(--shadow-lift);
+}
+
+@media (min-width: 64rem) {
+  .page-head.stage,
+  .listing {
+    --wide: max(100%, min(100vw - 4rem, 100rem));
+    width: var(--wide);
+    margin-inline: calc((100% - var(--wide)) / 2);
+  }
+
+  .listing {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+}
+
+/* The rows a reader scans for a living: still rows. The kind's bar is there at
+   rest now, the name and the description a size up, and the facts legible. */
+.listing .rows > li {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--hue, var(--border)) 45%, transparent);
+}
+
+.listing .rows > li:is(:hover, :focus-within) {
+  box-shadow: inset 4px 0 0 var(--hue, var(--accent));
+}
+
+.listing .row-title a {
+  font-size: var(--t-lg);
+}
+
+/* 13px, not the scale's 12: the two identifiers a reader compares down a list. */
+:is(.listing, .board) :is(.row-title .repo, .row-meta .path) {
+  font-size: var(--t-sm);
+}
+
+.listing .row-desc {
+  font-size: var(--t-base);
+}
+
+:is(.listing, .board) .row-meta {
+  font-size: var(--t-sm);
+}
+
+/* The artifact's own opening, on the stage, in its kind's light. */
+.detail-top {
+  position: relative;
+  isolation: isolate;
+  margin-top: calc(var(--s-6) * -1);
+  margin-bottom: var(--s-6);
+  padding-block: var(--s-5) var(--s-7);
+}
+
+.detail-top::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background:
+    radial-gradient(
+      60vw 120% at 78% -10%,
+      color-mix(in srgb, var(--hue, var(--accent)) 20%, transparent),
+      transparent 70%
+    ),
+    var(--stage);
+}
+
+.detail-top .detail-head {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.detail-top .detail-head h1 {
+  font-size: clamp(var(--t-2xl), 1.2rem + 3vw, 5rem);
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+.detail-top .detail-actions a:first-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.detail-top .detail-actions a:first-child:hover {
+  background: var(--accent-hover);
+}
+
+.detail-top ~ :is(section, div) h2:not(.body h2),
+.detail-top ~ h2 {
+  font-size: var(--t-xl);
+  letter-spacing: -0.02em;
+}
+
 /* ---------- motion ---------- */
 
 /*
@@ -3627,19 +4232,20 @@ details.notice[open] p {
  * they animate to, and there is nothing to switch off. motion.test.ts asserts
  * that this block is the only place an `animation` or an `@keyframes` appears.
  *
- * Every animation here runs once, on arrival,
+ * Every timed animation here runs once, on arrival,
  * except the loading sweep, which lasts as long as the placeholder it sits on;
  * a running job's progress bar takes three passes of the same sweep, 4.2 s.
  * Nothing else here loops. The hero's board (DockScene.tsx) is the one thing on
  * the site that moves without being asked; it is on a canvas, it stops by itself
- * and it has a Pause button. The one thing here tied to scrolling is the index flow's
- * reveal, and only where CSS can do it (`animation-timeline: view()`): an
- * IntersectionObserver reveal on every section is the pattern that makes a
+ * and it has a Pause button. Under the hero, one move per section is tied to
+ * scrolling, and only where CSS can do it (`animation-timeline`): the pipeline's
+ * hold, the conditions, the types' plates. An IntersectionObserver reveal on every section is the pattern that makes a
  * page feel like it is performing rather than loading, and it would also be
  * the first JavaScript this stylesheet ever required.
  *
- * All of it is opacity and transform, plus one custom property. None of it
- * changes a box, so none of it can shift the layout, and `backwards` fill
+ * All of it is opacity and transform, plus one custom property, so no animation can
+ * shift the layout. The one layout this block adds is the pipeline's pin (240svh
+ * and sticky); without the block the section has its natural height. `backwards` fill
  * without `forwards` means every element's resting style is the one written
  * above — an animation that never runs leaves nothing invisible.
  *
@@ -3708,180 +4314,240 @@ details.notice[open] p {
     animation: panel-in 240ms var(--ease-emphasized) backwards;
   }
 
-  /* --- the index flow ---
+  /* --- the page under the hero (Phase 83–85) ---
 
-     It sits below the feed, a screen or more down, so an entrance on page load
-     played where nobody was looking (Phase 57's flow reveal: measured at
-     y=2,493 on a 1280×800 screen; y=2,145 after Phase 60 moved it up a
-     section). Where the browser can tie an animation to
-     scrolling, the stages arrive as the flow scrolls in instead; the
-     time-based reveal below is the fallback for one that cannot. */
-
-  /* Each stage arrives from the left, in the order the run reads. */
-  @keyframes flow-step-in {
-    from {
-      opacity: 0;
-      transform: translateX(-10px);
-    }
-  }
-
-  .flow > li {
-    animation: flow-step-in var(--dur-slow) var(--ease-emphasized) backwards;
-  }
-
-  .flow > li:nth-child(1) {
-    animation-delay: 240ms;
-  }
-
-  .flow > li:nth-child(2) {
-    animation-delay: 380ms;
-  }
-
-  .flow > li:nth-child(3) {
-    animation-delay: 520ms;
-  }
-
-  .flow > li:nth-child(4) {
-    animation-delay: 660ms;
-  }
-
-  /* The seven filenames, after the step that holds them. This is the one place
-     the sequence is worth the extra rules: they are the concrete answer to
-     "what does AgentDock read", and arriving one at a time is what makes a
-     reader count them. */
-  @keyframes chip-in {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-  }
-
-  .flow-files li {
-    animation: chip-in 220ms var(--ease-emphasized) backwards;
-  }
-
-  .flow-files li:nth-child(1) {
-    animation-delay: 560ms;
-  }
-
-  .flow-files li:nth-child(2) {
-    animation-delay: 605ms;
-  }
-
-  .flow-files li:nth-child(3) {
-    animation-delay: 650ms;
-  }
-
-  .flow-files li:nth-child(4) {
-    animation-delay: 695ms;
-  }
-
-  .flow-files li:nth-child(5) {
-    animation-delay: 740ms;
-  }
-
-  .flow-files li:nth-child(6) {
-    animation-delay: 785ms;
-  }
-
-  .flow-files li:nth-child(n + 7) {
-    animation-delay: 830ms;
-  }
-
-  /* The count. `backwards` holds it at 0 through the delay, and the implied
-     `to` is the element's own --count, which is --target. */
-  @keyframes count-up {
-    from {
-      --count: 0;
-    }
-  }
-
-  .count {
-    animation: count-up 800ms var(--ease-emphasized) 700ms backwards;
-  }
-
-  /* The connectors draw between the stages as they arrive. */
-  @keyframes connector-draw {
-    from {
-      transform: scaleX(0);
-    }
-  }
-
-  .flow > li + li::after {
-    transform-origin: left;
-    animation: connector-draw var(--dur-slow) var(--ease-emphasized) backwards;
-  }
-
-  .flow > li:nth-child(2)::after {
-    animation-delay: 330ms;
-  }
-
-  .flow > li:nth-child(3)::after {
-    animation-delay: 470ms;
-  }
-
-  .flow > li:nth-child(4)::after {
-    animation-delay: 610ms;
-  }
-
-  /* Scroll-driven: each stage's reveal runs while that stage enters the
-     viewport and is finished by the time all of it is in — a reader never
-     reads a stage that is still fading. The count runs over its own entry, so
-     the number on screen is the real one whenever the whole number is on
-     screen. Delays are time, and mean nothing on a scroll timeline, so they
-     are reset. */
+     One move per section, each tied to scrolling, none of them to time: a timed
+     entrance down here plays where nobody is looking. Where the browser cannot tie
+     animation to scrolling, or the reader asked for less motion, there is no pin
+     and no animation, and the sections stand finished (the styles above). Every
+     one fills `backwards` only, so a finished one holds nothing. Measured against
+     the hero's scene: docs/analysis/agentdock-phase83-85-discovery-experience.md. */
   @supports (animation-timeline: view()) {
-    /* :nth-child(n) matches every one, and gives these the specificity of
-       the per-child delay rules above, which they come after. */
-    .flow > li:nth-child(n),
-    .flow > li:nth-child(n)::after,
-    .flow-files li:nth-child(n),
-    .count {
-      animation-timeline: view();
-      animation-range: entry 0% entry 100%;
-      animation-delay: 0s;
-    }
-  }
+    /* The feed: no entrance. It is what a visitor came to read, and it is on screen
+       at load. Its motion is the pane answering the pointer. */
 
-  /* Where the run is vertical, the connectors are too, and draw downward. */
-  @keyframes connector-draw-down {
-    from {
-      transform: scaleY(0);
-    }
-  }
-
-  @media (max-width: 64rem) {
-    .flow > li + li::after {
-      transform-origin: top;
-      animation-name: connector-draw-down;
-    }
-  }
-
-  /* --- Browse by type ---
-
-     The seven kind cards rise in as they scroll into view, the same mechanism
-     and range as the index flow above them, so the two sections below the
-     feed arrive the same way. Scroll-driven only, with no time-based
-     fallback: these sit two screens down, and a timed entrance would play
-     where nobody is looking — the reason the flow's reveal was tied to
-     scrolling in the first place. `backwards` without `forwards`: once a card
-     is in, the animation holds nothing, so its hover lift is the transition's
-     alone. The feed's rows get no entrance, as since Phase 57: they are what a
-     visitor came to read, and they are on screen at load. */
-  @supports (animation-timeline: view()) {
-    /* Each card swings up out of the page's depth as it scrolls in: the hero's
-       space carried one section further, and only while the card is arriving. */
-    @keyframes card-rise {
+    /* The pipeline: a stage at a time, on the line, while the section holds still.
+       A step ahead of the reader is dim, not gone: the whole drawing is on screen
+       from the first frame of the hold. */
+    @keyframes flow-line {
       from {
-        opacity: 0;
-        transform: perspective(900px) translateY(26px) rotateX(16deg);
+        transform: scaleX(0);
       }
     }
 
-    .type-card {
-      animation: card-rise linear backwards;
+    @keyframes flow-line-down {
+      from {
+        transform: scaleY(0);
+      }
+    }
+
+    @keyframes flow-lit {
+      from {
+        opacity: 0.22;
+      }
+    }
+
+    @keyframes flow-file-lit {
+      from {
+        opacity: 0.22;
+        transform: translateX(-12px);
+      }
+    }
+
+    /* `backwards`: holds at 0 before its range; the implied `to` is the element's
+       own --count, which is --target. */
+    @keyframes count-up {
+      from {
+        --count: 0;
+      }
+    }
+
+    /* The section is 240svh, so the pin holds for about 1.4 screens of scrolling, and
+       needs a window the whole drawing fits in. 74rem, because under about 1,160px the
+       file tiles go to one column and the drawing is 838px high: at 1024×768 the last
+       two files sat below the window for the whole hold (found in review). */
+    @media (min-width: 74rem) and (min-height: 44rem) {
+      .pipeline {
+        height: 240svh;
+        padding-block: 0;
+        view-timeline: --pipeline block;
+      }
+
+      .pipeline-pin {
+        position: sticky;
+        top: 3.5rem;
+        display: grid;
+        align-content: center;
+        min-height: calc(100svh - 3.5rem);
+      }
+
+      .pipeline .section-head {
+        margin-bottom: var(--s-6);
+      }
+
+      .flow::after {
+        animation: flow-line linear backwards;
+        animation-timeline: --pipeline;
+        animation-range: contain 2% contain 88%;
+      }
+
+      .flow > li {
+        animation: flow-lit linear backwards;
+        animation-timeline: --pipeline;
+      }
+
+      .flow > li:nth-child(1) {
+        animation-range: contain 0% contain 14%;
+      }
+
+      .flow > li:nth-child(2) {
+        animation-range: contain 16% contain 34%;
+      }
+
+      .flow > li:nth-child(3) {
+        animation-range: contain 46% contain 60%;
+      }
+
+      .flow > li:nth-child(4) {
+        animation-range: contain 66% contain 80%;
+      }
+
+      /* The nine files, one after another, because that is what a reader counts. */
+      .flow-file {
+        animation: flow-file-lit linear backwards;
+        animation-timeline: --pipeline;
+      }
+
+      li:nth-child(1) > .flow-file {
+        animation-range: contain 20% contain 26%;
+      }
+
+      li:nth-child(2) > .flow-file {
+        animation-range: contain 22% contain 28%;
+      }
+
+      li:nth-child(3) > .flow-file {
+        animation-range: contain 24% contain 30%;
+      }
+
+      li:nth-child(4) > .flow-file {
+        animation-range: contain 26% contain 32%;
+      }
+
+      li:nth-child(5) > .flow-file {
+        animation-range: contain 28% contain 34%;
+      }
+
+      li:nth-child(6) > .flow-file {
+        animation-range: contain 30% contain 36%;
+      }
+
+      li:nth-child(7) > .flow-file {
+        animation-range: contain 32% contain 38%;
+      }
+
+      li:nth-child(8) > .flow-file {
+        animation-range: contain 34% contain 40%;
+      }
+
+      li:nth-child(9) > .flow-file {
+        animation-range: contain 36% contain 42%;
+      }
+
+      .count {
+        animation: count-up linear backwards;
+        animation-timeline: --pipeline;
+        animation-range: contain 66% contain 90%;
+      }
+    }
+
+    /* Too short or too narrow to hold: each stage over its own entry. */
+    @media (max-width: 73.99rem), (max-height: 43.99rem) {
+      .flow > li,
+      .count {
+        animation-timeline: view();
+        animation-range: entry 0% entry 100%;
+      }
+
+      .flow > li {
+        animation-name: flow-lit;
+        animation-timing-function: linear;
+        animation-fill-mode: backwards;
+      }
+
+      .count {
+        animation-name: count-up;
+        animation-timing-function: linear;
+        animation-fill-mode: backwards;
+      }
+
+      .flow::after {
+        animation: flow-line linear backwards;
+        animation-timeline: view();
+        animation-range: entry 0% exit 40%;
+      }
+    }
+
+    @media (max-width: 63.99rem) {
+      .flow::after {
+        animation-name: flow-line-down;
+      }
+    }
+
+    /* The conditions: the number grows as it arrives, and the words come in from
+       its side after it. */
+    @keyframes floor-grow {
+      from {
+        opacity: 0;
+        transform: scale(0.7);
+      }
+    }
+
+    /* From the number's side. Leftward on purpose: a 28px offset the other way
+       widened a 390px page by 12px, from the bottom of a page nobody had scrolled
+       (e2e: "never widens a phone page"). */
+    @keyframes condition-in {
+      from {
+        opacity: 0;
+        transform: translateX(-28px);
+      }
+    }
+
+    .stats > div:first-child dd:not(.notice) {
+      animation: floor-grow linear backwards;
       animation-timeline: view();
-      animation-range: entry 0% entry 100%;
+      animation-range: entry 10% entry 100%;
+    }
+
+    .stats > div:not(:first-child) {
+      animation: condition-in linear backwards;
+      animation-timeline: view();
+    }
+
+    .stats > div:nth-child(2) {
+      animation-range: entry 10% cover 20%;
+    }
+
+    .stats > div:nth-child(3) {
+      animation-range: entry 30% cover 28%;
+    }
+
+    .stats > div:nth-child(4) {
+      animation-range: entry 50% cover 36%;
+    }
+
+    /* The types: the plates drop onto their docks, as they do on the ring. */
+    @keyframes plate-drop {
+      from {
+        opacity: 0;
+        transform: translateY(calc(-26px - var(--i) * 7px));
+      }
+    }
+
+    .dock-plate {
+      animation: plate-drop linear backwards;
+      animation-timeline: --tile;
+      animation-range: entry 15% cover 40%;
     }
   }
 
@@ -4059,7 +4725,8 @@ details.notice[open] p {
      2026-10-28; motion.test.ts now checks every selector that declares
      --dur is reached). */
   :root,
-  .hero {
+  .hero,
+  .stage {
     --dur-fast: 0.01ms;
     --dur: 0.01ms;
   }

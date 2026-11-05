@@ -1,9 +1,11 @@
+import type { CSSProperties } from 'react';
 import {
   cablePath,
   DOCK_DEPTH,
   DOCK_WIDTH,
   DOCKS,
   type DockCounts,
+  type DockKind,
   PLATE_HEIGHT,
   plates,
   RING,
@@ -78,6 +80,33 @@ function Circle({ radius, y = 0, className }: { radius: number; y?: number; clas
       rx={(radius * SCALE).toFixed(1)}
       ry={(radius * SCALE * Math.sin(PITCH)).toFixed(1)}
     />
+  );
+}
+
+/**
+ * One kind's stack on its own, for a Browse by type tile: the same box, projection
+ * and plate count as its dock on the ring, one group per plate so the stylesheet
+ * can lift them apart. No WebGL and no script. Zero plates is the empty socket
+ * the ring draws for a kind with nothing listed.
+ */
+export function DockStack({ kind, count }: { kind: DockKind; count: number }) {
+  const n = plates(count);
+  return (
+    <svg aria-hidden="true" className={`dock-stack dock dock-${kind}`} viewBox="-60 -75 120 115">
+      <Box d={DOCK_DEPTH + 0.3} h={0.05} w={DOCK_WIDTH + 0.3} x={0} z={0} />
+      {Array.from({ length: n }, (_, i) => `plate-${i}`).map((key, i) => (
+        <g className="dock-plate" key={key} style={{ '--i': i } as CSSProperties}>
+          <Box
+            d={DOCK_DEPTH}
+            h={PLATE_HEIGHT * 0.8}
+            w={DOCK_WIDTH}
+            x={0}
+            y={0.05 + i * PLATE_HEIGHT}
+            z={0}
+          />
+        </g>
+      ))}
+    </svg>
   );
 }
 

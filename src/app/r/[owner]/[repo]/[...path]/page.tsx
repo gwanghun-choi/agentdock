@@ -208,60 +208,63 @@ export default async function PackagePage({ params }: Props) {
       {/* Where this page sits: the listing, this type's listing (catalog has
           none — the search route does not filter on it), the repository, then
           this artifact. Every step is a page a reader can go back up to. */}
-      <nav aria-label="Breadcrumb" className="crumbs">
-        <ol>
-          <li>
-            <Link href="/artifacts">Artifacts</Link>
-          </li>
-          {typeListing ? (
+      <div className={`detail-top stage hue-${detail.type}`}>
+        <nav aria-label="Breadcrumb" className="crumbs">
+          <ol>
             <li>
-              <Link href={`/artifacts?type=${detail.type}`}>{typeListing}</Link>
+              <Link href="/artifacts">Artifacts</Link>
             </li>
-          ) : null}
-          <li>
-            <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
-          </li>
-          <li aria-current="page">{detail.name}</li>
-        </ol>
-      </nav>
+            {typeListing ? (
+              <li>
+                <Link href={`/artifacts?type=${detail.type}`}>{typeListing}</Link>
+              </li>
+            ) : null}
+            <li>
+              <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+            </li>
+            <li aria-current="page">{detail.name}</li>
+          </ol>
+        </nav>
 
-      {/* One shell for all seven types: badge, name, repository, description, then
+        {/* One shell for all seven types: badge, name, repository, description, then
           the two links a reader reaches for. Nothing here is skill-specific —
           the type-conditional parts are further down: the usage guide, which
           reads its type's entry from usageGuide.ts, and the frontmatter row's
           field set. */}
-      <div className="detail-head">
-        <ArtifactBadge type={detail.type} />
-        <h1>{detail.name}</h1>
-        <p className="repo-line">
-          <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
-          <span aria-hidden="true">/</span>
-          <span className="path">{detail.sourcePath}</span>
-        </p>
-        {detail.summary ? (
-          <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
-            {detail.summary}
+        <div className="detail-head">
+          <ArtifactBadge type={detail.type} />
+          <h1>{detail.name}</h1>
+          <p className="repo-line">
+            <Link href={`/r/${detail.fullName}`}>{detail.fullName}</Link>
+            <span aria-hidden="true">/</span>
+            <span className="path">{detail.sourcePath}</span>
           </p>
-        ) : null}
-        {languageNote(detail.summaryLanguage) ? (
-          <p className="muted">
-            Description language: {languageNote(detail.summaryLanguage)}. Shown as the author wrote
-            it; AgentDock does not translate it, and a browser&rsquo;s translate feature can.
-          </p>
-        ) : null}
-        <div className="detail-actions">
-          {/* Both leave AgentDock, and both say so with the same icon — §16's
+          {detail.summary ? (
+            <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
+              {detail.summary}
+            </p>
+          ) : null}
+          {languageNote(detail.summaryLanguage) ? (
+            <p className="muted">
+              Description language: {languageNote(detail.summaryLanguage)}. Shown as the author
+              wrote it; AgentDock does not translate it, and a browser&rsquo;s translate feature
+              can.
+            </p>
+          ) : null}
+          <div className="detail-actions">
+            {/* Both leave AgentDock, and both say so with the same icon — §16's
               internal/external distinction, made visible rather than implied. */}
-          <a href={source} rel="noopener noreferrer" target="_blank">
-            <ExternalIcon /> View this file at commit {detail.commitSha.slice(0, 7)}
-          </a>
-          <a
-            href={`https://github.com/${detail.fullName}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <ExternalIcon /> Repository on GitHub
-          </a>
+            <a href={source} rel="noopener noreferrer" target="_blank">
+              <ExternalIcon /> View this file at commit {detail.commitSha.slice(0, 7)}
+            </a>
+            <a
+              href={`https://github.com/${detail.fullName}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <ExternalIcon /> Repository on GitHub
+            </a>
+          </div>
         </div>
       </div>
 
