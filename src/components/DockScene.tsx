@@ -100,6 +100,9 @@ const SIGNAL = '#f0b44c';
 const DRIFT = 0.05; // radians per second
 const PIXEL_BUDGET = 3_700_000; // about 2560×1440: past it the cost is pixels, not picture
 
+/** Renderers with no GPU behind them: what the browser falls back to on such a machine. */
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+
 const ease = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
 const approach = (rate: number, delta: number) => 1 - Math.exp(-rate * delta);
 const scratch = new Object3D();
@@ -175,6 +178,9 @@ function environmentScene() {
   };
   add(new Color('#ffffff').multiplyScalar(5), 0, 18, 0, 26, 6);
   add(new Color(SIGNAL).multiplyScalar(4), 0, -18, 0, 10, 10);
+  // A cool edge from behind. In the room rather than a light: a sixth light cost every
+  // metal pixel on the ring, 4.6 fps against 7 with no GPU and two cores (2026-11-06).
+  add(new Color('#a9c7ff').multiplyScalar(3), 0, 5, -19, 34, 7);
   for (const dock of DOCKS) {
     add(new Color(dock.hue).multiplyScalar(2.6), dock.x * 3.4, 3, dock.z * 3.4, 7, 10);
   }
@@ -717,6 +723,8 @@ function Station({
   const crownPaint = useRef<MeshStandardMaterial[][]>(DOCKS.map(() => []));
   const crownGlow = useRef<MeshStandardMaterial[][]>(DOCKS.map(() => []));
   const spins = useRef<(Group | null)[]>([]);
+  const tagSizes = useRef<{ width: number; height: number }[]>([]);
+  const litTags = useRef<boolean[]>([]);
   const halos = useRef<(Sprite | null)[]>([]);
   const hit = useRef<(Mesh | null)[]>([]);
 
@@ -800,6 +808,24 @@ function Station({
       compiled?.uniforms?.dfgLUT?.value?.dispose();
     };
   }, [gl]);
+
+  // No GPU: start where the steps below would end, before anything compiles, rather than
+  // spending the entrance finding out. A two-core machine drew 3.6 fps at full quality
+  // and the steps took seconds each (2026-11-06).
+  useLayoutEffect(() => {
+    const context = gl.getContext();
+    const info = context.getExtension('WEBGL_debug_renderer_info');
+    if (
+      !info ||
+      !SOFTWARE_RENDERER.test(String(context.getParameter(info.UNMASKED_RENDERER_WEBGL)))
+    )
+      return;
+    if (key.current) key.current.castShadow = false;
+    now.current.tier = 3;
+    gl.domElement.dataset.tier = '3';
+    want.current.lowerDpr();
+    want.current.lowerDpr();
+  }, [gl, want]);
 
   // A paused or returning reader skips the entrance: it is motion they refused.
   useLayoutEffect(() => {
@@ -966,8 +992,12 @@ function Station({
       edge,
     };
     camera.fov = STAGE_FOV;
+    tagSizes.current = tags.current.map((tag) => ({
+      width: tag?.offsetWidth ?? 0,
+      height: tag?.offsetHeight ?? 0,
+    }));
     invalidate();
-  }, [camera, gl, invalidate, size]);
+  }, [camera, gl, invalidate, size, tags]);
 
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 1 / 20);
@@ -1187,15 +1217,23 @@ function Station({
             (-dock.x * s + dock.z * c) * reach,
           )
           .project(camera);
-        const half = tag.offsetWidth / 2;
+        // Measured once per stage size, in the framing effect above. Read here, after the
+        // previous tag's writes, each of these forced a style pass: twelve a frame.
+        const { width, height } = tagSizes.current[i] ?? { width: 0, height: 0 };
+        const half = width / 2;
         const x = Math.min(
           size.width - half - 8,
           Math.max(frameNow.edge + half + 8, ((anchor.x + 1) / 2) * size.width),
         );
-        const y = Math.max(tag.offsetHeight + 8, ((1 - anchor.y) / 2) * size.height);
-        tag.style.transform = `translate3d(${x - half}px, ${y - tag.offsetHeight - 6}px, 0)`;
+        const y = Math.max(height + 8, ((1 - anchor.y) / 2) * size.height);
+        tag.style.transform = `translate3d(${x - half}px, ${y - height - 6}px, 0)`;
         tag.style.opacity = String(arrived * (value < 0 ? 1 + value * 0.68 : 1));
-        tag.dataset.lit = up > 0.5 ? 'true' : 'false';
+        const isLit = up > 0.5;
+        // An attribute a selector reads: only when it changes.
+        if (litTags.current[i] !== isLit) {
+          litTags.current[i] = isLit;
+          tag.dataset.lit = String(isLit);
+        }
       }
       moteUniforms.uLit.value[i] = value;
       const cable = cableUniforms[i];
@@ -1239,7 +1277,9 @@ function Station({
     if (state.looping && state.tier < 4) {
       state.frames++;
       state.frameSum += rawDelta;
-      if (state.frames >= 45) {
+      // 45 frames, or 1.5 s if that comes first: at 45 frames alone a machine doing 4 fps
+      // waited 11 s for each step down, so the slowest machine answered last.
+      if (state.frames >= 45 || (state.frames >= 4 && state.frameSum >= 1.5)) {
         if (state.frameSum / state.frames > 1 / 34) {
           state.tier++;
           gl.domElement.dataset.tier = String(state.tier);
@@ -1281,8 +1321,6 @@ function Station({
       {/* Depth: the far side of the ring falls a step back into the stage's own ground. */}
       <fogExp2 args={['#0c0f11', 0.0135]} attach="fog" />
       <hemisphereLight args={['#c9d6dc', '#0a0c0d', 0.55]} />
-      {/* The rim: a cool edge from behind, so the figures stand off the dark. No shadow. */}
-      <directionalLight color="#a9c7ff" intensity={0.8} position={[4, 5, -14]} />
       <directionalLight
         castShadow
         intensity={1.7}

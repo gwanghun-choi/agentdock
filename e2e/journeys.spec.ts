@@ -466,6 +466,9 @@ test('home: the page has no motion past five seconds, and none under reduced mot
 // what the page does with the scene, not how it looks.
 test.describe('the dock board', () => {
   test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+  // These run a real scene with no GPU: a runner's two cores spend the default 30 s on the
+  // longest of them with nothing wrong (2026-11-06, CI 42076948384).
+  test.setTimeout(120_000);
 
   /** Counts every WebGL draw call, from before the page's own script runs. */
   const countDraws = (page: Page) =>
@@ -791,7 +794,7 @@ test.describe('the dock board', () => {
     await page.goto('/');
     await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
     await page.setViewportSize({ width: 800, height: 800 });
-    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page)).toHaveAttribute('data-scene', 'still', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(0);
     await page.waitForTimeout(800); // R3F's own context loss comes after the unmount
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -812,7 +815,7 @@ test.describe('the dock board', () => {
       };
     });
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(0);
     await expect(board(page).locator('svg')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Pause motion' })).toHaveCount(0);
@@ -887,7 +890,7 @@ test.describe('the dock board', () => {
     });
     await page.goto('/');
     await page.locator('html[data-hotkeys]').waitFor();
-    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page)).toHaveAttribute('data-scene', 'still', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(0);
     await expect(board(page).locator('svg')).toBeVisible();
     await page.waitForLoadState('networkidle');
@@ -909,7 +912,7 @@ test.describe('the dock board', () => {
       const canvas = document.querySelector('.dock-board canvas') as HTMLCanvasElement;
       canvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     });
-    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(0);
     await expect(board(page).locator('svg')).toBeVisible();
     await expect(page.locator('h1')).toBeVisible();
@@ -928,7 +931,7 @@ test.describe('the dock board', () => {
       return route.fulfill({ response });
     });
     await page.goto('/');
-    await expect(board(page)).toHaveAttribute('data-scene', 'failed');
+    await expect(board(page)).toHaveAttribute('data-scene', 'failed', { timeout: 20_000 });
     await expect(page.locator('h1')).toHaveText(/Find agent artifacts/);
     await expect(board(page).locator('svg')).toBeVisible();
     await page.fill('#q', 'review');
@@ -953,7 +956,7 @@ test.describe('the dock board', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.locator('html[data-hotkeys]').waitFor();
-    await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    await expect(board(page)).toHaveAttribute('data-scene', 'still', { timeout: 20_000 });
     await expect(board(page).locator('canvas')).toHaveCount(0);
     const top = board(page).locator('.dock-hook .dock-top').first();
     const rest = await top.evaluate((e) => getComputedStyle(e).fill);
@@ -1664,7 +1667,9 @@ test.describe('on a phone', () => {
     expect((await page.locator('.board .rows li').first().boundingBox())?.y).toBeLessThan(844);
     // A still drawing, not the scene: nothing 3D on a phone, and its chunk is
     // not requested (DockBoard.tsx).
-    await expect(page.locator('.dock-board')).toHaveAttribute('data-scene', 'still');
+    await expect(page.locator('.dock-board')).toHaveAttribute('data-scene', 'still', {
+      timeout: 20_000,
+    });
     await expect(page.locator('.dock-board canvas')).toHaveCount(0);
     await noHorizontalOverflow(page);
   });
