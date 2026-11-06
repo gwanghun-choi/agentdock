@@ -2,7 +2,7 @@ import { eq, isNull, sql } from 'drizzle-orm';
 import { ANALYZERS } from '@/analyze';
 import { analyzeArtifact } from '@/analyze/run';
 import { db } from '@/db/client';
-import { capabilityFinding, packageTable, packageVersion } from '@/db/schema';
+import { capabilityFinding, findingIdentity, packageTable, packageVersion } from '@/db/schema';
 
 /**
  * Re-runs the shipped analyzers over one stored version's own bytes.
@@ -74,43 +74,32 @@ export async function analyzePackageVersion(packageVersionId: number): Promise<n
 
     let written = 0;
     if (pass.findings.length > 0) {
-      const inserted = await tx
-        .insert(capabilityFinding)
-        .values(
-          pass.findings.map((f) => ({
-            packageVersionId,
-            detectorId: f.detectorId,
-            detectorVersion: f.detectorVersion,
-            category: f.category,
-            signal: f.signal,
-            summary: f.summary,
-            sourcePath: f.sourcePath,
-            startLine: f.startLine,
-            endLine: f.endLine,
-            commitSha: row.commitSha,
-            evidenceText: f.evidenceText,
-            metadata: f.metadata,
-          })),
-        )
-        // A single analyzeArtifact pass can itself produce two
-        // structurally-identical findings (persist.ts's own documented case:
-        // a line matching the same detector pattern twice, e.g. "npm
-        // install" appearing twice on skills/docx/SKILL.md:21) — the delete
-        // above already cleared this version's OLD rows, so this conflict is
-        // never against a previous run, only within this one pass. The array
-        // must name the same six columns, in the same order, as
-        // capability_finding_identity — persist.ts:210-221's convention.
-        .onConflictDoNothing({
-          target: [
-            capabilityFinding.packageVersionId,
-            capabilityFinding.detectorId,
-            capabilityFinding.category,
-            capabilityFinding.sourcePath,
-            capabilityFinding.startLine,
-            capabilityFinding.summary,
-          ],
-        })
-        .returning({ id: capabilityFinding.id });
+      const insert = tx.insert(capabilityFinding).values(
+        pass.findings.map((f) => ({
+          packageVersionId,
+          detectorId: f.detectorId,
+          detectorVersion: f.detectorVersion,
+          category: f.category,
+          signal: f.signal,
+          summary: f.summary,
+          sourcePath: f.sourcePath,
+          startLine: f.startLine,
+          endLine: f.endLine,
+          commitSha: row.commitSha,
+          evidenceText: f.evidenceText,
+          metadata: f.metadata,
+        })),
+      );
+      // A single analyzeArtifact pass can itself produce two
+      // structurally-identical findings (persist.ts's own documented case:
+      // a line matching the same detector pattern twice, e.g. "npm
+      // install" appearing twice on skills/docx/SKILL.md:21) — the delete
+      // above already cleared this version's OLD rows, so this conflict is
+      // never against a previous run, only within this one pass. By hand
+      // because the target is an expression (schema.ts, findingIdentity).
+      const inserted = await tx.execute(
+        sql`${insert.getSQL()} on conflict ${findingIdentity} do nothing returning id`,
+      );
       written = inserted.length;
     }
 

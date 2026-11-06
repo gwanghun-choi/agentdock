@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, not, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   capabilityFinding,
+  findingIdentity,
   ingestAttempt,
   ingestJob,
   packageTable,
@@ -9,6 +10,7 @@ import {
   repoSeed,
   repository,
   repositoryDenylist,
+  sourcePathDigest,
 } from '@/db/schema';
 import type { RepoMetadata } from '@/github/types';
 import type { RepoScan } from './types';
@@ -53,6 +55,18 @@ function chunks<T>(items: T[]): T[][] {
     out.push(items.slice(i, i + ROWS_PER_STATEMENT));
   }
   return out;
+}
+
+/**
+ * tx.execute skips Drizzle's column mapping, and postgres.js returns a bigint as a string.
+ * A string here misses every number key in `minted` below, and the package's findings
+ * disappear with no error. Past 2^53 two ids would round to one number, so that stops
+ * the transaction instead of writing another package's versions onto this one.
+ */
+function packageIdOf(raw: string): number {
+  const id = Number(raw);
+  if (!Number.isSafeInteger(id)) throw new Error(`package id ${raw} is not a safe integer`);
+  return id;
 }
 
 /**
@@ -148,50 +162,43 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
 
     const idOf = new Map<string, number>();
     for (const part of chunks(rows)) {
-      const upserted = await tx
-        .insert(packageTable)
-        .values(
-          part.map((found) => ({
-            repositoryId: repo.id,
-            type: found.type,
-            sourcePath: found.sourcePath,
-            name: found.name,
-            slug: found.slug,
-            summary: found.summary,
-            licenseText: found.licenseText,
-            meta: found.meta,
-            parentPath: found.parentPath,
-            files: found.files,
-          })),
-        )
-        // The array must name the same three columns, in the same order, as the
-        // unique('package_identity') constraint.
-        .onConflictDoUpdate({
-          target: [packageTable.repositoryId, packageTable.type, packageTable.sourcePath],
-          set: {
-            name: sql`excluded.name`,
-            slug: sql`excluded.slug`,
-            summary: sql`excluded.summary`,
-            licenseText: sql`excluded.license_text`,
-            meta: sql`excluded.meta`,
-            parentPath: sql`excluded.parent_path`,
-            // Refreshed on every scan, unlike a version's own columns: the
-            // inventory's lifetime is the scan, not the content hash. A commit
-            // where the tree moved but the manifest did not still updates
-            // this — see ScannedPackage.files's own doc.
-            files: sql`excluded.files`,
-            delistedAt: null,
-            updatedAt: sql`now()`,
-          },
-        })
-        // Keyed back by identity, not by position: RETURNING order is not a
-        // documented guarantee.
-        .returning({
-          id: packageTable.id,
-          type: packageTable.type,
-          sourcePath: packageTable.sourcePath,
-        });
-      for (const r of upserted) idOf.set(key(r.type, r.sourcePath), r.id);
+      const insert = tx.insert(packageTable).values(
+        part.map((found) => ({
+          repositoryId: repo.id,
+          type: found.type,
+          sourcePath: found.sourcePath,
+          name: found.name,
+          slug: found.slug,
+          summary: found.summary,
+          licenseText: found.licenseText,
+          meta: found.meta,
+          parentPath: found.parentPath,
+          files: found.files,
+        })),
+      );
+      // The target must be the expression of package_identity_digest, which Drizzle's
+      // onConflictDoUpdate cannot name: it takes columns only (schema.ts).
+      //
+      // `files` is refreshed on every scan, unlike a version's own columns: the
+      // inventory's lifetime is the scan, not the content hash. A commit where the tree
+      // moved but the manifest did not still updates it: ScannedPackage.files's own doc.
+      const upserted = await tx.execute<{ id: string; type: string; source_path: string }>(sql`
+        ${insert.getSQL()}
+        on conflict (repository_id, type, ${sourcePathDigest}) do update set
+          name = excluded.name,
+          slug = excluded.slug,
+          summary = excluded.summary,
+          license_text = excluded.license_text,
+          meta = excluded.meta,
+          parent_path = excluded.parent_path,
+          files = excluded.files,
+          delisted_at = null,
+          updated_at = now()
+        returning id, type, source_path
+      `);
+      // Keyed back by identity, not by position: RETURNING order is not a
+      // documented guarantee.
+      for (const r of upserted) idOf.set(key(r.type, r.source_path), packageIdOf(r.id));
     }
     const pkgId = (found: { type: string; sourcePath: string }) =>
       idOf.get(key(found.type, found.sourcePath)) as number;
@@ -279,21 +286,9 @@ export async function persistScan(scan: RepoScan, job?: JobContext): Promise<Per
       }));
     });
     for (const part of chunks(findings)) {
-      await tx
-        .insert(capabilityFinding)
-        .values(part)
-        // The array must name the same six columns, in the same order,
-        // as capability_finding_identity.
-        .onConflictDoNothing({
-          target: [
-            capabilityFinding.packageVersionId,
-            capabilityFinding.detectorId,
-            capabilityFinding.category,
-            capabilityFinding.sourcePath,
-            capabilityFinding.startLine,
-            capabilityFinding.summary,
-          ],
-        });
+      const insert = tx.insert(capabilityFinding).values(part);
+      // By hand for the reason the package upsert above is: the target is an expression.
+      await tx.execute(sql`${insert.getSQL()} on conflict ${findingIdentity} do nothing`);
     }
 
     const packageIds: number[] = [];

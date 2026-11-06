@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { analyzeArtifact } from '@/analyze/run';
 import type { RepoMetadata } from '@/github/types';
@@ -157,6 +158,242 @@ describe.skipIf(!DB_URL)('persistScan', () => {
     await sql`DELETE FROM ingest_job WHERE target = ${JOB_TARGET}`;
     await sql`DELETE FROM repo_seed WHERE full_name = ${SEED_NAME}`;
     await sql`DELETE FROM repository_denylist WHERE full_name = ${SEED_NAME}`;
+  });
+
+  describe('long source paths (54000)', () => {
+    const at = (sourcePath: string, n = sourcePath.length) =>
+      pkg({ sourcePath, name: `n${n}`, slug: `n${n}`, contentHash: `hash-${sourcePath.length}` });
+
+    // Random, so PostgreSQL cannot compress it under the limit: 3,840 characters of this
+    // were what failed the old unique constraint. 'd'.repeat() would have passed it.
+    const noise = (length: number) =>
+      Array.from({ length: Math.ceil(length / 36) }, () => randomUUID())
+        .join('/')
+        .slice(0, length);
+    const hangul = (length: number) =>
+      String.fromCodePoint(
+        ...Array.from({ length }, () => 0xac00 + Math.floor(Math.random() * 11_172)),
+      );
+    const finding = (sourcePath: string) => ({
+      detectorId: 'network',
+      detectorVersion: '1',
+      category: 'network_request' as const,
+      signal: 'url',
+      summary: 'a summary',
+      sourcePath,
+      startLine: 1,
+      endLine: 1,
+      evidenceText: null,
+      metadata: {},
+    });
+    const storedFindingPaths = async (packageId: number) =>
+      (
+        await sql<{ source_path: string }[]>`
+          SELECT cf.source_path FROM capability_finding cf
+          JOIN package_version pv ON pv.id = cf.package_version_id
+          WHERE pv.package_id = ${packageId}
+        `
+      ).map((r) => r.source_path);
+
+    // What the old constraints still allow, so the upsert is exercised on either side of 0012.
+    const LONG = 1_000;
+
+    it.each([100, 1_000])('stores a %i-character path whole', async (length) => {
+      const path = `${noise(length - 9)}/SKILL.md`;
+      expect(path).toHaveLength(length);
+      await persistScan(scan({ packages: [at(path)] }));
+      expect(await livePaths()).toEqual([path]);
+    });
+
+    it.each([
+      ['4,000 characters', () => noise(4_000)],
+      ['8,000 characters', () => noise(8_000)],
+      ['multi-byte, over 8,000 bytes', () => hangul(3_000)],
+    ])('still fails the whole transaction with 54000 until 0012: %s', async (_, path) => {
+      await persistScan(scan());
+      await expect(persistScan(scan({ packages: [at(path())] }))).rejects.toMatchObject({
+        cause: { code: '54000' },
+      });
+      expect(await livePaths()).toEqual(['skills/canvas-design/SKILL.md']);
+    });
+
+    it('stores a multi-byte path that compresses under the limit, and its finding', async () => {
+      const path = `${'스킬/😀/'.repeat(800)}SKILL.md`;
+      expect(Buffer.byteLength(path)).toBeGreaterThan(8_000);
+      const result = await persistScan(
+        scan({ packages: [{ ...at(path), findings: [finding(path)] }] }),
+      );
+      expect(await livePaths()).toEqual([path]);
+      expect(await storedFindingPaths(result.packageIds[0])).toEqual([path]);
+    });
+
+    it('keys findings by a package id that tx.execute returned as a string', async () => {
+      // The reproduction: the raw path hands back a string, which `minted` would not find.
+      const { db } = await import('@/db/client');
+      const { sql: raw } = await import('drizzle-orm');
+      const [row] = await db.execute<{ id: unknown }>(raw`select 9007199254740991::bigint as id`);
+      expect(row.id).toBe('9007199254740991');
+
+      const path = 'skills/finding/SKILL.md';
+      const result = await persistScan(
+        scan({ packages: [{ ...at(path), findings: [finding(path)] }] }),
+      );
+      expect(typeof result.packageIds[0]).toBe('number');
+      expect(result.counters.new).toBe(1);
+      expect(await storedFindingPaths(result.packageIds[0])).toEqual([path]);
+    });
+
+    describe('a package id at the edge of the safe integers', () => {
+      // A row already there under this id, so the upsert's conflict branch returns it.
+      async function packageWithId(id: string, path: string) {
+        const { repositoryId } = await persistScan(scan({ packages: [] }));
+        await sql`
+          INSERT INTO package (id, repository_id, type, source_path, name, slug)
+          VALUES (${id}, ${repositoryId}, 'skill', ${path}, 'edge', 'edge')
+        `;
+      }
+
+      it('uses the largest one exactly', async () => {
+        const path = 'skills/edge/SKILL.md';
+        await packageWithId('9007199254740991', path);
+        const result = await persistScan(
+          scan({ packages: [{ ...at(path), findings: [finding(path)] }] }),
+        );
+        expect(result.packageIds).toEqual([Number.MAX_SAFE_INTEGER]);
+        const rows = await sql<{ package_id: string }[]>`
+          SELECT package_id::text FROM package_version WHERE package_id = '9007199254740991'
+        `;
+        expect(rows).toHaveLength(1);
+        expect(await storedFindingPaths(Number.MAX_SAFE_INTEGER)).toEqual([path]);
+      });
+
+      it.each(['9007199254740992', '9007199254740993'])(
+        'stops the transaction at %s rather than round it onto another id',
+        async (id) => {
+          const path = 'skills/edge/SKILL.md';
+          await packageWithId(id, path);
+          await expect(persistScan(scan({ packages: [at(path)] }))).rejects.toThrow(
+            `package id ${id} is not a safe integer`,
+          );
+          const rows = await sql<{ n: number }[]>`
+            SELECT count(*)::int AS n FROM package_version pv
+            JOIN package p ON p.id = pv.package_id
+            JOIN repository r ON r.id = p.repository_id
+            WHERE r.github_node_id = ${NODE_ID}
+          `;
+          expect(rows[0].n).toBe(0);
+        },
+      );
+    });
+
+    it('keeps long paths apart that differ only at the end, or only at the start', async () => {
+      const shared = noise(LONG);
+      const paths = [
+        `${shared}/a/SKILL.md`,
+        `${shared}/b/SKILL.md`,
+        `x/${shared}/SKILL.md`,
+        `y/${shared}/SKILL.md`,
+      ];
+      const first = await persistScan(scan({ packages: paths.map((p, i) => at(p, i)) }));
+      expect(first.counters.new).toBe(4);
+      expect(new Set(first.packageIds).size).toBe(4);
+      expect(new Set(await livePaths())).toEqual(new Set(paths));
+    });
+
+    it('updates the row a repeated read of a long path finds, and mints nothing new', async () => {
+      const path = `${noise(LONG)}/SKILL.md`;
+      const first = await persistScan(scan({ packages: [at(path)] }));
+      const again = await persistScan(scan({ packages: [at(path)] }));
+      expect(again.packageIds).toEqual(first.packageIds);
+      expect(again.counters.new).toBe(0);
+      expect(again.newVersions).toBe(0);
+    });
+
+    // The conflict branch is written by hand, so every column it sets is named here.
+    it('writes every column of a re-read onto the row it conflicts with', async () => {
+      const path = `${noise(LONG)}/SKILL.md`;
+      const [id] = (await persistScan(scan({ packages: [at(path)] }))).packageIds;
+      const changed = {
+        name: 'renamed',
+        slug: 'renamed-slug',
+        summary: 'changed summary',
+        licenseText: 'changed license',
+        meta: { changed: ['yes', 1] },
+        parentPath: 'changed/parent',
+        files: [{ path: 'changed.md', size: 1, kind: 'file' as const, executable: false }],
+      };
+      const again = await persistScan(scan({ packages: [{ ...at(path), ...changed }] }));
+      expect(again.packageIds).toEqual([id]);
+      const [row] = await sql<Record<string, unknown>[]>`
+        SELECT name, slug, summary, license_text, meta, parent_path, files FROM package
+        WHERE id = ${id}
+      `;
+      expect(row).toEqual({
+        name: changed.name,
+        slug: changed.slug,
+        summary: changed.summary,
+        license_text: changed.licenseText,
+        meta: changed.meta,
+        parent_path: changed.parentPath,
+        files: changed.files,
+      });
+    });
+
+    it('keeps two findings of one version apart by line, and collapses a true duplicate', async () => {
+      const path = 'skills/lines/SKILL.md';
+      const result = await persistScan(
+        scan({
+          packages: [
+            {
+              ...at(path),
+              findings: [
+                finding(path),
+                finding(path),
+                { ...finding(path), startLine: 2, endLine: 2 },
+              ],
+            },
+          ],
+        }),
+      );
+      expect(await storedFindingPaths(result.packageIds[0])).toEqual([path, path]);
+    });
+
+    it('keeps one path in two types as two artifacts', async () => {
+      const path = `${noise(LONG)}/plugin.json`;
+      const result = await persistScan(
+        scan({ packages: [at(path), { ...at(path), type: 'plugin', name: 'p', slug: 'p' }] }),
+      );
+      expect(new Set(result.packageIds).size).toBe(2);
+    });
+
+    it('treats a backslash as the byte it is', async () => {
+      // A text-to-bytea cast would read these as escapes, or refuse them.
+      const paths = ['a\\b/SKILL.md', 'a\\\\b/SKILL.md', '\\x41/SKILL.md', 'A/SKILL.md'];
+      const result = await persistScan(scan({ packages: paths.map((p, i) => at(p, i)) }));
+      expect(new Set(result.packageIds).size).toBe(4);
+      expect(new Set(await livePaths())).toEqual(new Set(paths));
+    });
+
+    it('digests exactly the path bytes, so the index means what its name says', async () => {
+      const paths = ['skills/a/SKILL.md', '스킬/😀.md', 'a\\b', '\\x41', noise(LONG)];
+      await persistScan(scan({ packages: paths.map((p, i) => at(p, i)) }));
+      // The expression comes from the index itself, so a change to it is a change here.
+      const [{ def }] = await sql<{ def: string }[]>`
+        SELECT pg_get_expr(i.indexprs, i.indrelid) AS def FROM pg_index i
+        WHERE i.indexrelid = 'package_identity_digest'::regclass
+      `;
+      expect(def).toContain('sha256');
+      const rows = await sql<{ source_path: string; digest: string }[]>`
+        SELECT source_path, encode(${sql.unsafe(def)}, 'hex') AS digest FROM (
+          SELECT p.source_path FROM package p
+          JOIN repository r ON r.id = p.repository_id WHERE r.github_node_id = ${NODE_ID}
+        ) q
+      `;
+      expect(rows).toHaveLength(paths.length);
+      for (const row of rows) {
+        expect(row.digest).toBe(createHash('sha256').update(row.source_path).digest('hex'));
+      }
+    });
   });
 
   it('writes a repository, a package and a version', async () => {
