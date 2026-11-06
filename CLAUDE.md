@@ -97,7 +97,8 @@ not replace `bun run ci`.
   no markup equivalent), the error boundary, which the framework requires to
   be one, and the hero's orbital dock: DockBoard, which decides whether the scene
   loads and holds the panel and Pause, and DockScene, the lazily loaded WebGL
-  scene itself — CSS has no 3D projection. None of them holds data and none of them fetches. A package
+  scene itself — CSS has no 3D projection. None of them holds data, and one fetches: DockBoard
+  reads the kind in focus from `/api/docks/[kind]`, off the CDN, after first paint. A package
   that ships
   `'use client'` turns every import site into a client component; measure before
   adopting one. The measurement that rejected `lucide-react` is written up in

@@ -53,12 +53,15 @@ import {
   DOCKS,
   type DockCounts,
   type DockKind,
+  frontDock,
   isSoftwareRenderer,
   motes,
   nearestTurn,
+  nextDock,
   PLATE_HEIGHT,
   plates,
   RING,
+  spring,
 } from '@/components/dockBoard';
 import {
   BEAM_FRAGMENT,
@@ -80,9 +83,16 @@ import {
  *
  * `frameloop="demand"`, still: nothing draws unless something below asks. What
  * asks is the entrance, the reader (pointer, scroll, focus, a key), and the
- * ambient drift, which spins down after IDLE_SECONDS without input and at once
- * off screen or under Pause. At rest the loop is fully stopped, the same zero
- * idle cost Phase 79 measured, so the drift costs only what a reader is present for.
+ * tour, which spins down after IDLE_SECONDS without input and at once off screen
+ * or under Pause. At rest the loop is fully stopped, the same zero idle cost
+ * Phase 79 measured, so the tour costs only what a reader is present for.
+ *
+ * The tour: the ring carries each dock to the front in turn and holds it for
+ * DWELL_SECONDS. DockBoard holds which one, because its panel says what it is and
+ * the same state serves the drawing, where nothing here runs. A reader who is doing
+ * something outranks it: a dock under the pointer, a pick, a drag, the search field, a
+ * step of the arrows, or the panel in use each hold it, the last two for RESUME_SECONDS
+ * after they end. It only runs where the drift ran: Pause and reduced motion stop both.
  *
  * The canvas takes no input (`pointer-events: none`). The hero's listeners below
  * raycast instead, and only when the event did not land on a control or on the
@@ -96,9 +106,16 @@ const OUTER = RING + 1; // the deck's outer edge
 const DECK_TOP = 0.22;
 const HUB_Y = 1.5;
 const ENTRANCE = 2.6; // seconds
-const IDLE_SECONDS = 20;
+const IDLE_SECONDS = 45; // one lap of the tour, and a little
+const DWELL_SECONDS = 6; // travel included: about 2.5 s on the way and the rest to read
+const RESUME_SECONDS = 8;
+const TOUR_PACE = 1.7; // the spring's omega, an unhurried pass from one dock to the next
+const PICK_PACE = 5; // a reader's own pick, which answers at once
+const TOUR_ZOOM = 0.72; // how far in the camera comes for the tour, of a pick's 1
+const DRAG_SLOP = 6; // px: under it a press is a click
+const COAST = 0.35; // seconds of a release's speed counted when choosing where it lands
 const SIGNAL = '#f0b44c';
-const DRIFT = 0.05; // radians per second
+const DRIFT = 0.05; // radians per second, where the tour is held and nothing is in focus
 const PIXEL_BUDGET = 3_700_000; // about 2560×1440: past it the cost is pixels, not picture
 
 /**
@@ -493,7 +510,9 @@ function Crown({
 type Want = {
   lit: DockKind | null;
   flown: DockKind | null;
+  tour: DockKind | null;
   paused: boolean;
+  onTour: (kind: DockKind) => void;
   onHover: (kind: DockKind | null) => void;
   onSelect: (kind: DockKind | null) => void;
   onDrawn: () => void;
@@ -506,11 +525,14 @@ function Station({
   counts,
   want,
   changed,
+  touched,
   tags,
 }: {
   counts: DockCounts;
   want: RefObject<Want>;
   changed: string;
+  /** Counts the reader's own steps of the tour, from the arrows. */
+  touched: number;
   tags: RefObject<(HTMLElement | null)[]>;
 }) {
   const gl = useThree((state) => state.gl);
@@ -745,6 +767,10 @@ function Station({
     burst: 0,
     wave: 0,
     lastInput: performance.now(),
+    // When the reader last steered the tour: it waits RESUME_SECONDS from here.
+    held: 0,
+    dragging: false,
+    dragTheta: 0,
     inView: true,
     light: new Vector3(3, 2, 3),
   });
@@ -753,6 +779,8 @@ function Station({
     time: 0,
     drift: 0,
     theta: 0.45,
+    turning: 0,
+    dwell: 0,
     x: 0,
     y: 0,
     scroll: 0,
@@ -772,7 +800,14 @@ function Station({
     looping: false,
     drawn: 0,
   });
-  const frame = useRef({ distance: 30, shift: 0, pickedShift: 0, closeIn: 0, edge: 0 });
+  const frame = useRef({
+    distance: 30,
+    shift: 0,
+    pickedShift: 0,
+    closeIn: 0,
+    edge: 0,
+    radius: 300,
+  });
 
   // Removed on unmount, because R3F then forces a context loss of its own, and a
   // scene closed by narrowing the window must be able to come back when it widens.
@@ -789,6 +824,14 @@ function Station({
     input.current.lastInput = performance.now();
     invalidate();
   }, [changed, invalidate]);
+
+  // A step of the arrows: the turn is DockBoard's to say and the wait starts here.
+  useEffect(() => {
+    if (touched === 0) return;
+    input.current.held = performance.now();
+    input.current.lastInput = input.current.held;
+    invalidate();
+  }, [touched, invalidate]);
 
   // Built here, so freed here. R3F also frees a geometry it was handed as a prop, and
   // a second dispose() does nothing; the textures and unmounted ones it never saw.
@@ -894,8 +937,60 @@ function Station({
       !(event.target as Element).closest('a, button, form, nav, h1, p, li, .dock-panel');
 
     let lit: DockKind | null = null;
+    // A press on the stage, until it is a click or a drag.
+    let press: { id: number; x: number; theta: number; moved: boolean } | null = null;
+    let dragged = false;
+    const onDown = (event: Event) => {
+      const pointer = event as PointerEvent;
+      // A second finger is not a second drag: it would take the press from the first, whose
+      // lift would then end nothing and leave the ring held for good.
+      if (!pointer.isPrimary) return;
+      dragged = false;
+      if (pointer.button !== 0 || !onScene(event) || pointer.clientX < frame.current.edge) return;
+      press = {
+        id: pointer.pointerId,
+        x: pointer.clientX,
+        theta: now.current.theta,
+        moved: false,
+      };
+    };
+    /** A drag ends where the ring would coast to, on a dock: there is no stopping between two. */
+    const endDrag = (event?: Event) => {
+      if (press && event && (event as PointerEvent).pointerId !== press.id) return;
+      if (press?.moved) {
+        dragged = true;
+        input.current.dragging = false;
+        input.current.held = performance.now();
+        delete hero.dataset.dragging;
+        if (hero.hasPointerCapture(press.id)) hero.releasePointerCapture(press.id);
+        const { theta, turning } = now.current;
+        want.current.onTour(frontDock(theta + turning * COAST));
+        wake();
+      }
+      press = null;
+    };
     const onMove = (event: Event) => {
       const pointer = event as PointerEvent;
+      // Let go where this never heard it: outside the hero before it was a drag, or a window
+      // switch in the middle of one. A pointer with no button down holds nothing.
+      if (press && pointer.pointerId === press.id && !(pointer.buttons & 1)) endDrag();
+      if (press && pointer.pointerId === press.id) {
+        const dx = pointer.clientX - press.x;
+        if (!press.moved && Math.abs(dx) > DRAG_SLOP) {
+          press.moved = true;
+          input.current.dragging = true;
+          hero.dataset.dragging = '';
+          hero.setPointerCapture(pointer.pointerId);
+          want.current.onSelect(null);
+          want.current.onHover(null);
+        }
+        if (press.moved) {
+          // The near side of the ring follows the pointer, at the ring's own radius on screen.
+          input.current.dragTheta = press.theta + dx / frame.current.radius;
+          wake();
+          return;
+        }
+      }
       input.current.x = (pointer.clientX / innerWidth) * 2 - 1;
       input.current.y = (pointer.clientY / innerHeight) * 2 - 1;
       wake();
@@ -904,11 +999,17 @@ function Station({
       lit = over;
       if (over) hero.dataset.over = '';
       else delete hero.dataset.over;
+      if (onScene(event) && pointer.clientX >= frame.current.edge) hero.dataset.stage = '';
+      else delete hero.dataset.stage;
       want.current.onHover(over);
       // The reader's light, where the pointer's ray meets a plane just over the ring.
       ray.ray.intersectPlane(lightPlane, input.current.light);
     };
     const onClick = (event: Event) => {
+      if (dragged) {
+        dragged = false;
+        return;
+      }
       if (!onScene(event) || getSelection()?.toString()) return;
       // What is lit is what a click means: the ring may have drifted out from under a
       // pointer that has not moved. `under` is for a tap, which never hovered.
@@ -922,6 +1023,7 @@ function Station({
       input.current.y = 0;
       lit = null;
       delete hero.dataset.over;
+      delete hero.dataset.stage;
       want.current.onHover(null);
       wake();
     };
@@ -953,6 +1055,10 @@ function Station({
     });
     seen.observe(hero);
 
+    hero.addEventListener('pointerdown', onDown);
+    hero.addEventListener('pointerup', endDrag);
+    hero.addEventListener('pointercancel', endDrag);
+    hero.addEventListener('lostpointercapture', endDrag);
     hero.addEventListener('pointermove', onMove, { passive: true });
     hero.addEventListener('pointerleave', onLeave);
     hero.addEventListener('click', onClick);
@@ -964,6 +1070,10 @@ function Station({
     if (document.activeElement === field) onFocus();
     return () => {
       seen.disconnect();
+      hero.removeEventListener('pointerdown', onDown);
+      hero.removeEventListener('pointerup', endDrag);
+      hero.removeEventListener('pointercancel', endDrag);
+      hero.removeEventListener('lostpointercapture', endDrag);
       hero.removeEventListener('pointermove', onMove);
       hero.removeEventListener('pointerleave', onLeave);
       hero.removeEventListener('click', onClick);
@@ -972,6 +1082,8 @@ function Station({
       field?.removeEventListener('blur', onBlur);
       field?.removeEventListener('input', onType);
       delete hero.dataset.over;
+      delete hero.dataset.stage;
+      delete hero.dataset.dragging;
     };
   }, [gl, camera, invalidate, ray, lightPlane, want]);
 
@@ -996,6 +1108,7 @@ function Station({
       pickedShift: panelLeft - 8.5 * rem - size.width / 2,
       closeIn: 0.34 * Math.min(1, gap / (14 * rem)),
       edge,
+      radius: radiusPixels,
     };
     camera.fov = STAGE_FOV;
     tagSizes.current = tags.current.map((tag) => ({
@@ -1009,11 +1122,17 @@ function Station({
     const delta = Math.min(rawDelta, 1 / 20);
     const state = now.current;
     const reader = input.current;
-    const { flown, lit, paused } = want.current;
+    const { flown, lit, paused, tour } = want.current;
     const frameNow = frame.current;
 
     const litIndex = DOCKS.findIndex((dock) => dock.id === lit);
     const flownIndex = DOCKS.findIndex((dock) => dock.id === flown);
+    const tourIndex = DOCKS.findIndex((dock) => dock.id === tour);
+    // What is lit here: the reader's, or failing that the tour's, with the rest stepping back
+    // less far for the tour than for a pick. The hub's colour and the beam go with it.
+    const focusIndex = litIndex >= 0 ? litIndex : tourIndex;
+    const standBack = litIndex >= 0 ? -1 : -0.4;
+    const dockGoal = (i: number) => (focusIndex === i ? 1 : focusIndex < 0 ? 0 : standBack);
 
     // `placed`: a reader who paused skips the entrance, but the plates start at scale
     // 0 and still need this one pass to land.
@@ -1038,14 +1157,59 @@ function Station({
     state.searching += (reader.searching - state.searching) * approach(3.2, delta);
     reader.burst *= 1 - approach(2.8, delta);
     if (reader.burst < 0.004) reader.burst = 0;
-    state.zoom += ((flownIndex >= 0 ? 1 : 0) - state.zoom) * approach(3, delta);
+    const zoomGoal = flownIndex >= 0 ? 1 : tourIndex >= 0 ? TOUR_ZOOM : 0;
+    state.zoom += (zoomGoal - state.zoom) * approach(flownIndex >= 0 ? 3 : 1.6, delta);
     state.light.lerp(reader.light, approach(5, delta));
 
-    if (flownIndex >= 0) {
-      const target = nearestTurn(state.theta, DOCKS[flownIndex].angle);
-      state.theta += (target - state.theta) * approach(3, delta);
+    // The ring: the pointer's while it is held, then on a spring to a dock, which is what
+    // keeps a release's speed instead of dropping it. The search field turns it as it did.
+    const carried = flownIndex >= 0 ? flownIndex : reader.searching ? -1 : tourIndex;
+    if (reader.dragging) {
+      const before = state.theta;
+      state.theta += (reader.dragTheta - state.theta) * approach(22, delta);
+      state.turning = delta > 0 ? (state.theta - before) / delta : 0;
+      const front = frontDock(state.theta);
+      if (front !== tour) want.current.onTour(front);
+    } else if (carried >= 0) {
+      [state.theta, state.turning] = spring(
+        state.theta,
+        state.turning,
+        nearestTurn(state.theta, DOCKS[carried].angle),
+        flownIndex >= 0 ? PICK_PACE : TOUR_PACE,
+        delta,
+      );
     } else {
-      state.theta += DRIFT * delta * state.drift * (1 + state.searching * 3);
+      state.turning *= 1 - approach(4, delta);
+      if (Math.abs(state.turning) < 0.001) state.turning = 0;
+      state.theta += (DRIFT * state.drift * (1 + state.searching * 3) + state.turning) * delta;
+    }
+
+    // The tour's clock, read here so a hidden tab, which draws no frames, stops it as well.
+    const held =
+      flownIndex >= 0 ||
+      litIndex >= 0 ||
+      reader.dragging ||
+      reader.searching > 0 ||
+      performance.now() - reader.held < RESUME_SECONDS * 1000;
+    if (held || !active) {
+      state.dwell = 0;
+    } else if (state.enter >= ENTRANCE) {
+      state.dwell += delta;
+      if (tourIndex < 0) {
+        want.current.onTour(frontDock(state.theta));
+        state.dwell = 0;
+      } else if (state.dwell >= DWELL_SECONDS) {
+        state.dwell = 0;
+        // Never out from under a reader: the panel moves its links and its focus with its kind.
+        const hero = gl.domElement.closest('.hero');
+        if (
+          !hero?.querySelector(
+            '.dock-panel:hover, .dock-panel:focus-within, .dock-step:focus-within',
+          )
+        ) {
+          want.current.onTour(nextDock(tour as DockKind));
+        }
+      }
     }
     if (reader.wave > 0) {
       reader.wave += delta / 1.5;
@@ -1116,7 +1280,7 @@ function Station({
       lattice.current.rotation.x = state.time * 0.11;
     }
     // The core takes the colour of whatever the reader has lit, and gives it back.
-    const tinted = Math.max(flownIndex, litIndex);
+    const tinted = flownIndex >= 0 ? flownIndex : focusIndex;
     tint.lerp(tinted >= 0 ? hue[tinted] : signal, approach(4, delta));
     coreUniforms.uColor.value.copy(tint);
     shellUniforms.uColor.value.copy(tint);
@@ -1143,8 +1307,9 @@ function Station({
       const stack = stacks.current[i];
       const delay = i * 0.1 + 0.5;
       const arrived = ease((state.enter - delay - 0.5) / 0.6);
-      const target = litIndex === i ? 1 : litIndex < 0 ? 0 : -1;
-      state.lit[i] += (target - state.lit[i]) * approach(9, delta);
+      const target = dockGoal(i);
+      // A pick answers at once; the tour's light changes at the pace the ring is turning.
+      state.lit[i] += (target - state.lit[i]) * approach(litIndex >= 0 ? 9 : 2.6, delta);
       const value = state.lit[i];
       litMax = Math.max(litMax, value);
       const up = Math.max(0, value);
@@ -1165,8 +1330,14 @@ function Station({
       }
 
       const lift = docks.current[i];
-      // Scaled about the deck's level, so a figure's foot stays on its socket.
-      if (lift) lift.position.y = DECK_TOP * (1 - FIGURE_SCALE) + up * 0.12;
+      // Scaled about the deck's level, so a figure's foot stays on its socket. The one in
+      // focus stands forward a little and the rest step back, which reads as depth with no
+      // glow to pay for.
+      if (lift) {
+        const stands = FIGURE_SCALE * (1 + up * 0.07 + Math.min(0, value) * 0.06);
+        lift.scale.setScalar(stands);
+        lift.position.y = DECK_TOP * (1 - stands) + up * 0.12;
+      }
       const crown = crowns.current[i];
       const base = crownBase(dock.id, n, up);
       if (crown) {
@@ -1248,20 +1419,19 @@ function Station({
       cable.uBurst.value = reader.burst + state.searching * 0.45;
     });
     if (focusLight.current) {
-      if (flownIndex >= 0) focusLight.current.color.copy(hue[flownIndex]);
-      else if (litIndex >= 0) focusLight.current.color.copy(hue[litIndex]);
+      if (tinted >= 0) focusLight.current.color.copy(hue[tinted]);
       state.focusLit += (litMax - state.focusLit) * approach(6, delta);
-      const dock = DOCKS[Math.max(flownIndex, litIndex)] ?? DOCKS[0];
+      const dock = DOCKS[tinted] ?? DOCKS[0];
       focusLight.current.position.set(dock.x, 2.2, dock.z);
       focusLight.current.intensity = state.focusLit * 5;
     }
 
     // One beam, on whichever dock the reader has: in the ring, so it turns with it.
     if (pick.current) {
-      const at = DOCKS[Math.max(flownIndex, litIndex)];
+      const at = DOCKS[tinted];
       if (at) {
         pick.current.position.set(at.x, DECK_TOP + 2.2, at.z);
-        pickUniforms.uColor.value.copy(hue[Math.max(flownIndex, litIndex)]);
+        pickUniforms.uColor.value.copy(hue[tinted]);
       }
       pickUniforms.uStrength.value = state.focusLit * 0.5;
       pick.current.visible = state.focusLit > 0.01;
@@ -1310,15 +1480,14 @@ function Station({
       Math.abs(reader.y - state.y) < 0.002 &&
       Math.abs(reader.scroll - state.scroll) < 0.002 &&
       Math.abs(reader.searching - state.searching) < 0.004 &&
-      Math.abs((flownIndex >= 0 ? 1 : 0) - zoom) < 0.003 &&
+      Math.abs(zoomGoal - zoom) < 0.003 &&
+      !reader.dragging &&
+      Math.abs(state.turning) < 0.003 &&
       state.light.distanceToSquared(reader.light) < 0.001 &&
       Math.abs(shiftGoal - state.shift) <= 0.2 &&
-      (flownIndex < 0 ||
-        Math.abs(nearestTurn(state.theta, DOCKS[flownIndex].angle) - state.theta) < 0.002) &&
-      state.lit.every((value, i) => {
-        const target = litIndex === i ? 1 : litIndex < 0 ? 0 : -1;
-        return Math.abs(value - target) < 0.004;
-      });
+      (carried < 0 ||
+        Math.abs(nearestTurn(state.theta, DOCKS[carried].angle) - state.theta) < 0.002) &&
+      state.lit.every((value, i) => Math.abs(value - dockGoal(i)) < 0.004);
     // The still drawing fades out on `live`, so `live` waits for a frame that exists:
     // this call runs before the render, so the second call follows a finished one.
     if (state.drawn < 2 && ++state.drawn === 2) want.current.onDrawn();
@@ -1705,7 +1874,10 @@ export default function DockScene({
   counts,
   lit,
   flown,
+  tour,
+  touched,
   paused,
+  onTour,
   onHover,
   onSelect,
   onReady,
@@ -1715,7 +1887,10 @@ export default function DockScene({
   counts: DockCounts;
   lit: DockKind | null;
   flown: DockKind | null;
+  tour: DockKind | null;
+  touched: number;
   paused: boolean;
+  onTour: (kind: DockKind) => void;
   onHover: (kind: DockKind | null) => void;
   onSelect: (kind: DockKind | null) => void;
   onReady: () => void;
@@ -1730,7 +1905,9 @@ export default function DockScene({
   const handlers = {
     lit,
     flown,
+    tour,
     paused,
+    onTour,
     onHover,
     onSelect,
     onDrawn: onReady,
@@ -1765,7 +1942,13 @@ export default function DockScene({
         // the stylesheet's `none` on the parent does not reach through it.
         style={{ pointerEvents: 'none' }}
       >
-        <Station changed={`${lit} ${flown} ${paused}`} counts={counts} tags={tags} want={want} />
+        <Station
+          changed={`${lit} ${flown} ${paused}`}
+          counts={counts}
+          tags={tags}
+          touched={touched}
+          want={want}
+        />
       </Canvas>
       <div className="dock-tags">
         {DOCKS.map((dock, i) => (

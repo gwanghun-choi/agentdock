@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { Component, lazy, type ReactNode, Suspense, useEffect, useRef, useState } from 'react';
-import { type DockCounts, type DockKind, isSoftwareRenderer } from '@/components/dockBoard';
+import {
+  type DockCounts,
+  type DockExample,
+  type DockKind,
+  isSoftwareRenderer,
+  nextDock,
+  TOUR_ORDER,
+} from '@/components/dockBoard';
+import { ArrowRightIcon } from '@/components/Icon';
 import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 
 const DockScene = lazy(() => import('@/components/DockScene'));
@@ -89,6 +97,12 @@ function chipKind(target: EventTarget | null) {
  * a picture of what they do: a chip under the pointer or the focus flies to its
  * dock and opens the panel, in the drawing as well as in the scene, and the chip's
  * own link is the keyboard's way to everything a click in the scene reaches.
+ *
+ * `tour` is the dock in focus when the reader has not picked one: where the scene is running
+ * it moves by itself, a drag moves it, and the arrows move it everywhere, the drawing
+ * included. Under 64rem the cards below the drawing are the same thing, swiped: CSS scroll
+ * snap, with no script needed to reach any of it. The panel's examples are the one read this
+ * component makes, after the first paint and from the CDN: /api/docks/[kind] says why.
  */
 export function DockBoard({
   counts,
@@ -113,6 +127,11 @@ export function DockBoard({
   const [chipHover, setChipHover] = useState<DockKind | null>(null);
   const [chipFocus, setChipFocus] = useState<DockKind | null>(null);
   const [objectHover, setObjectHover] = useState<DockKind | null>(null);
+  const [tour, setTour] = useState<DockKind | null>(null);
+  const [touched, setTouched] = useState(0);
+  // Said once, for a step the reader took: the tour's own steps are not announced.
+  const [said, setSaid] = useState('');
+  const [examples, setExamples] = useState<Partial<Record<DockKind, DockExample[]>>>({});
   const anchor = useRef<HTMLDivElement>(null);
   // Focus handed back to a chip must not reopen what was just closed.
   const handingBack = useRef(false);
@@ -125,12 +144,22 @@ export function DockBoard({
     handingBack.current = false;
   };
 
+  // Nothing in focus, and the scene told: it waits before the tour picks a dock again, or the
+  // next frame would bring back what the reader just closed. Also what wakes a stopped loop.
+  const letGo = () => {
+    setTour(null);
+    setTouched((n) => n + 1);
+  };
+
   const running = scene === 'loading' || scene === 'live';
   const flown = picked ?? chipFocus ?? chipHover;
   // A dock under the pointer lights, and says its name and count in the scene. The
   // panel waits for a pick: opened by a hover, it could land on the pointer, take
   // the hover away from the dock, close, and open again, many times a second.
   const lit = flown ?? objectHover;
+  // The scene turning by itself: where the tour's steps come from.
+  const touring = scene === 'live' && !paused;
+  const shown = flown ?? tour;
 
   useEffect(() => {
     if (stored(PAUSE_KEY)) setPaused(true);
@@ -172,6 +201,46 @@ export function DockBoard({
     };
   }, []);
 
+  // The tour carries on from wherever the reader last was. Elsewhere a chip only borrows the
+  // panel, as it always did: nothing would ever move it on.
+  useEffect(() => {
+    if (flown && touring) setTour(flown);
+  }, [flown, touring]);
+
+  // The scene gone (asked away, too slow, lost): what it had in focus goes with it, on a wide
+  // screen. A narrow one's focus is the card in view.
+  useEffect(() => {
+    if (!running && matchMedia('(min-width: 64rem)').matches) setTour(null);
+  }, [running]);
+
+  // Under a moment's wait, so a pointer crossing the chips asks for nothing.
+  useEffect(() => {
+    if (!shown || examples[shown] || !matchMedia('(min-width: 64rem)').matches) return;
+    const wait = setTimeout(async () => {
+      const rows = await fetch(`/api/docks/${shown}`)
+        .then((response) => (response.ok ? response.json() : []))
+        .catch(() => []);
+      setExamples((now) => ({ ...now, [shown]: rows }));
+    }, 250);
+    return () => clearTimeout(wait);
+  }, [shown, examples]);
+
+  // A swipe through the cards lights the drawing above them.
+  useEffect(() => {
+    const cards = anchor.current?.closest('.hero')?.querySelector('.dock-cards');
+    if (!cards) return;
+    const seen = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setTour((entry.target as HTMLElement).dataset.kind as DockKind);
+        }
+      },
+      { root: cards, threshold: 0.7 },
+    );
+    for (const card of cards.children) seen.observe(card);
+    return () => seen.disconnect();
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: handBack reads only refs.
   useEffect(() => {
     const hero = anchor.current?.closest('.hero');
@@ -187,12 +256,24 @@ export function DockBoard({
       if (!hero.contains((event as FocusEvent).relatedTarget as Node | null)) setChipFocus(null);
     };
     const onKey = (event: Event) => {
-      if ((event as KeyboardEvent).key !== 'Escape') return;
+      const { key, altKey, ctrlKey, metaKey, shiftKey } = event as KeyboardEvent;
+      const plain = !altKey && !ctrlKey && !metaKey && !shiftKey; // Alt+Left is the browser's
+      // The chips as one row: focus flies the ring, so this is the ring by keyboard.
+      const chip = (event.target as Element).closest?.('.hero-types a');
+      if (plain && chip && (key === 'ArrowLeft' || key === 'ArrowRight')) {
+        const row = [...hero.querySelectorAll<HTMLElement>('.hero-types a')];
+        const by = key === 'ArrowLeft' ? -1 : 1;
+        row[(row.indexOf(chip as HTMLElement) + by + row.length) % row.length].focus();
+        event.preventDefault();
+        return;
+      }
+      if (key !== 'Escape') return;
       // From inside the panel, or the focus goes with it.
       const panel = document.activeElement?.closest<HTMLElement>('.dock-panel');
       if (panel) handBack(panel.dataset.kind);
       setPicked(null);
       setChipFocus(null);
+      letGo();
     };
     hero.addEventListener('pointerover', onOver);
     hero.addEventListener('pointerleave', onLeave);
@@ -239,15 +320,33 @@ export function DockBoard({
 
   /** Closing takes the focus back to the chip, or it falls out of the page with the panel. */
   const close = () => {
-    handBack(picked);
+    handBack(picked ?? tour);
     setPicked(null);
+    letGo();
   };
 
-  const count = flown ? (counts[flown] ?? 0) : 0;
+  /** One dock along. A pick stays a pick; with nothing turning, this is what opens the panel. */
+  const step = (by: 1 | -1) => {
+    const next = shown ? nextDock(shown, by) : TOUR_ORDER[by === 1 ? 0 : TOUR_ORDER.length - 1];
+    if (picked || !touring) setPicked(next);
+    else {
+      setTour(next);
+      setTouched((n) => n + 1);
+    }
+    setSaid(`${TYPE_FILTER_LABELS[next]}, ${(counts[next] ?? 0).toLocaleString('en-US')} listed`);
+  };
+
+  const count = shown ? (counts[shown] ?? 0) : 0;
 
   return (
     <>
-      <div aria-hidden="true" className="dock-board" data-scene={scene} ref={anchor}>
+      <div
+        aria-hidden="true"
+        className="dock-board"
+        data-focus={shown ?? undefined}
+        data-scene={scene}
+        ref={anchor}
+      >
         {children}
         {running ? (
           <SceneBoundary onError={onFailed}>
@@ -261,21 +360,24 @@ export function DockBoard({
                 onReady={() => setScene('live')}
                 onSelect={setPicked}
                 onTooSlow={onTooSlow}
+                onTour={setTour}
                 paused={paused}
+                touched={touched}
+                tour={tour}
               />
             </Suspense>
           </SceneBoundary>
         ) : null}
       </div>
 
-      {flown ? (
+      {shown ? (
         <section
-          aria-label={`${TYPE_FILTER_LABELS[flown]} in the index`}
-          className={`dock-panel dock-${flown}`}
-          data-kind={flown}
-          key={flown}
+          aria-label={`${TYPE_FILTER_LABELS[shown]} in the index`}
+          className={`dock-panel dock-${shown}`}
+          data-kind={shown}
+          key={shown}
         >
-          <p className="dock-panel-kind">{TYPE_FILTER_LABELS[flown]}</p>
+          <p className="dock-panel-kind">{TYPE_FILTER_LABELS[shown]}</p>
           <p className="dock-panel-count">
             {count > 0 ? (
               <>
@@ -285,10 +387,37 @@ export function DockBoard({
               'None listed yet'
             )}
           </p>
-          <p className="dock-panel-what">{blurbs[flown]}</p>
+          <p className="dock-panel-what">{blurbs[shown]}</p>
+          {count > 0 ? (
+            <div className="dock-examples" data-loading={examples[shown] ? undefined : ''}>
+              {examples[shown]?.length ? (
+                <>
+                  <p>Recently read</p>
+                  <ul>
+                    {examples[shown].map((item) => (
+                      <li key={item.id}>
+                        <Link href={item.href} prefetch={false}>
+                          {item.name}
+                        </Link>
+                        <span className="repo">{item.fullName}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </div>
+          ) : null}
           <div className="dock-panel-actions">
-            <Link href={`/artifacts?type=${flown}`}>Browse {TYPE_FILTER_LABELS[flown]}</Link>
-            {picked ? (
+            <Link href={`/artifacts?type=${shown}`}>
+              Browse {TYPE_FILTER_LABELS[shown]} <ArrowRightIcon />
+            </Link>
+            {count > 0 ? (
+              // A plain link: a prefetch would follow the redirect and spend a read on nobody.
+              <a href={`/artifacts/random?type=${shown}`} rel="nofollow">
+                Open one at random
+              </a>
+            ) : null}
+            {picked || (tour && !touring) ? (
               <button onClick={close} type="button">
                 Close
               </button>
@@ -297,28 +426,74 @@ export function DockBoard({
         </section>
       ) : null}
 
+      {/* The drawing's other way in on a narrow screen: a swipe from one to the next. */}
+      <ul aria-label="Artifact types" className="dock-cards">
+        {TOUR_ORDER.map((id) => (
+          <li className={`dock-card dock-${id}`} data-kind={id} key={id}>
+            <p className="dock-card-head">
+              <span>{TYPE_FILTER_LABELS[id]}</span>
+              <b>{(counts[id] ?? 0).toLocaleString('en-US')}</b>
+            </p>
+            <p className="dock-card-what">{blurbs[id]}</p>
+            <p className="dock-card-actions">
+              <Link href={`/artifacts?type=${id}`} prefetch={false}>
+                Browse <ArrowRightIcon />
+              </Link>
+              {counts[id] ? (
+                <a href={`/artifacts/random?type=${id}`} rel="nofollow">
+                  Open one at random
+                </a>
+              ) : null}
+            </p>
+          </li>
+        ))}
+      </ul>
+
       {scene === 'failed' && asked.current ? (
         <div className="dock-controls">
           <p role="status">The 3D view could not start. This is the drawing instead.</p>
         </div>
       ) : null}
 
-      {possible && scene !== 'failed' ? (
-        <div className="dock-controls">
-          {scene === 'live' ? (
-            <>
-              <p>Select a dock, or tab to a type.</p>
-              <button aria-pressed={paused} onClick={togglePause} type="button">
-                Pause motion
-              </button>
-            </>
-          ) : null}
-          {/* One button through all three states, last in the row: it keeps the focus. */}
+      <div className="dock-controls">
+        <p aria-live="polite" className="sr-only">
+          {said}
+        </p>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset brings a border and a legend for two buttons. */}
+        <div
+          aria-label="Step through the artifact types"
+          className="dock-step"
+          onKeyDown={(event) => {
+            if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            step(event.key === 'ArrowLeft' ? -1 : 1);
+            event.preventDefault();
+          }}
+          role="group"
+        >
+          <button aria-label="Previous type" onClick={() => step(-1)} type="button">
+            <ArrowRightIcon />
+          </button>
+          <span aria-hidden="true">
+            {shown ? `${TOUR_ORDER.indexOf(shown) + 1} / ${TOUR_ORDER.length}` : 'Types'}
+          </span>
+          <button aria-label="Next type" onClick={() => step(1)} type="button">
+            <ArrowRightIcon />
+          </button>
+        </div>
+        {scene === 'live' ? <p className="dock-hint">Drag the ring, or pick a dock.</p> : null}
+        {scene === 'live' ? (
+          <button aria-pressed={paused} onClick={togglePause} type="button">
+            Pause motion
+          </button>
+        ) : null}
+        {/* One button through all three states, last in the row: it keeps the focus. */}
+        {possible && scene !== 'failed' ? (
           <button onClick={toggleScene} ref={toggle} type="button">
             {scene === 'still' ? 'View in 3D' : 'Show the drawing'}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </>
   );
 }

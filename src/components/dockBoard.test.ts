@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   cablePath,
   DOCKS,
+  frontDock,
   isSoftwareRenderer,
   MOTE_CAP,
   motes,
   nearestTurn,
+  nextDock,
   plates,
+  spring,
+  TOUR_ORDER,
 } from '@/components/dockBoard';
 
 describe('the stack a count draws', () => {
@@ -91,5 +95,57 @@ describe('isSoftwareRenderer', () => {
     [''],
   ])('says nothing against this one: %s', (name) => {
     expect(isSoftwareRenderer(name)).toBe(false);
+  });
+});
+
+describe('the tour round the ring', () => {
+  it('visits every dock once a lap, and goes back the way it came', () => {
+    let at = TOUR_ORDER[0];
+    const seen = new Set<string>();
+    for (let i = 0; i < TOUR_ORDER.length; i++) {
+      seen.add(at);
+      at = nextDock(at);
+    }
+    expect(seen.size).toBe(DOCKS.length);
+    expect(at).toBe(TOUR_ORDER[0]);
+    expect(nextDock(nextDock('skill'), -1)).toBe('skill');
+  });
+
+  it('steps to the dock the ring brings round next', () => {
+    const dock = (id: string) => DOCKS.find((d) => d.id === id) as (typeof DOCKS)[number];
+    const front = nearestTurn(0, dock('skill').angle);
+    expect(frontDock(front)).toBe('skill');
+    // A step's worth of turn in the direction the ring drifts.
+    expect(frontDock(front + Math.PI / 3)).toBe(nextDock('skill'));
+    // Many revolutions along, as a long visit leaves it.
+    expect(frontDock(front + Math.PI * 2 * 40)).toBe('skill');
+  });
+});
+
+describe('the spring that turns the ring', () => {
+  const run = (velocity: number, omega: number, delta: number, seconds: number) => {
+    let state: [number, number] = [0, velocity];
+    let furthest = 0;
+    // Counted, not summed: a float sum runs one step over at some rates.
+    for (let step = 0; step < Math.round(seconds / delta); step++) {
+      state = spring(state[0], state[1], 1, omega, delta);
+      furthest = Math.max(furthest, state[0]);
+    }
+    return { at: state[0], speed: state[1], furthest };
+  };
+
+  it('arrives and stops, with no overshoot from rest', () => {
+    const { at, speed, furthest } = run(0, 5, 1 / 60, 4);
+    expect(at).toBeCloseTo(1, 3);
+    expect(Math.abs(speed)).toBeLessThan(0.01);
+    expect(furthest).toBeLessThanOrEqual(1);
+  });
+
+  it('is stable at the longest frame the scene allows', () => {
+    expect(run(8, 5, 1 / 20, 6).at).toBeCloseTo(1, 2);
+  });
+
+  it('lands at the same place at any frame rate', () => {
+    expect(run(0, 3, 1 / 120, 1).at).toBeCloseTo(run(0, 3, 1 / 30, 1).at, 6);
   });
 });

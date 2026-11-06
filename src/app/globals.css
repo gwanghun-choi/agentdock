@@ -684,9 +684,23 @@ main {
   color: var(--dock);
 }
 
-/* A dock under the pointer in the scene. */
+/* The stage can be dragged and a dock can be picked. A touch going up and down stays the
+   page's: pan-y leaves the browser the scroll and the scene the sideways swipe. */
+.hero[data-stage] {
+  cursor: grab;
+}
+
 .hero[data-over] {
   cursor: pointer;
+}
+
+.hero[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.hero:has(.dock-board[data-scene="live"]) {
+  touch-action: pan-y;
 }
 
 /* The still drawing's surfaces: one light from the upper left, so a top is the
@@ -840,6 +854,27 @@ main {
   fill: var(--dock);
 }
 
+/* The chip of the dock in focus, so the words and the scene are one thing. */
+.hero:has(.dock-board[data-focus="skill"]) .hero-types a[href$="type=skill"],
+.hero:has(.dock-board[data-focus="plugin"]) .hero-types a[href$="type=plugin"],
+.hero:has(.dock-board[data-focus="mcp_server"]) .hero-types a[href$="type=mcp_server"],
+.hero:has(.dock-board[data-focus="command"]) .hero-types a[href$="type=command"],
+.hero:has(.dock-board[data-focus="hook"]) .hero-types a[href$="type=hook"],
+.hero:has(.dock-board[data-focus="agent"]) .hero-types a[href$="type=agent"] {
+  border-color: var(--accent);
+  color: var(--fg-strong);
+}
+
+/* The dock in focus, in the drawing: the same answer to the arrows or a swipe. */
+.dock-board[data-focus="skill"] .dock-skill .dock-top,
+.dock-board[data-focus="plugin"] .dock-plugin .dock-top,
+.dock-board[data-focus="mcp_server"] .dock-mcp_server .dock-top,
+.dock-board[data-focus="command"] .dock-command .dock-top,
+.dock-board[data-focus="hook"] .dock-hook .dock-top,
+.dock-board[data-focus="agent"] .dock-agent .dock-top {
+  fill: var(--dock);
+}
+
 /* What the reader has picked: the kind's definition, count and the way in. In the
    free space, opposite the words, on a solid ground so nothing behind it can lower
    its contrast. The hue is only the edge: the words are the ladder's. */
@@ -890,11 +925,65 @@ main {
   line-height: 1.5;
 }
 
+/* Real rows of the kind. Room is kept while they load: the panel is centred on the stage, and
+   three lines arriving would move everything in it under the pointer. */
+.dock-examples {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--t-sm);
+}
+
+.dock-examples[data-loading] {
+  min-height: 7.5rem;
+}
+
+.dock-examples:empty:not([data-loading]) {
+  display: none;
+}
+
+.dock-examples p {
+  margin: 0 0 var(--s-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.dock-examples ul {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dock-examples li {
+  display: grid;
+  min-width: 0;
+}
+
+.dock-examples a,
+.dock-examples .repo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-examples a {
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+
+.dock-examples .repo {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
 .dock-panel-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
+  gap: var(--s-2) var(--s-4);
   margin-top: var(--s-3);
   font-size: var(--t-sm);
 }
@@ -904,11 +993,40 @@ main {
   font-weight: 600;
 }
 
+.dock-panel-actions a + a {
+  color: var(--fg);
+  font-weight: 450;
+}
+
+.dock-panel-actions button {
+  margin-inline-start: auto;
+}
+
+.dock-cards {
+  display: none;
+}
+
 /* The drawing cannot turn a dock out of the way, so here the panel keeps off the hub. */
 .dock-board:not([data-scene="live"]) ~ .dock-panel {
   top: auto;
-  bottom: var(--s-4);
+  bottom: calc(var(--s-4) + 3.25rem);
   translate: none;
+}
+
+/* The drawing cannot turn a dock out from under the panel, so it moves over and takes the
+   room the panel leaves. Measured against a panel that covered Subagents, the very dock it
+   was describing (1440×900, 2026-11-06). */
+@media (min-width: 64rem) {
+  .dock-board[data-focus]:not([data-scene="live"]) .dock-still {
+    right: calc(min(21rem, 26vw) + var(--s-5));
+    width: calc(100% - var(--gutter) - var(--copy) - min(21rem, 26vw) - var(--s-5));
+  }
+}
+
+@media (max-width: 80rem) {
+  .dock-hint {
+    display: none;
+  }
 }
 
 /* The one control the drift needs: WCAG 2.2.2, it can run past five seconds. */
@@ -934,6 +1052,32 @@ main {
 .dock-controls button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.dock-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.dock-step span {
+  min-width: 3.25rem;
+  color: var(--fg);
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.dock-controls .dock-step button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+}
+
+.dock-step button:first-child svg {
+  rotate: 180deg;
 }
 
 /* One column: the drawing follows the type row, small and in the flow, and only
@@ -967,6 +1111,86 @@ main {
   .dock-panel,
   .dock-controls {
     display: none;
+  }
+
+  /* One kind to a card, the next one showing at the edge: that edge is the invitation. */
+  .dock-cards {
+    order: 2;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: min(19rem, 82%);
+    gap: var(--s-3);
+    margin: 0;
+    padding: 0 0 var(--s-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    list-style: none;
+  }
+
+  .dock-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--border-strong);
+    border-inline-start: 3px solid var(--dock);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    scroll-snap-align: start;
+  }
+
+  .dock-card p {
+    margin: 0;
+  }
+
+  .dock-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+    color: var(--fg-strong);
+    font-weight: 600;
+  }
+
+  .dock-card-head b {
+    font-size: var(--t-lg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dock-card-what {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--fg);
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* Thumb-sized: a line of text alone is under the 44px a tap needs. */
+  .dock-card .dock-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--s-4);
+    margin-top: auto;
+    font-size: var(--t-sm);
+  }
+
+  .dock-card-actions a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    min-height: 2.75rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .dock-card-actions a + a {
+    color: var(--fg);
+    font-weight: 450;
   }
 
   .trust {
@@ -2623,6 +2847,14 @@ details.notice[open] p {
   color: var(--muted);
 }
 
+.detail-among {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-4);
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-sm);
+}
+
 .detail-actions {
   display: flex;
   gap: var(--s-2);
@@ -2893,6 +3125,16 @@ details.notice[open] p {
 
 .file-outline .outline-sub-2 {
   padding-left: var(--s-6);
+}
+
+.code-block {
+  position: relative;
+}
+
+.code-block .copy {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
 }
 
 .body pre {
@@ -5161,6 +5403,30 @@ code {
 
   .dock-panel {
     animation: panel-in 240ms var(--ease-emphasized) backwards;
+  }
+
+  /* The words follow the box in, in the order they are read. */
+  @keyframes panel-line {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  .dock-panel > * {
+    animation: panel-line 280ms var(--ease-emphasized) backwards;
+  }
+
+  .dock-panel > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .dock-panel > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .dock-panel > :nth-child(n + 4) {
+    animation-delay: 150ms;
   }
 
   /* --- the page under the hero (Phase 83–85) ---

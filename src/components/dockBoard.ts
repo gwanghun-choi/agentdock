@@ -20,6 +20,8 @@ export const isSoftwareRenderer = (name: string) =>
 
 export type DockKind = (typeof TYPE_FILTER_IDS)[number];
 export type DockCounts = Partial<Record<DockKind, number>>;
+/** A real listed artifact of a kind, as /api/docks/[kind] sends it to the panel. */
+export type DockExample = { id: number; name: string; fullName: string; href: string };
 
 /** The ring's centre line, in the scene's units. */
 export const RING = 5.2;
@@ -99,4 +101,37 @@ export function nearestTurn(current: number, angle: number, front = Math.PI / 2)
   const tau = Math.PI * 2;
   const goal = angle - front;
   return current + ((((goal - current + Math.PI) % tau) + tau) % tau) - Math.PI;
+}
+
+/** The ring in the order it comes round: θ growing brings the next larger angle to the front. */
+export const TOUR_ORDER = [...DOCKS].sort((a, b) => a.angle - b.angle).map((dock) => dock.id);
+
+/** The dock `step` places along the ring from this one, either way round. */
+export function nextDock(kind: DockKind, step: 1 | -1 = 1): DockKind {
+  const n = TOUR_ORDER.length;
+  return TOUR_ORDER[(TOUR_ORDER.indexOf(kind) + step + n) % n];
+}
+
+/** The dock nearest the front at this turn of the ring. */
+export function frontDock(theta: number): DockKind {
+  const away = (dock: (typeof DOCKS)[number]) => Math.abs(nearestTurn(theta, dock.angle) - theta);
+  return DOCKS.reduce((best, dock) => (away(dock) < away(best) ? dock : best)).id;
+}
+
+/**
+ * One step of a critically damped spring, in closed form: it arrives without overshoot from
+ * any speed a drag left it with, and a long frame cannot make it blow up the way an Euler
+ * step would. `omega` sets the pace: it is most of the way there after 4/omega seconds.
+ */
+export function spring(
+  position: number,
+  velocity: number,
+  target: number,
+  omega: number,
+  delta: number,
+): [number, number] {
+  const offset = position - target;
+  const lead = (velocity + omega * offset) * delta;
+  const decay = Math.exp(-omega * delta);
+  return [target + (offset + lead) * decay, (velocity - omega * lead) * decay];
 }
