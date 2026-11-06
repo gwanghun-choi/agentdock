@@ -1,0 +1,95 @@
+200 4.388900 4.739023 239773 /
+    <span class="chip-count">([^<]+) → 7 ['44,746', '30,253', '2,972']
+    indexed[^<]{0,40} → 7 ['indexed', 'indexed', 'indexed right now']
+    newest read ([0-9-]+) → 2 ['2026-11-05', '2026-11-05']
+    last sync[^<]{0,50} → 2 ['last sync without errors 2026-11-05 23:22 UTC', 'last sync without errors 2026-11-05 23:22 UTC\\"]}],[\\"$\\",\\']
+    x-agentdock → 0 []
+200 0.484018 2.359259 223184 /artifacts?type=skill
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.390200 1.092649 215215 /artifacts?type=plugin
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.375934 0.850748 208947 /artifacts?type=mcp_server
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.388011 1.115249 212130 /artifacts?type=command
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.394875 1.075709 199576 /artifacts?type=hook
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.391440 0.981513 214593 /artifacts?type=agent
+    pager-status[^>]*>([^<]+) → 1 ['Page ']
+    class="result-count[^>]*>[^<]* → 1 ['class="result-count">']
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.383330 2.766722 218823 /artifacts
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+    pager-status[^>]*>(.{0,60}) → 2 [' <div class="page-head stage" vt-name="_', 'Page  1  of  1790   </d']
+200 0.389629 2.265862 228388 /artifacts?lang=any
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.376780 1.988447 236728 /artifacts?lang=zh
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.411915 1.359234 221555 /artifacts?lang=ko
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.401248 1.520286 230765 /artifacts?lang=ja
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.394112 2.514878 275570 /artifacts?q=code%20review
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.408367 1.538602 112317 /artifacts?q=%EC%BD%94%EB%93%9C%20%EB%A6%AC%EB%B7%B0&lang=any
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.390038 1.520476 232426 /artifacts?q=%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5&lang=any
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+200 0.382726 2.089779 38791 /artifacts?q=zzzzqqqqxxxx
+    ([0-9,]+) (?:artifacts|results) → 2 [',', ',']
+    No [a-z ]{0,40}match[^<]{0,50} → 2 ['No artifacts matched \\",\\"\\\\\\"zzzzqqqqxxxx\\\\\\"\\",\\"\\",\\".\\"]}],[\\"$\\', 'No artifacts matched ']
+    class="notice[^>]*>.{0,80} → 1 ['class="notice"> <svg aria-hidden="true" fill="none" focusable="false" height="1em" stro']
+200 0.376091 2.888448 220832 /artifacts?sort=name
+    row-title[^>]*><a[^>]*>([^<]+) → 25 ['(app)', '-21risk-automation', '-2chat-automation']
+200 0.381160 2.404860 218998 /artifacts?sort=stars
+    row-title[^>]*><a[^>]*>([^<]+) → 25 ['release-notes', 'aissue', 'amux-board']
+200 0.373405 2.370556 218998 /artifacts?sort=bogus
+200 0.388159 2.389801 216144 /artifacts?page=2
+    pager-status[^>]*>(.{0,60}) → 2 [' <div class="page-head stage" vt-name="_', 'Page  2  of  1790   </d']
+200 0.411816 2.421344 218877 /artifacts?page=999999
+    no page[^<]{0,30}|There is no page[^<]{0 → 0 []
+200 0.378336 2.696022 218865 /artifacts?page=-1
+200 0.388318 2.430192 218868 /artifacts?page=abc
+200 0.375395 2.453773 218874 /artifacts?type=bogus
+200 0.396886 2.423991 218989 /artifacts?lang=xx
+200 0.379567 1.876650 262861 /artifacts?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E
+    <script>alert\(1\) → 0 []
+    &lt;script&gt;alert → 5 ['&lt;script&gt;alert', '&lt;script&gt;alert', '&lt;script&gt;alert']
+200 0.401395 2.002889 40437 /artifacts?q=%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E
+    <img src=x → 0 []
+    onerror=alert\(1\)" → 0 []
+200 0.377501 2.407717 218963 /artifacts?type=%22%3E%3Csvg%20onload%3Dalert(1)%3E
+    <svg onload → 0 []
+200 0.577221 1.819802 245380 /artifacts?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+200 0.404589 1.639643 234174 /artifacts?q=%27%3B%20select%20pg_sleep(5)--
+400 0.082211 0.082286 65 /r/%00/%00
+400 0.082694 0.082762 65 /r/..%2f..%2fetc/passwd
+404 0.859801 0.860134 14442 /r/nobody/nothing
+200 1.312892 1.313097 18649 /jobs/1
+404 0.843388 0.843580 14121 /jobs/999999
+404 0.371588 0.371751 14115 /jobs/abc
+404 0.190661 0.190943 18070 /api
+404 0.171143 0.171326 18070 /api/health
+404 0.164421 0.164634 18070 /api/packages
+404 0.168318 0.168609 18070 /api/search?q=a
+404 0.171118 0.171429 18070 /.env
+404 0.174055 0.174275 18070 /.git/config
+404 0.174533 0.174872 18070 /package.json
+404 0.173229 0.173381 18070 /next.config.ts
+404 0.169540 0.169797 18070 /robots.txt
+404 0.170978 0.171103 18070 /sitemap.xml
+404 0.085099 0.085370 18070 /favicon.ico
+400 0.837756 0.837828 84 /_next/image?url=%2Ffavicon.ico&w=64&q=75
+400 0.082760 0.082823 84 /_next/image?url=https%3A%2F%2Fexample.com%2Fa.png&w=64&q=75
+308 0.081874 0.081926 15 /skills
+requests=50

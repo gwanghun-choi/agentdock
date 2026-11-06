@@ -1,0 +1,297 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "AgentDock":
+    - /url: /
+  - navigation "Main":
+    - link "Artifacts":
+      - /url: /artifacts
+    - link "Search":
+      - /url: /artifacts?q=
+- main:
+  - heading "Find agent artifacts, and see where they came from." [level=1]
+  - paragraph: Skills, plugins, MCP servers, commands, hooks and subagents, read from established public repositories and linked to the exact commit.
+  - text: Search artifacts Ctrl K
+  - searchbox "Search artifacts"
+  - text: /
+  - button "Search"
+  - navigation "Artifact types":
+    - link "All 44,746":
+      - /url: /artifacts
+    - link "Agent Skills 30,253":
+      - /url: /artifacts?type=skill
+    - link "Claude Code Plugins 2,972":
+      - /url: /artifacts?type=plugin
+    - link "MCP Servers 545":
+      - /url: /artifacts?type=mcp_server
+    - link "Slash Commands 5,392":
+      - /url: /artifacts?type=command
+    - link "Hook Configurations 504":
+      - /url: /artifacts?type=hook
+    - link "Subagents 5,080":
+      - /url: /artifacts?type=agent
+  - list:
+    - listitem: Public repositories only, never by request
+    - listitem: Files are read, never executed
+    - listitem: Linked to the exact commit that was read
+  - region "Recently indexed":
+    - heading "Recently indexed" [level=2]
+    - paragraph: 10 most recent · newest read 2026-11-05 · last sync without errors 2026-11-05 23:22 UTC
+    - paragraph:
+      - link "Newly added":
+        - /url: /artifacts?sort=added
+      - link "Content changed":
+        - /url: /artifacts?sort=changed
+      - link "Browse all 44,746 artifacts":
+        - /url: /artifacts
+    - paragraph:
+      - text: "Not listed by default: 1,926 artifacts with a description written in Chinese."
+      - link "List every language":
+        - /url: /artifacts?lang=any
+    - list:
+      - listitem:
+        - text: Agent Skill
+        - paragraph:
+          - link "release-notes":
+            - /url: /r/jnMetaCode/ai-coding-guide/codex/templates
+          - text: jnMetaCode/ai-coding-guide
+        - paragraph: Draft user-facing release notes from a git log range. Trigger when the user asks for "release notes", "changelog entry", or "what shipped this week" with a git ref range. Output is markdown sections grouped by Features / Fixes / Breaking with PR links.
+        - paragraph:
+          - text: codex/templates/SKILL.md 550 read 2026-11-05 commit
+          - code: "2214708"
+          - 'link "Read all of it : release-notes"':
+            - /url: /r/jnMetaCode/ai-coding-guide/codex/templates
+          - link "source on GitHub":
+            - /url: https://github.com/jnMetaCode/ai-coding-guide/blob/2214708188cd13af5c42804d55979354a8baabf8/codex/templates/SKILL.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "playwright-auth":
+            - /url: /r/mixpeek/amux/.claude/commands/playwright-auth.md
+          - text: mixpeek/amux
+        - paragraph: Use when the user needs to log into a website for browser automation, save auth cookies, or sync browser profiles to cloud
+        - paragraph:
+          - text: .claude/commands/playwright-auth.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : playwright-auth"':
+            - /url: /r/mixpeek/amux/.claude/commands/playwright-auth.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/playwright-auth.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "amux-board":
+            - /url: /r/mixpeek/amux/.claude/commands/amux-board.md
+          - text: mixpeek/amux
+        - paragraph: Use when the user says "add to board", "create a task", or wants to track a todo on the amux kanban board
+        - paragraph:
+          - text: .claude/commands/amux-board.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : amux-board"':
+            - /url: /r/mixpeek/amux/.claude/commands/amux-board.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/amux-board.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "smoke-test":
+            - /url: /r/mixpeek/amux/.claude/commands/smoke-test.md
+          - text: mixpeek/amux
+        - paragraph: Use after making changes to the amux server or dashboard to verify the dashboard and APIs are working correctly
+        - paragraph:
+          - text: .claude/commands/smoke-test.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : smoke-test"':
+            - /url: /r/mixpeek/amux/.claude/commands/smoke-test.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/smoke-test.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "chrome-cdp":
+            - /url: /r/mixpeek/amux/.claude/commands/chrome-cdp.md
+          - text: mixpeek/amux
+        - paragraph: Use when the user asks to interact with a web page, take a screenshot of a site, click or type in Chrome, scrape content, or debug a web UI. Connects to real Chrome tabs with existing logins.
+        - paragraph:
+          - text: .claude/commands/chrome-cdp.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : chrome-cdp"':
+            - /url: /r/mixpeek/amux/.claude/commands/chrome-cdp.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/chrome-cdp.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "orchestrate":
+            - /url: /r/mixpeek/amux/.claude/commands/orchestrate.md
+          - text: mixpeek/amux
+        - paragraph: Scaffold and run a closed orchestrator loop that drives an existing MD plan to verified completion.
+        - paragraph:
+          - text: .claude/commands/orchestrate.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : orchestrate"':
+            - /url: /r/mixpeek/amux/.claude/commands/orchestrate.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/orchestrate.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "review-session-log":
+            - /url: /r/mixpeek/amux/.claude/commands/review-session-log.md
+          - text: mixpeek/amux
+        - paragraph: Use when the user asks what a session did, wants to review session history, or needs to find errors in a session log
+        - paragraph:
+          - text: .claude/commands/review-session-log.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : review-session-log"':
+            - /url: /r/mixpeek/amux/.claude/commands/review-session-log.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/review-session-log.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "pw-test":
+            - /url: /r/mixpeek/amux/.claude/commands/pw-test.md
+          - text: mixpeek/amux
+        - paragraph: Use when you need to test the amux dashboard UI, investigate a visual bug, or verify a frontend change works correctly
+        - paragraph:
+          - text: .claude/commands/pw-test.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : pw-test"':
+            - /url: /r/mixpeek/amux/.claude/commands/pw-test.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/pw-test.md
+      - listitem:
+        - text: Slash Command
+        - paragraph:
+          - link "aissue":
+            - /url: /r/mixpeek/amux/.claude/commands/aissue.md
+          - text: mixpeek/amux
+        - paragraph: Pick up an open issue from the amux issue tracker, mark it doing, work it, and mark it done.
+        - paragraph:
+          - text: .claude/commands/aissue.md 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : aissue"':
+            - /url: /r/mixpeek/amux/.claude/commands/aissue.md
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/aissue.md
+      - listitem:
+        - text: Hook Configuration
+        - paragraph:
+          - link "settings":
+            - /url: /r/mixpeek/amux/.claude/settings.json
+          - text: mixpeek/amux
+        - paragraph:
+          - text: .claude/settings.json 554 read 2026-11-05 commit
+          - code: da83914
+          - 'link "Read all of it : settings"':
+            - /url: /r/mixpeek/amux/.claude/settings.json
+          - link "source on GitHub":
+            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/settings.json
+  - region "How a repository gets indexed":
+    - heading "How a repository gets indexed" [level=2]
+    - paragraph: "AgentDock discovers repositories on its own, twice a day. There is no submission form: nothing is added by request."
+    - list:
+      - listitem:
+        - paragraph: A public repository
+        - paragraph: A registry, a curated seed list, GitHub's topic search.
+      - listitem:
+        - paragraph: The files that declare an artifact
+        - list:
+          - listitem:
+            - code: SKILL.md
+            - text: Agent Skill
+          - listitem:
+            - code: plugin.json
+            - text: Claude Code Plugin
+          - listitem:
+            - code: marketplace.json
+            - text: Plugin Marketplace
+          - listitem:
+            - code: .mcp.json
+            - text: MCP Server
+          - listitem:
+            - code: server.json
+            - text: MCP Server
+          - listitem:
+            - code: commands/*.md
+            - text: Slash Command
+          - listitem:
+            - code: agents/*.md
+            - text: Subagent
+          - listitem:
+            - code: settings.json
+            - text: Hook Configuration
+          - listitem:
+            - code: hooks.json
+            - text: Hook Configuration
+      - listitem:
+        - paragraph: AgentDock reads each one
+        - paragraph: What it declares about itself. It never runs the file, and never writes it to disk.
+      - listitem:
+        - paragraph: Filed against the commit it read
+        - paragraph: 46,672 artifacts indexed right now
+  - region "What decides which repositories it reads":
+    - heading "What decides which repositories it reads" [level=2]
+    - paragraph: A repository AgentDock has found
+    - term: Stars
+    - definition: 50+ on GitHub, at the time it is first read
+    - definition: The star floor decides which unread repositories AgentDock spends its small GitHub request budget on first. It is a popularity signal used for scheduling, not a statement about any artifact.
+    - term: Visibility
+    - definition: Public private repositories are unreadable, not excluded
+    - term: Not a fork
+    - definition: Upstream only the original is what gets read
+    - term: Not archived
+    - definition: Active an archive has no next commit
+    - paragraph: AgentDock reads it
+    - paragraph: All four hold at once. They are conditions, not steps.
+  - region "Browse by type":
+    - heading "Browse by type" [level=2]
+    - list:
+      - listitem:
+        - link "Agent Skills 30,253 listed A directory of instructions and supporting files that Claude Code loads when a task matches its description. SKILL.md":
+          - /url: /artifacts?type=skill
+          - text: Agent Skills
+          - strong: 30,253
+          - text: listed A directory of instructions and supporting files that Claude Code loads when a task matches its description.
+          - code: SKILL.md
+      - listitem:
+        - link "Slash Commands 5,392 listed A prompt file that runs when you type its name after a slash. commands/*.md":
+          - /url: /artifacts?type=command
+          - text: Slash Commands
+          - strong: 5,392
+          - text: listed A prompt file that runs when you type its name after a slash.
+          - code: commands/*.md
+      - listitem:
+        - link "Subagents 5,080 listed A separate assistant with its own system prompt and tool access that Claude Code can hand a task to. agents/*.md":
+          - /url: /artifacts?type=agent
+          - text: Subagents
+          - strong: 5,080
+          - text: listed A separate assistant with its own system prompt and tool access that Claude Code can hand a task to.
+          - code: agents/*.md
+      - listitem:
+        - link "Claude Code Plugins 2,972 listed A bundle of skills, commands, subagents, hooks or MCP servers that Claude Code installs as one unit. plugin.json":
+          - /url: /artifacts?type=plugin
+          - text: Claude Code Plugins
+          - strong: 2,972
+          - text: listed A bundle of skills, commands, subagents, hooks or MCP servers that Claude Code installs as one unit.
+          - code: plugin.json
+      - listitem:
+        - 'link "MCP Servers 545 listed A declaration of a Model Context Protocol server: a program a client starts, or a URL it connects to, for tools and data. .mcp.json server.json"':
+          - /url: /artifacts?type=mcp_server
+          - text: MCP Servers
+          - strong: "545"
+          - text: "listed A declaration of a Model Context Protocol server: a program a client starts, or a URL it connects to, for tools and data."
+          - code: .mcp.json
+          - code: server.json
+      - listitem:
+        - link "Hook Configurations 504 listed Configuration that runs a command when a Claude Code event fires, such as before a tool call. settings.json hooks.json":
+          - /url: /artifacts?type=hook
+          - text: Hook Configurations
+          - strong: "504"
+          - text: listed Configuration that runs a command when a Claude Code event fires, such as before a tool call.
+          - code: settings.json
+          - code: hooks.json
+- contentinfo:
+  - paragraph: AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe. Read anything before you use it.
+- alert

@@ -1,0 +1,29 @@
+== V1_countVisibleByType_as_is
+ Execution Time: 430.023 ms
+ Execution Time: 437.989 ms
+ Execution Time: 439.749 ms
+== V2_count_without_language
+ Execution Time: 339.011 ms
+ Execution Time: 328.179 ms
+ Execution Time: 329.010 ms
+== V3_language_without_notlisted
+ Execution Time: 134.891 ms
+ Execution Time: 133.733 ms
+ Execution Time: 133.162 ms
+== V4_plain_count
+ Execution Time: 13.247 ms
+ Execution Time: 12.961 ms
+ Execution Time: 12.995 ms
+== V5_listPackages_limit10
+ Execution Time: 460.882 ms
+ Execution Time: 452.466 ms
+ Execution Time: 462.681 ms
+== V6_language_column_stored
+== V6_language_column_stored
+ Execution Time: 364.413 ms
+ Execution Time: 348.834 ms
+ Execution Time: 362.670 ms
+== V7_listPackages_with_partial_updated_at_index
+ Execution Time: 488.587 ms
+ Execution Time: 495.505 ms
+ Execution Time: 481.572 ms

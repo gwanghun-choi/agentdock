@@ -1,0 +1,925 @@
+[
+ {
+  "width": 360,
+  "label": "home",
+  "overflow": 0,
+  "doc": 5632,
+  "scene": "still",
+  "canvas": 0,
+  "svg": true,
+  "targets": 52,
+  "small24": [
+   "a 114x16 \"List every langu\""
+  ],
+  "n24": 1,
+  "n44": 43,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": 0,
+  "sec": {
+   ".site-header": [
+    4832,
+    57
+   ],
+   ".hero": [
+    81,
+    459
+   ],
+   ".hero-copy": [
+    97,
+    323
+   ],
+   ".dock-board": [
+    428,
+    96
+   ],
+   ".hero-types": [
+    382,
+    39
+   ],
+   ".board": [
+    540,
+    611
+   ],
+   ".pipeline": [
+    1151,
+    1398
+   ],
+   ".conditions": [
+    2549,
+    1077
+   ],
+   ".types": [
+    3625,
+    1775
+   ],
+   ".site-footer": [
+    5400,
+    232
+   ]
+  },
+  "cards": [
+   [
+    328,
+    248,
+    0,
+    248
+   ],
+   [
+    328,
+    221,
+    0,
+    221
+   ],
+   [
+    328,
+    248,
+    0,
+    248
+   ],
+   [
+    328,
+    273,
+    0,
+    273
+   ],
+   [
+    328,
+    291,
+    0,
+    291
+   ],
+   [
+    328,
+    296,
+    0,
+    296
+   ]
+  ],
+  "body13": 0,
+  "errors": [],
+  "ok": {
+   "searchRows": 25
+  }
+ },
+ {
+  "width": 360,
+  "label": "list",
+  "overflow": 0,
+  "doc": 7361,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 82,
+  "small24": [],
+  "n24": 0,
+  "n44": 82,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\"",
+   "span.pager-word 27>1 \"Next\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    7129,
+    232
+   ],
+   ".facets": [
+    346,
+    145
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 360,
+  "label": "search",
+  "overflow": 0,
+  "doc": 8557,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 83,
+  "small24": [],
+  "n24": 0,
+  "n44": 80,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\"",
+   "span.pager-word 27>1 \"Next\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    8324,
+    232
+   ],
+   ".facets": [
+    346,
+    145
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 360,
+  "label": "detail",
+  "overflow": 0,
+  "doc": 7441,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 37,
+  "small24": [
+   "a 107x16 \"documentation\"",
+   "a 172x16 \"jnMetaCode/ai-co\"",
+   "a 166x16 \"codex/templates/\""
+  ],
+  "n24": 3,
+  "n44": 33,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [
+   "a & a 309x16"
+  ],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    7209,
+    232
+   ],
+   ".toc": [
+    826,
+    52
+   ],
+   ".detail-opening": [
+    137,
+    609
+   ],
+   ".detail-glance": [
+    598,
+    148
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 390,
+  "label": "home",
+  "overflow": 0,
+  "doc": 5577,
+  "scene": "still",
+  "canvas": 0,
+  "svg": true,
+  "targets": 52,
+  "small24": [
+   "a 114x16 \"List every langu\""
+  ],
+  "n24": 1,
+  "n44": 43,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": 0,
+  "sec": {
+   ".site-header": [
+    4718,
+    57
+   ],
+   ".hero": [
+    81,
+    436
+   ],
+   ".hero-copy": [
+    97,
+    300
+   ],
+   ".dock-board": [
+    405,
+    96
+   ],
+   ".hero-types": [
+    358,
+    39
+   ],
+   ".board": [
+    517,
+    611
+   ],
+   ".pipeline": [
+    1127,
+    1326
+   ],
+   ".conditions": [
+    2454,
+    1079
+   ],
+   ".types": [
+    3532,
+    1807
+   ],
+   ".site-footer": [
+    5340,
+    238
+   ]
+  },
+  "cards": [
+   [
+    358,
+    258,
+    0,
+    258
+   ],
+   [
+    358,
+    231,
+    0,
+    231
+   ],
+   [
+    358,
+    258,
+    0,
+    258
+   ],
+   [
+    358,
+    273,
+    0,
+    273
+   ],
+   [
+    358,
+    291,
+    0,
+    291
+   ],
+   [
+    358,
+    296,
+    0,
+    296
+   ]
+  ],
+  "body13": 0,
+  "errors": [],
+  "ok": {
+   "searchRows": 25
+  }
+ },
+ {
+  "width": 390,
+  "label": "list",
+  "overflow": 0,
+  "doc": 7228,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 82,
+  "small24": [],
+  "n24": 0,
+  "n44": 82,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\"",
+   "span.pager-word 27>1 \"Next\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    6990,
+    238
+   ],
+   ".facets": [
+    322,
+    145
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 390,
+  "label": "search",
+  "overflow": 0,
+  "doc": 8306,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 83,
+  "small24": [],
+  "n24": 0,
+  "n44": 80,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\"",
+   "span.pager-word 27>1 \"Next\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    8068,
+    238
+   ],
+   ".facets": [
+    322,
+    145
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 390,
+  "label": "detail",
+  "overflow": 0,
+  "doc": 7219,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 37,
+  "small24": [
+   "a 107x16 \"documentation\"",
+   "a 172x16 \"jnMetaCode/ai-co\"",
+   "a 166x16 \"codex/templates/\""
+  ],
+  "n24": 3,
+  "n44": 33,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [
+   "a.path & button.copy-button 78x21",
+   "a & a 315x16"
+  ],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    6982,
+    238
+   ],
+   ".toc": [
+    770,
+    52
+   ],
+   ".detail-opening": [
+    137,
+    553
+   ],
+   ".detail-glance": [
+    542,
+    148
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 768,
+  "label": "home",
+  "overflow": 0,
+  "doc": 5253,
+  "scene": "still",
+  "canvas": 0,
+  "svg": true,
+  "targets": 52,
+  "small24": [
+   "a 114x16 \"List every langu\""
+  ],
+  "n24": 1,
+  "n44": 43,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": 0,
+  "sec": {
+   ".site-header": [
+    4229,
+    57
+   ],
+   ".hero": [
+    89,
+    637
+   ],
+   ".hero-copy": [
+    141,
+    316
+   ],
+   ".dock-board": [
+    473,
+    192
+   ],
+   ".hero-types": [
+    388,
+    70
+   ],
+   ".board": [
+    726,
+    572
+   ],
+   ".pipeline": [
+    1298,
+    1066
+   ],
+   ".conditions": [
+    2364,
+    1151
+   ],
+   ".types": [
+    3516,
+    1469
+   ],
+   ".site-footer": [
+    4984,
+    268
+   ]
+  },
+  "cards": [
+   [
+    720,
+    281,
+    0,
+    350
+   ],
+   [
+    354,
+    276,
+    0,
+    276
+   ],
+   [
+    354,
+    276,
+    0,
+    276
+   ],
+   [
+    354,
+    321,
+    0,
+    321
+   ],
+   [
+    354,
+    321,
+    0,
+    321
+   ],
+   [
+    720,
+    281,
+    0,
+    350
+   ]
+  ],
+  "body13": 0,
+  "errors": [],
+  "ok": {
+   "searchRows": 25
+  }
+ },
+ {
+  "width": 768,
+  "label": "list",
+  "overflow": 0,
+  "doc": 5918,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 83,
+  "small24": [
+   "a 78x16 \"Include them\""
+  ],
+  "n24": 1,
+  "n44": 82,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    5649,
+    268
+   ],
+   ".facets": [
+    383,
+    199
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 768,
+  "label": "search",
+  "overflow": 0,
+  "doc": 6401,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 84,
+  "small24": [
+   "a 78x16 \"Include them\""
+  ],
+  "n24": 1,
+  "n44": 83,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    6133,
+    268
+   ],
+   ".facets": [
+    383,
+    199
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 768,
+  "label": "detail",
+  "overflow": 0,
+  "doc": 5381,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 37,
+  "small24": [
+   "a 225x16 \"Browse the direc\"",
+   "a 107x16 \"documentation\"",
+   "a 172x16 \"jnMetaCode/ai-co\"",
+   "a 266x16 \"Every artifact i\"",
+   "a 46x19 \"2214708\"",
+   "a 166x16 \"codex/templates/\""
+  ],
+  "n24": 6,
+  "n44": 30,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [
+   "a.path & button.copy-button 78x21",
+   "a & a 266x16"
+  ],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    5112,
+    268
+   ],
+   ".toc": [
+    636,
+    44
+   ],
+   ".detail-opening": [
+    121,
+    435
+   ],
+   ".detail-glance": [
+    407,
+    148
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 1024,
+  "label": "home",
+  "overflow": 0,
+  "doc": 4470,
+  "scene": "live",
+  "canvas": 1,
+  "svg": true,
+  "targets": 53,
+  "small24": [
+   "a 114x16 \"List every langu\""
+  ],
+  "n24": 1,
+  "n44": 44,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [],
+  "maxCountEscape": 23,
+  "sec": {
+   ".site-header": [
+    2851,
+    57
+   ],
+   ".hero": [
+    89,
+    564
+   ],
+   ".hero-copy": [
+    113,
+    455
+   ],
+   ".dock-board": [
+    57,
+    596
+   ],
+   ".hero-types": [
+    459,
+    108
+   ],
+   ".board": [
+    653,
+    521
+   ],
+   ".pipeline": [
+    1174,
+    798
+   ],
+   ".conditions": [
+    1972,
+    766
+   ],
+   ".types": [
+    2738,
+    1419
+   ],
+   ".site-footer": [
+    4156,
+    314
+   ]
+  },
+  "cards": [
+   [
+    960,
+    281,
+    0,
+    522
+   ],
+   [
+    474,
+    292,
+    0,
+    292
+   ],
+   [
+    474,
+    292,
+    0,
+    292
+   ],
+   [
+    474,
+    303,
+    0,
+    303
+   ],
+   [
+    474,
+    303,
+    0,
+    303
+   ],
+   [
+    960,
+    281,
+    0,
+    522
+   ]
+  ],
+  "body13": 1,
+  "errors": [],
+  "ok": {
+   "searchRows": 25
+  }
+ },
+ {
+  "width": 1024,
+  "label": "list",
+  "overflow": 0,
+  "doc": 5396,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 83,
+  "small24": [
+   "a 78x16 \"Include them\""
+  ],
+  "n24": 1,
+  "n44": 82,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    5082,
+    314
+   ],
+   ".facets": [
+    309,
+    687
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 1024,
+  "label": "search",
+  "overflow": 0,
+  "doc": 5906,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 84,
+  "small24": [
+   "a 78x16 \"Include them\""
+  ],
+  "n24": 1,
+  "n44": 83,
+  "escaped": [],
+  "clipped": [
+   "label 99>1 \"Search artifacts\""
+  ],
+  "overlaps": [],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    5592,
+    314
+   ],
+   ".facets": [
+    309,
+    687
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ },
+ {
+  "width": 1024,
+  "label": "detail",
+  "overflow": 0,
+  "doc": 5120,
+  "scene": null,
+  "canvas": 0,
+  "svg": false,
+  "targets": 37,
+  "small24": [
+   "a 225x16 \"Browse the direc\"",
+   "a 266x16 \"Every artifact i\"",
+   "a 46x19 \"2214708\"",
+   "a 166x16 \"codex/templates/\""
+  ],
+  "n24": 4,
+  "n44": 32,
+  "escaped": [],
+  "clipped": [],
+  "overlaps": [
+   "a.path & button.copy-button 78x21",
+   "a & a 266x16"
+  ],
+  "maxCountEscape": null,
+  "sec": {
+   ".site-header": [
+    0,
+    57
+   ],
+   ".site-footer": [
+    4806,
+    314
+   ],
+   ".toc": [
+    499,
+    270
+   ],
+   ".detail-opening": [
+    121,
+    298
+   ],
+   ".detail-glance": [
+    270,
+    149
+   ]
+  },
+  "cards": [],
+  "body13": 0,
+  "errors": [],
+  "ok": null
+ }
+]

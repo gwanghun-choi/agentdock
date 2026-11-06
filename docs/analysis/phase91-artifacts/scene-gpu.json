@@ -1,0 +1,158 @@
+{
+ "mode": "gpu",
+ "base": "https://agentdock-delta.vercel.app",
+ "browser": "156.0.8078.4",
+ "timeline": {
+  "load": 2570,
+  "docEnd": 2561,
+  "chunk3d": [
+   {
+    "start": 2610,
+    "end": 2630,
+    "gz": 260081,
+    "dec": 951265
+   }
+  ],
+  "liveAt": 3379
+ },
+ "shader": {
+  "programs": 24,
+  "shaders": 48,
+  "linkMs": 1.6,
+  "compileMs": 0
+ },
+ "renderer": "ANGLE (Intel, Vulkan 1.4.335 (Intel(R) Graphics (RPL-S) (0x0000A780)), Intel open-source Mesa driver)",
+ "live": {
+  "rafFps": 60.1,
+  "renderFps": 60.1,
+  "rendered": 181,
+  "drawsPerFrame": 97,
+  "trisPerFrame": 63266,
+  "pointsPerFrame": 5691,
+  "p50": 16.7,
+  "p95": 16.9,
+  "worst": 17.5,
+  "n": 181,
+  "mainThreadPct": 9.6,
+  "scriptPct": 4.9
+ },
+ "hover": {
+  "rafFps": 60.4,
+  "renderFps": 60.4,
+  "rendered": 121,
+  "drawsPerFrame": 97,
+  "trisPerFrame": 63266,
+  "pointsPerFrame": 5691,
+  "p50": 16.7,
+  "p95": 16.8,
+  "worst": 17.7,
+  "n": 121,
+  "mainThreadPct": 9.6,
+  "scriptPct": 4.8
+ },
+ "search": {
+  "rafFps": 60.3,
+  "renderFps": 60.3,
+  "rendered": 121,
+  "drawsPerFrame": 97,
+  "trisPerFrame": 63266,
+  "pointsPerFrame": 5691,
+  "p50": 16.7,
+  "p95": 16.9,
+  "worst": 17.8,
+  "n": 121,
+  "mainThreadPct": 9.9,
+  "scriptPct": 4.8
+ },
+ "fly": {
+  "rafFps": 60.4,
+  "renderFps": 60.4,
+  "rendered": 121,
+  "drawsPerFrame": 98,
+  "trisPerFrame": 63314,
+  "pointsPerFrame": 5691,
+  "p50": 16.7,
+  "p95": 16.9,
+  "worst": 17.8,
+  "n": 121,
+  "mainThreadPct": 9.4,
+  "scriptPct": 4.7
+ },
+ "info": {
+  "rev": "186",
+  "renderers": 1,
+  "memGeometries": 82,
+  "memTextures": 6,
+  "programs": 24,
+  "sceneGeometries": 74,
+  "sceneMaterials": 86,
+  "materialTypes": {
+   "ShaderMaterial": 17,
+   "MeshStandardMaterial": 53,
+   "LineBasicMaterial": 2,
+   "SpriteMaterial": 7,
+   "MeshBasicMaterial": 7
+  },
+  "meshes": 74,
+  "instanced": 8,
+  "instanceTotal": 276,
+  "points": 3,
+  "lights": 5,
+  "shadowLights": 1,
+  "pixelRatio": 1,
+  "size": [
+   1920,
+   882
+  ],
+  "shadowMap": true,
+  "shadowType": 1,
+  "tier": null,
+  "attrs": true
+ },
+ "res": {
+  "programs": 24,
+  "textures": 10,
+  "delTex": 0,
+  "buffers": 301,
+  "delBuf": 0,
+  "bufMB": 1,
+  "texMB": 20.1
+ },
+ "rest": {
+  "drawsIn5s": 0,
+  "framesIn5s": 0,
+  "mainThreadPct": 0.4,
+  "scriptPct": 0
+ },
+ "offscreen": {
+  "drawsIn3s": 4656
+ },
+ "paused": {
+  "drawsIn3s": 1746
+ },
+ "resumed": {
+  "rafFps": 60.2,
+  "renderFps": 60.2,
+  "rendered": 91,
+  "drawsPerFrame": 97,
+  "trisPerFrame": 63266,
+  "pointsPerFrame": 5691,
+  "p50": 16.7,
+  "p95": 17.4,
+  "worst": 17.6,
+  "n": 91
+ },
+ "heapMB": 13.2,
+ "contextLoss": {
+  "scene": "failed",
+  "canvas": 0,
+  "svgOpacity": "1",
+  "svgVisible": true,
+  "controls": 0,
+  "chips": 7
+ },
+ "errors": [
+  "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "THREE.WebGLRenderer: WEBGL_lose_context extension not supported."
+ ]
+}

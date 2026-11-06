@@ -1,0 +1,9 @@
+round=1 first 09:35:53 status=200 ttfb=5.357440 total=5.705623
+round=1 second 09:36:00 status=200 ttfb=2.668120 total=3.028426
+round=1 third 09:36:04 status=200 ttfb=2.341831 total=2.692714
+round=2 first 09:44:08 status=200 ttfb=5.353144 total=5.696944
+round=2 second 09:44:15 status=200 ttfb=2.357578 total=2.712331
+round=2 third 09:44:18 status=200 ttfb=2.248249 total=2.592119
+round=3 first 09:52:22 status=200 ttfb=13.686243 total=14.028997
+round=3 second 09:52:37 status=200 ttfb=2.459021 total=2.806263
+round=3 third 09:52:41 status=200 ttfb=2.276120 total=2.631120

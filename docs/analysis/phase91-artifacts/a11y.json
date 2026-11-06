@@ -1,0 +1,1229 @@
+{
+ "first": {
+  "tag": "a",
+  "cls": "skip-link",
+  "name": "Skip to content",
+  "href": "#main",
+  "outline": "2px rgb(138, 86, 0)",
+  "shadow": false,
+  "inView": true,
+  "y": 16,
+  "hiddenAncestor": false
+ },
+ "afterSkip": {
+  "hash": "#main",
+  "active": "BODY",
+  "id": ""
+ },
+ "homeWalk": [
+  {
+   "tag": "a",
+   "cls": "skip-link",
+   "name": "Skip to content",
+   "href": "#main",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "brand",
+   "name": "AgentDock",
+   "href": "/",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Artifacts",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Search",
+   "href": "/artifacts?q=",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "input",
+   "cls": "",
+   "name": "Search artifacts",
+   "href": "",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": true,
+   "inView": true,
+   "y": 469,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "",
+   "name": "Search",
+   "href": "",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 469,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "All 44,746",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 537,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Agent Skills 30,253",
+   "href": "/artifacts?type=skill",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 537,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Claude Code Plugins 2,972",
+   "href": "/artifacts?type=plugin",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 537,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "MCP Servers 545",
+   "href": "/artifacts?type=mcp_server",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 576,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Slash Commands 5,392",
+   "href": "/artifacts?type=command",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 576,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Hook Configurations 504",
+   "href": "/artifacts?type=hook",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 576,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Subagents 5,080",
+   "href": "/artifacts?type=agent",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 614,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Browse Subagents",
+   "href": "/artifacts?type=agent",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 504,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "",
+   "name": "Pause motion",
+   "href": "",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 733,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Newly added",
+   "href": "/artifacts?sort=added",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 818,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Content changed",
+   "href": "/artifacts?sort=changed",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 818,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Browse all 44,746 artifacts",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 818,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "List every language",
+   "href": "/artifacts?lang=any",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 845,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "release-notes",
+   "href": "/r/jnMetaCode/ai-coding-guide/codex/temp",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": false,
+   "y": 891,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/jnMetaCode/ai-coding-",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1401,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "playwright-auth",
+   "href": "/r/mixpeek/amux/.claude/commands/playwri",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 950,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "amux-board",
+   "href": "/r/mixpeek/amux/.claude/commands/amux-bo",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1009,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "smoke-test",
+   "href": "/r/mixpeek/amux/.claude/commands/smoke-t",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1069,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "chrome-cdp",
+   "href": "/r/mixpeek/amux/.claude/commands/chrome-",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1128,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "orchestrate",
+   "href": "/r/mixpeek/amux/.claude/commands/orchest",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1187,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "review-session-log",
+   "href": "/r/mixpeek/amux/.claude/commands/review-",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1247,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "row-source",
+   "name": "source on GitHub",
+   "href": "https://github.com/mixpeek/amux/blob/da8",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1407,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "pw-test",
+   "href": "/r/mixpeek/amux/.claude/commands/pw-test",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 1306,
+   "hiddenAncestor": false
+  }
+ ],
+ "homeOutline": {
+  "h1": 1,
+  "headings": [
+   "H1 Find agent artifacts, and see where ",
+   "H2 Recently indexed",
+   "H2 How a repository gets indexed",
+   "H2 What decides which repositories it r",
+   "H2 Browse by type"
+  ],
+  "jumps": [],
+  "links": 51,
+  "noName": 0,
+  "generic": [],
+  "ambiguous": [
+   "source on GitHub → 10 targets"
+  ],
+  "landmarks": [
+   "header",
+   "nav\"Main\"",
+   "nav\"Browse by type\"",
+   "main",
+   "nav\"Artifact types\"",
+   "section",
+   "section",
+   "section",
+   "section",
+   "footer"
+  ],
+  "live": [],
+  "lang": "en",
+  "title": "AgentDock"
+ },
+ "panel": {
+  "open": 1,
+  "ariaLabel": "Hook Configurations in the index",
+  "afterEsc": {
+   "open": 0,
+   "focus": {
+    "tag": "a",
+    "cls": "chip",
+    "name": "Hook Configurations 504",
+    "href": "/artifacts?type=hook",
+    "outline": "2px rgb(240, 180, 76)",
+    "shadow": false,
+    "inView": true,
+    "y": 576,
+    "hiddenAncestor": false
+   }
+  },
+  "liveRegionNear": null
+ },
+ "launcher": {
+  "open": true,
+  "focus": {
+   "tag": "input",
+   "cls": "",
+   "name": "Search artifacts",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 125,
+   "hiddenAncestor": false
+  },
+  "trap": [
+   "button.",
+   "a.",
+   "a.",
+   "a.",
+   "a.",
+   "a.",
+   "a.",
+   "button."
+  ],
+  "allInside": true,
+  "closed": true
+ },
+ "listWalk": [
+  {
+   "tag": "a",
+   "cls": "skip-link",
+   "name": "Skip to content",
+   "href": "#main",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "brand",
+   "name": "AgentDock",
+   "href": "/",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Artifacts",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Search",
+   "href": "/artifacts?q=",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "input",
+   "cls": "",
+   "name": "Search artifacts",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": true,
+   "inView": true,
+   "y": 262,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "",
+   "name": "Search",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 262,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "All types",
+   "href": "/artifacts",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 352,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Agent Skills",
+   "href": "/artifacts?type=skill",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 385,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Claude Code Plugins",
+   "href": "/artifacts?type=plugin",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 418,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "MCP Servers",
+   "href": "/artifacts?type=mcp_server",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 450,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Slash Commands",
+   "href": "/artifacts?type=command",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 483,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Hook Configurations",
+   "href": "/artifacts?type=hook",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 516,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Subagents",
+   "href": "/artifacts?type=agent",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 549,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "All except Chinese",
+   "href": "/artifacts",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 619,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "All languages",
+   "href": "/artifacts?lang=any",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 652,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Latin alphabet",
+   "href": "/artifacts?lang=latin",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 685,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Chinese",
+   "href": "/artifacts?lang=zh",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 717,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Japanese",
+   "href": "/artifacts?lang=ja",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 750,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Korean",
+   "href": "/artifacts?lang=ko",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 783,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Mixed languages",
+   "href": "/artifacts?lang=mixed",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 816,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Other scripts",
+   "href": "/artifacts?lang=other",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 849,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip chip-toggle",
+   "name": "No network request observed",
+   "href": "/artifacts?cap=no_network",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1121,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip chip-toggle",
+   "name": "No Bash grant declared",
+   "href": "/artifacts?cap=no_shell",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1154,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip chip-toggle",
+   "name": "No bundled script files",
+   "href": "/artifacts?cap=no_scripts",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1187,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "summary",
+   "cls": "",
+   "name": "What these filters mean",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1234,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Include them",
+   "href": "/artifacts?lang=any",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 335,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Recently indexed",
+   "href": "/artifacts",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 361,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Newly added",
+   "href": "/artifacts?sort=added",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 361,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Content changed",
+   "href": "/artifacts?sort=changed",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 361,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "chip",
+   "name": "Name",
+   "href": "/artifacts?sort=name",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 361,
+   "hiddenAncestor": false
+  }
+ ],
+ "listOutline": {
+  "h1": 1,
+  "headings": [
+   "H1 Artifacts"
+  ],
+  "jumps": [],
+  "links": 81,
+  "noName": 0,
+  "generic": [],
+  "ambiguous": [
+   "source on GitHub → 25 targets"
+  ],
+  "landmarks": [
+   "header",
+   "nav\"Main\"",
+   "nav\"Browse by type\"",
+   "main",
+   "nav\"Sort results\"",
+   "nav\"Pagination\"",
+   "footer"
+  ],
+  "live": [],
+  "lang": "en",
+  "title": "Artifacts — AgentDock"
+ },
+ "detailWalk": [
+  {
+   "tag": "a",
+   "cls": "skip-link",
+   "name": "Skip to content",
+   "href": "#main",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "brand",
+   "name": "AgentDock",
+   "href": "/",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 16,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Artifacts",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Search",
+   "href": "/artifacts?q=",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 10,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Artifacts",
+   "href": "/artifacts",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 81,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Agent Skills",
+   "href": "/artifacts?type=skill",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 81,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "jnMetaCode/ai-coding-guide",
+   "href": "/r/jnMetaCode/ai-coding-guide",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 81,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "jnMetaCode/ai-coding-guide",
+   "href": "/r/jnMetaCode/ai-coding-guide",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 230,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "View this file at commit 2214708",
+   "href": "https://github.com/jnMetaCode/ai-coding-",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 362,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Repository on GitHub",
+   "href": "https://github.com/jnMetaCode/ai-coding-",
+   "outline": "2px rgb(240, 180, 76)",
+   "shadow": false,
+   "inView": true,
+   "y": 362,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Setup",
+   "href": "#setup",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 481,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Using it",
+   "href": "#usage",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 515,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Details",
+   "href": "#details",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 549,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Files",
+   "href": "#files",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 583,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Capabilities",
+   "href": "#observed",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 617,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Related",
+   "href": "#related",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 651,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Versions",
+   "href": "#versions",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 685,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "File",
+   "href": "#file",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 719,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "Browse the directory at this commit",
+   "href": "https://github.com/jnMetaCode/ai-coding-",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 525,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "documentation",
+   "href": "https://code.claude.com/docs/en/skills",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 720,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "copy-button",
+   "name": "Copy path",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 822,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "copy-button",
+   "name": "Copy path",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 822,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "a",
+   "cls": "",
+   "name": "jnMetaCode/ai-coding-guide",
+   "href": "/r/jnMetaCode/ai-coding-guide",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1009,
+   "hiddenAncestor": false
+  },
+  {
+   "tag": "button",
+   "cls": "copy-button",
+   "name": "Copy path",
+   "href": "",
+   "outline": "2px rgb(138, 86, 0)",
+   "shadow": false,
+   "inView": true,
+   "y": 1122,
+   "hiddenAncestor": false
+  }
+ ],
+ "detailOutline": {
+  "h1": 1,
+  "headings": [
+   "H1 release-notes",
+   "H2 Setting up this file",
+   "H2 Using this kind of artifact",
+   "H2 What AgentDock observed while readin",
+   "H2 Files",
+   "H2 Declared by the author",
+   "H2 Observed in the file text",
+   "H2 What AgentDock does not check",
+   "H2 Related artifacts",
+   "H2 Versions",
+   "H2 File",
+   "H3 Release Notes Drafter",
+   "H4 When to fire",
+   "H4 Inputs you should gather",
+   "H4 Steps",
+   "H4 Output template",
+   "H4 Gotchas",
+   "H4 References"
+  ],
+  "jumps": [],
+  "links": 34,
+  "noName": 0,
+  "generic": [],
+  "ambiguous": [],
+  "landmarks": [
+   "header",
+   "nav\"Main\"",
+   "nav\"Browse by type\"",
+   "main",
+   "nav\"Breadcrumb\"",
+   "nav\"On this page\"",
+   "span[status]",
+   "span[status]",
+   "span[status]",
+   "span[status]",
+   "nav\"Sections in this file\"",
+   "footer"
+  ],
+  "live": [
+   "span status",
+   "span status",
+   "span status",
+   "span status"
+  ],
+  "lang": "en",
+  "title": "release-notes — jnMetaCode/ai-coding-guide — AgentDock"
+ },
+ "detailHref": "/r/jnMetaCode/ai-coding-guide/codex/templates",
+ "copy": {
+  "text": "Copy path",
+  "aria": null,
+  "label": null,
+  "statusNear": true
+ },
+ "axe": {
+  "home": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 147
+    }
+   ],
+   "passes": 46
+  },
+  "home-reduced": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 150
+    }
+   ],
+   "passes": 46
+  },
+  "home-390": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 201
+    }
+   ],
+   "passes": 47
+  },
+  "list": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 2
+    }
+   ],
+   "passes": 45
+  },
+  "search-empty": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 2
+    }
+   ],
+   "passes": 41
+  },
+  "detail": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 19
+    }
+   ],
+   "passes": 48
+  },
+  "detail-390": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "nodes": 21
+    }
+   ],
+   "passes": 48
+  },
+  "notfound": {
+   "violations": [],
+   "incomplete": [],
+   "passes": 35
+  }
+ },
+ "ariaSnapshotHome": "- link \"Skip to content\":\n  - /url: \"#main\"\n- banner:\n  - link \"AgentDock\":\n    - /url: /\n  - navigation \"Main\":\n    - link \"Artifacts\":\n      - /url: /artifacts\n    - link \"Search\":\n      - /url: /artifacts?q=\n- main:\n  - heading \"Find agent artifacts, and see where they came from.\" [level=1]\n  - paragraph: Skills, plugins, MCP servers, commands, hooks and subagents, read from established public repositories and linked to the exact commit.\n  - text: Search artifacts Ctrl K\n  - searchbox \"Search artifacts\"\n  - text: /\n  - button \"Search\"\n  - navigation \"Artifact types\":\n    - link \"All 44,746\":\n      - /url: /artifacts\n    - link \"Agent Skills 30,253\":\n      - /url: /artifacts?type=skill\n    - link \"Claude Code Plugins 2,972\":\n      - /url: /artifacts?type=plugin\n    - link \"MCP Servers 545\":\n      - /url: /artifacts?type=mcp_server\n    - link \"Slash Commands 5,392\":\n      - /url: /artifacts?type=command\n    - link \"Hook Configurations 504\":\n      - /url: /artifacts?type=hook\n    - link \"Subagents 5,080\":\n      - /url: /artifacts?type=agent\n  - list:\n    - listitem: Public repositories only, never by request\n    - listitem: Files are read, never executed\n    - listitem: Linked to the exact commit that was read\n  - region \"Recently indexed\":\n    - heading \"Recently indexed\" [level=2]\n    - paragraph: 10 most recent · newest read 2026-11-05 · last sync without errors 2026-11-05 23:22 UTC\n    - paragraph:\n      - link \"Newly added\":\n        - /url: /artifacts?sort=added\n      - link \"Content changed\":\n        - /url: /artifacts?sort=changed\n      - link \"Browse all 44,746 artifacts\":\n        - /url: /artifacts\n    - paragraph:\n      - text: \"Not listed by default: 1,926 artifacts with a description written in Chinese.\"\n      - link \"List every language\":\n        - /url: /artifacts?lang=any\n    - list:\n      - listitem:\n        - text: Agent Skill\n        - paragraph:\n          - link \"release-notes\":\n            - /url: /r/jnMetaCode/ai-coding-guide/codex/templates\n          - text: jnMetaCode/ai-coding-guide\n        - paragraph: Draft user-facing release notes from a git log range. Trigger when the user asks for \"release notes\", \"changelog entry\", or \"what shipped this week\" with a git ref range. Output is markdown sections grouped by Features / Fixes / Breaking with PR links.\n        - paragraph:\n          - text: codex/templates/SKILL.md 550 read 2026-11-05 commit\n          - code: \"2214708\"\n          - 'link \"Read all of it : release-notes\"':\n            - /url: /r/jnMetaCode/ai-coding-guide/codex/templates\n          - link \"source on GitHub\":\n            - /url: https://github.com/jnMetaCode/ai-coding-guide/blob/2214708188cd13af5c42804d55979354a8baabf8/codex/templates/SKILL.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"playwright-auth\":\n            - /url: /r/mixpeek/amux/.claude/commands/playwright-auth.md\n          - text: mixpeek/amux\n        - paragraph: Use when the user needs to log into a website for browser automation, save auth cookies, or sync browser profiles to cloud\n        - paragraph:\n          - text: .claude/commands/playwright-auth.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : playwright-auth\"':\n            - /url: /r/mixpeek/amux/.claude/commands/playwright-auth.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/playwright-auth.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"amux-board\":\n            - /url: /r/mixpeek/amux/.claude/commands/amux-board.md\n          - text: mixpeek/amux\n        - paragraph: Use when the user says \"add to board\", \"create a task\", or wants to track a todo on the amux kanban board\n        - paragraph:\n          - text: .claude/commands/amux-board.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : amux-board\"':\n            - /url: /r/mixpeek/amux/.claude/commands/amux-board.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/amux-board.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"smoke-test\":\n            - /url: /r/mixpeek/amux/.claude/commands/smoke-test.md\n          - text: mixpeek/amux\n        - paragraph: Use after making changes to the amux server or dashboard to verify the dashboard and APIs are working correctly\n        - paragraph:\n          - text: .claude/commands/smoke-test.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : smoke-test\"':\n            - /url: /r/mixpeek/amux/.claude/commands/smoke-test.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/smoke-test.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"chrome-cdp\":\n            - /url: /r/mixpeek/amux/.claude/commands/chrome-cdp.md\n          - text: mixpeek/amux\n        - paragraph: Use when the user asks to interact with a web page, take a screenshot of a site, click or type in Chrome, scrape content, or debug a web UI. Connects to real Chrome tabs with existing logins.\n        - paragraph:\n          - text: .claude/commands/chrome-cdp.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : chrome-cdp\"':\n            - /url: /r/mixpeek/amux/.claude/commands/chrome-cdp.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/chrome-cdp.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"orchestrate\":\n            - /url: /r/mixpeek/amux/.claude/commands/orchestrate.md\n          - text: mixpeek/amux\n        - paragraph: Scaffold and run a closed orchestrator loop that drives an existing MD plan to verified completion.\n        - paragraph:\n          - text: .claude/commands/orchestrate.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : orchestrate\"':\n            - /url: /r/mixpeek/amux/.claude/commands/orchestrate.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/orchestrate.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"review-session-log\":\n            - /url: /r/mixpeek/amux/.claude/commands/review-session-log.md\n          - text: mixpeek/amux\n        - paragraph: Use when the user asks what a session did, wants to review session history, or needs to find errors in a session log\n        - paragraph:\n          - text: .claude/commands/review-session-log.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : review-session-log\"':\n            - /url: /r/mixpeek/amux/.claude/commands/review-session-log.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/review-session-log.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"pw-test\":\n            - /url: /r/mixpeek/amux/.claude/commands/pw-test.md\n          - text: mixpeek/amux\n        - paragraph: Use when you need to test the amux dashboard UI, investigate a visual bug, or verify a frontend change works correctly\n        - paragraph:\n          - text: .claude/commands/pw-test.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : pw-test\"':\n            - /url: /r/mixpeek/amux/.claude/commands/pw-test.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/pw-test.md\n      - listitem:\n        - text: Slash Command\n        - paragraph:\n          - link \"aissue\":\n            - /url: /r/mixpeek/amux/.claude/commands/aissue.md\n          - text: mixpeek/amux\n        - paragraph: Pick up an open issue from the amux issue tracker, mark it doing, work it, and mark it done.\n        - paragraph:\n          - text: .claude/commands/aissue.md 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : aissue\"':\n            - /url: /r/mixpeek/amux/.claude/commands/aissue.md\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/commands/aissue.md\n      - listitem:\n        - text: Hook Configuration\n        - paragraph:\n          - link \"settings\":\n            - /url: /r/mixpeek/amux/.claude/settings.json\n          - text: mixpeek/amux\n        - paragraph:\n          - text: .claude/settings.json 554 read 2026-11-05 commit\n          - code: da83914\n          - 'link \"Read all of it : settings\"':\n            - /url: /r/mixpeek/amux/.claude/settings.json\n          - link \"source on GitHub\":\n            - /url: https://github.com/mixpeek/amux/blob/da83914cdc193dff04deb0ea0acfa17ffa30ab86/.claude/settings.json\n  - region \"How a repository gets indexed\":\n    - heading \"How a repository gets indexed\" [level=2]\n    - paragraph: \"AgentDock discovers repositories on its own, twice a day. There is no submission form: nothing is added by request.\"\n    - list:\n      - listitem:\n        - paragraph: A public repository\n        - paragraph: A registry, a curated seed list, GitHub's topic search.\n      - listitem:\n        - paragraph: The files that declare an artifact\n        - list:\n          - listitem:\n            - code: SKILL.md\n            - text: Agent Skill\n          - listitem:\n            - code: plugin.json\n            - text: Claude Code Plugin\n          - listitem:\n            - code: marketplace.json\n            - text: Plugin Marketplace\n          - listitem:\n            - code: .mcp.json\n            - text: MCP Server\n          - listitem:\n            - code: server.json\n            - text: MCP Server\n          - listitem:\n            - code: commands/*.md\n            - text: Slash Command\n          - listitem:\n            - code: agents/*.md\n            - text: Subagent\n          - listitem:\n            - code: settings.json\n            - text: Hook Configuration\n          - listitem:\n            - code: hooks.json\n            - text: Hook Configuration\n      - listitem:\n        - paragraph: AgentDock reads each one\n        - paragraph: What it declares about itself. It never runs the file, and never writes it to disk.\n      - listitem:\n        - paragraph: Filed against the commit it read\n        - paragraph: 46,672 artifacts indexed right now\n  - region \"What decides which repositories it reads\":\n    - heading \"What decides which repositories it reads\" [level=2]\n    - paragraph: A repository AgentDock has found\n    - term: Stars\n    - definition: 50+ on GitHub, at the time it is first read\n    - definition: The star floor decides which unread repositories AgentDock spends its small GitHub request budget on first. It is a popularity signal used for scheduling, not a statement about any artifact.\n    - term: Visibility\n    - definition: Public private repositories are unreadable, not excluded\n    - term: Not a fork\n    - definition: Upstream only the original is what gets read\n    - term: Not archived\n    - definition: Active an archive has no next commit\n    - paragraph: AgentDock reads it\n    - paragraph: All four hold at once. They are conditions, not steps.\n  - region \"Browse by type\":\n    - heading \"Browse by type\" [level=2]\n    - list:\n      - listitem:\n        - link \"Agent Skills 30,253 listed A directory of instructions and supporting files that Claude Code loads when a task matches its description. SKILL.md\":\n          - /url: /artifacts?type=skill\n          - text: Agent Skills\n          - strong: 30,253\n          - text: listed A directory of instructions and supporting files that Claude Code loads when a task matches its description.\n          - code: SKILL.md\n      - listitem:\n        - link \"Slash Commands 5,392 listed A prompt file that runs when you type its name after a slash. commands/*.md\":\n          - /url: /artifacts?type=command\n          - text: Slash Commands\n          - strong: 5,392\n          - text: listed A prompt file that runs when you type its name after a slash.\n          - code: commands/*.md\n      - listitem:\n        - link \"Subagents 5,080 listed A separate assistant with its own system prompt and tool access that Claude Code can hand a task to. agents/*.md\":\n          - /url: /artifacts?type=agent\n          - text: Subagents\n          - strong: 5,080\n          - text: listed A separate assistant with its own system prompt and tool access that Claude Code can hand a task to.\n          - code: agents/*.md\n      - listitem:\n        - link \"Claude Code Plugins 2,972 listed A bundle of skills, commands, subagents, hooks or MCP servers that Claude Code installs as one unit. plugin.json\":\n          - /url: /artifacts?type=plugin\n          - text: Claude Code Plugins\n          - strong: 2,972\n          - text: listed A bundle of skills, commands, subagents, hooks or MCP servers that Claude Code installs as one unit.\n          - code: plugin.json\n      - listitem:\n        - 'link \"MCP Servers 545 listed A declaration of a Model Context Protocol server: a program a client starts, or a URL it connects to, for tools and data. .mcp.json server.json\"':\n          - /url: /artifacts?type=mcp_server\n          - text: MCP Servers\n          - strong: \"545\"\n          - text: \"listed A declaration of a Model Context Protocol server: a program a client starts, or a URL it connects to, for tools and data.\"\n          - code: .mcp.json\n          - code: server.json\n      - listitem:\n        - link \"Hook Configurations 504 listed Configuration that runs a command when a Claude Code event fires, such as before a tool call. settings.json hooks.json\":\n          - /url: /artifacts?type=hook\n          - text: Hook Configurations\n          - strong: \"504\"\n          - text: listed Configuration that runs a command when a Claude Code event fires, such as before a tool call.\n          - code: settings.json\n          - code: hooks.json\n- contentinfo:\n  - paragraph: AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe. Read anything before you use it.\n- alert"
+}

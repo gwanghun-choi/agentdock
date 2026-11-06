@@ -1,0 +1,89 @@
+[
+ {
+  "i": 0,
+  "fcp": 2776,
+  "lcp": 2776,
+  "lcpCandidates": [
+   2776
+  ],
+  "firstResponse": 2532,
+  "firstData": 2547,
+  "acc": {
+   "beforeLCP": {
+    "parseHTML": 3,
+    "style": 7,
+    "paint": 2,
+    "parseCSS": 1,
+    "script": 18,
+    "compile": 0,
+    "layout": 17
+   },
+   "afterLCP": {
+    "style": 6,
+    "paint": 0,
+    "parseHTML": 6,
+    "script": 584,
+    "compile": 0,
+    "layout": 2
+   }
+  }
+ },
+ {
+  "i": 1,
+  "fcp": 3683,
+  "lcp": 3683,
+  "lcpCandidates": [
+   3683
+  ],
+  "firstResponse": 3460,
+  "firstData": 3481,
+  "acc": {
+   "beforeLCP": {
+    "parseHTML": 3,
+    "style": 8,
+    "paint": 4,
+    "parseCSS": 0,
+    "script": 19,
+    "compile": 0,
+    "layout": 12
+   },
+   "afterLCP": {
+    "style": 5,
+    "paint": 0,
+    "parseHTML": 6,
+    "script": 564,
+    "compile": 0,
+    "layout": 0
+   }
+  }
+ },
+ {
+  "i": 2,
+  "fcp": 2515,
+  "lcp": 2515,
+  "lcpCandidates": [
+   2515
+  ],
+  "firstResponse": 2288,
+  "firstData": 2304,
+  "acc": {
+   "beforeLCP": {
+    "parseHTML": 4,
+    "style": 8,
+    "paint": 2,
+    "parseCSS": 1,
+    "script": 18,
+    "compile": 0,
+    "layout": 12
+   },
+   "afterLCP": {
+    "paint": 0,
+    "style": 6,
+    "parseHTML": 6,
+    "script": 532,
+    "compile": 0,
+    "layout": 1
+   }
+  }
+ }
+]

@@ -1,0 +1,105 @@
+{
+ "base": "http://127.0.0.1:3971",
+ "mode": "full",
+ "browser": "156.0.8078.4",
+ "rows": [
+  {
+   "cycle": 0,
+   "heapMB": 11.86,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1442,
+   "listeners": 395,
+   "rendererCreated": 1,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 10,
+   "netBuffers": 297,
+   "netPrograms": 24,
+   "canvasesInDom": 1,
+   "reqs": 27
+  },
+  {
+   "cycle": 10,
+   "heapMB": 16.6,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1375,
+   "listeners": 399,
+   "rendererCreated": 11,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 70,
+   "netBuffers": 297,
+   "netPrograms": 224,
+   "canvasesInDom": 1,
+   "reqs": 64
+  },
+  {
+   "cycle": 20,
+   "heapMB": 16.57,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1375,
+   "listeners": 399,
+   "rendererCreated": 21,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 130,
+   "netBuffers": 297,
+   "netPrograms": 424,
+   "canvasesInDom": 1,
+   "reqs": 94
+  },
+  {
+   "cycle": 30,
+   "heapMB": 16.84,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1375,
+   "listeners": 399,
+   "rendererCreated": 31,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 190,
+   "netBuffers": 297,
+   "netPrograms": 624,
+   "canvasesInDom": 1,
+   "reqs": 124
+  }
+ ],
+ "afterSearch": {
+  "cycle": "afterSearch3",
+  "heapMB": 12.6,
+  "webgl2Contexts": 1,
+  "canvasElements": 2,
+  "documents": 1,
+  "nodes": 1434,
+  "listeners": 399,
+  "rendererCreated": 1,
+  "renderersAlive": 1,
+  "scenesAlive": 2,
+  "netTextures": 10,
+  "netBuffers": 297,
+  "netPrograms": 24,
+  "canvasesInDom": 1,
+  "reqs": 212,
+  "detachedNodes": 1,
+  "detachedTop": [
+   [
+    "<canvas height=\"128\" width=\"128\">",
+    1
+   ]
+  ]
+ },
+ "errors": [
+  "AbortError: Transition was skipped. Navigation transition active",
+  "AbortError: Transition was skipped. Navigation transition active",
+  "AbortError: Transition was skipped. Navigation transition active"
+ ],
+ "reqs": 212
+}

@@ -1,0 +1,44 @@
+{
+ "base": "https://agentdock-delta.vercel.app",
+ "mode": "nav",
+ "browser": "156.0.8078.4",
+ "rows": [
+  {
+   "cycle": 0,
+   "heapMB": 12.33,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1741,
+   "listeners": 395,
+   "rendererCreated": 1,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 10,
+   "netBuffers": 297,
+   "netPrograms": 24,
+   "canvasesInDom": 1,
+   "reqs": 27
+  },
+  {
+   "cycle": 10,
+   "heapMB": 15.18,
+   "webgl2Contexts": 1,
+   "canvasElements": 2,
+   "documents": 1,
+   "nodes": 1671,
+   "listeners": 396,
+   "rendererCreated": 11,
+   "renderersAlive": 1,
+   "scenesAlive": 2,
+   "netTextures": 70,
+   "netBuffers": 297,
+   "netPrograms": 224,
+   "canvasesInDom": 1,
+   "reqs": 50
+  }
+ ],
+ "afterSearch": null,
+ "errors": [],
+ "reqs": 50
+}

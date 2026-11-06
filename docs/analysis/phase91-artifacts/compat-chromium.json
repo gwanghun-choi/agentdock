@@ -1,0 +1,227 @@
+{
+ "engine": "chromium",
+ "checks": [
+  {
+   "name": "home load",
+   "ok": true,
+   "detail": {
+    "ms": 3882
+   }
+  },
+  {
+   "name": "features",
+   "ok": "info",
+   "detail": {
+    "has": true,
+    "animTimelineView": true,
+    "viewTimeline": true,
+    "timelineScope": true,
+    "allowDiscrete": true,
+    "container": true,
+    "cqi": true,
+    "colorMix": true,
+    "textWrapBalance": true,
+    "textWrapPretty": true,
+    "startingStyle": true,
+    "ric": true,
+    "webgl2": "ANGLE (Intel, Vulkan 1.4.335 (Intel(R) Graphics (RPL-S) (0x0000A780)), Intel open-source Mesa driver)",
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+    "dpr": 1
+   }
+  },
+  {
+   "name": "hero content",
+   "ok": true,
+   "detail": {
+    "h1": "Find agent artifacts, and see where they came from.",
+    "search": true,
+    "chips": 7,
+    "static": true,
+    "overflow": 0
+   }
+  },
+  {
+   "name": "3d state",
+   "ok": true,
+   "detail": {
+    "scene": "live",
+    "canvas": true,
+    "tier": null,
+    "w": 1440,
+    "h": 724,
+    "staticOpacity": "0",
+    "tags": 6
+   }
+  },
+  {
+   "name": "category chip hover opens panel",
+   "ok": true,
+   "detail": "Agent Skills 30,253 listed A directory of instructions and supporting files that"
+  },
+  {
+   "name": "category navigates",
+   "ok": true,
+   "detail": "/artifacts?type=skill"
+  },
+  {
+   "name": "search",
+   "ok": true,
+   "detail": {
+    "url": "/artifacts?q=code+review",
+    "rows": 25,
+    "title": "Code Reviewer"
+   }
+  },
+  {
+   "name": "type filter",
+   "ok": true,
+   "detail": "/artifacts?type=mcp_server"
+  },
+  {
+   "name": "language filter",
+   "ok": true,
+   "detail": "Artifacts"
+  },
+  {
+   "name": "sort",
+   "ok": true,
+   "detail": {
+    "label": "Newly added",
+    "url": "/artifacts?sort=added",
+    "first": "release-notes",
+    "second": "com.firstfluke.oma"
+   }
+  },
+  {
+   "name": "pagination",
+   "ok": true,
+   "detail": {
+    "url": "/artifacts?page=2",
+    "status": "Page 2 of 1790"
+   }
+  },
+  {
+   "name": "detail",
+   "ok": true,
+   "detail": "https://github.com/Lifecycle-Innovations-Limited/claude-ops/blob/821d09d7a4ff23d1e5ac0ba36b6d4be2dd167488/claude-ops/skills/ops-deploy-fix/SKILL.md"
+  },
+  {
+   "name": "sticky navigation",
+   "ok": true,
+   "detail": {
+    "pos": "sticky",
+    "before": 453,
+    "after": 80
+   }
+  },
+  {
+   "name": "scroll-spy marks a section",
+   "ok": true,
+   "detail": {
+    "colours": [
+     "rgb(89, 98, 95)",
+     "rgb(138, 86, 0)"
+    ],
+    "animated": true,
+    "supported": true
+   }
+  },
+  {
+   "name": "no content stuck invisible on home",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "name": "reduced motion",
+   "ok": true,
+   "detail": {
+    "scene": "still",
+    "canvas": 0,
+    "running": 0,
+    "svg": true,
+    "big": 0
+   }
+  },
+  {
+   "name": "3d fallback at 800px",
+   "ok": true,
+   "detail": {
+    "scene": "still",
+    "canvas": 0,
+    "overflow": 0,
+    "svgVisible": "1"
+   }
+  }
+ ],
+ "errors": [],
+ "failed": [
+  "/artifacts?type=plugin&_rsc=5CB68i4pnAekjehf net::ERR_ABORTED",
+  "/artifacts?_rsc=z7M1Piymj4tNAPg_ net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/amux-board.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/playwright-auth.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/jnMetaCode/ai-coding-guide/codex/templates?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/smoke-test.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/artifacts?type=skill&_rsc=BB7e8Ley9mAO0oEr net::ERR_ABORTED",
+  "/r/zenstory-ai/oh-story-dsh/packages/knowledge/novel-to-game/skills/novel-game-a net::ERR_ABORTED",
+  "/r/zenstory-ai/oh-story-dsh/packages/knowledge/novel-to-game/skills/game-world-d net::ERR_ABORTED",
+  "/r/zenstory-ai/oh-story-dsh/packages/knowledge/novel-to-game/skills/game-build?_ net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/review-session-log.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/playwright-auth.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/pw-test.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/jnMetaCode/ai-coding-guide/codex/templates?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/amux-board.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/chrome-cdp.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/orchestrate.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/aissue.md?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/artifacts?sort=added&_rsc=fTtfOS2DnvNDG3sz net::ERR_ABORTED",
+  "/r/mksglu/context-mode/.claude/skills/release?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mksglu/context-mode/plugins/claude-code/codex/skills/ctx-stats?_rsc=3jQYwu0OC net::ERR_ABORTED",
+  "/r/mksglu/context-mode/plugins/claude-code/codex/skills/ctx-doctor?_rsc=3jQYwu0O net::ERR_ABORTED",
+  "/r/first-fluke/oh-my-agent/codex-plugin/com.firstfluke.oma?_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/mksglu/context-mode/plugins/claude-code/codex/skills/ctx-upgrade?_rsc=3jQYwu0 net::ERR_ABORTED",
+  "/artifacts?q=&_rsc=3jQYwu0OC520Qig1 net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-competitors?_r net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-credentials?_r net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-comms?_rsc=3jQ net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-daemon?_rsc=3j net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-dash?_rsc=3jQY net::ERR_ABORTED",
+  "/artifacts?page=2&_rsc=fTtfOS2DnvNDG3sz net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-desktop?_rsc=3 net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-deploy-fix?_rs net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-desk?_rsc=3jQY net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-deploy?_rsc=3j net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-ecom?_rsc=3jQY net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-doctor?_rsc=3j net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops/claude-ops/skills/ops-deploy-fix?_rs net::ERR_ABORTED",
+  "/r/Lifecycle-Innovations-Limited/claude-ops?_rsc=Eeai-R7HH6b83xDj net::ERR_ABORTED",
+  "/r/jnMetaCode/ai-coding-guide/codex/templates?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/playwright-auth.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/amux-board.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/smoke-test.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/chrome-cdp.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/pw-test.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/orchestrate.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/review-session-log.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/commands/aissue.md?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED",
+  "/r/mixpeek/amux/.claude/settings.json?_rsc=tXyZJ52UQVBCVsD3 net::ERR_ABORTED"
+ ],
+ "version": "156.0.8078.4",
+ "features": {
+  "has": true,
+  "animTimelineView": true,
+  "viewTimeline": true,
+  "timelineScope": true,
+  "allowDiscrete": true,
+  "container": true,
+  "cqi": true,
+  "colorMix": true,
+  "textWrapBalance": true,
+  "textWrapPretty": true,
+  "startingStyle": true,
+  "ric": true,
+  "webgl2": "ANGLE (Intel, Vulkan 1.4.335 (Intel(R) Graphics (RPL-S) (0x0000A780)), Intel open-source Mesa driver)",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+  "dpr": 1
+ },
+ "reqs": 270
+}
