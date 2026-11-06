@@ -53,6 +53,7 @@ import {
   DOCKS,
   type DockCounts,
   type DockKind,
+  isSoftwareRenderer,
   motes,
   nearestTurn,
   PLATE_HEIGHT,
@@ -100,8 +101,14 @@ const SIGNAL = '#f0b44c';
 const DRIFT = 0.05; // radians per second
 const PIXEL_BUDGET = 3_700_000; // about 2560×1440: past it the cost is pixels, not picture
 
-/** Renderers with no GPU behind them: what the browser falls back to on such a machine. */
-const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+/**
+ * At the last quality step, below this for TOO_SLOW_WINDOWS measurements in a row (about
+ * 4.5 s): the drawing is the better picture. Software rendering on twenty cores does 14-16
+ * fps (Phase 91), and a real GPU on this scene does 60. Only a browser that hides its
+ * renderer gets this far; the one that says "software" never loads the scene.
+ */
+const TOO_SLOW_FPS = 15;
+const TOO_SLOW_WINDOWS = 3;
 
 const ease = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
 const approach = (rate: number, delta: number) => 1 - Math.exp(-rate * delta);
@@ -491,6 +498,7 @@ type Want = {
   onSelect: (kind: DockKind | null) => void;
   onDrawn: () => void;
   onLost: () => void;
+  onTooSlow: () => void;
   lowerDpr: () => void;
 };
 
@@ -758,6 +766,7 @@ function Station({
     light: new Vector3(3, 2, 3),
     frames: 0,
     frameSum: 0,
+    slowWindows: 0,
     tier: 0,
     placed: false,
     looping: false,
@@ -815,10 +824,7 @@ function Station({
   useLayoutEffect(() => {
     const context = gl.getContext();
     const info = context.getExtension('WEBGL_debug_renderer_info');
-    if (
-      !info ||
-      !SOFTWARE_RENDERER.test(String(context.getParameter(info.UNMASKED_RENDERER_WEBGL)))
-    )
+    if (!info || !isSoftwareRenderer(String(context.getParameter(info.UNMASKED_RENDERER_WEBGL))))
       return;
     if (key.current) key.current.castShadow = false;
     now.current.tier = 3;
@@ -1274,17 +1280,21 @@ function Station({
     // going back up would only make it oscillate.
     // Only frames that followed a frame: the gap before one woken by a scroll event is
     // the event's cadence and says nothing about the machine.
-    if (state.looping && state.tier < 4) {
+    if (state.looping) {
       state.frames++;
       state.frameSum += rawDelta;
       // 45 frames, or 1.5 s if that comes first: at 45 frames alone a machine doing 4 fps
       // waited 11 s for each step down, so the slowest machine answered last.
       if (state.frames >= 45 || (state.frames >= 4 && state.frameSum >= 1.5)) {
-        if (state.frameSum / state.frames > 1 / 34) {
+        const mean = state.frameSum / state.frames;
+        if (state.tier < 4 && mean > 1 / 34) {
           state.tier++;
           gl.domElement.dataset.tier = String(state.tier);
           if (state.tier === 1 && key.current) key.current.castShadow = false;
           else want.current.lowerDpr();
+        } else if (state.tier === 4) {
+          state.slowWindows = mean > 1 / TOO_SLOW_FPS ? state.slowWindows + 1 : 0;
+          if (state.slowWindows === TOO_SLOW_WINDOWS) want.current.onTooSlow();
         }
         state.frames = 0;
         state.frameSum = 0;
@@ -1700,6 +1710,7 @@ export default function DockScene({
   onSelect,
   onReady,
   onLost,
+  onTooSlow,
 }: {
   counts: DockCounts;
   lit: DockKind | null;
@@ -1709,6 +1720,7 @@ export default function DockScene({
   onSelect: (kind: DockKind | null) => void;
   onReady: () => void;
   onLost: () => void;
+  onTooSlow: () => void;
 }) {
   // In state, not `setDpr` from inside: Canvas re-applies its prop on every render,
   // and a hover or a Pause renders it, which silently undid each step down.
@@ -1723,6 +1735,7 @@ export default function DockScene({
     onSelect,
     onDrawn: onReady,
     onLost,
+    onTooSlow,
     lowerDpr: () => setDpr((now) => Math.max(0.65, now * 0.8)),
   };
   const want = useRef<Want>(handlers);

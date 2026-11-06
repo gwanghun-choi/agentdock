@@ -341,8 +341,9 @@ library도, icon package도 없습니다. `'use client'`를 가진 component는 
 경로·링크·설정 텍스트 복사 버튼, framework가 client component이기를 요구하는 error
 boundary, 그리고 홈 hero의 궤도 도크(Phase 79, 80–82)입니다: 장면을 불러올지 정하고 선택
 패널과 일시정지 버튼을 가진 `DockBoard`와 지연 로딩되는 WebGL 장면 `DockScene`(React Three
-Fiber, three.js)입니다. 장면은 별도 chunk이고 넓은 화면에서 모션을 허용하고 WebGL이 있을 때만
-받으며, 그 밖에는 서버가 그린 같은 모양의 SVG가 남습니다. 장면은 입력 없이 20초가 지나거나 화면
+Fiber, three.js)입니다. 장면은 별도 chunk이고 넓은 화면에서 모션을 허용하고 WebGL 뒤에 GPU가 있을 때만
+스스로 받으며, 그 밖에는 서버가 그린 같은 모양의 SVG가 남고 넓은 화면이면 "View in 3D"로 켤 수 있습니다.
+렌더러를 가리는 브라우저에서 프레임이 15fps 아래로 머물면 그림으로 돌아갑니다. 장면은 입력 없이 20초가 지나거나 화면
 밖으로 나가거나 일시정지하면 그리기를 멈춥니다. 세부 내용은
 [Phase 80–82 보고서](docs/analysis/agentdock-phase80-82-immersive-3d.md)에 있습니다. 검색은 GET form이고, type·capability 필터와 페이지 이동은 URL에
 검색 상태 전체를 담은 일반 링크라서 JavaScript를 꺼도 동작하며 뒤로 가기·새로

@@ -361,7 +361,9 @@ which the framework requires to be a client component, and the home hero's
 orbital dock (Phases 79, 80–82): `DockBoard`, which decides whether the scene
 loads and holds the selection panel and the Pause button, and `DockScene`, the
 WebGL scene (React Three Fiber and three.js) in a chunk of its own. It downloads
-only on a wide screen with motion allowed and WebGL present; otherwise a
+only on a wide screen with motion allowed and a GPU behind WebGL, or when asked for
+with "View in 3D", and it ends at the drawing if a browser that hides its renderer
+stays under 15 fps; otherwise a
 server-drawn SVG of the same dock stays. The scene stops drawing after 20 seconds
 without input, off screen, or under Pause. Search is a GET form;
 the type and capability filters and the pager are plain links whose URLs carry

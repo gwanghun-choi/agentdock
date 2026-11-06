@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { cablePath, DOCKS, MOTE_CAP, motes, nearestTurn, plates } from '@/components/dockBoard';
+import {
+  cablePath,
+  DOCKS,
+  isSoftwareRenderer,
+  MOTE_CAP,
+  motes,
+  nearestTurn,
+  plates,
+} from '@/components/dockBoard';
 
 describe('the stack a count draws', () => {
   it('is an empty socket at zero, and never empty above it', () => {
@@ -57,5 +65,31 @@ describe('the board', () => {
       expect(path[0]).toEqual([x, z]);
       expect(Math.hypot(...(path.at(-1) as [number, number]))).toBeCloseTo(0.55);
     }
+  });
+});
+
+describe('isSoftwareRenderer', () => {
+  it.each([
+    [
+      'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)',
+    ],
+    ['llvmpipe (LLVM 19.1.7, 256 bits)'],
+    ['softpipe'],
+    ['Mesa Software Rasterizer'],
+    ['Microsoft Basic Render Driver'],
+  ])('has no GPU behind it: %s', (name) => {
+    expect(isSoftwareRenderer(name)).toBe(true);
+  });
+
+  it.each([
+    [
+      'ANGLE (Intel, Vulkan 1.4.335 (Intel(R) Graphics (RPL-S) (0x0000A780)), Intel open-source Mesa driver)',
+    ],
+    ['ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)'],
+    ['Apple GPU'],
+    ['Intel(R) HD Graphics, or similar'],
+    [''],
+  ])('says nothing against this one: %s', (name) => {
+    expect(isSoftwareRenderer(name)).toBe(false);
   });
 });

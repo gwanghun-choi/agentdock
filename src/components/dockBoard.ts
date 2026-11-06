@@ -1,5 +1,9 @@
 import { TYPE_FILTER_IDS } from '@/components/typeFilters';
 
+/** A WebGL renderer with no GPU behind it: what a browser falls back to on such a machine. */
+export const isSoftwareRenderer = (name: string) =>
+  /swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+
 /**
  * The hero's picture, as numbers: one dock per artifact kind on a ring around one
  * hub, the index. The 3D scene (DockScene.tsx) and its still drawing
