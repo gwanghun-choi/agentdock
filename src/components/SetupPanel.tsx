@@ -1,4 +1,5 @@
 import { CopyButton } from '@/components/CopyButton';
+import { highlight } from '@/components/highlight';
 import { ExternalIcon } from '@/components/Icon';
 import { REDACTED, redactArgs, redactSecrets } from '@/components/redact';
 
@@ -53,13 +54,13 @@ export function hintText(value: unknown): string | null {
   return null;
 }
 
-const strings = (value: unknown): string[] =>
+export const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 
-const text = (value: unknown): string =>
+export const text = (value: unknown): string =>
   typeof value === 'string' ? value : (JSON.stringify(value) ?? '');
 
-function servers(meta: Record<string, unknown>): Server[] {
+export function servers(meta: Record<string, unknown>): Server[] {
   if (!Array.isArray(meta.servers)) return [];
   return meta.servers.flatMap((raw) => {
     const s = (raw ?? {}) as Record<string, unknown>;
@@ -124,7 +125,9 @@ function McpSetup({ meta, sourcePath }: { meta: Record<string, unknown>; sourceP
             <>
               <dt>Starts</dt>
               <dd className="fact-long">
-                <code>{[s.command, ...(s.args ?? []).map(text)].join(' ')}</code>
+                <code>
+                  {highlight([s.command, ...(s.args ?? []).map(text)].join(' '), 'shell')}
+                </code>
               </dd>
             </>
           ) : null}
@@ -148,7 +151,8 @@ function McpSetup({ meta, sourcePath }: { meta: Record<string, unknown>; sourceP
         <dl className="facts install">
           <dt>As configuration</dt>
           <dd className="fact-long">
-            <code>{mcpConfig(list)}</code> <CopyButton label="Copy JSON" value={mcpConfig(list)} />
+            <code>{highlight(mcpConfig(list), 'json')}</code>{' '}
+            <CopyButton label="Copy JSON" value={mcpConfig(list)} />
             <span className="muted">
               {' '}
               Rebuilt from the fields above. Environment values are not in it
@@ -222,7 +226,11 @@ function HookSetup({ meta, sourcePath }: { meta: Record<string, unknown>; source
           </dd>
           <dt>Command</dt>
           <dd className="fact-long">
-            {h.command == null ? 'not declared' : <code>{redactSecrets(text(h.command))}</code>}
+            {h.command == null ? (
+              'not declared'
+            ) : (
+              <code>{highlight(redactSecrets(text(h.command)), 'shell')}</code>
+            )}
           </dd>
           <dt>Type</dt>
           <dd>{h.type == null ? 'not declared' : text(h.type)}</dd>

@@ -20,7 +20,7 @@
 :root,
 .hero,
 .stage {
-  color-scheme: light dark;
+  color-scheme: dark;
 
   /* Surfaces climb away from the page: --bg is the canvas, --surface is a card
      on it, --surface-2 is a well inside a card, --surface-3 is any of those
@@ -38,7 +38,7 @@
      Contrast on --surface, light / dark, computed 2026-11-05: --muted 6.3 / 7.8,
      --faint 5.8 / 6.2, --accent 6.2 / 9.5, and 4.5 or better on every ground
      in the ladder. */
-  --bg: light-dark(#f7f8f8, #101315);
+  --bg: light-dark(#f7f8f8, #0c0f11);
   --surface: light-dark(#ffffff, #161a1d);
   --surface-2: light-dark(#f0f2f2, #1c2124);
   --surface-3: light-dark(#e7eaea, #24292d);
@@ -3982,609 +3982,6 @@ details.notice[open] p {
   line-height: 1;
 }
 
-/* --- the conditions --- */
-
-/*
- * The one section on the page's own scheme. The number is the largest thing below
- * the hero, on a panel of the stage, the other three stand beside it as words, and a bracket runs down the
- * left from "found" to "reads it", with no arrowhead on it anywhere.
- */
-.conditions::before {
-  background: var(--band);
-}
-
-.gate {
-  --rail: 0.75rem;
-  position: relative;
-  display: grid;
-  gap: var(--s-5);
-  padding-inline-start: calc(var(--rail) + var(--s-5));
-}
-
-.gate::before {
-  content: "";
-  position: absolute;
-  inset-block: 0.75rem 3.25rem;
-  inset-inline-start: calc(var(--rail) / 2 - 1px);
-  width: 2px;
-  background: var(--border-strong);
-}
-
-.gate-end {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  max-width: none;
-  color: var(--fg-strong);
-  font-size: var(--t-lg);
-  font-weight: 620;
-}
-
-.gate-end::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: calc((var(--rail) + var(--s-5)) * -1);
-  width: var(--rail);
-  height: var(--rail);
-  border: 2px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--band);
-}
-
-.gate-out::before {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.gate-end svg {
-  flex: none;
-  width: 1.25rem;
-  height: 1.25rem;
-  color: var(--accent);
-}
-
-.gate-note {
-  margin: calc(var(--s-3) * -1) 0 0;
-  max-width: none;
-  color: var(--muted);
-}
-
-.stats {
-  display: grid;
-  gap: var(--s-2) var(--s-6);
-  margin: 0 0 0 calc(var(--s-5) * -1);
-  padding: 0;
-}
-
-@media (min-width: 52rem) {
-  .stats {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    grid-template-rows: repeat(3, auto);
-  }
-
-  .stats > div:first-child {
-    grid-row: 1 / span 3;
-  }
-}
-
-.stats > div {
-  padding: var(--s-4) var(--s-5);
-  border-radius: var(--r-md);
-  transition: background var(--dur-fast) var(--ease);
-}
-
-.stats > .floor {
-  padding: clamp(var(--s-5), 3vw, var(--s-7));
-  border-radius: var(--r-lg);
-}
-
-.stats > div:not(:first-child):hover {
-  background: var(--surface-3);
-}
-
-.stats dt {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--t-base);
-  font-weight: 560;
-}
-
-.stats dt svg {
-  flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  transition: transform var(--dur) var(--ease);
-}
-
-.stats > div:hover dt svg {
-  transform: scale(1.25);
-}
-
-.stats dd {
-  margin: var(--s-1) 0 0;
-  color: var(--fg-strong);
-  font-size: clamp(var(--t-xl), 1.2rem + 1.5vw, 3.25rem);
-  font-weight: 680;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.stats dd small {
-  display: block;
-  margin-top: var(--s-2);
-  color: var(--muted);
-  font-size: var(--t-base);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.45;
-}
-
-/* Tabular figures would space the plus like a digit. */
-.stats > div:first-child dd:not(.notice) {
-  color: var(--accent);
-  font-size: var(--t-numeral);
-  font-weight: 720;
-  letter-spacing: -0.055em;
-  line-height: 0.95;
-  transform-origin: left bottom;
-}
-
-.stats dd.notice {
-  display: flex;
-  align-items: start;
-  gap: var(--s-2);
-  margin-top: var(--s-5);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fg);
-  font-size: var(--t-base);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.5;
-}
-
-/* --- the types --- */
-
-/*
- * Compared on the real counts (194, 29, 16, 8, 3, 1 in the seed; production has one
- * kind far ahead too):
- *
- * A bento with fixed spans would draw whichever kind came first as the largest.
- * A category wall of equal tiles is the six rectangles this replaced. A spatial
- * explorer, in 3D, is the hero again, at the hero's cost.
- *
- * So the bento, with the spans given by the data: the page sorts the kinds by what
- * is listed, the first tile takes the big cell, and each stands on the hero's own
- * figure for its count. 12 columns, three rows: 5×3 beside 4|3, 3|4, 7.
- *
- * A span follows the count, so any kind can land in any cell, and each tile lays
- * itself out from its own width (`@container`). What stays with the kind is the
- * figure and how it stands in the tile: six outlines, in six places, rather than
- * one rectangle six times.
- */
-.type-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 40rem) {
-  .type-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .type-grid > li:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .type-grid > li:last-child {
-    grid-column: 1 / -1;
-  }
-}
-
-/* 80rem: at 1024 a 3-of-12 tile was 220px, and "Configurations" ran under the stack. */
-@media (min-width: 80rem) {
-  .type-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-
-  .type-grid > li:first-child {
-    grid-column: span 5;
-    grid-row: span 3;
-  }
-
-  .type-grid > li:nth-child(2),
-  .type-grid > li:nth-child(5) {
-    grid-column: span 4;
-  }
-
-  .type-grid > li:nth-child(3),
-  .type-grid > li:nth-child(4) {
-    grid-column: span 3;
-  }
-
-  .type-grid > li:last-child {
-    grid-column: span 7;
-  }
-}
-
-.type-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  display: block;
-  height: 100%;
-  padding: var(--s-5);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  color: var(--fg);
-  text-decoration: none;
-  container-type: inline-size;
-  view-timeline: --tile block;
-  transition: background var(--dur) var(--ease);
-}
-
-/* The hue comes up from the figure, under the words. */
-.type-card::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -60%;
-  right: -30%;
-  width: 180%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--hue) 17%, var(--surface));
-  transform: scale(0);
-  transform-origin: 72% 40%;
-  transition: transform var(--dur) var(--ease);
-}
-
-.type-card:is(:hover, :focus-visible)::before {
-  transform: scale(1);
-}
-
-/* A press on a screen with no hover still answers. */
-.type-card:active::before {
-  transform: scale(1);
-}
-
-/*
- * The number's room is the tile's own, less the figure beside it where there is one, and
- * its size is that room over its own length: .6em a character is the widest a digit
- * sets in this face at this tracking, measured. So a count can reach seven digits and
- * more without a rule to add, and nothing here reads the count's value.
- */
-.type-inner {
-  --stack: 6.5rem;
-  --room: 100cqi;
-  --cap: clamp(2.5rem, 1.5rem + 2.4vw, 4.5rem);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: var(--s-1) var(--s-3);
-  height: 100%;
-}
-
-.type-name {
-  color: var(--fg-strong);
-  font-size: var(--t-xl);
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.type-count {
-  min-width: 0;
-  color: var(--muted);
-  font-size: var(--t-base);
-}
-
-.type-count strong {
-  display: block;
-  color: var(--hue);
-  font-size: min(var(--cap), var(--room) / (var(--digits, 4) * 0.6));
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
-  white-space: nowrap;
-}
-
-.type-what {
-  margin-top: var(--s-3);
-  max-width: 62ch;
-  color: var(--fg);
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-/* What the detectors match for this kind, as what they are: file names. */
-.type-files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-1) var(--s-3);
-  margin-top: var(--s-3);
-}
-
-.type-files code {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: var(--t-sm);
-}
-
-.dock-stack {
-  width: var(--stack);
-  overflow: visible;
-}
-
-.dock-plate {
-  transform: translateY(calc(var(--i) * var(--lift, 0px)));
-  transition:
-    transform var(--dur) var(--ease),
-    rotate var(--dur) var(--ease),
-    scale var(--dur) var(--ease);
-}
-
-/* Each figure answers as what it is: the modules part, the steps rise, the coil
-   stretches, the fan opens, the nodes swell. */
-.type-card:is(:hover, :focus-visible) .dock-plate {
-  --lift: -2.5px;
-}
-
-.dock-skill .dock-plate {
-  rotate: calc((var(--i) - var(--mid)) * var(--open, 0deg));
-}
-
-.type-card:is(:hover, :focus-visible) .dock-skill .dock-plate {
-  --lift: 0px;
-  --open: 2.4deg;
-}
-
-.dock-agent .dock-plate {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.type-card:is(:hover, :focus-visible) .dock-agent .dock-plate {
-  --lift: 0px;
-  scale: 1.45;
-}
-
-.dock-orbit-group {
-  transition: rotate var(--dur) var(--ease);
-}
-
-.type-card:is(:hover, :focus-visible) .dock-orbit-group {
-  rotate: 14deg;
-}
-
-.dock-cursor {
-  transition: opacity var(--dur) var(--ease);
-}
-
-.type-card:is(:hover, :focus-visible) .dock-cursor {
-  opacity: 0.25;
-}
-
-.type-card:is(:hover, :focus-visible) .type-files code {
-  color: var(--fg);
-}
-
-/* Beside the words, wherever there is room. Which side, and how far it stands out of
-   the tile, is the kind's. */
-@container (min-width: 15rem) {
-  .type-inner {
-    --stack: clamp(5rem, 30cqi, 8rem);
-    --room: calc(100cqi - var(--stack) - var(--s-3));
-    grid-template-columns: minmax(0, 1fr) var(--stack);
-  }
-
-  .type-name,
-  .type-count {
-    grid-column: 1;
-  }
-
-  .dock-stack {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: start;
-  }
-
-  .type-what,
-  .type-files {
-    grid-column: 1 / -1;
-  }
-
-  /* A plugin leads with its connector. */
-  .hue-plugin .type-inner {
-    grid-template-columns: var(--stack) minmax(0, 1fr);
-  }
-
-  .hue-plugin :is(.type-name, .type-count) {
-    grid-column: 2;
-  }
-
-  .hue-plugin .dock-stack {
-    grid-column: 1;
-  }
-
-  /* A command's first line is its file, so its figure starts beside the name under it. */
-  .hue-command .dock-stack {
-    grid-row: 2 / span 2;
-  }
-
-  /* A rack and a coil stand down in the corner, cut by the tile's own edge. */
-  .hue-mcp_server .dock-stack,
-  .hue-hook .dock-stack {
-    grid-row: 1 / span 3;
-    align-self: end;
-    scale: 1.2;
-    translate: 8% 10%;
-  }
-
-  .hue-mcp_server .type-what,
-  .hue-hook .type-what {
-    grid-column: 1;
-  }
-
-  .hue-mcp_server .type-files,
-  .hue-hook .type-files {
-    grid-column: 1;
-  }
-}
-
-/* A wide tile: name and number, then what it is, then the figure at its full size. */
-@container (min-width: 38rem) {
-  .type-inner {
-    --stack: 13rem;
-    --room: 40cqi;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) var(--stack);
-    column-gap: var(--s-6);
-  }
-
-  .type-inner .type-name,
-  .type-inner .type-count {
-    grid-column: 1;
-  }
-
-  .type-inner .type-what {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    margin-top: 0;
-  }
-
-  .type-inner .type-files {
-    grid-column: 2;
-    grid-row: 3;
-  }
-
-  .type-inner .dock-stack {
-    grid-column: 3;
-    grid-row: 1 / span 3;
-    align-self: center;
-  }
-}
-
-/* A command says its file first, at the top, as the line it is typed at. */
-.hue-command .type-files {
-  order: -1;
-  grid-column: 1 / -1;
-  margin: 0 0 var(--s-2);
-  font-family: var(--mono);
-}
-
-.hue-command .type-files::before {
-  content: ">" / "";
-  color: var(--hue);
-  font-size: var(--t-sm);
-}
-
-/* A hook runs down a rail, as a thing that waits for something to pass. */
-.hue-hook .type-what {
-  padding-inline-start: var(--s-3);
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--hue) 55%, transparent);
-}
-
-/* The largest kind gets the big cell, and the room is for scale. */
-@media (min-width: 80rem) {
-  /* Name and number at the top, the words at the foot, the figure at scale between. */
-  .type-grid > li:first-child .type-inner {
-    --stack: min(100%, 34rem);
-    --room: 100cqi;
-    --cap: var(--t-numeral);
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr auto auto;
-    column-gap: 0;
-  }
-
-  .type-grid > li:first-child :is(.type-name, .type-count, .type-what, .type-files) {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .type-grid > li:first-child .dock-stack {
-    grid-column: 1;
-    grid-row: 3;
-    align-self: center;
-    justify-self: center;
-    margin-block: var(--s-4);
-    scale: 1;
-    translate: none;
-  }
-
-  .type-grid > li:first-child .type-what {
-    grid-row: 4;
-    margin-top: 0;
-  }
-
-  .type-grid > li:first-child .type-files {
-    grid-row: 5;
-  }
-
-  .type-grid > li:first-child .type-name {
-    margin-top: 0;
-    font-size: clamp(var(--t-xl), 1rem + 1.5vw, 3rem);
-  }
-
-  .type-grid > li:first-child .type-count strong {
-    line-height: 0.95;
-  }
-}
-
-/* --- the close --- */
-
-/* The name again at the width of the page, cut by the edge of the window, under
-   the sentence every page ends on. From the stylesheet: the brand link at the top
-   of the page is the name, this is the sign on the building. */
-.site-footer {
-  overflow: hidden;
-  margin-top: var(--s-7);
-  padding-block: var(--s-7) 0;
-  border-top: 0;
-  background: var(--stage);
-}
-
-/* The page's last section is already on the stage: no light strip between them. */
-main:has(.types) {
-  padding-bottom: 0;
-}
-
-body:has(.types) .site-footer {
-  margin-top: 0;
-}
-
-.site-footer p {
-  color: var(--fg);
-  font-size: var(--t-lg);
-  line-height: 1.45;
-}
-
-.site-footer::after {
-  content: "AgentDock" / "";
-  display: block;
-  margin-top: var(--s-6);
-  margin-bottom: -0.04em;
-  color: var(--surface-3);
-  font-size: min(19.5vw, 24rem);
-  font-weight: 760;
-  letter-spacing: -0.05em;
-  line-height: 0.95;
-  text-align: center;
-  white-space: nowrap;
-}
-
 /* --- the listing and the detail page --- */
 
 /* The same stage opening the listing, the field straddling its edge. */
@@ -4784,33 +4181,6 @@ body:has(.types) .site-footer {
   }
 }
 
-/* The rows a reader scans for a living: still rows. The kind's bar is there at
-   rest now, the name and the description a size up, and the facts legible. */
-.listing .rows > li {
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--hue, var(--border)) 45%, transparent);
-}
-
-.listing .rows > li:is(:hover, :focus-within) {
-  box-shadow: inset 4px 0 0 var(--hue, var(--accent));
-}
-
-.listing .row-title a {
-  font-size: var(--t-lg);
-}
-
-/* 13px, not the scale's 12: the two identifiers a reader compares down a list. */
-:is(.listing, .board) :is(.row-title .repo, .row-meta .path) {
-  font-size: var(--t-sm);
-}
-
-.listing .row-desc {
-  font-size: var(--t-base);
-}
-
-:is(.listing, .board) .row-meta {
-  font-size: var(--t-sm);
-}
-
 /* The artifact's own opening, on the stage, in its kind's light. */
 .detail-top {
   position: relative;
@@ -4969,75 +4339,6 @@ code {
 
   .flow-file code {
     font-size: var(--t-sm);
-  }
-
-  .stats > div {
-    padding: var(--s-3) var(--s-4);
-  }
-
-  .stats dd {
-    font-size: var(--t-xl);
-  }
-
-  .type-card {
-    padding: var(--s-4);
-  }
-
-  .type-what {
-    margin-top: var(--s-2);
-    font-size: var(--t-base);
-  }
-
-  .site-footer::after {
-    margin-top: var(--s-4);
-  }
-}
-
-/* --- the listing: name and words on the left, where it came from on the right --- */
-
-/* Where there is the width. A row was four lines at 160px, with the facts wrapping under the
-   words; here it is the words beside a column of facts, the same order down every row, so
-   the eye can run down either one. The markup is the phone's, so nothing moves in the
-   accessibility tree: the metadata line lets its children into the row's own grid. */
-@media (min-width: 96rem) {
-  .listing .row-detail {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 13rem;
-    grid-auto-flow: dense;
-    column-gap: var(--s-6);
-  }
-
-  .listing .row-desc {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    margin: 0;
-  }
-
-  .listing .row-meta {
-    display: contents;
-  }
-
-  .listing .row-meta > * {
-    grid-column: 2;
-    margin: 0;
-    color: var(--muted);
-    font-size: var(--t-sm);
-    line-height: 1.6;
-  }
-
-  .listing .row-meta > .path {
-    grid-column: 1;
-    grid-row: 4;
-    align-self: end;
-  }
-
-  .listing .row-meta > .row-why {
-    grid-column: 1;
-    grid-row: 5;
-  }
-
-  .listing .row-meta > .row-source {
-    margin-inline-start: 0;
   }
 }
 
@@ -5304,6 +4605,1949 @@ code {
 
 .body {
   font-size: 1rem;
+}
+
+/* ---------- the yard (Phase 97) ---------- */
+
+/*
+ * Every artifact is a box on a dock, stencilled with the commit it was read at. That is the
+ * site's one picture, and it is made from the sha, so it cannot say anything that is not so.
+ *
+ * Before (production, 2026-11-06): the page under the hero was five sections in one treatment,
+ * the listing was 25 identical rows on a light ground, and the detail page was a run of tables.
+ * After: one dark stage from top to bottom, and each stretch of it does one thing differently
+ * from its neighbours. The kinds stack up as boxes, the yard is a map, the pipeline holds still,
+ * the gate is the one whole field of colour, and the footer closes on the name.
+ */
+.commit-print {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--hue, var(--accent));
+}
+
+/* The stage runs through every page. */
+.yard-section,
+.types {
+  --section-y: clamp(var(--s-7), 12vh, 9rem);
+}
+
+/* --- the kinds: six boxes, stacked as the window comes down --- */
+
+.types {
+  padding-block: var(--section-y) 0;
+}
+
+.types .section-head {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0 0 clamp(var(--s-6), 6vh, var(--s-7));
+}
+
+.type-grid {
+  display: grid;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0;
+  list-style: none;
+}
+
+.kind-slot {
+  position: relative;
+  /* The rib of a box's wall, on its own colour. Painted once. */
+  --ground: color-mix(in oklab, var(--hue) 24%, var(--stage));
+  --pad: clamp(var(--s-5), 4vw, 5rem);
+}
+
+.type-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-5);
+  padding: var(--pad) var(--pad) calc(var(--pad) + 3rem);
+  border-radius: 1.25rem 1.25rem 0 0;
+  box-shadow:
+    inset 0 2px 0 var(--hue),
+    0 -18px 40px -24px rgb(0 0 0 / 90%);
+  background:
+    radial-gradient(
+      44rem 30rem at var(--mx, 74%) var(--my, 42%),
+      color-mix(in oklab, var(--hue) 22%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3.5rem,
+      rgb(0 0 0 / 14%) 3.5rem 3.6rem,
+      rgb(255 255 255 / 2.5%) 3.6rem 3.7rem
+    ),
+    var(--ground);
+  color: var(--fg);
+  text-decoration: none;
+  container-type: inline-size;
+}
+
+.type-inner {
+  --room: calc(100cqi);
+  --cap: clamp(3.5rem, 2rem + 8vw, 11rem);
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.type-name {
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-xl), 1rem + 1.6vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.type-count {
+  color: var(--fg);
+  font-size: var(--t-base);
+}
+
+.type-count strong {
+  display: block;
+  color: var(--hue);
+  font-size: min(var(--cap), var(--room) / (var(--digits, 4) * 0.62));
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  white-space: nowrap;
+}
+
+.type-what {
+  max-width: 44ch;
+  color: var(--fg-strong);
+  font-size: clamp(1rem, 0.9rem + 0.35vw, 1.3125rem);
+  line-height: 1.45;
+}
+
+.type-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1) var(--s-3);
+}
+
+.type-files code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font-size: var(--t-sm);
+}
+
+.type-go {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  min-height: 2.75rem;
+  color: var(--hue);
+  font-weight: 620;
+}
+
+.type-go svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+.type-card:is(:hover, :focus-visible) .type-go svg {
+  transform: translateX(6px);
+}
+
+.type-card:focus-visible {
+  outline-offset: -6px;
+}
+
+.kind-random {
+  position: absolute;
+  inset-block-end: calc(var(--pad) - 0.25rem);
+  inset-inline-end: var(--pad);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--fg);
+  font-size: var(--t-sm);
+}
+
+/* The drawing. Its ink is the kind's; whatever is filled stands on the box's own ground. */
+.kind-art {
+  --ink: var(--hue, var(--accent));
+  --fill: color-mix(in oklab, var(--ink) 16%, var(--stage));
+  width: 100%;
+  max-height: min(46svh, 26rem);
+  overflow: visible;
+  color: var(--ink);
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: perspective(900px) rotateY(calc(var(--tx, 0) * 7deg))
+    rotateX(calc(var(--ty, 0) * -5deg));
+  transition: transform var(--dur) var(--ease);
+}
+
+.kind-art text {
+  fill: var(--fg-strong);
+  stroke: none;
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.kind-art :is(.ka-page rect, .ka-top rect, .ka-part rect, .ka-node, .ka-frame, .ka-sub-disc) {
+  fill: var(--fill);
+}
+
+.kind-art :is(.ka-page path, .ka-top path) {
+  stroke-width: 2;
+  opacity: 0.45;
+}
+
+/* A skill: the pages behind the file open like a fan. */
+.ka-page {
+  transform: rotate(calc((var(--i) - 5) * 7deg));
+  transform-origin: 170px 290px;
+}
+
+.ka-page rect {
+  stroke-opacity: 0.65;
+}
+
+.kind-art .ka-label,
+.kind-art .ka-file {
+  fill: var(--ink);
+}
+
+.kind-art .ka-big {
+  fill: var(--fg-strong);
+  font-size: 44px;
+  font-weight: 650;
+}
+
+.ka-dim {
+  opacity: 0.35;
+}
+
+.kind-art .ka-fill {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.kind-art .ka-dim-fill {
+  fill: var(--ink);
+  stroke: none;
+  opacity: 0.35;
+}
+
+.ka-wire-track,
+.ka-orbit-path {
+  opacity: 0.25;
+  stroke-dasharray: 3 9;
+}
+
+.ka-wire,
+.ka-hook,
+.ka-hand {
+  stroke-dasharray: 1;
+  stroke-width: 3.5;
+}
+
+.ka-track {
+  opacity: 0.45;
+}
+
+.ka-pulse {
+  transform: translateX(280px);
+}
+
+.ka-trip {
+  stroke-width: 3;
+}
+
+.ka-orbit {
+  transform-origin: 170px 180px;
+}
+
+.ka-back {
+  opacity: 0.55;
+}
+
+@media (min-width: 52rem) {
+  .type-card {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s-7);
+  }
+
+  .type-inner {
+    --room: calc((100cqi - var(--s-7)) * 0.53);
+  }
+}
+
+/* A box stays where it stops and the next one comes down over it. Only where the window can
+   hold a whole box; otherwise they follow one another. Not a pin on the page's scrolling: the
+   reader's wheel moves the page as it always does. */
+@media (min-width: 64rem) and (min-height: 44rem) {
+  .kind-slot {
+    position: sticky;
+    top: calc(3.5rem + var(--i) * 1.5rem);
+  }
+
+  /* Shift+Tab goes back into a box the next one has come down over. It comes up to be seen. */
+  .kind-slot:focus-within {
+    z-index: 1;
+  }
+
+  .type-card {
+    min-height: calc(100svh - 3.5rem - 7.5rem);
+    align-content: center;
+  }
+}
+
+/* A phone's box: the words first, the drawing small, and six of them still a short run. */
+@media (max-width: 40rem) {
+  .kind-art {
+    max-height: 11rem;
+  }
+
+  .type-card {
+    gap: var(--s-3);
+    padding-bottom: 4rem;
+  }
+}
+
+/* --- the yard --- */
+
+.yard-section {
+  position: relative;
+  isolation: isolate;
+  padding-block: var(--section-y);
+}
+
+.yard-section::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: 0;
+  inset-inline: -50vw;
+  margin-inline: 50%;
+  background:
+    linear-gradient(rgb(255 255 255 / 2.5%) 1px, transparent 1px) 0 0 / 100% 4rem,
+    linear-gradient(90deg, rgb(255 255 255 / 2.5%) 1px, transparent 1px) 0 0 / 4rem 100%,
+    var(--stage);
+  pointer-events: none;
+}
+
+.yard-section h2 {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-display);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.yard-scope {
+  max-width: 68ch;
+  margin: 0 0 var(--s-5);
+  color: var(--fg);
+  font-size: var(--t-lg);
+}
+
+.yard-kinds {
+  display: flex;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-bottom: var(--s-5);
+}
+
+.yard-kinds button {
+  min-height: 2.75rem;
+  padding-inline: var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.yard-kinds button span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.yard-kinds button[aria-pressed="true"] {
+  border-color: var(--hue, var(--fg-strong));
+  background: var(--hue, var(--fg-strong));
+  color: var(--stage);
+  font-weight: 620;
+}
+
+.yard-kinds button[aria-pressed="true"] span {
+  color: inherit;
+}
+
+.yard-floor {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.yard-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--s-2);
+  min-height: 15rem;
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklab, var(--hue) 16%, var(--stage));
+  box-shadow: inset 0 2px 0 var(--hue);
+  transition: background var(--dur) var(--ease);
+}
+
+.yard-readout p {
+  margin: 0;
+  max-width: none;
+}
+
+.yard-name {
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-xl), 1rem + 1.2vw, 2.25rem);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.yard-repo {
+  color: var(--hue);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+.yard-summary {
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.yard-readout .yard-commit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  height: 2.25rem;
+  margin-block-start: auto;
+}
+
+.yard-commit code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+}
+
+.yard-open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 2.75rem;
+  color: var(--fg-strong);
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.yard-map {
+  position: relative;
+  min-height: 24rem;
+  min-width: 0;
+}
+
+.yard-pending {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+}
+
+.yard-berths {
+  columns: 15rem;
+  column-gap: var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.yard-berth {
+  break-inside: avoid;
+  margin-bottom: var(--s-5);
+  transition: opacity var(--dur) var(--ease);
+}
+
+.yard-berth-name {
+  display: block;
+  margin-bottom: var(--s-1);
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yard-berth:is(:hover, :focus-within) .yard-berth-name {
+  color: var(--fg-strong);
+}
+
+.yard-boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* A box, longer than it is tall. On a touch screen, the size a thumb can hit. */
+.yard-box {
+  display: block;
+  width: 1.5rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  background: var(--hue);
+  opacity: 0.8;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+@media (pointer: coarse) {
+  .yard-boxes {
+    gap: 4px;
+  }
+
+  .yard-box {
+    width: 2rem;
+    height: 1.5rem;
+  }
+}
+
+.yard-box:hover,
+.yard-box:focus-visible,
+.yard-box.is-picked {
+  opacity: 1;
+  transform: translateY(-3px) scale(1.25);
+}
+
+.yard-box.is-picked {
+  outline: 2px solid var(--fg-strong);
+  outline-offset: 1px;
+}
+
+.yard-box:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.yard-repo {
+  text-decoration: none;
+}
+
+@media (scripting: none) {
+  .yard {
+    display: none;
+  }
+}
+
+/* Picking out a kind leaves the others where they stand: where a kind is, among its
+   neighbours, is what the map shows. */
+.yard-box[data-off] {
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .yard-map:has(.yard-berth:hover) .yard-berth:not(:hover) {
+    opacity: 0.45;
+  }
+}
+
+@media (min-width: 64rem) {
+  .yard-floor {
+    grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* Only beside the map. Above it, on one column, it stood over the boxes it describes. */
+  .yard-readout {
+    position: sticky;
+    top: 5rem;
+    min-height: 26rem;
+  }
+
+  .yard-map {
+    min-height: 34rem;
+  }
+}
+
+/* --- the pipeline: its last stop stamps a real commit --- */
+
+.flow-print {
+  display: grid;
+  gap: var(--s-1);
+  margin: 0;
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.flow-print .commit-print {
+  height: 2.5rem;
+  color: var(--commit);
+}
+
+.flow-print code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--commit);
+}
+
+/* --- the gate: the page's one whole field of colour --- */
+
+/*
+ * Amber, the colour of everything a reader acts on, because this is the one thing on the page
+ * AgentDock itself decides. The star floor is the largest thing on it and is cut by the edge,
+ * with the sentence that keeps it from reading as a quality claim right beside it. Size here is
+ * not rank. No tick, no cross, no green, no red: a repository that fails a condition is not
+ * worse, only unread. Every number and condition is the one the code enforces (policy.ts).
+ */
+.conditions {
+  --fg: #231a06;
+  --fg-strong: #120d02;
+  --muted: #3f300c;
+  --accent: #120d02;
+  position: relative;
+  isolation: isolate;
+  color: var(--fg);
+  padding-block: clamp(var(--s-7), 12vh, 9rem);
+}
+
+.conditions::before {
+  background: #f0b44c;
+}
+
+.conditions .section-head {
+  margin: 0 0 var(--s-6);
+}
+
+.gate {
+  display: grid;
+  gap: var(--s-5);
+}
+
+.gate-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  max-width: none;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-lg), 1rem + 0.6vw, 1.625rem);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.gate-end svg {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.gate-note {
+  margin: 0;
+  max-width: none;
+  color: var(--fg);
+}
+
+.stats {
+  display: grid;
+  gap: var(--s-5) var(--s-7);
+  margin: 0;
+  padding: 0;
+}
+
+.stats > div {
+  padding-block-start: var(--s-3);
+  border-top: 2px solid var(--fg-strong);
+}
+
+.stats > .floor {
+  border-top: 0;
+  padding: 0;
+}
+
+.stats dt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--fg-strong);
+  font-size: var(--t-base);
+  font-weight: 620;
+}
+
+.stats dt svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.stats dd {
+  margin: var(--s-1) 0 0;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-xl), 1.2rem + 1.5vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.stats dd small {
+  display: block;
+  margin-top: var(--s-2);
+  color: var(--fg);
+  font-size: var(--t-base);
+  font-weight: 450;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+.stats .floor dd:not(.notice) {
+  font-size: clamp(7rem, 32vw, 30rem);
+  font-weight: 760;
+  letter-spacing: -0.07em;
+  line-height: 0.8;
+  transform-origin: left bottom;
+}
+
+.stats .floor dd:not(.notice) small {
+  margin-top: var(--s-4);
+  font-size: var(--t-lg);
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.stats dd.notice {
+  display: flex;
+  align-items: start;
+  gap: var(--s-2);
+  max-width: 62ch;
+  margin-top: var(--s-5);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-strong);
+  font-size: var(--t-base);
+  font-weight: 450;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.stats dd.notice svg {
+  flex: none;
+  margin-top: 0.2em;
+  color: inherit;
+}
+
+@media (min-width: 64rem) {
+  .stats {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    grid-template-rows: repeat(3, auto);
+  }
+
+  .stats > .floor {
+    grid-row: 1 / span 3;
+  }
+}
+
+/* The hero and the sections under it end on the footer's own ground. */
+main:has(.conditions) {
+  padding-bottom: 0;
+}
+
+body:has(.conditions) .site-footer {
+  margin-top: 0;
+}
+
+/* --- the close --- */
+
+.site-footer {
+  overflow: hidden;
+  margin-top: var(--s-7);
+  padding-block: clamp(var(--s-7), 10vh, 7rem) 0;
+  border-top: 0;
+  background: var(--stage);
+}
+
+.footer-grid {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.footer-close {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+}
+
+.site-footer .footer-line {
+  margin: 0;
+  color: var(--fg-strong);
+  font-size: var(--t-display);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.footer-close p {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--fg);
+  font-size: var(--t-lg);
+  line-height: 1.45;
+}
+
+.footer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 3rem;
+  padding-inline: var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 650;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.footer-cta:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+.footer-cta svg {
+  transition: transform var(--dur) var(--ease);
+}
+
+.footer-cta:hover svg {
+  transform: translateX(4px);
+}
+
+.footer-links p {
+  margin: 0 0 var(--s-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.footer-links ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer-links a {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 2.25rem;
+  color: var(--fg-strong);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.footer-links li[class*="hue-"] a::before {
+  content: "";
+  width: 1rem;
+  height: 0.6rem;
+  border-radius: 2px;
+  background: var(--hue);
+  transition: transform var(--dur) var(--ease);
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.footer-links a:hover::before {
+  transform: translateX(3px);
+}
+
+.footer-mark::after {
+  content: "AgentDock" / "";
+  display: block;
+  margin-top: var(--s-6);
+  margin-bottom: -0.04em;
+  color: var(--surface-3);
+  font-size: min(19.5vw, 24rem);
+  font-weight: 760;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (min-width: 52rem) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* --- the listing --- */
+
+.page-head.stage {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.page-head.stage .list-hero-words {
+  min-width: 0;
+}
+
+.page-head.stage h1 {
+  font-size: clamp(2.5rem, 1.2rem + 6vw, 8rem);
+  font-weight: 720;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.page-head.stage .list-what {
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+}
+
+.page-head.stage .list-query {
+  max-width: none;
+  margin: 0 0 var(--s-3);
+  color: var(--accent);
+  font-size: clamp(var(--t-2xl), 1rem + 4vw, 5rem);
+  font-weight: 680;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+/* A kind's listing stands on its kind's own ground, with its drawing. */
+.list-hero-kind.page-head.stage::before {
+  background:
+    radial-gradient(
+      60vw 120% at 80% 10%,
+      color-mix(in oklab, var(--hue) 30%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3.5rem,
+      rgb(0 0 0 / 14%) 3.5rem 3.6rem,
+      rgb(255 255 255 / 2.5%) 3.6rem 3.7rem
+    ),
+    color-mix(in oklab, var(--hue) 14%, var(--stage));
+}
+
+.list-hero-kind.page-head.stage h1 {
+  color: var(--hue);
+}
+
+.list-hero-kind .kind-art {
+  display: none;
+}
+
+/* To scale. A kind with very few still has a bar a pointer can land on. */
+.list-share {
+  min-width: 0;
+}
+
+.list-share ul {
+  display: flex;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-share li {
+  min-width: 1rem;
+}
+
+.list-share a {
+  display: block;
+  height: 1.75rem;
+  border-radius: 3px;
+  background: var(--hue);
+  transition: transform var(--dur) var(--ease);
+  transform-origin: bottom;
+}
+
+.list-share a:is(:hover, :focus-visible) {
+  transform: scaleY(1.5);
+}
+
+.page-head.stage .list-share p {
+  margin: var(--s-2) 0 0;
+  max-width: none;
+  color: var(--fg);
+  font-size: var(--t-sm);
+}
+
+.list-share strong {
+  color: var(--fg-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 64rem) {
+  .page-head.stage:is(:has(.list-share), .list-hero-kind) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+    gap: var(--s-7);
+  }
+
+  .list-hero-kind .kind-art {
+    display: block;
+    max-height: 17rem;
+    margin-bottom: calc(var(--s-5) * -1);
+  }
+}
+
+/* A phone's first result stays on its first screen (e2e: y < 625 at 375). The bars say it to
+   scale without the sentence, and the name of the page does not need the desktop's size. */
+@media (max-width: 40rem) {
+  .page-head.stage h1 {
+    font-size: 2rem;
+  }
+
+  .page-head.stage .list-share p {
+    display: none;
+  }
+
+  /* The words are in the field and in the count, both on this screen. */
+  .page-head.stage .list-query {
+    display: none;
+  }
+
+  .page-head.stage .muted {
+    font-size: var(--t-sm);
+  }
+}
+
+/* One card per artifact. The first is wider: the top of a result set is where a reader starts,
+   and a wall of one size has nowhere to start. */
+:is(.listing, .repo-rows) .rows,
+main > .rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+:is(.listing, .repo-rows) .rows > li,
+main > .rows > li {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--s-4) var(--s-5);
+  border: 0;
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(
+      26rem 18rem at var(--mx, 100%) var(--my, 0%),
+      color-mix(in oklab, var(--hue, var(--accent)) 13%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+  box-shadow:
+    inset 0 2px 0 var(--hue, var(--border)),
+    inset 0 0 0 1px var(--border);
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+:is(.listing, .repo-rows) .rows > li:is(:hover, :focus-within) {
+  background:
+    radial-gradient(
+      26rem 18rem at var(--mx, 100%) var(--my, 0%),
+      color-mix(in oklab, var(--hue, var(--accent)) 20%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+  box-shadow:
+    inset 0 2px 0 var(--hue, var(--border)),
+    inset 0 0 0 1px color-mix(in oklab, var(--hue, var(--accent)) 60%, transparent);
+  transform: translateY(-3px);
+}
+
+:is(.listing, .repo-rows) .rows > li:active {
+  transform: translateY(-1px);
+}
+
+:is(.listing, .repo-rows) .row-type,
+main > .rows .row-type {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-2);
+  padding: 0;
+}
+
+:is(.listing, .repo-rows) .row-type .commit-print {
+  flex: 0 1 9rem;
+  width: 9rem;
+  height: 1.25rem;
+  opacity: 0.7;
+}
+
+:is(.listing, .repo-rows) .rows > li:is(:hover, :focus-within) .commit-print {
+  opacity: 1;
+}
+
+.board .row-type .commit-print {
+  display: none;
+}
+
+.board .row-detail-print {
+  flex: none;
+  height: 2.5rem;
+  opacity: 0.85;
+}
+
+:is(.listing, .repo-rows) .row-title {
+  display: grid;
+  gap: 0;
+  margin-bottom: var(--s-2);
+}
+
+:is(.listing, .repo-rows) .row-title a {
+  font-size: clamp(var(--t-lg), 1rem + 0.45vw, 1.5rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* The card is the link. The source link is the one other way out, above it. */
+:is(.listing, .repo-rows) .row-title a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+}
+
+:is(.listing, .repo-rows) .rows > li {
+  position: relative;
+}
+
+:is(.listing, .repo-rows) :is(.row-source, .row-where code) {
+  position: relative;
+  z-index: 1;
+}
+
+:is(.listing, .repo-rows) .row-title a:focus-visible {
+  outline: none;
+}
+
+:is(.listing, .repo-rows) .row-title a:focus-visible::after {
+  outline: var(--ring-w) solid var(--ring);
+  /* Inside the card: a subagent's card clips what stands outside it. */
+  outline-offset: calc(var(--ring-w) * -1);
+}
+
+:is(.listing, .repo-rows) :is(.row-title .repo, .row-meta .path) {
+  font-size: var(--t-sm);
+}
+
+:is(.listing, .repo-rows) .row-title .repo {
+  color: var(--hue, var(--muted));
+}
+
+:is(.listing, .repo-rows) .row-desc {
+  color: var(--fg);
+  font-size: var(--t-base);
+}
+
+:is(.listing, .repo-rows) .row-meta {
+  margin-top: auto;
+  padding-top: var(--s-2);
+  font-size: var(--t-sm);
+}
+
+/* What the kind is, in the card's own shape: a command is a line typed, a hook hangs off a
+   rail, an MCP declaration has its two ends, a plugin its studs, a subagent its ring. */
+.rows > li:has(.badge-command) .row-title a::before {
+  content: "/" / "";
+  color: var(--hue);
+  font-family: var(--mono);
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-hook) {
+  padding-inline-start: calc(var(--s-5) + var(--s-2));
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-hook)::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--s-3);
+  inset-inline-start: var(--s-3);
+  width: 2px;
+  background: repeating-linear-gradient(var(--hue) 0 6px, transparent 6px 12px);
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-mcp_server)::before,
+:is(.listing, .repo-rows) .rows > li:has(.badge-mcp_server)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hue);
+  translate: 0 -50%;
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-mcp_server)::before {
+  inset-inline-start: -4px;
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-mcp_server)::after {
+  inset-inline-end: -4px;
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-plugin)::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  inset-inline: var(--s-5);
+  height: 6px;
+  background: radial-gradient(circle, var(--hue) 2.5px, transparent 3px) 0 0 / 1.25rem 6px repeat-x;
+  max-width: 6rem;
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-agent)::after {
+  content: "";
+  position: absolute;
+  top: -1.75rem;
+  inset-inline-end: -1.75rem;
+  width: 5rem;
+  height: 5rem;
+  border: 1px dashed color-mix(in oklab, var(--hue) 50%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+:is(.listing, .repo-rows) .rows > li:has(.badge-agent) {
+  overflow: hidden;
+}
+
+@media (min-width: 72rem) {
+  :is(.listing, .repo-rows) .rows,
+  main > .rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :is(.listing, .repo-rows) .rows > li:first-child {
+    grid-column: 1 / -1;
+    padding: var(--s-5) var(--s-6);
+  }
+
+  :is(.listing, .repo-rows) .rows > li:first-child .row-title a {
+    font-size: clamp(var(--t-xl), 1rem + 1.3vw, 2.25rem);
+    letter-spacing: -0.03em;
+  }
+
+  :is(.listing, .repo-rows) .rows > li:first-child .row-desc {
+    font-size: var(--t-lg);
+    max-width: 70ch;
+  }
+
+  :is(.listing, .repo-rows) .rows > li:first-child .row-type .commit-print {
+    flex-basis: 16rem;
+    width: 16rem;
+    height: 2rem;
+  }
+}
+
+.result-bar .result-count strong {
+  color: var(--fg-strong);
+}
+
+.result-bar a[href^="/artifacts/random"] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding-inline: var(--s-3);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  color: var(--accent);
+  font-weight: 620;
+  text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.result-bar a[href^="/artifacts/random"]:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* An empty result: an empty berth, drawn. */
+.listing .empty {
+  position: relative;
+  padding: clamp(var(--s-6), 6vw, 5rem);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 1.25rem,
+    rgb(255 255 255 / 2%) 1.25rem 2.5rem
+  );
+}
+
+.listing .empty > p:first-child {
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-lg), 1rem + 0.9vw, var(--t-2xl));
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* --- the detail page --- */
+
+.read-progress {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: var(--hue, var(--accent));
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.detail-top[data-kind]::before {
+  background:
+    radial-gradient(
+      70vw 110% at 80% 10%,
+      color-mix(in oklab, var(--hue) 34%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3.5rem,
+      rgb(0 0 0 / 14%) 3.5rem 3.6rem,
+      rgb(255 255 255 / 2.5%) 3.6rem 3.7rem
+    ),
+    color-mix(in oklab, var(--hue) 10%, var(--stage));
+}
+
+.detail-top .detail-head h1 {
+  font-size: clamp(2.5rem, 1.2rem + 5.5vw, 7.5rem);
+  font-weight: 720;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+
+.detail-top .detail-head h1[data-length="mid"] {
+  font-size: clamp(var(--t-2xl), 1.1rem + 3vw, 4.75rem);
+}
+
+.detail-top .detail-head h1[data-length="long"] {
+  font-size: clamp(var(--t-xl), 1rem + 1.5vw, 3rem);
+}
+
+.detail-top .lede {
+  max-width: 60ch;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-lg), 1rem + 0.5vw, 1.5rem);
+  line-height: 1.4;
+}
+
+/* The box. Three faces, which is all of it the range of the tilt can show. */
+.cargo {
+  --w: clamp(12rem, 24vw, 24rem);
+  --h: calc(var(--w) * 0.52);
+  --d: calc(var(--w) * 0.5);
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: calc(var(--h) + var(--d) * 0.8);
+  perspective: 1200px;
+  min-width: 0;
+}
+
+.cargo-body {
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  transform-style: preserve-3d;
+  transform: rotateX(calc(-18deg + var(--ty, 0) * -7deg))
+    rotateY(calc(-32deg + var(--tx, 0) * 12deg));
+  transition: transform var(--dur) var(--ease);
+}
+
+.cargo-face {
+  position: absolute;
+  background-color: color-mix(in oklab, var(--hue) 44%, var(--stage));
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0 0.6rem,
+    rgb(0 0 0 / 16%) 0.6rem 0.8rem,
+    rgb(255 255 255 / 4%) 0.8rem 0.9rem
+  );
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--hue) 80%, var(--stage));
+  backface-visibility: hidden;
+}
+
+.cargo-front {
+  inset: 0;
+  display: grid;
+  grid-template-rows: 1fr minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  padding: calc(var(--w) * 0.05);
+  transform: translateZ(calc(var(--d) / 2));
+}
+
+.cargo-name {
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-size: calc(var(--w) * 0.075);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cargo-front .commit-print {
+  color: var(--fg-strong);
+}
+
+.cargo-sha {
+  color: var(--fg-strong);
+  font-family: var(--mono);
+  font-size: calc(var(--w) * 0.05);
+  letter-spacing: 0.08em;
+}
+
+.cargo-side {
+  top: 0;
+  left: calc(var(--w) - var(--d) / 2);
+  display: grid;
+  place-items: center;
+  width: var(--d);
+  height: var(--h);
+  background-color: color-mix(in oklab, var(--hue) 26%, var(--stage));
+  transform: rotateY(90deg);
+}
+
+.cargo-side span {
+  padding-inline: 0.5rem;
+  color: var(--fg-strong);
+  font-size: calc(var(--w) * 0.042);
+  font-weight: 620;
+  text-align: center;
+}
+
+.cargo-top {
+  top: calc(var(--d) / -2);
+  left: 0;
+  width: var(--w);
+  height: var(--d);
+  background-color: color-mix(in oklab, var(--hue) 62%, var(--stage));
+  transform: rotateX(90deg);
+}
+
+.cargo-shadow {
+  position: absolute;
+  z-index: -1;
+  bottom: 0;
+  left: 8%;
+  width: 90%;
+  height: 26%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 55%), transparent);
+}
+
+/* The band only this kind has. */
+.sig {
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: 1px solid color-mix(in oklab, var(--hue) 45%, transparent);
+}
+
+.sig-label {
+  margin: 0 0 var(--s-3);
+  color: var(--hue);
+  font-size: var(--t-sm);
+  font-weight: 620;
+}
+
+.sig ul,
+.sig ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sig-more {
+  margin: var(--s-3) 0 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.sig-run {
+  display: block;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: rgb(0 0 0 / 35%);
+  color: var(--fg-strong);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+/* A command: the line, at the size it deserves, cursor and all. */
+.sig-prompt {
+  max-width: none;
+  margin: 0;
+  color: var(--fg-strong);
+  font-family: var(--mono);
+  font-size: clamp(var(--t-xl), 1rem + 2.6vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.sig-slash {
+  color: var(--hue);
+}
+
+.sig-args {
+  color: var(--fg);
+  font-weight: 400;
+}
+
+.sig-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.95em;
+  margin-inline-start: 0.15em;
+  background: var(--hue);
+  vertical-align: -0.1em;
+}
+
+/* An MCP declaration: two ends and the wire between. */
+.sig-wires ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 28rem), 1fr));
+  gap: var(--s-2) var(--s-6);
+}
+
+.sig-wires li {
+  display: grid;
+  grid-template-columns: auto minmax(3rem, 1fr) auto;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding-block: var(--s-2);
+}
+
+.sig-end {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--hue);
+  border-radius: var(--r-sm);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+
+.sig-far {
+  background: color-mix(in oklab, var(--hue) 22%, transparent);
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+
+.sig-wire {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 2px;
+  background: var(--hue);
+}
+
+.sig-wire span {
+  position: absolute;
+  padding-inline: var(--s-2);
+  background: color-mix(in oklab, var(--hue) 14%, var(--stage));
+  color: var(--fg);
+  font-size: var(--t-xs);
+}
+
+.sig-wires .sig-run {
+  grid-column: 1 / -1;
+}
+
+/* A hook: stops on a rail. */
+.sig-rail ol {
+  display: grid;
+  gap: var(--s-3);
+  padding-inline-start: var(--s-5);
+  background: linear-gradient(var(--hue), var(--hue)) 0.3rem 0 / 2px 100% no-repeat;
+}
+
+.sig-rail li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+}
+
+.sig-rail li::before {
+  content: "";
+  position: absolute;
+  top: 0.45em;
+  inset-inline-start: calc(var(--s-5) * -1 + 0.05rem);
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--hue);
+}
+
+.sig-event {
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 650;
+}
+
+.sig-matcher {
+  color: var(--hue);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+
+.sig-rail .sig-run {
+  flex: 1 0 100%;
+}
+
+/* A subagent: what it was given, in a row. */
+.sig-orbit dl {
+  display: grid;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.sig-orbit dt {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.sig-orbit dd {
+  margin: 0;
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 52rem) {
+  .sig-orbit dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* A skill's directory: the files, as a tree stands. */
+.sig-tree ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.sig-tree code,
+.sig-modules code {
+  display: block;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid color-mix(in oklab, var(--hue) 40%, transparent);
+  border-radius: var(--r-sm);
+  background: rgb(0 0 0 / 25%);
+  color: var(--fg-strong);
+  overflow-wrap: anywhere;
+}
+
+/* A plugin: modules, side by side. */
+.sig-modules ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--s-2);
+}
+
+.sig-modules li {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: rgb(0 0 0 / 25%);
+  box-shadow: inset 0 2px 0 var(--hue, var(--border));
+  overflow-wrap: anywhere;
+}
+
+/* The four facts: a strip across the foot of the opening. */
+.detail-glance {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: var(--s-6);
+  padding: var(--s-4) 0 0;
+  border-top: 1px solid color-mix(in oklab, var(--hue) 45%, transparent);
+  border-radius: 0;
+  background: none;
+}
+
+.detail-glance dd {
+  font-size: clamp(var(--t-lg), 1rem + 0.8vw, 1.875rem);
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 52rem) {
+  .detail-glance {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* The sections: one reading column, each with its heading at a size that can be found. */
+.detail-top ~ .detail-body h2:not(.body h2) {
+  font-size: clamp(var(--t-xl), 1.2rem + 1vw, 2.5rem);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.doc-section {
+  padding-block: clamp(var(--s-6), 6vh, 4.5rem);
+}
+
+/* Each section reads as what it is. How to set it up is the page's first job, so it stands on
+   the kind's colour. What a kind is, is one sentence, set large. Details are tiles of fact. What
+   was observed and what was not stand apart. The file is a sheet to read. */
+.detail-body {
+  --kind-edge: var(--hue, var(--accent));
+}
+
+.spy-setup .install {
+  border: 0;
+  background: color-mix(in oklab, var(--hue, var(--accent)) 7%, var(--surface));
+  box-shadow: inset 2px 0 0 var(--hue, var(--accent));
+}
+
+.spy-usage .install {
+  border: 0;
+  background: none;
+  padding-inline: 0;
+}
+
+.spy-usage .install > dt:first-of-type {
+  grid-column: 1 / -1;
+}
+
+.spy-usage .install > dd:first-of-type {
+  grid-column: 1 / -1;
+  margin-bottom: var(--s-5);
+  max-width: 34ch;
+  color: var(--fg-strong);
+  font-size: clamp(var(--t-xl), 1.1rem + 1.6vw, 2.75rem);
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.spy-observed > h2 {
+  margin-top: var(--s-6);
+}
+
+.spy-observed > ul.notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--s-2);
+  padding: 0;
+  list-style: none;
+}
+
+.spy-observed > ul.notes > li {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.files {
+  width: 100%;
+}
+
+.file-outline {
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.spy-file .body {
+  margin-top: var(--s-5);
+  padding: clamp(var(--s-4), 3vw, var(--s-7));
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 3px 0 var(--hue, var(--accent));
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--s-2);
+  margin: var(--s-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.related-card {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: var(--s-1);
+  min-width: 0;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(
+      18rem 12rem at var(--mx, 100%) var(--my, 0%),
+      color-mix(in oklab, var(--hue, var(--accent)) 14%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+  box-shadow:
+    inset 0 2px 0 var(--hue, var(--border)),
+    inset 0 0 0 1px var(--border);
+  overflow-wrap: anywhere;
+  transition: transform var(--dur) var(--ease);
+}
+
+.related-card:is(:hover, :focus-within) {
+  transform: translateY(-2px);
+}
+
+.related-card > a {
+  color: var(--fg-strong);
+  font-size: var(--t-lg);
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.related-card > a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.related-card .path {
+  font-size: var(--t-xs);
+}
+
+/* --- code --- */
+
+.code-block {
+  position: relative;
+  margin-block: var(--s-4);
+  border-radius: var(--r-md);
+  background: #07090a;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.code-block::before {
+  content: attr(data-lang) / "";
+  display: flex;
+  align-items: center;
+  height: 2.5rem;
+  padding-inline: var(--s-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+}
+
+.body .code-block pre {
+  margin: 0;
+  padding: var(--s-4);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: var(--t-sm);
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.body .code-block pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.tk-cmd {
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.tk-flag,
+.tk-number {
+  color: #f0b678;
+}
+
+.tk-key {
+  color: #90b8f5;
+}
+
+.tk-string {
+  color: #6ed4b8;
+}
+
+.tk-keyword {
+  color: #c9a2f0;
+}
+
+.tk-comment {
+  color: var(--faint);
+  font-style: italic;
 }
 
 /* ---------- motion ---------- */
@@ -5748,20 +6992,299 @@ code {
       animation-timeline: --spy-file;
       animation-range: cover;
     }
+  }
 
-    /* The types: the plates drop onto their docks, as they do on the ring. */
-    @keyframes plate-drop {
+  /* --- the yard's motion (Phase 97) ---
+
+     One system, three speeds. Under the cursor: --dur-fast and --dur, in the page's own
+     transitions. Arriving: --dur-slow and --ease-emphasized, once. Tied to scrolling: everything
+     below, which has no duration at all, so a reader who stops stops it, a section off screen
+     costs nothing, and no pause control is owed (WCAG 2.2.2). Each section moves one way of its
+     own rather than all of them fading in: the kinds' drawings act out what the kind does, the
+     yard's berths come up from their own side of the map, the gate's number grows, the footer's
+     name rises out of its edge. Every one fills `backwards` only: past its range an element is at
+     its written style, and with no timeline it never left it. */
+  @keyframes cargo-land {
+    from {
+      opacity: 0;
+      transform: translateY(-40px) rotateX(-30deg) rotateY(-70deg);
+    }
+  }
+
+  .cargo-body {
+    animation: cargo-land 700ms var(--ease-emphasized) backwards;
+  }
+
+  @supports (animation-timeline: view()) {
+    @keyframes rise-in {
       from {
         opacity: 0;
-        transform: translateY(calc(-26px - var(--i) * 7px));
+        transform: translateY(1.5rem);
       }
     }
 
-    .dock-plate {
-      animation: plate-drop linear backwards;
-      animation-timeline: --tile;
-      animation-range: entry 15% cover 40%;
+    @keyframes wipe-up {
+      from {
+        clip-path: inset(100% 0 0 0);
+        transform: translateY(30%);
+      }
+
+      to {
+        clip-path: inset(-10% 0 0 0);
+      }
     }
+
+    @keyframes wipe-across {
+      from {
+        clip-path: inset(0 100% 0 0);
+      }
+
+      to {
+        clip-path: inset(0 0 0 0);
+      }
+    }
+
+    .kind-art {
+      view-timeline: --art block;
+    }
+
+    .type-count strong,
+    :is(.types, .yard-section, .pipeline) h2 {
+      animation: wipe-up linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 90%;
+    }
+
+    /* A skill opens. */
+    @keyframes ka-fan {
+      from {
+        transform: none;
+        opacity: 0.2;
+      }
+    }
+
+    .ka-page {
+      animation: ka-fan linear backwards;
+      animation-timeline: --art;
+      animation-range: entry 50% cover 68%;
+    }
+
+    /* A plugin's parts go into the one box. */
+    @keyframes ka-into {
+      from {
+        opacity: 0;
+        transform: translate(calc(var(--dx) * 2.4), calc(var(--dy) * 2.4));
+      }
+    }
+
+    .ka-part {
+      animation: ka-into linear backwards;
+      animation-timeline: --art;
+      animation-range: entry 50% cover 68%;
+    }
+
+    /* A client connects. */
+    @keyframes ka-draw {
+      from {
+        stroke-dashoffset: 1;
+      }
+    }
+
+    @keyframes ka-lit {
+      from {
+        opacity: 0.2;
+      }
+    }
+
+    .ka-wire,
+    .ka-hook,
+    .ka-hand {
+      animation: ka-draw linear backwards;
+      animation-timeline: --art;
+      animation-range: entry 50% cover 62%;
+    }
+
+    .ka-port {
+      animation: ka-lit linear backwards;
+      animation-timeline: --art;
+      animation-range: cover 40% cover 66%;
+    }
+
+    /* A command is typed. Steps, a letter at a time. */
+    .ka-typed {
+      animation: wipe-across steps(9) backwards;
+      animation-timeline: --art;
+      animation-range: entry 60% cover 66%;
+    }
+
+    @keyframes ka-caret {
+      from {
+        transform: translateX(-226px);
+      }
+    }
+
+    .ka-caret {
+      animation: ka-caret steps(9) backwards;
+      animation-timeline: --art;
+      animation-range: entry 60% cover 66%;
+    }
+
+    /* A hook waits, and an event comes down the line to it. */
+    @keyframes ka-along {
+      from {
+        transform: translateX(0);
+      }
+    }
+
+    .ka-pulse {
+      animation: ka-along linear backwards;
+      animation-timeline: --art;
+      animation-range: cover 15% cover 48%;
+    }
+
+    .ka-hook {
+      animation-range: cover 48% cover 68%;
+    }
+
+    .ka-trip {
+      animation: ka-lit linear backwards;
+      animation-timeline: --art;
+      animation-range: cover 44% cover 50%;
+    }
+
+    /* A subagent goes round on its own, and hands back. */
+    @keyframes ka-round {
+      from {
+        transform: rotate(-50deg);
+      }
+    }
+
+    .ka-orbit {
+      animation: ka-round linear backwards;
+      animation-timeline: --art;
+      animation-range: entry 30% cover 62%;
+    }
+
+    .ka-hand {
+      animation-range: cover 58% cover 70%;
+    }
+
+    /* The yard: berths in from the left of the map, a column at a time as it arrives. */
+    .yard-berth {
+      animation: rise-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+
+    /* The gate: the number grows into the field, the words come in from its side. */
+    @keyframes floor-in {
+      from {
+        opacity: 0.2;
+        transform: scale(0.72);
+      }
+    }
+
+    .stats .floor dd:not(.notice) {
+      animation: floor-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 5% cover 40%;
+    }
+
+    /* Leftward on purpose: an offset the other way widens a phone's page. */
+    @keyframes condition-rise {
+      from {
+        opacity: 0;
+        transform: translateX(-28px);
+      }
+    }
+
+    .stats > div:not(.floor) {
+      animation: condition-rise linear backwards;
+      animation-timeline: view();
+      animation-range: entry 20% cover 30%;
+    }
+
+    /* The last stop's commit is stamped as the line reaches it. */
+    .flow-print .commit-print {
+      animation: wipe-across linear backwards;
+      animation-timeline: view();
+      animation-range: entry 40% cover 60%;
+    }
+
+    /* The name rises out of the foot of the page. */
+    @keyframes mark-rise {
+      from {
+        transform: translateY(35%);
+      }
+    }
+
+    .footer-mark {
+      animation: mark-rise linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% cover 60%;
+    }
+
+    /* How far down an artifact's page, in its kind's colour. At rest it has no width at all. */
+    @keyframes read-progress {
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .read-progress {
+      animation: read-progress linear both;
+      animation-timeline: scroll(root);
+    }
+
+    /* A detail section comes up as it arrives, and only that. Its text is there at rest. */
+    .doc-section > * {
+      animation: rise-in linear backwards;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+
+  /* The listing: the cards settle once, on arrival, and only the first screenful waits. */
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  .listing .rows:not([aria-hidden]) > li {
+    animation: card-in var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  .listing .rows > li:nth-child(2) {
+    animation-delay: 30ms;
+  }
+
+  .listing .rows > li:nth-child(3) {
+    animation-delay: 60ms;
+  }
+
+  .listing .rows > li:nth-child(4) {
+    animation-delay: 90ms;
+  }
+
+  .listing .rows > li:nth-child(n + 5) {
+    animation-delay: 120ms;
+  }
+
+  .list-share a {
+    animation: card-in var(--dur-slow) var(--ease-emphasized) backwards;
+  }
+
+  /* A caret, a few times, then still: motion past five seconds would need a pause control. */
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .sig-caret {
+    animation: caret-blink 1s steps(1) 4;
   }
 
   /* --- the page transition (template.tsx) ---

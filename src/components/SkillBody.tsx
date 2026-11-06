@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { CopyButton } from '@/components/CopyButton';
+import { highlight } from '@/components/highlight';
 
 /**
  * Narrowed from the GitHub-flavoured default. Every deviation is deliberate.
@@ -59,6 +60,12 @@ function fenceFrontmatter(markdown: string): string {
  * and the page's own ids (`details`, `file`, …) share the namespace.
  */
 const headingId = (line: number) => `file-L${line}`;
+
+/** The word after a code fence, which the renderer leaves on the <code> as `language-…`. */
+const fenceLanguage = (className: unknown) =>
+  (Array.isArray(className) ? className.join(' ') : String(className ?? '')).match(
+    /language-([\w+#.-]+)/,
+  )?.[1];
 
 type Positioned = { position?: { start: { line: number } } };
 
@@ -147,12 +154,28 @@ export function SkillBody({ markdown }: { markdown: string }) {
         // and focus is the only way a keyboard reaches a scroll container.
         // Removing the attribute makes axe's scrollable-region-focusable fail
         // again, which is a measured WCAG failure traded for a lint heuristic.
-        pre: ({ node: _node, ...props }) => (
-          <div className="code-block">
+        pre: ({ node, ...props }) => (
+          <div
+            className="code-block"
+            data-lang={
+              fenceLanguage(
+                (node?.children[0] as { properties?: { className?: unknown } } | undefined)
+                  ?.properties?.className,
+              ) ?? 'text'
+            }
+          >
             {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core. */}
             <pre {...props} tabIndex={0} />
             <CopyButton label="Copy code" />
           </div>
+        ),
+        // A fence's own text, in coloured text nodes. Inline code has no language and passes.
+        code: ({ node: _node, className, children, ...props }) => (
+          <code className={className} {...props}>
+            {typeof children === 'string'
+              ? highlight(children, fenceLanguage(className))
+              : children}
+          </code>
         ),
         // GFM's task-list item renders a disabled checkbox with no label, which
         // axe-core reports as a critical `label` violation (Phase 10 baseline,

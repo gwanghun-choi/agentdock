@@ -19,6 +19,9 @@ const render = (props: Partial<SetupProps>) =>
     />,
   );
 
+/** A command's text, without the spans that colour it (highlight.tsx). */
+const uncoloured = (html: string) => html.replace(/<\/?span[^>]*>/g, '');
+
 const escaped = (s: string) => s.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 describe('SetupPanel', () => {
@@ -43,7 +46,7 @@ describe('SetupPanel', () => {
 
   it('MCP: shows each server as written, credentials blanked, env names without values', () => {
     const html = render({ type: 'mcp_server', meta: { servers }, sourcePath: '.mcp.json' });
-    expect(html).toContain('npx -y docs-server --api-key &lt;redacted&gt;');
+    expect(uncoloured(html)).toContain('npx -y docs-server --api-key &lt;redacted&gt;');
     expect(html).toContain(escaped(`https://mcp.example.invalid/x?token=${REDACTED}`));
     expect(html).toContain('DOCS_TOKEN — names only');
     expect(html).not.toContain('abc123');
@@ -95,7 +98,7 @@ describe('SetupPanel', () => {
     expect(html).toContain(
       '<dt>Event</dt><dd>PreToolUse</dd><dt>Matcher</dt><dd class="path">Bash</dd>',
     );
-    expect(html).toContain('API_KEY=&lt;redacted&gt; ./guard.sh &quot;&lt;b&gt;&quot;');
+    expect(uncoloured(html)).toContain('API_KEY=&lt;redacted&gt; ./guard.sh &quot;&lt;b&gt;&quot;');
     expect(html).not.toContain('<b>');
     expect(html).toContain(
       '<dd class="path">every</dd><dt>Command</dt><dd class="fact-long">not declared</dd><dt>Type</dt><dd>not declared</dd>',

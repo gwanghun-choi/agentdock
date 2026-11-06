@@ -215,12 +215,12 @@ describe('SkillBody — document structure (U1, U2)', () => {
     expect(html).not.toContain('<hr');
     expect(html).not.toMatch(/<h2>[^<]*description/);
     expect(html).toContain('language-yaml');
-    expect(html).toContain('description: Extract text');
+    expect(html.replace(/<\/?span[^>]*>/g, '')).toContain('description: Extract text');
   });
 
   it('a frontmatter value holding a fence cannot close the block early', () => {
     const html = render('---\nnote: "```"\n---\n\nAfter.');
-    expect(html).toContain('note: &quot;```&quot;');
+    expect(html.replace(/<\/?span[^>]*>/g, '')).toContain('note: &quot;```&quot;');
     expect(html).toMatch(/<\/pre>\s*<\/div>\s*<p>After\.<\/p>/);
   });
 
@@ -298,5 +298,19 @@ describe('bodyOutline — the section list above the file', () => {
     expect(h.text).toBe(shown?.trim());
     expect(h.text).not.toContain('<');
     expect(h.href).toMatch(/^#file-L\d+$/);
+  });
+});
+
+describe('SkillBody — code', () => {
+  it("names a fence's language and colours it as text, never as markup", () => {
+    const html = render('```bash\nnpx "<img src=x>" --flag\n```\n\nInline `npx` stays plain.');
+    expect(html).toContain('data-lang="bash"');
+    expect(html).toContain('<span class="tk-cmd">npx</span>');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('<code>npx</code>');
+  });
+
+  it('says text for a fence with no language', () => {
+    expect(render('```\nplain\n```')).toContain('data-lang="text"');
   });
 });
