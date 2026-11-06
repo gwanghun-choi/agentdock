@@ -10,7 +10,7 @@ Read AGENTS.md first. Nothing here overrides anything there.
 
 This project is built by the [ponytail](https://github.com/DietrichGebert/ponytail)
 plugin's rules, at **full** intensity, and the codebase already reflects them:
-one datastore, six small client components, no CLI library, no icon package,
+one datastore, a handful of small client components, no CLI library, no icon package,
 no UI kit, no CSS framework, no animation library, no cache layer, no state
 manager. Changes that add any of those need an argument, not a preference.
 
@@ -90,15 +90,18 @@ not replace `bun run ci`.
   record what was measured and what was rejected — "1,152 ms → 25.5 ms",
   "measured 2026-08-11, 253 registry seeds were re-tagged". Keep that register.
   A comment restating the code is noise.
-- **Avoid new client-side dependencies.** There are six client components,
+- **Avoid new client-side dependencies.** There are few client components,
   and `git grep -l "^'use client'" src/` is the list: a polling effect on the
   job page, a keyboard shortcut that focuses the search field or opens the
   launcher, a copy-to-clipboard button on the detail page (the Clipboard API has
   no markup equivalent), the error boundary, which the framework requires to
   be one, and the hero's orbital dock: DockBoard, which decides whether the scene
   loads and holds the panel and Pause, and DockScene, the lazily loaded WebGL
-  scene itself — CSS has no 3D projection. None of them holds data, and one fetches: DockBoard
-  reads the kind in focus from `/api/docks/[kind]`, off the CDN, after first paint. A package
+  scene itself — CSS has no 3D projection. ArtifactYard, the home page's map of
+  the rows read most recently (a map a reader picks through has no markup equivalent), and
+  PointerTilt, which reads the pointer for the stylesheet and renders nothing. None of them holds
+  data, and two fetch: DockBoard reads the kind in focus from `/api/docks/[kind]` and ArtifactYard
+  reads `/api/yard` when it nears the window, both off the CDN, after first paint. A package
   that ships
   `'use client'` turns every import site into a client component; measure before
   adopting one. The measurement that rejected `lucide-react` is written up in

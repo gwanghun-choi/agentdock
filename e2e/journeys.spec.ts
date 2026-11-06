@@ -346,7 +346,7 @@ test('home: a type tile fits its number at any length, at every width', async ({
           const range = document.createRange();
           range.selectNodeContents(strong);
           const digits = range.getBoundingClientRect();
-          const figure = (card.querySelector('.dock-stack') as Element).getBoundingClientRect();
+          const figure = (card.querySelector('.kind-art') as Element).getBoundingClientRect();
           const clear =
             digits.right <= box.right + 0.5 &&
             digits.left >= box.left - 0.5 &&
@@ -1632,9 +1632,9 @@ test('subagent detail: breadcrumb, section links and the plugin relation both wa
     await expect(page.locator(id)).toHaveCount(1);
   }
   await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/.claude-plugin/plugin.json');
-  await page.click('#related ~ ul.notes a:has-text("security-reviewer")');
+  await page.click('#related ~ ul.related-grid a:has-text("security-reviewer")');
   await page.waitForURL(/security-reviewer\.md$/);
-  await expect(page.locator('#related ~ ul.notes').first()).toContainText(
+  await expect(page.locator('#related ~ ul.related-grid').first()).toContainText(
     'Inside the plugin review-kit',
   );
 });
@@ -1758,7 +1758,7 @@ test('related: siblings in the same plugin, then the rest of the repository, eac
   page,
 }) => {
   await page.goto('/r/fixture/ui-edge-cases/plugins/review-kit/agents/security-reviewer.md');
-  const related = page.locator('#related ~ ul.notes');
+  const related = page.locator('#related ~ ul.related-grid');
   await expect(related.first()).toContainText('Inside the plugin review-kit');
   await expect(
     page.locator('h3:has-text("Other components of the same plugin") + ul'),
@@ -2359,4 +2359,133 @@ test.describe('the tour round the docks', () => {
       expect(errors).toEqual([]);
     });
   });
+});
+
+test.describe('the yard', () => {
+  const yard = (page: Page) => page.locator('.yard');
+
+  test('reads nothing until a reader comes near it, then every box is a real artifact', async ({
+    page,
+  }) => {
+    const asked: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/api/yard')) asked.push(r.url());
+    });
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    expect(asked).toEqual([]);
+    await yard(page).scrollIntoViewIfNeeded();
+    const first = page.locator('a.yard-box').first();
+    await expect(first).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('.yard-scope')).toContainText('most recently');
+    const href = await first.getAttribute('href');
+    expect((await page.request.get(href ?? '')).status()).toBe(200);
+  });
+
+  test('one tab stop, arrows inside it, a kind picked out and a way to its repository', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await yard(page).scrollIntoViewIfNeeded();
+    await expect(page.locator('a.yard-box').first()).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator('a.yard-box[tabindex="0"]')).toHaveCount(1);
+    await page.locator('a.yard-box[tabindex="0"]').focus();
+    const before = await page.locator('.yard-name').textContent();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('.yard-name')).not.toHaveText(before ?? '');
+    await expect(page.locator('a.yard-box[tabindex="0"]')).toHaveCount(1);
+    await expect(page.locator('.yard-repo')).toHaveAttribute('href', /^\/r\//);
+
+    await page.locator('.yard-kinds button.hue-hook').click();
+    const off = page.locator('a.yard-box[data-off]').first();
+    await expect(off).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('.yard-readout .badge')).toHaveClass(/badge-hook/);
+    await expect(page.locator('a.yard-box[tabindex="0"]:not([data-off])')).toHaveCount(1);
+  });
+
+  test('on a touch screen the first tap shows a box and the second opens it', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+      reducedMotion: 'reduce',
+      baseURL: 'http://127.0.0.1:3970',
+    });
+    const page = await context.newPage();
+    await page.goto('/');
+    await yard(page).scrollIntoViewIfNeeded();
+    const box = page.locator('a.yard-box:not(.is-picked)').first();
+    await expect(box).toBeAttached({ timeout: 15_000 });
+    const href = await box.getAttribute('href');
+    await box.tap();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator(`a.yard-box.is-picked[href="${href}"]`)).toHaveCount(1);
+    await page.locator(`a.yard-box.is-picked[href="${href}"]`).tap();
+    await page.waitForURL(`**${href}`);
+    await context.close();
+  });
+
+  test('the API answers from the CDN and sends no more than it says', async ({ request }) => {
+    const response = await request.get('/api/yard');
+    expect(response.headers()['cache-control']).toContain('s-maxage=21600');
+    const rows = (await response.json()) as { summary: string | null }[];
+    expect(rows.length).toBeLessThanOrEqual(240);
+  });
+});
+
+test('detail: each kind opens on what only it has, with its credential blanked', async ({
+  page,
+}) => {
+  await page.goto('/r/fixture/ui-edge-cases/.claude/commands/c%23-review.md');
+  await expect(page.locator('.sig-prompt')).toContainText('/c#-review');
+  await expect(page.locator('.cargo-sha')).toHaveText(/^[0-9a-f]{7}$/);
+  await page.goto('/r/fixture/ui-edge-cases/.claude/settings.json');
+  await expect(page.locator('.sig-rail')).toContainText('PreToolUse');
+  await expect(page.locator('.sig-rail')).toContainText('<redacted>');
+  await page.goto('/r/fixture/ui-edge-cases/.mcp.json');
+  await expect(page.locator('.sig-wires')).toContainText('fixture-search');
+  await expect(page.locator('.sig-wires')).toContainText('<redacted>');
+});
+
+test('listing: a card opens by its whole face, the source link still goes to the source', async ({
+  page,
+}) => {
+  await page.goto('/artifacts?type=skill');
+  const card = page.locator('.rows:not([aria-hidden]) > li').nth(1);
+  await expect(card.locator('.row-source')).toHaveAttribute('href', /github\.com/);
+  const href = await card.locator('.row-title a').getAttribute('href');
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  await page.mouse.click(
+    (box?.x ?? 0) + (box?.width ?? 0) / 2,
+    (box?.y ?? 0) + (box?.height ?? 0) - 40,
+  );
+  await page.waitForURL(`**${href}`);
+});
+
+test('kinds: a key going backwards brings the box it lands in out from under the next', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await page.locator('.kind-slot:nth-child(3) .type-card').focus();
+  await page.keyboard.press('Shift+Tab');
+  const hit = await page.evaluate(() => {
+    const focused = document.activeElement as HTMLElement;
+    const box = focused.getBoundingClientRect();
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return focused.classList.contains('kind-random') && top === focused;
+  });
+  expect(hit).toBe(true);
+});
+
+test('footer: every page closes on the kinds and the way into the index', async ({ page }) => {
+  await page.goto('/artifacts');
+  const footer = page.locator('footer.site-footer');
+  await expect(footer.locator('.footer-links a')).toHaveCount(9);
+  await footer.getByRole('link', { name: 'Hooks' }).click();
+  await page.waitForURL(/\?type=hook$/);
+  await expect(page.locator('main h1')).toHaveText('Hook Configurations');
 });
