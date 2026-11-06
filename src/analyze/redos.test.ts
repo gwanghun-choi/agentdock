@@ -72,7 +72,12 @@ describe('CAP-14 — the ReDoS lock', () => {
       meta: { servers: [{ command }] },
     });
     expect(pass.errors).toEqual({});
-    expect(pass.durationMs).toBeLessThan(WALL_CLOCK_BOUND_MS);
+    // Not WALL_CLOCK_BOUND_MS: a quarter of a megabyte through the whole cap, not the hot
+    // path. Linear: 175 ms for dashes here, doubling with the input, and 576 ms on a
+    // shared CI runner, which failed CI on 058d36a. With any one of redactSecrets' three
+    // length bounds removed, the cases it fails took 10.9 to 59.5 s (measured 2026-11-06),
+    // so 2 s sits between the two by a wide margin either way.
+    expect(pass.durationMs).toBeLessThan(2_000);
   });
 
   it('the per-line cap fires: scanning the fixture reports a non-zero skipped-line count', () => {
