@@ -5,6 +5,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
+import { CopyButton } from '@/components/CopyButton';
 
 /**
  * Narrowed from the GitHub-flavoured default. Every deviation is deliberate.
@@ -146,8 +147,13 @@ export function SkillBody({ markdown }: { markdown: string }) {
         // and focus is the only way a keyboard reaches a scroll container.
         // Removing the attribute makes axe's scrollable-region-focusable fail
         // again, which is a measured WCAG failure traded for a lint heuristic.
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core.
-        pre: ({ node: _node, ...props }) => <pre {...props} tabIndex={0} />,
+        pre: ({ node: _node, ...props }) => (
+          <div className="code-block">
+            {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable <pre> must be focusable — WCAG 2.1.1, measured by axe-core. */}
+            <pre {...props} tabIndex={0} />
+            <CopyButton label="Copy code" />
+          </div>
+        ),
         // GFM's task-list item renders a disabled checkbox with no label, which
         // axe-core reports as a critical `label` violation (Phase 10 baseline,
         // a `- [ ]` line in a skill body). The item's text follows it, so the

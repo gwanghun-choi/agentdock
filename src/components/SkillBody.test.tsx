@@ -221,7 +221,7 @@ describe('SkillBody — document structure (U1, U2)', () => {
   it('a frontmatter value holding a fence cannot close the block early', () => {
     const html = render('---\nnote: "```"\n---\n\nAfter.');
     expect(html).toContain('note: &quot;```&quot;');
-    expect(html).toMatch(/<\/pre>\s*<p>After\.<\/p>/);
+    expect(html).toMatch(/<\/pre>\s*<\/div>\s*<p>After\.<\/p>/);
   });
 
   it("renders the body headings below the page's own h1 and h2", () => {

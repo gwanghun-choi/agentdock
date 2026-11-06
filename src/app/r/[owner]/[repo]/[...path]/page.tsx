@@ -248,6 +248,28 @@ export default async function PackagePage({ params }: Props) {
               <span aria-hidden="true">/</span>
               <span className="path">{detail.sourcePath}</span>
             </p>
+            {/* What it stands among, from the same stored facts as the Related section: the
+                relation a reader of one artifact most often goes looking for. */}
+            {related.container || related.components.length > 0 || othersTotal > 0 ? (
+              <p className="detail-among">
+                {related.container ? (
+                  <Link href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}>
+                    Part of the plugin {related.container.name}
+                  </Link>
+                ) : null}
+                {related.components.length > 0 ? (
+                  <a href="#related">
+                    {related.components.length}{' '}
+                    {related.components.length === 1 ? 'component' : 'components'} inside
+                  </a>
+                ) : null}
+                {othersTotal > 0 ? (
+                  <a href="#related">
+                    {othersTotal.toLocaleString('en-US')} more in this repository
+                  </a>
+                ) : null}
+              </p>
+            ) : null}
             {detail.summary ? (
               <p className="lede" lang={htmlLang(detail.summaryLanguage)}>
                 {detail.summary}
@@ -596,6 +618,10 @@ export default async function PackagePage({ params }: Props) {
                   >
                     Search {typeListing} for &ldquo;{detail.name}&rdquo;
                   </Link>
+                  {' · '}
+                  <a href={`/artifacts/random?type=${detail.type}`} rel="nofollow">
+                    Another one at random
+                  </a>
                 </>
               ) : null}
             </p>

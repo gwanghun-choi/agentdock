@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
  * "Copied" without focus moving — and a refusal (a denied permission, a browser
  * that throws) says so instead of looking like success.
  */
-export function CopyButton({ value, label }: { value: string; label: string }) {
+export function CopyButton({ value, label }: { value?: string; label: string }) {
   const [supported, setSupported] = useState(false);
   const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
 
@@ -36,8 +36,15 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
     <span className="copy">
       <button
         className="copy-button"
-        onClick={() =>
-          copyText(value, navigator.clipboard).then(setStatus, () => setStatus('failed'))
+        onClick={(event) =>
+          // No value: the code block it stands in, read from the page at the moment of the
+          // click, so an author's text never crosses into a client component as a prop.
+          copyText(
+            value ??
+              event.currentTarget.closest('.code-block')?.querySelector('pre')?.textContent ??
+              '',
+            navigator.clipboard,
+          ).then(setStatus, () => setStatus('failed'))
         }
         type="button"
       >

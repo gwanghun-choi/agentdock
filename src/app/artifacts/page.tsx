@@ -915,6 +915,14 @@ export default async function ArtifactsPage({
           <p className="muted">
             Showing {offset + 1}–{offset + items.length}
           </p>
+          {/* A plain link: a prefetch would spend a read on a redirect nobody asked for. */}
+          {!q && filters.types.length === 1 ? (
+            <p className="muted">
+              <a href={`/artifacts/random?type=${filters.types[0]}`} rel="nofollow">
+                Open one at random
+              </a>
+            </p>
+          ) : null}
           {/* searchMode relaxed the query, and the reader is told: these match
               some of the words, not all of them. */}
           {/* With the default in force the claim is narrower: an artifact in a
