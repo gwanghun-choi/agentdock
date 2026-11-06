@@ -67,7 +67,7 @@ function SectionBody({
           // those pages it is the one place the command appears; blanked by the
           // same rule as SetupPanel. The file at the page's permalink has it as written.
           <li key={f.id}>
-            <code>{f.signal}</code> — {redactSecrets(f.summary)}
+            <code>{redactSecrets(f.signal)}</code> — {redactSecrets(f.summary)}
           </li>
         ) : (
           <li key={f.id}>

@@ -138,9 +138,14 @@ jobs:
   # journeys 7.7 s. A journey retries once on CI; one that passes on its retry is
   # reported flaky, not passed, so an unsteady runner and a regression read
   # differently in the summary.
+  #
+  # 25 minutes: the 71 journeys take 406 s on a GPU-less runner and the job 461 s
+  # (run 42088569302), and run 42082401349's first attempt was cancelled at 15
+  # minutes when one `playwright install --with-deps` took 520 s in apt (13 s on
+  # its rerun).
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17

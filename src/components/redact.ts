@@ -32,32 +32,46 @@ const isReference = (value: string) => /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/.test(v
 const TOKEN_PREFIX =
   /\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{16,}|sk_(?:live|test)_[A-Za-z0-9]{16,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|glpat-[A-Za-z0-9_-]{20,})\b/g;
 
+// The names and the scheme are bounded because the text is not: unbounded, each
+// start in a run of `-` or `a` rescanned to the end of it, and 64 KB took 5.9 s
+// (measured 2026-11-06). A longer name still matches on its last 128 characters,
+// which is where the word the sensitive test looks for ends up.
+const NAME_VALUE = /([A-Za-z0-9_.-]{1,128})(=|:(?!\/\/)\s*)("[^"]*"|'[^']*'|[^\s&"',;]+)/g;
+
+/**
+ * `depth` is one level, not recursion: a name that is not sensitive takes the rest
+ * of its word as a value, so `tools: Bash(API_KEY=x)` reads as `tools` holding
+ * something harmless, and a summary's own label hid every credential right behind
+ * it. Looking inside once covers that without going quadratic on `a=a=a=...`.
+ */
+function redactNameValues(text: string, depth = 0): string {
+  return text.replace(NAME_VALUE, (whole, name: string, sep: string, value: string) => {
+    const bare = value.replace(/^["']|["']$/g, '');
+    const keep =
+      !isSensitiveName(name) ||
+      bare === '' ||
+      bare === REDACTED ||
+      isReference(bare) ||
+      // A header's scheme word; the Bearer rule blanked what follows it.
+      /^(Bearer|Basic|Token)$/.test(bare);
+    if (!keep) return `${name}${sep}${REDACTED}`;
+    return depth === 0 ? `${name}${sep}${redactNameValues(value, 1)}` : whole;
+  });
+}
+
 /** One string, any shape: a command line, a URL, an argument. */
 export function redactSecrets(text: string): string {
+  const blanked = text
+    // scheme://user:password@host — the password, whatever the scheme.
+    .replace(/([a-z][a-z0-9+.-]{0,32}:\/\/[^\s/:@]+):[^\s/@]+@/gi, `$1:${REDACTED}@`)
+    // Authorization: Bearer x / Basic x, quoted or not.
+    .replace(/\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/g, `$1 ${REDACTED}`);
   return (
-    text
-      // scheme://user:password@host — the password, whatever the scheme.
-      .replace(/([a-z][a-z0-9+.-]*:\/\/[^\s/:@]+):[^\s/@]+@/gi, `$1:${REDACTED}@`)
-      // Authorization: Bearer x / Basic x, quoted or not.
-      .replace(/\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/g, `$1 ${REDACTED}`)
-      // name=value and name: value, in a query string, an env prefix or a header.
-      .replace(
-        /([A-Za-z0-9_.-]+)(=|:(?!\/\/)\s*)("[^"]*"|'[^']*'|[^\s&"',;]+)/g,
-        (whole, name: string, sep: string, value: string) => {
-          const bare = value.replace(/^["']|["']$/g, '');
-          const keep =
-            !isSensitiveName(name) ||
-            bare === '' ||
-            bare === REDACTED ||
-            isReference(bare) ||
-            // A header's scheme word; the Bearer rule above blanked what follows it.
-            /^(Bearer|Basic|Token)$/.test(bare);
-          return keep ? whole : `${name}${sep}${REDACTED}`;
-        },
-      )
+    // name=value and name: value, in a query string, an env prefix or a header.
+    redactNameValues(blanked)
       // `--flag value`, the value as the next word.
       .replace(
-        /(--?[A-Za-z0-9_-]+)(\s+)("[^"]*"|'[^']*'|[^\s"'-][^\s]*)/g,
+        /(--?[A-Za-z0-9_-]{1,128})(\s+)("[^"]*"|'[^']*'|[^\s"'-][^\s]*)/g,
         (whole, flag, gap, value) =>
           isSensitiveName(flag) && !isReference(value.replace(/^["']|["']$/g, ''))
             ? `${flag}${gap}${REDACTED}`

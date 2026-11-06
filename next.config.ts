@@ -12,11 +12,13 @@ const config: NextConfig = {
   // therefore no credential baked into a layer.
   //
   // Not on Vercel, which sets VERCEL=1 at build time. Vercel builds through a
-  // deployment adapter, and on Next 16.3 with Turbopack an adapter build emits
+  // deployment adapter, and on Next 16.3 with Turbopack an adapter build emitted
   // no .next/next-server.js.nft.json — yet the standalone step, which runs
-  // after the adapter's onBuildComplete, opens that file. The first production
-  // build of de79558 failed exactly there (ENOENT), and a no-op local adapter
-  // (NEXT_ADAPTER_PATH) reproduces it. Vercel does not run the image anyway.
+  // after the adapter's onBuildComplete, opened that file. The first production
+  // build of de79558 failed exactly there (ENOENT). On 16.4.5 a no-op local
+  // adapter (NEXT_ADAPTER_PATH) no longer reproduces it (measured 2026-11-06);
+  // the branch stays until a real adapter build has gone without it, and Vercel
+  // does not run the image anyway.
   output: process.env.VERCEL ? undefined : 'standalone',
   // Headers that are the same on every request. The policy is not among them:
   // it carries a per-request nonce and therefore lives in the proxy.

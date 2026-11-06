@@ -48,6 +48,15 @@ export const ANALYZE_CAPS = {
    */
   maxEvidenceChars: 200,
   /**
+   * `summary` is a column of the capability_finding_identity btree, whose row
+   * limit is 2,704 bytes after compression, and a finding can quote a whole hook
+   * command. A 4,737-byte one in griddynamics/rosetta made a 3,600-byte row and
+   * failed that repository's every ingest with 54000 (reproduced 2026-11-06). 500
+   * UTF-16 units are at most 1,500 bytes and the cap's suffix about 32 more, which
+   * leaves the row's other columns over 1,100 bytes.
+   */
+  maxSummaryChars: 500,
+  /**
    * Largest real file inventory measured is 83 entries
    * (anthropics-skills skills/canvas-design/). 200 is 2.4x that.
    */

@@ -1628,11 +1628,14 @@ textarea {
 
 /* A touch screen with no hover has no keyboard to press them on, and on a
    390px phone the two caps covered a third of the field's placeholder
-   (Phase 10 baseline). */
+   (Phase 10 baseline). `display`, not `content: none`: the platform rules below
+   set `content` at a higher specificity, which left the chord cap standing over
+   the placeholder on a touch screen wider than 640px, by 84px at 1024
+   (Phase 91, A-01). */
 @media (hover: none) {
   .search-row .field::before,
   .search-row .field::after {
-    content: none;
+    display: none;
   }
 
   :root[data-platform] .search-row .field input[type="search"],

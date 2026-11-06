@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { analyzeArtifact } from '@/analyze/run';
 import type { RepoMetadata } from '@/github/types';
 import type { RepoScan, ScannedPackage, ScannedSeed } from './types';
 
@@ -416,6 +417,33 @@ describe.skipIf(!DB_URL)('persistScan', () => {
       expect(rows[0].start_line).toBe(3);
       expect(rows[0].commit_sha).toBe(COMMIT);
       expect(await analyzedAtOf(versionId)).not.toBeNull();
+    });
+
+    it('a capped summary fits the identity index at its worst, and long commands stay apart', async () => {
+      // Three bytes a unit, in an order pglz does not shrink. Uncut this stops at
+      // the 8,191-byte index tuple limit, ahead of the 2,704-byte btree check; both
+      // are 54000 and both count the row after compression.
+      const incompressible = Array.from({ length: 5000 }, (_, i) =>
+        String.fromCharCode(0x4e00 + ((i * i * 7919 + i) % 20000)),
+      ).join('');
+      const capped = (tail: string) =>
+        analyzeArtifact(
+          [
+            function long() {
+              return [finding({ summary: `${incompressible}${tail}` })];
+            },
+          ],
+          { sourcePath: 'SKILL.md', body: '', frontmatter: {}, meta: {}, files: [] },
+        ).findings[0];
+      await expect(
+        persistScan(
+          scan({ packages: [pkg({ findings: [finding({ summary: incompressible })] })] }),
+        ),
+      ).rejects.toThrow();
+      const result = await persistScan(
+        scan({ packages: [pkg({ findings: [capped('tail-a'), capped('tail-b')] })] }),
+      );
+      expect(await findingRows(await versionIdOf(result.packageIds[0]))).toHaveLength(2);
     });
 
     it('sets analyzed_at even when there are zero findings, so "analyzed, nothing found" is stored', async () => {

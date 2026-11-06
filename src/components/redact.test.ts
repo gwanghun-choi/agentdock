@@ -17,6 +17,16 @@ describe('redactSecrets', () => {
       `curl -H "Authorization: Bearer ${REDACTED}" https://x.invalid`,
     ],
     ['API_KEY=s3cretvalue ./run.sh', `API_KEY=${REDACTED} ./run.sh`],
+    // A finding's summary quotes the command behind a label of its own.
+    [
+      'declares a hook command: API_KEY=s3cretvalue ./run.sh',
+      `declares a hook command: API_KEY=${REDACTED} ./run.sh`,
+    ],
+    [
+      'declares allowed-tools: Bash(API_KEY=s3cret:*)',
+      `declares allowed-tools: Bash(API_KEY=${REDACTED}`,
+    ],
+    ['url: https://x.invalid/?token=abc', `url: https://x.invalid/?token=${REDACTED}`],
     ['./check.sh --token=abc --verbose', `./check.sh --token=${REDACTED} --verbose`],
     ['./check.sh --password hunter2 --verbose', `./check.sh --password ${REDACTED} --verbose`],
     ['echo ghp_abcdefghijklmnopqrstuvwxyz0123456789', `echo ${REDACTED}`],

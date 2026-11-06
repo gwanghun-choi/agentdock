@@ -1570,6 +1570,29 @@ for (const [width, height, scheme] of [
   });
 }
 
+test('the search field draws its keyboard caps where there is a mouse', async ({ page }) => {
+  await page.goto('/artifacts');
+  await page.locator('html[data-hotkeys][data-platform]').waitFor({ state: 'attached' });
+  const chord = await page
+    .locator('.search-row .field')
+    .evaluate((field) => getComputedStyle(field, '::before').display);
+  expect(chord).toBe('block');
+});
+
+test.describe('on a tablet', () => {
+  test.use({ viewport: { width: 1024, height: 768 }, isMobile: true, hasTouch: true });
+
+  test('the search field draws no keyboard caps over its placeholder', async ({ page }) => {
+    await page.goto('/artifacts');
+    await page.locator('html[data-hotkeys][data-platform]').waitFor({ state: 'attached' });
+    const caps = await page.locator('.search-row .field').evaluate((field) => ({
+      chord: getComputedStyle(field, '::before').display,
+      slash: getComputedStyle(field, '::after').display,
+    }));
+    expect(caps).toEqual({ chord: 'none', slash: 'none' });
+  });
+});
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 

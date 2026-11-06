@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { redactSecrets } from '@/components/redact';
 import type { AnalyzeInput, Analyzer, Finding } from './types';
 import { ANALYZE_CAPS } from './types';
 
@@ -9,6 +11,25 @@ export type AnalyzePass = {
   overflow: Record<string, number>;
   durationMs: number;
 };
+
+/**
+ * Blanks credentials before the cut, not at render as a shorter summary is: a cut
+ * inside `PASSWORD="two words"` drops the closing quote the rule needs to see the
+ * value at all. The digest of the blanked text keeps two commands that differ only
+ * past the cut from colliding on the identity, where ON CONFLICT DO NOTHING would
+ * lose one of them on the same line (a null start_line never conflicts, so a
+ * declared command would only repeat). Commands that differ only in a blanked value can still collide,
+ * which loses nothing a reader could have seen. Stable for the same input, since a
+ * reanalysis has to write the same row.
+ */
+function capSummary(finding: Finding): Finding {
+  const { summary } = finding;
+  if (summary.length <= ANALYZE_CAPS.maxSummaryChars) return finding;
+  const blanked = redactSecrets(summary);
+  const digest = createHash('sha256').update(blanked).digest('hex').slice(0, 8);
+  const head = blanked.slice(0, ANALYZE_CAPS.maxSummaryChars).replace(/\s+\S*$/, '');
+  return { ...finding, summary: `${head} … (${summary.length} characters, ${digest})` };
+}
 
 /**
  * The guarded analyzer pass.
@@ -46,7 +67,7 @@ export function analyzeArtifact(analyzers: Analyzer[], input: AnalyzeInput): Ana
   for (const analyzer of analyzers) {
     const id = analyzer.name || 'anonymous';
     try {
-      const result = analyzer(input);
+      const result = analyzer(input).map(capSummary);
       if (result.length > ANALYZE_CAPS.maxFindingsPerDetector) {
         const withheld = result.length - ANALYZE_CAPS.maxFindingsPerDetector;
         overflow[id] = withheld;

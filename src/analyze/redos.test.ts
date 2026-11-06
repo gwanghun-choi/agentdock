@@ -59,6 +59,22 @@ describe('CAP-14 — the ReDoS lock', () => {
     expect(pass.durationMs).toBeLessThan(WALL_CLOCK_BOUND_MS);
   });
 
+  it.each([
+    ['dashes', '-'],
+    ['letters', 'a'],
+    ['scheme-like', 'a+'],
+  ])('a declared command of nothing but %s stays inside the bound', (_, unit) => {
+    // No per-line cap reaches a declared command; JSON's 256 KB is its only bound,
+    // and capSummary blanks the whole of it before cutting.
+    const command = unit.repeat(250_000 / unit.length);
+    const pass = analyzeArtifact([declaredCapabilities], {
+      ...input(),
+      meta: { servers: [{ command }] },
+    });
+    expect(pass.errors).toEqual({});
+    expect(pass.durationMs).toBeLessThan(WALL_CLOCK_BOUND_MS);
+  });
+
   it('the per-line cap fires: scanning the fixture reports a non-zero skipped-line count', () => {
     const skipped = scanLines(BODY, () => {});
     // The fixture is one line at ~31,000 chars, ANALYZE_CAPS.maxLineChars is

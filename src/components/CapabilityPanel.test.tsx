@@ -48,6 +48,15 @@ const render = (findings: CapabilityFindingView[], analyzedAt: Date | null) =>
   );
 
 describe('CapabilityPanel — declared and observed never merge', () => {
+  it('blanks a credential in a declared grant, in its signal as well as its summary', () => {
+    const grant = 'Bash(API_KEY=invented-value:*)';
+    const html = render(
+      [declaredFinding({ signal: grant, summary: `declares allowed-tools: ${grant}` })],
+      new Date(),
+    );
+    expect(html).not.toContain('invented-value');
+  });
+
   it('renders two headings and puts each row in the section matching its category', () => {
     const html = render([declaredFinding(), finding()], new Date());
     expect(html).toContain('Declared by the author');

@@ -129,6 +129,55 @@ describe('analyzeArtifact — the per-analyzer volume cap', () => {
   });
 });
 
+describe('analyzeArtifact — the summary cap', () => {
+  const withSummary = (summary: string): Analyzer =>
+    function long() {
+      return [finding({ summary })];
+    };
+
+  it('cuts a hook command too long for the identity index, and says how long it was', () => {
+    const command = `declares a hook commands: ${'word '.repeat(1000)}`;
+    const [{ summary }] = analyzeArtifact([withSummary(command)], input()).findings;
+    expect(summary.length).toBeLessThan(ANALYZE_CAPS.maxSummaryChars + 40);
+    expect(summary).toMatch(/word … \(5026 characters, [0-9a-f]{8}\)$/);
+  });
+
+  it('blanks a token that straddles the cut', () => {
+    const token = `ghp_${'a'.repeat(40)}`;
+    // No space to back off to, or the cut would remove the token by itself.
+    const padding = ','.repeat(ANALYZE_CAPS.maxSummaryChars - 20);
+    const [{ summary }] = analyzeArtifact([withSummary(`${padding}${token}`)], input()).findings;
+    expect(summary).not.toContain('ghp_');
+  });
+
+  it('blanks a credential whose closing quote falls past the cut', () => {
+    const padding = 'x '.repeat((ANALYZE_CAPS.maxSummaryChars - 30) / 2);
+    const command = `${padding}PASSWORD="first-half second-half ${'y '.repeat(200)}"`;
+    const [{ summary }] = analyzeArtifact([withSummary(command)], input()).findings;
+    expect(summary).not.toContain('first-half');
+  });
+
+  it('keeps two long commands apart when only their tails differ, and is stable', () => {
+    const shared = 'word '.repeat(200);
+    const run = (summary: string) =>
+      analyzeArtifact([withSummary(summary)], input()).findings[0].summary;
+    expect(run(`${shared}tail-a`)).not.toBe(run(`${shared}tail-b`));
+    expect(run(`${shared}tail-a`)).toBe(run(`${shared}tail-a`));
+  });
+
+  it('digests the blanked text, so no hash of a credential reaches a page', () => {
+    const run = (token: string) =>
+      analyzeArtifact([withSummary(`${'word '.repeat(200)}ghp_${token.repeat(40)}`)], input())
+        .findings[0].summary;
+    expect(run('a')).toBe(run('b'));
+  });
+
+  it('leaves a summary at the cap exactly as written', () => {
+    const summary = 'x'.repeat(ANALYZE_CAPS.maxSummaryChars);
+    expect(analyzeArtifact([withSummary(summary)], input()).findings[0].summary).toBe(summary);
+  });
+});
+
 describe('analyzeArtifact — takes the analyzer list as a parameter', () => {
   it('runs a candidate analyzer that is not in any shipped registry', () => {
     const candidate: Analyzer = function candidate() {
