@@ -124,6 +124,13 @@ export type HomeUnavailableLog = {
   code: string | null;
 };
 
+/** The panel's examples or a random pick could not be read: both go on without them. */
+export type DockExamplesLog = {
+  event: 'dock_read_unavailable';
+  /** errorCode(), as above. */
+  code: string | null;
+};
+
 /**
  * One line, one shape. The field set is closed on purpose: a free-form payload
  * parameter is how a response body, a header, or a connection string ends up in
@@ -132,10 +139,13 @@ export type HomeUnavailableLog = {
  * key an arbitrary object could be assigned to.
  */
 export function log(
-  entry: IngestLog | WorkerLog | SearchLog | HomeSnapshotLog | HomeUnavailableLog,
+  entry: IngestLog | WorkerLog | SearchLog | HomeSnapshotLog | HomeUnavailableLog | DockExamplesLog,
 ): void {
   // An error's level as well, for a log filter: nothing else reports this one, because
   // the page handled it (app/page.tsx).
-  const write = entry.event === 'home_unavailable' ? console.error : console.log;
+  const write =
+    entry.event === 'home_unavailable' || entry.event === 'dock_read_unavailable'
+      ? console.error
+      : console.log;
   write(JSON.stringify({ ts: new Date().toISOString(), ...entry }));
 }

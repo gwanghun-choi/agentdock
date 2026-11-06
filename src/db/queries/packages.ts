@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import type { FileEntry } from '@/analyze/types';
 import { sourcePathCandidates } from '@/components/hrefs';
@@ -180,6 +180,7 @@ export const listPackages = cache(
     limit = 25,
     offset = 0,
     fullName,
+    type,
     listingOnly = true,
     hiddenLanguages = [],
     reader = db,
@@ -188,6 +189,8 @@ export const listPackages = cache(
     offset?: number;
     /** Restricts the listing to one repository, matched case-insensitively. */
     fullName?: string;
+    /** Restricts the listing to one kind. */
+    type?: string;
     /** False returns suppressed rows too, each carrying its own reason. */
     listingOnly?: boolean;
     /** language.ts, HIDDEN_UNLESS_ASKED: the home page passes it, a repository's page does not. */
@@ -221,6 +224,7 @@ export const listPackages = cache(
         and(
           isNull(packageTable.delistedAt),
           fullName ? sql`lower(${repository.fullName}) = ${fullName.toLowerCase()}` : undefined,
+          type ? eq(packageTable.type, type as typeof packageTable.type._.data) : undefined,
           // The same fragment object as the projection above. Drizzle SQL values
           // are immutable descriptors, so referencing one twice is safe — and
           // asserted, because a fragment that consumed its bindings on first use
@@ -234,6 +238,44 @@ export const listPackages = cache(
       .limit(limit)
       .offset(offset),
 );
+
+/**
+ * One listed artifact of a kind, by chance: the row at or after a random id, then the first
+ * row if the dice landed past the last one of that kind. Ids have gaps, so a row after a gap
+ * is a little likelier; nothing here is a ranking, and no popularity goes in. An index walk
+ * stopping at the first listed row, where `order by random()` would read every row of the kind.
+ */
+export async function randomListedPackage(
+  type: string,
+  hiddenLanguages: readonly CjkLanguage[],
+): Promise<{ fullName: string; sourcePath: string; type: string } | null> {
+  const pick = (from: SQL | undefined) =>
+    db
+      .select({
+        fullName: repository.fullName,
+        sourcePath: packageTable.sourcePath,
+        type: packageTable.type,
+      })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(
+        and(
+          isNull(packageTable.delistedAt),
+          eq(packageTable.type, type as typeof packageTable.type._.data),
+          sql`${NOT_LISTED_BECAUSE} is null`,
+          visibleLanguage(hiddenLanguages),
+          from,
+        ),
+      )
+      .orderBy(packageTable.id)
+      .limit(1);
+  const [row] = await pick(
+    // ::bigint, or the comparison is in double precision and the primary key cannot start it.
+    // The kind's own maximum, or a rare kind's rows would nearly all be past the dice's range.
+    sql`${packageTable.id} >= (select floor(random() * max(p.id))::bigint from ${packageTable} p where p.type = ${type})`,
+  );
+  return row ?? (await pick(undefined))[0] ?? null;
+}
 
 /**
  * How many artifacts the listing shows.
