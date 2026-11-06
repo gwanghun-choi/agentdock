@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArtifactBadge } from '@/components/ArtifactBadge';
+import { CommitPrint } from '@/components/CommitPrint';
 import { detailHref, permalink } from '@/components/hrefs';
 import { ArrowRightIcon, ClockIcon, ExternalIcon, FileIcon, StarIcon } from '@/components/Icon';
 import { htmlLang, languageNote } from '@/components/language';
@@ -8,7 +9,8 @@ import type { PackageListItem } from '@/db/queries/packages';
 import type { MatchField, SearchResultItem } from '@/db/queries/search';
 
 /**
- * Dense bordered rows, not cards. Four short lines per item: a title line, where the
+ * One item per artifact: the stylesheet draws them as the home feed's index and pane there and
+ * as cards on the listing (Phase 97). Four short lines per item: a title line, where the
  * file is, a clamped description, and a metadata line. The
  * path is never clamped — a truncated path is a useless path.
  *
@@ -109,9 +111,10 @@ export function PackageRows({
           </span>
         );
         return (
-          <li key={p.id}>
+          <li data-tilt="" key={p.id}>
             <div className="row-type">
               <ArtifactBadge type={p.type} />
+              {p.commitSha ? <CommitPrint sha={p.commitSha} /> : null}
             </div>
             <div className="row-main">
               <p className="row-title">
@@ -125,6 +128,9 @@ export function PackageRows({
                 with, from the stylesheet: the link above stays the only name in
                 the accessibility tree. */}
               <div className="row-detail" data-name={p.name}>
+                {preview && p.commitSha ? (
+                  <CommitPrint className="row-detail-print" sha={p.commitSha} />
+                ) : null}
                 {/* Right under the name, because with several rows of one name it is what
                   tells them apart (`ponytail`: three in one repository, 2026-11-06). The
                   home feed's rows have a name each and a pane to fit. */}

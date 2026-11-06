@@ -159,7 +159,9 @@ export default async function RepositoryPage({ params }: Props) {
       {packages.length === 0 ? (
         <p className="muted">AgentDock currently lists nothing from this repository.</p>
       ) : (
-        <PackageRows items={packages} showRepo={false} />
+        <div className="repo-rows">
+          <PackageRows items={packages} showRepo={false} />
+        </div>
       )}
     </>
   );

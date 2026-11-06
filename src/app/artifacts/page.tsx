@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { z } from 'zod';
+import type { DockKind } from '@/components/dockBoard';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
+import { KindArt } from '@/components/KindArt';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { FieldClear } from '@/components/SearchLauncher';
@@ -15,7 +17,9 @@ import {
   withType,
 } from '@/components/searchState';
 import { TYPE_FILTER_LABELS as SHARED_TYPE_FILTER_LABELS } from '@/components/typeFilters';
+import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
+import { readHomeData } from '@/db/queries/homeSnapshot';
 import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
 import {
   ANY_LANGUAGE,
@@ -731,10 +735,46 @@ export default async function ArtifactsPage({
     </p>
   );
 
+  // Three openings, for what this page is being asked: one kind, a set of words, or the whole
+  // index. Only the last needs a number this route has not already read, and it is the snapshot
+  // the home page prints, so it agrees with the chips there. A failure leaves the words.
+  const soleType = selectedTypes.length === 1 ? (selectedTypes[0] as DockKind) : null;
+  const index = !hasQuery && !hasFilters ? await readHomeData().catch(() => null) : null;
   const pageHead = (
-    <div className="page-head stage">
-      <h1>Artifacts</h1>
-      <p className="muted">{SCOPE_SENTENCE}</p>
+    <div
+      className={`page-head stage${soleType ? ` list-hero-kind hue-${soleType}` : hasQuery ? ' list-hero-query' : ''}`}
+    >
+      <div className="list-hero-words">
+        <h1>{soleType ? TYPE_FILTER_LABELS[soleType] : 'Artifacts'}</h1>
+        {hasQuery ? <p className="list-query">{q}</p> : null}
+        {soleType ? <p className="list-what">{USAGE_GUIDES[soleType]?.what}</p> : null}
+        <p className="muted">{SCOPE_SENTENCE}</p>
+      </div>
+      {soleType ? <KindArt kind={soleType} /> : null}
+      {/* The index by kind, to scale: each bar's width is its share of what is listed. */}
+      {index && total > 0 ? (
+        <nav aria-label="The index by kind" className="list-share">
+          <ul>
+            {ARTIFACT_TYPE_IDS.filter((id) => index.visible[id]).map((id) => (
+              <li
+                className={`hue-${id}`}
+                key={id}
+                style={{ flexGrow: index.visible[id], flexBasis: 0 }}
+              >
+                <Link
+                  aria-label={`${(index.visible[id] ?? 0).toLocaleString('en-US')} ${TYPE_FILTER_LABELS[id]}`}
+                  href={`/artifacts?type=${id}`}
+                  title={`${(index.visible[id] ?? 0).toLocaleString('en-US')} ${TYPE_FILTER_LABELS[id]}`}
+                />
+              </li>
+            ))}
+          </ul>
+          <p>
+            <strong>{total.toLocaleString('en-US')}</strong> listed. Each bar is one kind, to scale,
+            down to the narrowest a pointer can land on.
+          </p>
+        </nav>
+      ) : null}
     </div>
   );
 
