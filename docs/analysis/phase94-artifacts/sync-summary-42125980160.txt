@@ -1,0 +1,48 @@
+corpus-sync: drained 200 job(s) of at most 200
+corpus-sync: 0 job(s) still queued after the drain, 0 of them due now
+corpus-sync: listed=46672 of held=56671 artifact(s) — listed is what the home page renders; the 9999 difference is on ea
+AgentDock scheduled sync
+  Status                        COMPLETED
+  Repositories processed        200
+    ingested (new or changed)   108
+    unchanged, no files read    54
+    no artifacts found          7
+  Declined by discovery policy  31
+    below 50 stars              31
+    archived on GitHub          0
+    a fork                      0
+  Could not be read             0
+  Rate limited, deferred        0
+  Other failures                0
+    of which retry next run     0
+  Artifacts delisted            13
+  Stored repos failing checks   2 (before this drain)
+  Jobs still queued             0 (0 due now, 0 waiting on a retry time)
+    since the previous run      +0 (was 0)
+  Drain stopped by              its cap or an empty queue
+  GitHub core requests left     4535 of 5000
+  GitHub core requests spent    403
+  Budget                        authenticated (token set)
+  Duration                      1384s
+    stage registry              12s
+    stage seeds                 0s
+    stage links                 2s
+    stage search                166s
+    stage fan-out               66s
+    stage refresh               63s
+    stage drain                 1071s
+  Drain throughput              11.7 jobs/min over 1027.0s of jobs
+    per job                     p50 4.2s, p95 10.8s, max 50.7s
+  Discovered this run           
+    registry                    781 seed(s) written
+    seeds                       15 seed(s) written
+    links                       1239 seed(s) written
+    search                      2008 seed(s) written
+  Enqueued this run             200
+    new from seeds              0
+    new from search             34
+    new from links              33
+    new from backlog            33
+    re-checks of stored repos   100
+##[notice]status=COMPLETED processed=200 ingested=108 unchanged=54 queued=0 due=0 failed-stages=none duration=1384s
+##[group]Run bun run ops:status --markdown >> "$GITHUB_STEP_SUMMARY"

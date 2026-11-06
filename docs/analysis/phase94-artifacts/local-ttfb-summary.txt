@@ -1,0 +1,8 @@
+after cold-boot rtt100+wake5000          n=6   ttfb med   1480 min   1477 max   1488 | total mean   5881
+after cold-db rtt100+wake5000            n=6   ttfb med    409 min    408 max    413 | total mean   5667
+after warm loopback                      n=40  ttfb med     14 min     11 max     21 | total mean     16
+after warm rtt100                        n=40  ttfb med    217 min    211 max    225 | total mean    219
+before cold-boot rtt100+wake5000         n=6   ttfb med   6221 min   6209 max   6252 | total mean   6466
+before cold-db rtt100+wake5000           n=6   ttfb med    410 min    407 max    415 | total mean   5658
+before warm loopback                     n=40  ttfb med     15 min     10 max     21 | total mean     17
+before warm rtt100                       n=40  ttfb med    215 min    212 max    223 | total mean    218

@@ -1,0 +1,34 @@
+{"label":"before","q":"ponytail","status":200,"ttfbMed":13.9,"fcpMed":44,"dom":694,"rows":15,"count":"15 artifacts for ponytail","order":"c136ef4183","overflow":0}
+{"label":"before","q":"mcp","status":200,"ttfbMed":7.4,"fcpMed":48,"dom":1132,"rows":25,"count":"933 artifacts for mcp","order":"3be58024c4","overflow":0}
+{"label":"before","q":"plugin","status":200,"ttfbMed":6.1,"fcpMed":40,"dom":1037,"rows":25,"count":"9,645 artifacts for plugin","order":"033a340ef4","overflow":0}
+{"label":"before","q":"agent","status":200,"ttfbMed":8,"fcpMed":40,"dom":1082,"rows":25,"count":"5,261 artifacts for agent","order":"3b9a5c8cd7","overflow":0}
+{"label":"before","q":"skill","status":200,"ttfbMed":6.6,"fcpMed":40,"dom":1260,"rows":25,"count":"27,704 artifacts for skill","order":"28c585f85e","overflow":0}
+{"label":"before","q":"hooks","status":200,"ttfbMed":5.7,"fcpMed":36,"dom":959,"rows":25,"count":"2,406 artifacts for hooks","order":"9ac6d6fccb","overflow":0}
+{"label":"before","q":"코드 리뷰","status":200,"ttfbMed":6.3,"fcpMed":32,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"コードレビュー","status":200,"ttfbMed":4.3,"fcpMed":32,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"no-such-word-anywhere","status":200,"ttfbMed":6,"fcpMed":44,"dom":1211,"rows":25,"count":"403 artifacts for no-such-word-anywhere","order":"c146fc53f3","overflow":0}
+{"label":"before","q":"\"quoted phrase\"","status":200,"ttfbMed":6.3,"fcpMed":32,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"<script>alert(1)</script","status":200,"ttfbMed":6.2,"fcpMed":36,"dom":1060,"rows":25,"count":"1,889 artifacts for <script>alert(1)</script>","order":"dd49a6b312","overflow":0}
+{"label":"before","q":"' or 1=1 --","status":200,"ttfbMed":6.8,"fcpMed":44,"dom":1107,"rows":25,"count":"133 artifacts for ' or 1=1 --","order":"4eec17e60b","overflow":0}
+{"label":"before","q":"a%20b","status":200,"ttfbMed":6,"fcpMed":36,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"REVIEW","status":200,"ttfbMed":6.3,"fcpMed":36,"dom":1057,"rows":25,"count":"3,093 artifacts for REVIEW","order":"085e6c1190","overflow":0}
+{"label":"before","q":"   spaced   ","status":200,"ttfbMed":6.5,"fcpMed":36,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"𝕏😀","status":200,"ttfbMed":4.1,"fcpMed":28,"dom":130,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"before","q":"xxxxxxxxxxxxxxxxxxxxxxxx","status":200,"ttfbMed":5.9,"fcpMed":32,"dom":985,"rows":25,"count":null,"order":"91b86c3e01","overflow":268}
+{"label":"after","q":"ponytail","status":200,"ttfbMed":15.6,"fcpMed":60,"dom":720,"rows":15,"count":"15 artifacts for ponytail","order":"c136ef4183","overflow":0}
+{"label":"after","q":"mcp","status":200,"ttfbMed":7.6,"fcpMed":40,"dom":1164,"rows":25,"count":"933 artifacts for mcp","order":"3be58024c4","overflow":0}
+{"label":"after","q":"plugin","status":200,"ttfbMed":7.3,"fcpMed":36,"dom":1067,"rows":25,"count":"9,645 artifacts for plugin","order":"033a340ef4","overflow":0}
+{"label":"after","q":"agent","status":200,"ttfbMed":7.2,"fcpMed":40,"dom":1116,"rows":25,"count":"5,261 artifacts for agent","order":"3b9a5c8cd7","overflow":0}
+{"label":"after","q":"skill","status":200,"ttfbMed":6.8,"fcpMed":36,"dom":1293,"rows":25,"count":"27,704 artifacts for skill","order":"28c585f85e","overflow":0}
+{"label":"after","q":"hooks","status":200,"ttfbMed":8,"fcpMed":36,"dom":993,"rows":25,"count":"2,406 artifacts for hooks","order":"9ac6d6fccb","overflow":0}
+{"label":"after","q":"코드 리뷰","status":200,"ttfbMed":6.6,"fcpMed":40,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"コードレビュー","status":200,"ttfbMed":6.4,"fcpMed":32,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"no-such-word-anywhere","status":200,"ttfbMed":4,"fcpMed":36,"dom":1244,"rows":25,"count":"403 artifacts for no-such-word-anywhere","order":"c146fc53f3","overflow":0}
+{"label":"after","q":"\"quoted phrase\"","status":200,"ttfbMed":6.2,"fcpMed":32,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"<script>alert(1)</script","status":200,"ttfbMed":5.7,"fcpMed":36,"dom":1094,"rows":25,"count":"1,889 artifacts for <script>alert(1)</script>","order":"dd49a6b312","overflow":0}
+{"label":"after","q":"' or 1=1 --","status":200,"ttfbMed":4.3,"fcpMed":32,"dom":1139,"rows":25,"count":"133 artifacts for ' or 1=1 --","order":"4eec17e60b","overflow":0}
+{"label":"after","q":"a%20b","status":200,"ttfbMed":6.1,"fcpMed":28,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"REVIEW","status":200,"ttfbMed":6.3,"fcpMed":36,"dom":1089,"rows":25,"count":"3,093 artifacts for REVIEW","order":"085e6c1190","overflow":0}
+{"label":"after","q":"   spaced   ","status":200,"ttfbMed":6.5,"fcpMed":28,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"𝕏😀","status":200,"ttfbMed":6.1,"fcpMed":28,"dom":138,"rows":0,"count":null,"order":"d41d8cd98f","overflow":0}
+{"label":"after","q":"xxxxxxxxxxxxxxxxxxxxxxxx","status":200,"ttfbMed":6,"fcpMed":32,"dom":1018,"rows":25,"count":null,"order":"91b86c3e01","overflow":268}

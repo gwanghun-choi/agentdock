@@ -1,0 +1,462 @@
+{
+ "desktop": [
+  {
+   "lcp": [
+    {
+     "t": 612,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 522,
+    "search": 522,
+    "chips": 4956,
+    "feed": 4956
+   },
+   "stop": true,
+   "finalHead": 462,
+   "fcp": 612,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 452,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 434,
+    "search": 434,
+    "chips": 2441,
+    "feed": 2441
+   },
+   "stop": true,
+   "finalHead": 413,
+   "fcp": 452,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 476,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 457,
+    "search": 457,
+    "chips": 3242,
+    "feed": 3242
+   },
+   "stop": true,
+   "finalHead": 410,
+   "fcp": 476,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 456,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 443,
+    "search": 443,
+    "chips": 2444,
+    "feed": 2444
+   },
+   "stop": true,
+   "finalHead": 412,
+   "fcp": 456,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 472,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 458,
+    "search": 458,
+    "chips": 1639,
+    "feed": 1639
+   },
+   "stop": true,
+   "finalHead": 409,
+   "fcp": 472,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "tablet": [
+  {
+   "lcp": [
+    {
+     "t": 464,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 436,
+    "search": 436,
+    "chips": 2444,
+    "feed": 2444
+   },
+   "stop": true,
+   "finalHead": 408,
+   "fcp": 464,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 448,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 437,
+    "search": 437,
+    "chips": 1632,
+    "feed": 1632
+   },
+   "stop": true,
+   "finalHead": 408,
+   "fcp": 448,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 468,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 455,
+    "search": 455,
+    "chips": 2444,
+    "feed": 2444
+   },
+   "stop": true,
+   "finalHead": 409,
+   "fcp": 468,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 468,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 458,
+    "search": 458,
+    "chips": 1632,
+    "feed": 1632
+   },
+   "stop": true,
+   "finalHead": 410,
+   "fcp": 468,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 444,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 431,
+    "search": 431,
+    "chips": 1633,
+    "feed": 1633
+   },
+   "stop": true,
+   "finalHead": 408,
+   "fcp": 444,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "phone": [
+  {
+   "lcp": [
+    {
+     "t": 448,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0.034644970035208104,
+   "shifts": [
+    [
+     1639,
+     0.0346,
+     [
+      "::before"
+     ]
+    ]
+   ],
+   "t": {
+    "h1": 433,
+    "search": 433,
+    "chips": 1628,
+    "feed": 1628
+   },
+   "stop": true,
+   "finalHead": 410,
+   "fcp": 448,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 444,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0.034644970035208104,
+   "shifts": [
+    [
+     1642,
+     0.0346,
+     [
+      "::before"
+     ]
+    ]
+   ],
+   "t": {
+    "h1": 432,
+    "search": 432,
+    "chips": 1632,
+    "feed": 1632
+   },
+   "stop": true,
+   "finalHead": 411,
+   "fcp": 444,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 468,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0.034644970035208104,
+   "shifts": [
+    [
+     1654,
+     0.0346,
+     [
+      "::before"
+     ]
+    ]
+   ],
+   "t": {
+    "h1": 457,
+    "search": 457,
+    "chips": 1638,
+    "feed": 1638
+   },
+   "stop": true,
+   "finalHead": 409,
+   "fcp": 468,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 440,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0.034644970035208104,
+   "shifts": [
+    [
+     1650,
+     0.0346,
+     [
+      "::before"
+     ]
+    ]
+   ],
+   "t": {
+    "h1": 428,
+    "search": 428,
+    "chips": 1639,
+    "feed": 1639
+   },
+   "stop": true,
+   "finalHead": 409,
+   "fcp": 440,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 452,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0.034644970035208104,
+   "shifts": [
+    [
+     1644,
+     0.0346,
+     [
+      "::before"
+     ]
+    ]
+   ],
+   "t": {
+    "h1": 440,
+    "search": 440,
+    "chips": 1644,
+    "feed": 1644
+   },
+   "stop": true,
+   "finalHead": 411,
+   "fcp": 452,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "searchWhilePending": {
+  "placeholders": 50,
+  "url": "/artifacts?q=review"
+ },
+ "backAfterSearch": {
+  "chips": "38,578",
+  "rows": 10,
+  "skeleton": 0
+ },
+ "chipWhilePending": "/artifacts?type=hook",
+ "noJs": {
+  "h1": 1,
+  "search": 1,
+  "chipLinks": 14,
+  "firstChip": "",
+  "rows": 0,
+  "skeletonVisible": false,
+  "browseLink": 1
+ },
+ "reducedMotion": {
+  "scene": "still",
+  "canvas": 0,
+  "errors": []
+ }
+}

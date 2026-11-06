@@ -1,0 +1,509 @@
+2026-11-06T08:09:43Z
+실행 ID fc8ef54c6ab3, 실행 디렉터리 /tmp/claude-1000/-home-ChoiGwanghun-workspace-auto-agentdock/5c2b22dc-57d2-4ff1-8d78-983a093cb69b/scratchpad/rehearsal-xPEI3U
+  URL 검사: 거부 11건, 허용 1건 통과
+  시작 지문 기록(저장소, agentdock-testdb)
+
+=== 0. 코드 판 준비 (실행 디렉터리 안에만)
+  old=c1d4e7b, expand=작업 트리, contract=작업 트리+패치, revert=old의 persist·reanalyze+새 drizzle·schema
+  마이그레이션 수: old 11, expand 12, contract 13
+
+=== 0-1. 드라이버가 잘못된 대상을 접속 전에 거부하는지
+  드라이버·표본기 각각 거부 3건 확인
+
+=== 0-2. 전용 컨테이너
+  컨테이너 447d20d2a9d4 agentdock-m0012-fc8ef54c6ab3, 포트 127.0.0.1:32774, cluster_name=agentdock-m0012-fc8ef54c6ab3
+  생성: DB m0012_lab_fc8ef54c6ab3 (컨테이너 agentdock-m0012-fc8ef54c6ab3)
+  pg 17.11 (Debian 17.11-1.pgdg13+2), 적용 역할 agentdock_app
+
+=== 1. 구 스키마(0000~0010), 구 코드
+      pending: 0000_noisy_hemingway — auto
+      pending: 0001_outstanding_the_santerians — auto
+      pending: 0002_flowery_captain_america — auto
+      pending: 0003_flaky_selene — auto
+      pending: 0004_complete_the_professor — auto
+      pending: 0005_rainy_saracen — auto
+      pending: 0006_silly_black_tom — auto
+      pending: 0007_green_jasper_sitwell — auto
+      pending: 0008_overjoyed_talos — auto
+      pending: 0009_subagent_type — auto
+      pending: 0010_version_content_hash_idx — auto
+    agentdock: applied 11 of 11 migration(s).
+    [exit 0, 기대 0]
+    old seed: ok
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,package_identity | history=11 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+    old 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    old 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    old 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    old 재분석: ok {"findings":1}
+    old 4,000자 경로: FAIL 54000
+    old 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    old 저장 결과 지문: d3a6c3146e81
+    old 동시 삽입 40건: {"ok":40} 행 20
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,package_identity | history=11 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+
+=== 2. 신 코드 + 구 스키마 (배포 순서상 생기면 안 되는 칸)
+  --- Sync 게이트
+    agentdock: 11 applied, 1 pending, 12 on disk — AUTO
+      pending: 0011_path_digest_identity — auto
+    agentdock is behind this checkout; apply the pending migrations first.
+    [exit 1, 기대 1]
+  --- 게이트를 건너뛰고 직접 쓰면
+    new-expand 새 저장소·행+finding: FAIL 42P10
+    new-expand 재수집(같은 내용): FAIL 42P10
+    new-expand 기존 행 UPSERT 충돌(내용 변경): FAIL 42P10
+    new-expand 재분석: FAIL 42P10
+    new-expand 4,000자 경로: FAIL 42P10
+    new-expand 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,package_identity | history=11 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+
+=== 3. 0011과 0012를 한 번에 배포하면 (패치로 나눈 이유). 복제 DB
+  생성: DB m0012_both_fc8ef54c6ab3
+      pending: 0011_path_digest_identity — auto
+      pending: 0012_path_digest_contract — needs approval
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: pending migrations need approval. After a backup, set AGENTDOCK_APPROVED_MIGRATIONS to the tags marked "needs approval".
+    [exit 2, 기대 2]
+      pending: 0011_path_digest_identity — auto
+      pending: 0012_path_digest_contract — needs approval
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: pending migrations need approval. After a backup, set AGENTDOCK_APPROVED_MIGRATIONS to the tags marked "needs approval".
+    [exit 2, 기대 2]
+    history 11 그대로: 0011만 승인해도 아무것도 적용되지 않는다
+  --- 교착 시험: Sync처럼 package를 쓰고 2초 뒤 capability_finding을 쓰는 트랜잭션 중에 Expand 적용. 둘 다 성공해야 함
+      pending: 0011_path_digest_identity — auto
+    agentdock: applied 1 of 12 migration(s).
+    [exit 0, 기대 0]
+    쓰기 트랜잭션과 Expand 모두 성공, 교착 없음
+
+=== 4. Expand 실패와 재시도
+    agentdock: 11 applied, 1 pending, 12 on disk — AUTO
+      pending: 0011_path_digest_identity — auto
+    [exit 0, 기대 0]
+  --- 실패 A: 쓰기 트랜잭션이 20초 잡음. 대기 상한 15초
+      pending: 0011_path_digest_identity — auto
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    실패까지 15091ms
+    상태: capability_finding_identity,package_identity | history=11 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 실패 B: 두 번째 문장 실패(같은 이름의 객체). 첫 인덱스도 함께 롤백되어야 함
+      pending: 0011_path_digest_identity — auto
+    migrate failed: 42P07 relation "capability_finding_identity_digest" already exists
+    [exit 1, 기대 1]
+    상태: capability_finding_identity,package_identity | history=11 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 재시도
+      pending: 0011_path_digest_identity — auto
+    agentdock: applied 1 of 12 migration(s).
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- Deploy의 검증 단계
+    agentdock: 12 applied, 0 pending, 12 on disk — UP_TO_DATE
+    [exit 0, 기대 0]
+
+=== 5. Expand 상태 매트릭스
+  --- 신 코드 적용
+    new-expand 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    new-expand 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    new-expand 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    new-expand 재분석: ok {"findings":1}
+    new-expand 4,000자 경로: FAIL 54000
+    new-expand 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    new-expand 저장 결과 지문: d3a6c3146e81
+    new-expand 동시 삽입 40건: {"ok":40} 행 20
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 구 코드(진행 중이던 Sync가 끝까지 도는 경우)
+    old 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    old 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    old 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    old 재분석: ok {"findings":1}
+    old 4,000자 경로: FAIL 54000
+    old 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    old 저장 결과 지문: d3a6c3146e81
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 구 checkout으로 배포: 게이트가 막음
+    agentdock: 12 applied, 0 pending, 11 on disk — BLOCKED
+      history: the database records a migration (created_at 1793949763643) that this checkout does not have
+    [exit 1, 기대 1]
+  --- 구 코드 복귀(코드 커밋만 revert, 0011 유지)
+    agentdock: 12 applied, 0 pending, 12 on disk — UP_TO_DATE
+    [exit 0, 기대 0]
+    revert 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    revert 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    revert 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    revert 재분석: ok {"findings":1}
+    revert 4,000자 경로: FAIL 54000
+    revert 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    revert 저장 결과 지문: d3a6c3146e81
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 다시 신 코드
+    new-expand 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    new-expand 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    new-expand 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    new-expand 재분석: ok {"findings":1}
+    new-expand 4,000자 경로: FAIL 54000
+    new-expand 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    [exit 0, 기대 0]
+
+=== 6. Contract 게이트, 실패, 재시도
+  --- Contract를 올린 직후, 승인 전 Sync 게이트
+    agentdock: 12 applied, 1 pending, 13 on disk — NEEDS_APPROVAL
+      pending: 0012_path_digest_contract — needs approval
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    [exit 2, 기대 2]
+  --- 승인 없이 적용
+      pending: 0012_path_digest_contract — needs approval
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: pending migrations need approval. After a backup, set AGENTDOCK_APPROVED_MIGRATIONS to the tags marked "needs approval".
+    [exit 2, 기대 2]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 실패: 두 번째 문장의 테이블(capability_finding)을 읽기 트랜잭션이 6초 잡음. 대기 상한 2초. 첫 문장도 함께 롤백되어야 함
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    실패까지 2091ms
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=12 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 재시도
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: applied 1 of 13 migration(s).
+    [exit 0, 기대 0]
+    상태: capability_finding_identity_digest,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+    agentdock: 13 applied, 0 pending, 13 on disk — UP_TO_DATE
+    [exit 0, 기대 0]
+
+=== 7. Contract 상태 매트릭스
+  --- 신 코드: 긴 경로 저장
+    new-contract 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    new-contract 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    new-contract 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    new-contract 재분석: ok {"findings":1}
+    new-contract 4,000자 경로: ok {"same":true,"newVersions":0}
+    new-contract 읽기(목록·검색·상세): ok {"list":5,"found":16,"detail":1}
+    new-contract 저장 결과 지문: d3a6c3146e81
+    new-contract 동시 삽입 40건: {"ok":40} 행 20
+    [exit 0, 기대 0]
+    상태: capability_finding_identity_digest,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 구 코드 직접 쓰기 (금지된 칸)
+    old 새 저장소·행+finding: FAIL 42P10
+    old 재수집(같은 내용): FAIL 42P10
+    old 기존 행 UPSERT 충돌(내용 변경): FAIL 42P10
+    old 재분석: FAIL 42P10
+    old 4,000자 경로: FAIL 42P10
+    old 읽기(목록·검색·상세): ok {"list":5,"found":16,"detail":1}
+    [exit 0, 기대 0]
+  --- 제약 복원 전에 코드만 되돌리면 (금지된 칸)
+    revert 새 저장소·행+finding: FAIL 42P10
+    revert 재수집(같은 내용): FAIL 42P10
+    revert 기존 행 UPSERT 충돌(내용 변경): FAIL 42P10
+    revert 재분석: FAIL 42P10
+    revert 4,000자 경로: FAIL 42P10
+    revert 읽기(목록·검색·상세): ok {"list":5,"found":16,"detail":1}
+    [exit 0, 기대 0]
+    상태: capability_finding_identity_digest,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+
+=== 8. Contract 롤백
+  --- 긴 경로가 저장된 상태: 실패하고 아무것도 바뀌지 않아야 함
+    rollback 대상 확인: m0012_lab_fc8ef54c6ab3
+    psql:/home/ChoiGwanghun/workspace_auto/agentdock/docs/analysis/phase94-artifacts/rollback-0012.sql:18: ERROR:  index row size 4040 exceeds btree version 4 maximum 2704 for index "package_identity"
+    DETAIL:  Index row references tuple (17,10) in relation "package".
+    HINT:  Values larger than 1/3 of a buffer page cannot be indexed.
+    Consider a function index of an MD5 hash of the value, or use full text indexing.
+    [exit 3, 기대 3]
+    상태: capability_finding_identity_digest,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 긴 경로 행 제거(사람의 결정) 후 복원. 실제 삭제 대상:
+Lbe37c83b|1
+    rollback 대상 확인: m0012_lab_fc8ef54c6ab3
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+agentdock.capability_finding|capability_finding_identity|u
+agentdock.package|package_identity|u
+  --- 복원 상태: 신 코드
+    new-contract 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    new-contract 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    new-contract 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    new-contract 재분석: ok {"findings":1}
+    new-contract 4,000자 경로: FAIL 54000
+    new-contract 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    [exit 0, 기대 0]
+  --- 복원 상태: 구 코드 복귀(코드 revert, 0012 유지)
+    agentdock: 13 applied, 0 pending, 13 on disk — UP_TO_DATE
+    [exit 0, 기대 0]
+    revert 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    revert 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    revert 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    revert 재분석: ok {"findings":1}
+    revert 4,000자 경로: FAIL 54000
+    revert 읽기(목록·검색·상세): ok {"list":5,"found":15,"detail":1}
+    revert 저장 결과 지문: d3a6c3146e81
+    [exit 0, 기대 0]
+    상태: capability_finding_identity,capability_finding_identity_digest,package_identity,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  --- 다시 앞으로: 제약만 손으로 삭제
+    new-contract 새 저장소·행+finding: ok {"idType":"number","new":6,"findings":6}
+    new-contract 재수집(같은 내용): ok {"new":0,"versions":0,"unchanged":6}
+    new-contract 기존 행 UPSERT 충돌(내용 변경): ok {"sameId":true,"updated":true,"findingsOnNewVersion":1}
+    new-contract 재분석: ok {"findings":1}
+    new-contract 4,000자 경로: ok {"same":true,"newVersions":0}
+    new-contract 읽기(목록·검색·상세): ok {"list":5,"found":16,"detail":1}
+    new-contract 저장 결과 지문: d3a6c3146e81
+    [exit 0, 기대 0]
+    상태: capability_finding_identity_digest,package_identity_digest | history=13 | 기존 행 지문 6692cd67637c87b200fa595acfc93b99|240 88e88db93b429089bba59c3314efeacf|240
+  시나리오 구간 끝 (최종 판정은 로그 마지막 줄)
+
+=== 9. 잠금 측정: 패키지 합성 56671, finding 200000
+  생성: DB m0012_locksa_fc8ef54c6ab3 (컨테이너 agentdock-m0012-fc8ef54c6ab3)
+      pending: 0000_noisy_hemingway — auto
+      pending: 0001_outstanding_the_santerians — auto
+      pending: 0002_flowery_captain_america — auto
+      pending: 0003_flaky_selene — auto
+      pending: 0004_complete_the_professor — auto
+      pending: 0005_rainy_saracen — auto
+      pending: 0006_silly_black_tom — auto
+      pending: 0007_green_jasper_sitwell — auto
+      pending: 0008_overjoyed_talos — auto
+      pending: 0009_subagent_type — auto
+      pending: 0010_version_content_hash_idx — auto
+    agentdock: applied 11 of 11 migration(s).
+    [exit 0, 기대 0]
+    old seed: ok
+    [exit 0, 기대 0]
+규모|61912|75802|200241|113 MB|75 MB
+  --- 상세 조회 계획, 구 스키마
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity on package p (actual rows=1 loops=1)
+        Index Cond: ((repository_id = r.id) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Filter: (delisted_at IS NULL)
+Planning Time: 0.604 ms
+Execution Time: 0.715 ms
+  --- Expand (방해 없음)
+      pending: 0011_path_digest_identity — auto
+    agentdock: applied 1 of 12 migration(s).
+    [exit 0, 기대 0]
+    Expand 벽시계 288ms
+    Expand 읽기: n=14 p50=0ms max=1ms
+    Expand 쓰기: n=2 p50=1ms max=99ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding ShareLock granted=true: 142ms
+    잠금 관찰(5ms 표본, 처음~마지막) package ShareLock granted=true: 185ms
+  --- 상세 조회 계획, Expand
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity on package p (actual rows=1 loops=1)
+        Index Cond: ((repository_id = r.id) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Filter: (delisted_at IS NULL)
+Planning Time: 1.046 ms
+Execution Time: 1.280 ms
+  --- Contract: 첫 문장의 테이블(package)을 읽기 트랜잭션이 6초 잡은 경우(상한 2초)
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    Contract-첫문장대기 벽시계 2082ms
+    Contract-첫문장대기 읽기: n=5 p50=0ms max=1989ms
+    Contract-첫문장대기 쓰기: n=2 p50=0ms max=1917ms
+    잠금 관찰(5ms 표본, 처음~마지막) package AccessExclusiveLock granted=false: 1991ms
+  --- Contract: 두 번째 문장의 테이블(capability_finding)을 잡은 경우. 첫 테이블의 ACCESS EXCLUSIVE를 쥔 채 기다리는 최악
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    Contract-둘째문장대기 벽시계 2088ms
+    Contract-둘째문장대기 읽기: n=5 p50=0ms max=1994ms
+    Contract-둘째문장대기 쓰기: n=2 p50=0ms max=1966ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding AccessExclusiveLock granted=false: 1993ms
+    잠금 관찰(5ms 표본, 처음~마지막) package AccessExclusiveLock granted=true: 1993ms
+  --- Contract (방해 없음)
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: applied 1 of 13 migration(s).
+    [exit 0, 기대 0]
+    Contract 벽시계 95ms
+    Contract 읽기: n=5 p50=0ms max=1ms
+    Contract 쓰기: n=1 p50=0ms max=0ms
+    잠금 관찰(5ms 표본, 처음~마지막) package AccessExclusiveLock granted=true: 0ms
+  --- 상세 조회 계획, Contract
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity_digest on package p (actual rows=1 loops=1)
+        Index Cond: (repository_id = r.id)
+        Filter: ((delisted_at IS NULL) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Rows Removed by Filter: 4999
+Planning Time: 1.016 ms
+Execution Time: 5.168 ms
+  --- Contract 롤백
+    [exit 0, 기대 0]
+    Rollback 벽시계 608ms
+    Rollback 읽기: n=30 p50=0ms max=1ms
+    Rollback 쓰기: n=5 p50=1ms max=116ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding ShareLock granted=true: 90ms
+    잠금 관찰(5ms 표본, 처음~마지막) package ShareLock granted=true: 150ms
+  --- 서버 로그의 문장 시간(이 DB)
+    0.585 ms  ADD CONSTRAINT "package_repository_id_repository_id_fk"
+    0.392 ms  ADD CONSTRAINT "package_type_artifact_type_id_fk"
+    0.319 ms  ADD CONSTRAINT "package_version_package_id_package_id_fk"
+    0.163 ms  CREATE UNIQUE INDEX "repository_node_id_key"
+    0.251 ms  CREATE UNIQUE INDEX "repository_full_name_key"
+    0.308 ms  ADD CONSTRAINT "ingest_attempt_job_id_ingest_job_id_fk"
+    0.262 ms  CREATE UNIQUE INDEX "ingest_job_active_key"
+    0.151 ms  CREATE UNIQUE INDEX "repo_seed_full_name_key"
+    0.391 ms  ADD CONSTRAINT "capability_finding_package_version_id_package_version_id_fk"
+    42.635 ms  CREATE UNIQUE INDEX "package_identity_digest"
+    145.477 ms  CREATE UNIQUE INDEX "capability_finding_identity_digest"
+    0.600 ms  DROP CONSTRAINT "package_identity"
+    0.311 ms  DROP CONSTRAINT "package_identity"
+    0.192 ms  DROP CONSTRAINT "capability_finding_identity"
+    61.047 ms  CREATE UNIQUE INDEX "package_identity"
+    93.440 ms  CREATE UNIQUE INDEX "capability_finding_identity"
+    0.217 ms  ADD CONSTRAINT "package_identity"
+    0.078 ms  ADD CONSTRAINT "capability_finding_identity"
+
+=== 9. 잠금 측정: 패키지 합성 56671, finding 1000000
+  생성: DB m0012_locksb_fc8ef54c6ab3 (컨테이너 agentdock-m0012-fc8ef54c6ab3)
+      pending: 0000_noisy_hemingway — auto
+      pending: 0001_outstanding_the_santerians — auto
+      pending: 0002_flowery_captain_america — auto
+      pending: 0003_flaky_selene — auto
+      pending: 0004_complete_the_professor — auto
+      pending: 0005_rainy_saracen — auto
+      pending: 0006_silly_black_tom — auto
+      pending: 0007_green_jasper_sitwell — auto
+      pending: 0008_overjoyed_talos — auto
+      pending: 0009_subagent_type — auto
+      pending: 0010_version_content_hash_idx — auto
+    agentdock: applied 11 of 11 migration(s).
+    [exit 0, 기대 0]
+    old seed: ok
+    [exit 0, 기대 0]
+규모|61912|75802|1000241|112 MB|423 MB
+  --- 상세 조회 계획, 구 스키마
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity on package p (actual rows=1 loops=1)
+        Index Cond: ((repository_id = r.id) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Filter: (delisted_at IS NULL)
+Planning Time: 1.020 ms
+Execution Time: 1.265 ms
+  --- Expand (방해 없음)
+      pending: 0011_path_digest_identity — auto
+    agentdock: applied 1 of 12 migration(s).
+    [exit 0, 기대 0]
+    Expand 벽시계 1400ms
+    Expand 읽기: n=69 p50=0ms max=1ms
+    Expand 쓰기: n=1 p50=1309ms max=1309ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding ShareLock granted=true: 1268ms
+    잠금 관찰(5ms 표본, 처음~마지막) package ShareLock granted=true: 1305ms
+  --- 상세 조회 계획, Expand
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity on package p (actual rows=1 loops=1)
+        Index Cond: ((repository_id = r.id) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Filter: (delisted_at IS NULL)
+Planning Time: 1.023 ms
+Execution Time: 0.966 ms
+  --- Contract: 첫 문장의 테이블(package)을 읽기 트랜잭션이 6초 잡은 경우(상한 2초)
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    Contract-첫문장대기 벽시계 2086ms
+    Contract-첫문장대기 읽기: n=5 p50=0ms max=1992ms
+    Contract-첫문장대기 쓰기: n=2 p50=0ms max=1921ms
+    잠금 관찰(5ms 표본, 처음~마지막) package AccessExclusiveLock granted=false: 1993ms
+  --- Contract: 두 번째 문장의 테이블(capability_finding)을 잡은 경우. 첫 테이블의 ACCESS EXCLUSIVE를 쥔 채 기다리는 최악
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    migrate failed: 55P03 canceling statement due to lock timeout
+    [exit 1, 기대 1]
+    Contract-둘째문장대기 벽시계 2088ms
+    Contract-둘째문장대기 읽기: n=5 p50=1ms max=1984ms
+    Contract-둘째문장대기 쓰기: n=2 p50=1ms max=1932ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding AccessExclusiveLock granted=false: 1996ms
+    잠금 관찰(5ms 표본, 처음~마지막) package AccessExclusiveLock granted=true: 1996ms
+  --- Contract (방해 없음)
+      pending: 0012_path_digest_contract — approved
+          not an additive shape: SET LOCAL lock_timeout = '2s';
+          not an additive shape: ALTER TABLE "agentdock"."package" DROP CONSTRAINT "package_identity";
+          not an additive shape: ALTER TABLE "agentdock"."capability_finding" DROP CONSTRAINT "capability_finding…
+    agentdock: applied 1 of 13 migration(s).
+    [exit 0, 기대 0]
+    Contract 벽시계 99ms
+    Contract 읽기: n=4 p50=0ms max=1ms
+    Contract 쓰기: n=1 p50=1ms max=1ms
+  --- 상세 조회 계획, Contract
+Nested Loop (actual rows=1 loops=1)
+  ->  Index Scan using repository_full_name_key on repository r (actual rows=1 loops=1)
+        Index Cond: (lower(full_name) = 'big/repo'::text)
+  ->  Index Scan using package_identity_digest on package p (actual rows=1 loops=1)
+        Index Cond: (repository_id = r.id)
+        Filter: ((delisted_at IS NULL) AND (source_path = ANY ('{big/2500/SKILL.md,big/2500/SKILL.md/SKILL.md}'::text[])))
+        Rows Removed by Filter: 4999
+Planning Time: 0.802 ms
+Execution Time: 2.434 ms
+  --- Contract 롤백
+    [exit 0, 기대 0]
+    Rollback 벽시계 1405ms
+    Rollback 읽기: n=70 p50=0ms max=1ms
+    Rollback 쓰기: n=2 p50=1ms max=1214ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding ShareLock granted=false: 196ms
+    잠금 관찰(5ms 표본, 처음~마지막) capability_finding ShareLock granted=true: 1053ms
+    잠금 관찰(5ms 표본, 처음~마지막) package ShareLock granted=true: 1305ms
+  --- 서버 로그의 문장 시간(이 DB)
+    0.614 ms  ADD CONSTRAINT "package_repository_id_repository_id_fk"
+    0.373 ms  ADD CONSTRAINT "package_type_artifact_type_id_fk"
+    0.318 ms  ADD CONSTRAINT "package_version_package_id_package_id_fk"
+    0.163 ms  CREATE UNIQUE INDEX "repository_node_id_key"
+    0.251 ms  CREATE UNIQUE INDEX "repository_full_name_key"
+    0.345 ms  ADD CONSTRAINT "ingest_attempt_job_id_ingest_job_id_fk"
+    0.206 ms  CREATE UNIQUE INDEX "ingest_job_active_key"
+    0.182 ms  CREATE UNIQUE INDEX "repo_seed_full_name_key"
+    0.208 ms  ADD CONSTRAINT "capability_finding_package_version_id_package_version_id_fk"
+    40.616 ms  CREATE UNIQUE INDEX "package_identity_digest"
+    1272.407 ms  CREATE UNIQUE INDEX "capability_finding_identity_digest"
+    0.614 ms  DROP CONSTRAINT "package_identity"
+    0.299 ms  DROP CONSTRAINT "package_identity"
+    0.119 ms  DROP CONSTRAINT "capability_finding_identity"
+    53.780 ms  CREATE UNIQUE INDEX "package_identity"
+    1259.059 ms  CREATE UNIQUE INDEX "capability_finding_identity"
+    0.313 ms  ADD CONSTRAINT "package_identity"
+    0.084 ms  ADD CONSTRAINT "capability_finding_identity"
+
+=== 정리
+  삭제 대상 컨테이너: id=447d20d2a9d46f3f3fb78b3c2aab49014f2e446392ec0b5889a3afc174da038f name=/agentdock-m0012-fc8ef54c6ab3 label=fc8ef54c6ab3
+  삭제 완료(이 안의 DB 포함)
+  저장소 지문(HEAD, 추적, 미추적): 실행 전과 같음
+  저장소 전체(ignore 포함) 실행 중 수정된 파일: 0
+  agentdock_test·기존 컨테이너 지문(DB oid, 구조, 행 내용): 실행 전과 같음
+  실행 디렉터리(지우지 않음): /tmp/claude-1000/-home-ChoiGwanghun-workspace-auto-agentdock/5c2b22dc-57d2-4ff1-8d78-983a093cb69b/scratchpad/rehearsal-xPEI3U
+판정: 전체 통과

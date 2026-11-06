@@ -1,0 +1,30 @@
+### before: statements of one GET /artifacts?q=ponytail
+[2216] LOG:  duration: 0.363 ms  parse 8
+[2215] LOG:  duration: 0.369 ms  parse x
+[2216] LOG:  duration: 0.373 ms  bind 8j
+[2215] LOG:  duration: 0.374 ms  bind xs
+[2215] LOG:  duration: 0.206 ms  execute
+[2216] LOG:  duration: 0.210 ms  execute
+[2216] LOG:  duration: 0.581 ms  parse 8
+[2215] LOG:  duration: 1.395 ms  parse x
+[2216] LOG:  duration: 2.505 ms  bind 8j
+[2215] LOG:  duration: 3.566 ms  bind xs
+[2216] LOG:  duration: 47.890 ms  execut
+[2215] LOG:  duration: 46.549 ms  execut
+[2216] LOG:  duration: 0.477 ms  parse 8
+[2216] LOG:  duration: 4.291 ms  bind 8j
+[2216] LOG:  duration: 156.269 ms  execu
+[2216] LOG:  duration: 0.804 ms  bind 8j
+[2215] LOG:  duration: 1.029 ms  bind xs
+[2215] LOG:  duration: 42.686 ms  execut
+[2216] LOG:  duration: 47.174 ms  execut
+### after: statements of one GET /artifacts?q=ponytail
+[2234] LOG:  duration: 41.216 ms  execut
+[2233] LOG:  duration: 39.977 ms  execut
+[2234] LOG:  duration: 0.463 ms  parse 2
+[2234] LOG:  duration: 4.232 ms  bind 2l
+[2234] LOG:  duration: 155.254 ms  execu
+[2234] LOG:  duration: 0.537 ms  bind 2l
+[2233] LOG:  duration: 1.009 ms  bind bu
+[2234] LOG:  duration: 40.602 ms  execut
+[2233] LOG:  duration: 40.886 ms  execut

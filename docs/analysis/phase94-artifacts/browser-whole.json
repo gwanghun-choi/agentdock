@@ -1,0 +1,412 @@
+{
+ "desktop": [
+  {
+   "lcp": [
+    {
+     "t": 148,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 42,
+    "search": 42,
+    "chips": 42,
+    "feed": 42
+   },
+   "stop": true,
+   "finalHead": 11,
+   "fcp": 148,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 60,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 37,
+    "search": 37,
+    "chips": 37,
+    "feed": 37
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 60,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 68,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 47,
+    "search": 47,
+    "chips": 47,
+    "feed": 47
+   },
+   "stop": true,
+   "finalHead": 11,
+   "fcp": 68,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 44,
+    "search": 44,
+    "chips": 44,
+    "feed": 44
+   },
+   "stop": true,
+   "finalHead": 11,
+   "fcp": 64,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 60,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 39,
+    "search": 39,
+    "chips": 39,
+    "feed": 39
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 60,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "tablet": [
+  {
+   "lcp": [
+    {
+     "t": 108,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 66,
+    "search": 66,
+    "chips": 66,
+    "feed": 66
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 108,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 52,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 36,
+    "search": 36,
+    "chips": 36,
+    "feed": 36
+   },
+   "stop": true,
+   "finalHead": 11,
+   "fcp": 52,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 47,
+    "search": 48,
+    "chips": 48,
+    "feed": 48
+   },
+   "stop": true,
+   "finalHead": 14,
+   "fcp": 64,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 46,
+    "search": 46,
+    "chips": 46,
+    "feed": 46
+   },
+   "stop": true,
+   "finalHead": 14,
+   "fcp": 64,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 52,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 32,
+    "search": 32,
+    "chips": 32,
+    "feed": 32
+   },
+   "stop": true,
+   "finalHead": 9,
+   "fcp": 52,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "phone": [
+  {
+   "lcp": [
+    {
+     "t": 56,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 35,
+    "search": 35,
+    "chips": 35,
+    "feed": 35
+   },
+   "stop": true,
+   "finalHead": 9,
+   "fcp": 56,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 56,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 42,
+    "search": 42,
+    "chips": 42,
+    "feed": 42
+   },
+   "stop": true,
+   "finalHead": 16,
+   "fcp": 56,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 60,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 45,
+    "search": 46,
+    "chips": 46,
+    "feed": 46
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 60,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 76,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 61,
+    "search": 61,
+    "chips": 61,
+    "feed": 61
+   },
+   "stop": true,
+   "finalHead": 9,
+   "fcp": 76,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 92,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 64,
+    "search": 64,
+    "chips": 64,
+    "feed": 64
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 92,
+   "scene": "still",
+   "chips": "38,578",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "noJs": {
+  "h1": 1,
+  "search": 1,
+  "chipLinks": 7,
+  "firstChip": "38,578",
+  "rows": 30,
+  "skeletonVisible": false,
+  "browseLink": 1
+ },
+ "reducedMotion": {
+  "scene": "still",
+  "canvas": 0,
+  "errors": []
+ }
+}

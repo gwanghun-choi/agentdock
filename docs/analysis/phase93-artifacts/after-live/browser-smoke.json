@@ -1,0 +1,52 @@
+{
+ "desktop": {
+  "h1": "Find agent artifacts, and see where they came from.",
+  "search": 2,
+  "chips": [
+   "/artifacts=44,746",
+   "/artifacts?type=skill=30,253",
+   "/artifacts?type=plugin=2,972",
+   "/artifacts?type=mcp_server=545",
+   "/artifacts?type=command=5,392",
+   "/artifacts?type=hook=504",
+   "/artifacts?type=agent=5,080"
+  ],
+  "rows": 0,
+  "overflow": 0,
+  "failedNotice": false,
+  "lastSync": "last sync without errors 2026-11-05 23:22 UTC",
+  "errors": []
+ },
+ "phone": {
+  "h1": "Find agent artifacts, and see where they came from.",
+  "search": 2,
+  "chips": [
+   "/artifacts=44,746",
+   "/artifacts?type=skill=30,253",
+   "/artifacts?type=plugin=2,972",
+   "/artifacts?type=mcp_server=545",
+   "/artifacts?type=command=5,392",
+   "/artifacts?type=hook=504",
+   "/artifacts?type=agent=5,080"
+  ],
+  "rows": 0,
+  "overflow": 0,
+  "failedNotice": false,
+  "lastSync": "last sync without errors 2026-11-05 23:22 UTC",
+  "errors": []
+ },
+ "totals": {
+  "/artifacts": "44,746 artifacts",
+  "/artifacts?type=hook": "504 artifacts",
+  "/artifacts?type=skill": "30,253 artifacts",
+  "/artifacts?q=review": "5,534 artifacts for review"
+ },
+ "detail": {
+  "status": 200,
+  "hasH1": 1
+ },
+ "noJs": {
+  "h1": 1,
+  "search": 2
+ }
+}

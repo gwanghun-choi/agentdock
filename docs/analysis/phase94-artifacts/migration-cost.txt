@@ -1,0 +1,26 @@
+scale pkg|45287
+scale findings|201529
+pkg MB|117
+finding MB|87
+--- reproduce on the old constraint
+psql:docs/analysis/phase94-artifacts/reproduce-54000.sql:7: ERROR:  index row size 3856 exceeds btree version 4 maximum 2704 for index "pack
+DETAIL:  Index row references tuple (3906,9) in relation "package".
+HINT:  Values larger than 1/3 of a buffer page cannot be indexed.
+--- detail lookup, before 0011
+Index Scan using package_identity on package (actual rows=1 loops=1)
+  Index Cond: ((repository_id = 18075) AND (source_path = ANY ('{commands/autopilot.md,x}'::text[])))
+Planning Time: 0.379 ms
+Execution Time: 0.060 ms
+--- apply 0011 with a reader every 100 ms; slowest read is how long pages wait
+agentdock: applied 1 of 12 migration(s).
+apply wall ms: 3411
+slowest concurrent read ms: 3256
+--- detail lookup, after 0011
+Index Scan using package_identity_digest on package (actual rows=1 loops=1)
+  Index Cond: (repository_id = 18075)
+  Filter: (source_path = ANY ('{commands/autopilot.md,x}'::text[]))
+  Rows Removed by Filter: 98
+Planning Time: 0.395 ms
+Execution Time: 0.089 ms
+pkg MB after|103
+finding MB after|81

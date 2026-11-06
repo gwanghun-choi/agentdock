@@ -1,0 +1,3 @@
+GATE expand: {"blocked":[],"approval":[]}
+GATE contract: {"blocked":[],"approval":["not an additive shape: ALTER TABLE \"agentdock\".\"package\" DROP CONSTRAINT \"package_identity\";"]}
+drizzle sql tail: default) on conflict (repository_id, type, sha256(replace(source_path, '\\', '\\\\')::bytea)) do update set name = excluded.name, updated_at = now() returning id, type, source_path

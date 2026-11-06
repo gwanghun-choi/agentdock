@@ -1,0 +1,12 @@
+smoke 2026-11-06T06:22:08Z
+x-agentdock-commit: c1d4e7b3af93fc08a8a2205291471886adcaba49
+/ 200 ttfb=1.022407 total=6.007200 bytes=302813
+  result-count= chip-count=1 streamed=1 unavailable=0
+/artifacts 200 ttfb=0.381398 total=2.246392 bytes=218847
+  result-count=result-count"> chip-count=0 streamed=1 unavailable=0
+/artifacts?q=review 200 ttfb=0.640793 total=1.730497 bytes=253860
+  result-count=result-count"> chip-count=0 streamed=1 unavailable=0
+/artifacts?type=hook 200 ttfb=0.597820 total=1.074068 bytes=199572
+  result-count=result-count"> chip-count=0 streamed=1 unavailable=0
+/r/nobody/nothing 404 ttfb=0.823682 total=0.823916 bytes=14583
+  result-count= chip-count=0 streamed=0 unavailable=0

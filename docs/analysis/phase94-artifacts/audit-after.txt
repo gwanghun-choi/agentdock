@@ -1,0 +1,11 @@
+bun audit v1.4.2 (744846f84)
+
+esbuild@0.25.12, 0.18.20, 0.28.2
+  drizzle-kit > esbuild
+  vitest > @vitest/mocker > vite > tsx > esbuild
+  moderate: esbuild enables any website to send any requests to the development server and read the response (<=0.24.2) - https://github.com/advisories/GHSA-67mh-4wv8-2f99
+
+1 vulnerability (1 moderate)
+
+  bun audit fix           upgrade the vulnerable packages within their ranges
+  bun audit fix --latest  also cross major versions

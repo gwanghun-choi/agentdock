@@ -1,0 +1,15 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+desktop head 11 fcp 64 lcp 64 h1 h1 42 chips 42 feed 42 cls max 0.0000 scene still overflow 0 errors 0
+tablet head 11 fcp 64 lcp 64 h1 h1 46 chips 46 feed 46 cls max 0.0000 scene still overflow 0 errors 0
+phone head 10 fcp 60 lcp 60 h1 h1 45 chips 46 feed 46 cls max 0.0000 scene still overflow 0 errors 0
+noJs {"h1":1,"search":1,"chipLinks":7,"firstChip":"38,578","rows":30,"skeletonVisible":false,"browseLink":1}
+reducedMotion {"scene":"still","canvas":0,"errors":[]}
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+desktop head 412 fcp 472 lcp 472 h1 h1 457 chips 2444 feed 2444 cls max 0.0000 scene still overflow 0 errors 0
+tablet head 408 fcp 464 lcp 464 h1 h1 437 chips 1633 feed 1633 cls max 0.0000 scene still overflow 0 errors 0
+phone head 410 fcp 448 lcp 448 h1 h1 433 chips 1638 feed 1638 cls max 0.0346 scene still overflow 0 errors 0
+searchWhilePending {"placeholders":50,"url":"/artifacts?q=review"}
+backAfterSearch {"chips":"38,578","rows":10,"skeleton":0}
+chipWhilePending "/artifacts?type=hook"
+noJs {"h1":1,"search":1,"chipLinks":14,"firstChip":"","rows":0,"skeletonVisible":false,"browseLink":1}
+reducedMotion {"scene":"still","canvas":0,"errors":[]}

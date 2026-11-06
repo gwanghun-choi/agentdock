@@ -1,0 +1,79 @@
+실행 ID 3d50460505f3, 2026-11-06T08:11:33Z
+
+=== Expand 상태 복사본 (node_modules는 next 빌드 때문에 복사)
+
+=== expand
+  컨테이너 17d047f76967 agentdock-verify-expand-3d50460505f3, 127.0.0.1:32775
+  [6s] build (VERCEL=1): exit 0 (1.txt)
+  [3s] build (standalone): exit 0 (2.txt)
+  [0s] check:boundaries: exit 0 (3.txt)
+    check-boundaries: OK
+  [0s] lint: exit 0 (4.txt)
+    Checked 243 files in 91ms. No fixes applied.
+  [3s] typecheck: exit 0 (5.txt)
+  [1s] db:test:setup: exit 0 (6.txt)
+  [0s] db:test:migrations(0000~): exit 0 (7.txt)
+    agentdock: applied 12 of 12 migration(s).
+  [23s] unit (DB 포함): exit 0 (8.txt)
+    Test Files  81 passed (81)
+    Tests  1600 passed | 2 skipped (1602)
+  [1s] search:eval: exit 0 (9.txt)
+    Test Files  1 passed (1)
+    Tests  54 passed (54)
+  [0s] e2e:seed: exit 0 (10.txt)
+  [238s] E2E (Chromium): exit 0 (11.txt)
+    112 passed (4.0m)
+  [0s] 원본 가드 테스트 2개: exit 0 (12.txt)
+    Test Files  2 passed (2)
+    Tests  37 passed (37)
+
+=== 회귀 테스트가 실제로 잡는지 (같은 컨테이너, 복사본의 복사본에서 코드를 일부러 망가뜨린다)
+오류: 줄 214, 종료 코드 1
+  변이 'finding의 conflict target 삭제': 테스트 실패로 잡힘 (0건), 예: keeps two findings of one version apart by line, and collapses a true duplicate
+오류: 줄 214, 종료 코드 1
+  변이 'bigint를 문자열 그대로 키로 사용': 테스트 실패로 잡힘 (0건), 예: keys findings by a package id that tx.execute returned as a string
+오류: 줄 214, 종료 코드 1
+  변이 '안전 범위 검사 제거': 테스트 실패로 잡힘 (0건), 예: stops the transaction at
+
+=== 구 코드 복귀 상태: 0011과 schema.ts는 두고 persist·reanalyze·persist.test만 c1d4e7b로
+  [3s] revert: typecheck: exit 0 (16.txt)
+  [23s] revert: unit (DB 포함): exit 0 (17.txt)
+    Test Files  81 passed (81)
+    Tests  1583 passed | 2 skipped (1585)
+  삭제 대상 컨테이너: id=17d047f76967c4ea839dbd2ec65db69faba84a7663fe67c024951ea9a5672aa6 name=/agentdock-verify-expand-3d50460505f3 label=3d50460505f3
+  삭제 완료
+
+=== Contract 상태 복사본
+
+=== contract
+  컨테이너 14aff72efde5 agentdock-verify-contract-3d50460505f3, 127.0.0.1:32776
+  [6s] build (VERCEL=1): exit 0 (18.txt)
+  [3s] build (standalone): exit 0 (19.txt)
+  [0s] check:boundaries: exit 0 (20.txt)
+    check-boundaries: OK
+  [0s] lint: exit 0 (21.txt)
+    Checked 243 files in 91ms. No fixes applied.
+  [3s] typecheck: exit 0 (22.txt)
+  [0s] db:test:setup: exit 0 (23.txt)
+  [0s] db:test:migrations(0000~): exit 0 (24.txt)
+    agentdock: applied 13 of 13 migration(s).
+  [23s] unit (DB 포함): exit 0 (25.txt)
+    Test Files  81 passed (81)
+    Tests  1602 passed | 2 skipped (1604)
+  [1s] search:eval: exit 0 (26.txt)
+    Test Files  1 passed (1)
+    Tests  54 passed (54)
+  [0s] e2e:seed: exit 0 (27.txt)
+  [238s] E2E (Chromium): exit 0 (28.txt)
+    112 passed (4.0m)
+  [0s] 원본 가드 테스트 2개: exit 0 (29.txt)
+    Test Files  2 passed (2)
+    Tests  37 passed (37)
+  삭제 대상 컨테이너: id=14aff72efde58b4cd4d664261206c4edd1d95cfb4b44361a48fdbe4fa9eebbde name=/agentdock-verify-contract-3d50460505f3 label=3d50460505f3
+  삭제 완료
+
+=== 정리
+  저장소 지문: 실행 전과 같음
+  저장소 전체(ignore 포함) 실행 중 수정된 파일: 0
+  agentdock_test 지문: 실행 전과 같음
+판정: 전체 통과

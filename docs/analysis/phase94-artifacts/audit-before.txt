@@ -1,0 +1,42 @@
+bun audit v1.4.2 (744846f84)
+
+@vitest/mocker@4.1.10
+  vitest > @vitest/mocker
+  moderate: Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock (>=2.1.0 <4.1.11) - https://github.com/advisories/GHSA-82fw-gwwq-j7x9
+  moderate: Vitest: Code injection via unauthenticated manual mock registration (>=2.1.0-beta.7 <4.1.12) - https://github.com/advisories/GHSA-qxg6-89mg-rqv8
+
+esbuild@0.25.12, 0.18.20, 0.28.2
+  drizzle-kit > esbuild
+  vitest > @vitest/mocker > vite > tsx > esbuild
+  moderate: esbuild enables any website to send any requests to the development server and read the response (<=0.24.2) - https://github.com/advisories/GHSA-67mh-4wv8-2f99
+
+js-yaml@4.3.1
+  (direct dependency)
+  high: js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources (>=4.0.0 <4.3.2) - https://github.com/advisories/GHSA-2883-xcg3-v3hh
+
+source-map-js@1.2.1
+  next > postcss > source-map-js
+  vitest > @vitest/mocker > vite > postcss > source-map-js
+  high: source-map-js allows event-loop denial of service through indexed source-map section offsets (>=1.0.0 <1.2.2) - https://github.com/advisories/GHSA-68fv-2mgg-jv7q
+
+vite@8.2.1
+  vitest > @vitest/mocker > vite
+  low: Vite: Cross origin script execution through Vite custom middleware (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-9jrq-w75r-8gcw
+  moderate: Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-rq7h-c2jc-7f22
+  moderate: launch-editor: escapeCmdArgs() omits % escaping on Windows (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-698v-4r3x-3vcv
+  moderate: launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-r825-w8mm-5pxw
+  high: launch-editor: `fs.existsSync()` existence check can be bypassed on Windows (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-587h-7wmj-h5pm
+  moderate: Vite: First 4 bytes of files outside of `server.fs` setting is exposed by `?vite-wasm-instance` (>=8.2.0 <=8.2.3) - https://github.com/advisories/GHSA-vfpm-58rq-9qcg
+
+vitest@4.1.10
+  (direct dependency)
+  moderate: Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock (>=2.1.0 <4.1.11) - https://github.com/advisories/GHSA-82fw-gwwq-j7x9
+
+zod@4.4.3
+  (direct dependency)
+  high: Zod can exhaust memory while validating oversized constrained collections (<4.6.6) - https://github.com/advisories/GHSA-mrhx-c7xc-m3w5
+
+13 vulnerabilities (4 high, 8 moderate, 1 low)
+
+  bun audit fix           upgrade the vulnerable packages within their ranges
+  bun audit fix --latest  also cross major versions

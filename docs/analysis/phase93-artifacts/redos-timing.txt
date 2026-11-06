@@ -1,0 +1,30 @@
+# idle, nice -n 10, one worker, one process per sample;  15:07:41 up  4:41,  1 user,  load average: 4.42, 3.97, 5.09
+# fixture_all dashes letters scheme-like ratio_250k_to_62.5k (ms)
+1.6 177.3 76.3 10.3 3.99
+1.5 174.7 76.1 10.3 4.01
+1.6 175.5 76.0 10.7 4.03
+1.6 180.5 76.3 10.3 4.00
+1.6 175.7 76.4 10.2 4.01
+# mutants of redact.ts through redos.test.ts with the 2 s bound
+baseline exit=0
+name-unbounded exit=1 wall=44s 21870 21710 
+flag-unbounded exit=1 wall=60s 59491 
+scheme-unbounded exit=1 wall=33s 21794 10876 
+name-bound-1024 exit=0 wall=2s 
+name-bound-4096 exit=0 wall=3s 
+# already run before the instruction to stop, 12 busy processes on 4 pinned cores, not to be repeated
+2 383 181 18 4.13
+5 426 187 24 3.96
+2 444 184 24 4.29
+4 393 172 24 4.28
+2 402 172 21 4.37
+2 412 169 21 4.13
+2 375 172 21 4.36
+2 414 176 21 4.18
+3 430 170 24 4.12
+3 408 172 27 4.20
+2 384 158 21 3.97
+2 379 158 21 3.92
+3 360 157 21 3.96
+3 396 157 18 4.31
+2 378 157 21 4.09

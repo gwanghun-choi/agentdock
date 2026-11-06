@@ -1,0 +1,9 @@
+--- before
+4.3.1 CORE_SCHEMA, at the 64 KB input cap 59221 B: 6.1 ms (ok)
+4.3.1 default schema, at the 64 KB input cap 59221 B: 35.6 ms (ok)
+4.3.1 default schema, advisory n=20000 320021 B: 957.1 ms (ok)
+13 vulnerabilities (4 high, 8 moderate, 1 low)
+--- after
+4.3.2 CORE_SCHEMA, at the 64 KB input cap 59221 B: 6.4 ms (ok)
+4.3.2 default schema, at the 64 KB input cap 59221 B: 1.2 ms (abnormal merge sequence size)
+4.3.2 default schema, advisory n=20000 320021 B: 3.5 ms (abnormal merge sequence size)

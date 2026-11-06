@@ -1,0 +1,18 @@
+before: pkg 287|5903f648bc5ceeb7041afc29eef82ae3 findings 1529|1aa3ea9647ffbc4eb4f02c50374a9e8c
+package_identity
+capability_finding_identity
+--- apply (existing data)
+agentdock: applied 1 of 12 migration(s).
+after: pkg 287|5903f648bc5ceeb7041afc29eef82ae3 findings 1529|1aa3ea9647ffbc4eb4f02c50374a9e8c
+package_identity_digest
+capability_finding_identity_digest
+digest mismatches: 0
+--- rollback
+after: pkg 287|5903f648bc5ceeb7041afc29eef82ae3
+package_identity
+capability_finding_identity
+--- reapply
+agentdock: applied 1 of 12 migration(s).
+after: pkg 287|5903f648bc5ceeb7041afc29eef82ae3 findings 1529|1aa3ea9647ffbc4eb4f02c50374a9e8c
+package_identity_digest
+capability_finding_identity_digest

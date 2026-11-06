@@ -1,0 +1,67 @@
+// 마이그레이션 동안의 읽기·쓰기 지연과 잠금을 잰다. 리허설 전용 DB에만 접속하고, 정지 파일이 생기면 끝난다.
+// migration-rehearsal.sh가 코드 복사본의 scripts/zz-sampler.ts로 복사해 실행한다.
+// 출력 한 줄: <epoch ms> r|w <지연 ms>, 또는 <epoch ms> l <table> <mode> <granted>
+import { appendFileSync, existsSync } from 'node:fs';
+import postgres from 'postgres';
+
+const RUN_ID = process.env.REHEARSAL_RUN_ID ?? '';
+const [outFile, stopFile] = process.argv.slice(2);
+const url = new URL(process.env.DATABASE_URL ?? 'invalid://');
+if (
+  !/^[0-9a-f]{12}$/.test(RUN_ID) ||
+  url.protocol !== 'postgresql:' ||
+  url.hostname !== '127.0.0.1' ||
+  url.password !== '' ||
+  url.search !== '' ||
+  !/^[0-9]+$/.test(url.port) ||
+  url.port === '5432' ||
+  url.port === '55432' ||
+  url.port !== process.env.REHEARSAL_PORT ||
+  url.pathname !== `/${process.env.REHEARSAL_DB}` ||
+  !new RegExp(`^/m0012_[a-z]+_${RUN_ID}$`).test(url.pathname)
+) {
+  throw new Error('refused: the URL is not this run\'s rehearsal database');
+}
+const conn = () => postgres(url.href, { max: 1, onnotice: () => {}, connection: { application_name: 'rehearsal-sampler' } });
+const [r, w, o] = [conn(), conn(), conn()];
+const [who] = await o`select current_setting('cluster_name') c, current_database() d`;
+if (who.c !== `agentdock-m0012-${RUN_ID}` || `/${who.d}` !== url.pathname) {
+  throw new Error('refused: the server that answered is not this run\'s container');
+}
+const [{ id }] = await w`select min(id)::text id from agentdock.package`;
+const [{ fid }] = await w`select min(id)::text fid from agentdock.capability_finding`;
+const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
+const log = (line: string) => appendFileSync(outFile, `${line}\n`);
+const stopped = () => existsSync(stopFile);
+
+async function reads() {
+  while (!stopped()) {
+    const t = Date.now();
+    await r`select id from agentdock.package order by id desc limit 1`;
+    await r`select id from agentdock.capability_finding order by id desc limit 1`;
+    log(`${t} r ${Date.now() - t}`);
+    await sleep(20);
+  }
+}
+async function writes() {
+  while (!stopped()) {
+    const t = Date.now();
+    await w`update agentdock.package set updated_at = updated_at where id = ${id}`;
+    await w`update agentdock.capability_finding set summary = summary where id = ${fid}`;
+    log(`${t} w ${Date.now() - t}`);
+    await sleep(100);
+  }
+}
+async function locks() {
+  while (!stopped()) {
+    const rows = await o`
+      select c.relname, l.mode, l.granted from pg_locks l join pg_class c on c.oid = l.relation
+      where c.relname in ('package', 'capability_finding')
+        and l.mode in ('ShareLock', 'AccessExclusiveLock')`;
+    const t = Date.now();
+    for (const row of rows) log(`${t} l ${row.relname} ${row.mode} ${row.granted}`);
+    await sleep(5);
+  }
+}
+await Promise.all([reads(), writes(), locks()]);
+await Promise.all([r.end(), w.end(), o.end()]);

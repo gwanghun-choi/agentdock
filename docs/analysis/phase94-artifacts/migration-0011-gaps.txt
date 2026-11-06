@@ -1,0 +1,43 @@
+id types|bigint|bigint
+=== 구스키마
+pkg rows 1 id=1
+upsert 식 target: ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+upsert 구 target: 1
+finding 첫 삽입: [1]
+finding 재삽입(중복): []
+finding null start_line 2회: 3 / 4
+finding 긴 경로는 문장별 54000 여부: ERROR:  index row size 4216 exceeds btree version 4 maximum 2704 for i
+=== Expand
+pkg rows 1 id=1
+upsert 식 target: 1
+upsert 구 target: 1
+finding 첫 삽입: [6]
+finding 재삽입(중복): []
+finding null start_line 2회: 8 / 9
+finding 긴 경로는 문장별 54000 여부: ERROR:  index row size 4216 exceeds btree version 4 maximum 2704 for i
+=== Contract
+pkg rows 1 id=1
+upsert 식 target: 1
+upsert 구 target: ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+finding 첫 삽입: [11]
+finding 재삽입(중복): []
+finding null start_line 2회: 13 / 14
+finding 긴 경로는 문장별 54000 여부: 4160
+=== 복원 전 긴 경로 제거 후: 구 제약만 복원, 식 인덱스·코드는 유지
+=== 복원
+pkg rows 1 id=1
+upsert 식 target: 1
+upsert 구 target: 1
+finding 첫 삽입: [16]
+finding 재삽입(중복): []
+finding null start_line 2회: 18 / 19
+finding 긴 경로는 문장별 54000 여부: ERROR:  index row size 4216 exceeds btree version 4 maximum 2704 for i
+constraints: package_identity,capability_finding_identity
+indexes: package_identity_digest,capability_finding_identity_digest
+=== 긴 경로가 남아 있으면 복원은 실패하고 그대로
+NOTICE:  word is too long to be indexed
+DETAIL:  Words longer than 2047 characters are ignored.
+ERROR:  index row size 4192 exceeds btree version 4 maximum 2704 for index "package_identity"
+rows 유지 2, 구 인덱스 0
+finished
+cleaned

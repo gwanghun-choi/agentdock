@@ -1,0 +1,66 @@
+=== 1. 구 스키마(0000~0010) + 합성 데이터
+
+pg 17.11 (Debian 17.11-1.pgdg13+2)|45287|200000|111 MB|78 MB
+before hash:
+6d87b1a93a689c4504c397603bce2ef4
+be61b3f482378d0d55b8d913258b7271
+
+=== 2. 현재 0011 (생성 열): 호환성
+--- 신 코드(digest 열) + 구 스키마
+ERROR:  column "source_path_digest" does not exist
+--- 구 코드 + 구 스키마
+(오류 없으면 정상)
+apply 0011 wall=3493ms exit=0
+reads n=14 median=63ms max=3315ms
+--- 구 코드 + 신 스키마
+ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+--- 신 코드 + 신 스키마
+(오류 없으면 정상)
+6d87b1a93a689c4504c397603bce2ef4
+be61b3f482378d0d55b8d913258b7271
+
+=== 3. Expand: 식 unique index만 추가(재작성 없음, 잠금 SHARE)
+apply expand wall=268ms
+reads n=14 median=64ms max=644ms
+--- 확장 상태: 구 코드
+(오류 없으면 정상)
+--- 확장 상태: 신 코드(식 target), 기존 행 충돌
+ 361140 | x
+--- 확장 상태: 긴 경로(4160자 비압축) - 구 제약이 남아 있어 54000이 정상
+ERROR:  index row size 4192 exceeds btree version 4 maximum 2704 for index "package_identity"
+--- 확장 중 진행 중 쓰기: 빌드 전 쓰기 tx 3초 보유, 그동안 expand를 재실행(rollback)
+write-held expand wall=2754ms (쓰기 끝날 때까지 대기 후 진행)
+6d87b1a93a689c4504c397603bce2ef4
+be61b3f482378d0d55b8d913258b7271
+
+=== 4. Contract: 구 제약 삭제
+--- 읽기 tx 4초 보유 중 contract, lock_timeout 2초: 대기열이 읽기를 막는 범위
+ERROR:  canceling statement due to lock timeout
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+contract 실패까지 wall=2066ms
+reads n=11 median=62ms max=2032ms
+--- 방해 없는 contract
+apply contract wall=59ms
+reads n=13 median=59ms max=575ms
+--- 수축 후: 구 코드
+ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+--- 수축 후: 신 코드
+ 361140 | x
+--- 수축 후: 긴 경로
+ 862705 |   4160
+6d87b1a93a689c4504c397603bce2ef4
+be61b3f482378d0d55b8d913258b7271
+
+=== 5. 롤백
+--- 긴 경로가 저장된 뒤 구 제약 복원: 실패하고 아무것도 안 바뀌어야 함
+ERROR:  index row size 4192 exceeds btree version 4 maximum 2704 for index "package_identity"
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+--- 긴 경로 없음: 구 제약 복원 후 식 인덱스 삭제
+rollback wall=206ms
+reads n=14 median=58ms max=669ms
+6d87b1a93a689c4504c397603bce2ef4
+be61b3f482378d0d55b8d913258b7271
+--- 롤백 후 구 코드
+(오류 없으면 정상)
+finished
+cleaned; evidence in /tmp/claude-1000/-home-ChoiGwanghun-workspace-auto-agentdock/5c2b22dc-57d2-4ff1-8d78-983a093cb69b/scratchpad/lab-17ShJ0

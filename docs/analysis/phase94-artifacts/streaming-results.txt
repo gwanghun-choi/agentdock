@@ -1,0 +1,53 @@
+--- real smoke, healthy
+ok   / 200 14ms
+ok   /artifacts 200 461ms
+ok   /artifacts?q=mcp 200 62ms
+ok   /skills 308 1ms
+ok   /artifacts?type=skill 200 354ms
+ok   /artifacts?type=plugin 200 38ms
+ok   /artifacts?type=mcp_server 200 17ms
+ok   /artifacts?type=command 200 84ms
+ok   /artifacts?type=hook 200 22ms
+ok   /artifacts?type=agent 200 14ms
+smoke: PASS
+--- long paths
+984|984
+1238|3638
+4034|4034
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+rows 3 overflow at 320 0
+detail href bytes 992 status 200
+detail href bytes 10846 status 200
+detail href bytes 4042 status 200
+--- late, JavaScript off
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+{"name":"nojs-late","js":"nojs","status":200,"h1":true,"search":true,"chips":14,"chipDigits":false,"alert":0,"tryAgain":0,"skeletonVisible":false,"noscriptLine":false,"rows":0,"errors":[]}
+--- fails after the first byte
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+{"name":"failed-after-byte","js":"js","status":200,"h1":true,"search":true,"chips":7,"chipDigits":false,"alert":true,"tryAgain":1,"skeletonVisible":0,"noscriptLine":null,"rows":0,"errors":[]}
+{"ts":"2026-11-06T05:33:40.946Z","event":"home_unavailable","reason":"failed","code":"ECONNREFUSED"}
+--- no answer at all: the 20 s deadline
+status 200 first byte 0.462099 total 20.506800
+{"ts":"2026-11-06T05:34:09.945Z","event":"home_unavailable","reason":"deadline","code":null}
+--- database refused, inside the budget
+status 500 first byte 0.073559
+/artifacts status 200
+--- real smoke, refused
+FAIL /: HTTP 500
+FAIL /artifacts: no result count in the page
+FAIL /artifacts?q=mcp: no result count in the page
+ok   /skills 308 1ms
+FAIL /artifacts?type=skill: no result count in the page
+FAIL /artifacts?type=plugin: no result count in the page
+FAIL /artifacts?type=mcp_server: no result count in the page
+FAIL /artifacts?type=command: no result count in the page
+FAIL /artifacts?type=hook: no result count in the page
+FAIL /artifacts?type=agent: no result count in the page
+smoke: FAIL
+process still up
+boot: no answer from the database (ECONNREFUSED), attempt 1
+--- wrong role (superuser): ends the process
+exit 1
+Refusing to start: connected as a role other than "agentdock_app". Check the DATABASE_URL this process was given.
+--- bad environment: ends the process
+exit 1

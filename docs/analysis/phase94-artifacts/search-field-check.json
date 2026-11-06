@@ -1,0 +1,17 @@
+{
+ "chromium": {
+  "version": "156.0.8078.4",
+  "checked": 58,
+  "failed": []
+ },
+ "firefox": {
+  "version": "157.0",
+  "checked": 58,
+  "failed": []
+ },
+ "webkit": {
+  "version": "27.2",
+  "checked": 58,
+  "failed": []
+ }
+}

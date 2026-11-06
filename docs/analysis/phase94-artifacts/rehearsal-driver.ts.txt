@@ -1,0 +1,149 @@
+// 호환성 매트릭스의 한 칸: 이 코드 판의 실제 persistScan·analyzePackageVersion을 리허설 전용 DB에 실행한다.
+// migration-rehearsal.sh가 코드 복사본의 scripts/zz-driver.ts로 복사해 실행한다.
+// 앱 모듈을 import하기 전에 URL과 접속한 서버의 정체를 검사한다. 어긋나면 아무것도 쓰지 않고 종료한다.
+import { createHash, randomUUID } from 'node:crypto';
+import postgres from 'postgres';
+
+const RUN_ID = process.env.REHEARSAL_RUN_ID ?? '';
+if (!/^[0-9a-f]{12}$/.test(RUN_ID)) throw new Error('refused: no rehearsal run id');
+const url = new URL(process.env.DATABASE_URL ?? 'invalid://');
+if (
+  url.protocol !== 'postgresql:' ||
+  url.hostname !== '127.0.0.1' ||
+  url.password !== '' ||
+  url.search !== '' ||
+  !/^[0-9]+$/.test(url.port) ||
+  url.port === '5432' ||
+  url.port === '55432' ||
+  url.port !== process.env.REHEARSAL_PORT ||
+  url.pathname !== `/${process.env.REHEARSAL_DB}` ||
+  !new RegExp(`^/m0012_[a-z]+_${RUN_ID}$`).test(url.pathname)
+) {
+  throw new Error('refused: the URL is not this run\'s rehearsal database');
+}
+const probe = postgres(url.href, { max: 1, onnotice: () => {} });
+const [who] = await probe`select current_setting('cluster_name') c, current_database() d`;
+await probe.end();
+if (who.c !== `agentdock-m0012-${RUN_ID}` || `/${who.d}` !== url.pathname) {
+  throw new Error('refused: the server that answered is not this run\'s container');
+}
+
+process.env.DATABASE_SCHEMA = 'agentdock';
+const { persistScan } = await import('../src/ingest/persist');
+const { analyzePackageVersion } = await import('../src/ingest/reanalyze');
+const { getPackageDetail, listPackages } = await import('../src/db/queries/packages');
+const { searchPackages } = await import('../src/db/queries/search');
+const { sql } = await import('../src/db/client');
+
+const [label, ...scenarios] = process.argv.slice(2);
+const noise = (n: number) =>
+  Array.from({ length: Math.ceil(n / 37) }, () => randomUUID()).join('/').slice(0, n);
+const finding = (sourcePath: string, line = 1) => ({
+  detectorId: 'network', detectorVersion: '1', category: 'network_request' as const, signal: 'url',
+  summary: `refers to example.invalid ${line}`, sourcePath, startLine: line, endLine: line,
+  evidenceText: 'evidence', metadata: { host: 'example.invalid' },
+});
+const pkg = (sourcePath: string, over: object = {}) => ({
+  type: 'skill' as const, sourcePath, name: 'n-' + createHash('md5').update(sourcePath).digest('hex').slice(0, 8),
+  slug: 's', summary: 'a summary', licenseText: null, meta: { k: ['v', 1], ko: '한글' }, blobSha: null,
+  contentHash: 'hash-' + sourcePath.length, declaredVersion: null, body: 'npm install', frontmatter: { name: 'n' },
+  parseStatus: 'ok' as const, parseErrors: [], parentPath: null, findings: [finding(sourcePath)],
+  files: [{ path: 'a.md', size: 1 }], ...over,
+});
+const scan = (node: string, packages: unknown[]) => ({
+  githubNodeId: node, fullName: `lab/${node}`.toLowerCase(), owner: 'lab', defaultBranch: 'main', description: null,
+  homepage: null, licenseSpdx: null, stars: 100, isFork: false, isArchived: false, topics: [], pushedAt: null,
+  scannedAt: new Date(), etag: null, commitSha: 'c'.repeat(40), treeTruncated: false, packages, seeds: [],
+}) as never;
+const stable = ['skills/a/SKILL.md', '스킬/😀/SKILL.md', 'a\\b/SKILL.md', '\\x41/SKILL.md'];
+const short = [...stable, `${'p'.repeat(100)}/SKILL.md`, `${noise(1000)}/SKILL.md`];
+
+// 시각, id, 저장소 이름을 뺀 저장 결과. 판 사이에 같아야 한다.
+async function stateHash(node: string) {
+  const rows = await sql`
+    select p.type, p.source_path, p.name, p.slug, p.summary, p.meta::text, p.files::text, p.parent_path,
+      p.delisted_at is null as live, v.content_hash, v.body, v.parse_status,
+      (select coalesce(string_agg(f.detector_id||f.category||f.source_path||coalesce(f.start_line::text,'')||f.summary||coalesce(f.evidence_text,'')||f.metadata::text, ',' order by f.summary),'')
+         from capability_finding f where f.package_version_id = v.id) as findings
+    from package p join repository r on r.id = p.repository_id
+    left join package_version v on v.package_id = p.id
+    where r.github_node_id = ${node} order by p.type, p.source_path, v.content_hash`;
+  return createHash('md5').update(JSON.stringify(rows)).digest('hex').slice(0, 12);
+}
+const code = (e: { cause?: { code?: string }; code?: string; message?: string }) =>
+  e?.cause?.code ?? e?.code ?? String(e?.message).slice(0, 70);
+async function cell(name: string, fn: () => Promise<unknown>) {
+  try {
+    console.log(`${label} ${name}: ok ${JSON.stringify(await fn())}`);
+  } catch (e) {
+    console.log(`${label} ${name}: FAIL ${code(e as never)}`);
+  }
+}
+const run = randomUUID().slice(0, 8);
+const all: Record<string, () => Promise<void>> = {
+  async seed() { // 마이그레이션 전부터 있던 행. 지문은 스크립트가 잰다.
+    for (let i = 0; i < 40; i++) {
+      await persistScan(scan(`SEED${i}`, [...short.slice(0, 5).map((p) => pkg(`${i}/${p}`)), pkg(`${i}/${noise(1000)}`)]));
+    }
+    await persistScan(scan('EXISTING', [pkg('existing/SKILL.md')]));
+    console.log(`${label} seed: ok`);
+  },
+  async write() {
+    const node = `W${run}`;
+    await cell('새 저장소·행+finding', async () => {
+      const r = await persistScan(scan(node, short.map((p) => pkg(p))));
+      const [{ n }] = await sql`select count(*)::int n from capability_finding f join package_version v on v.id=f.package_version_id join package p on p.id=v.package_id join repository x on x.id=p.repository_id where x.github_node_id=${node}`;
+      return { idType: typeof r.packageIds[0], new: r.counters.new, findings: n };
+    });
+    await cell('재수집(같은 내용)', async () => {
+      const r = await persistScan(scan(node, short.map((p) => pkg(p))));
+      return { new: r.counters.new, versions: r.newVersions, unchanged: r.counters.unchanged };
+    });
+    await cell('기존 행 UPSERT 충돌(내용 변경)', async () => {
+      const [{ id: before }] = await sql`select p.id::text id from package p join repository r on r.id=p.repository_id where r.github_node_id='EXISTING'`;
+      const content = `hash-${run}`;
+      const r = await persistScan(scan('EXISTING', [pkg('existing/SKILL.md', { contentHash: content, name: `upd-${run}`, findings: [finding('existing/SKILL.md', 2)] })]));
+      const [{ name, n }] = await sql`select p.name, (select count(*)::int from capability_finding f join package_version v on v.id=f.package_version_id where v.package_id=p.id and v.content_hash=${content}) n from package p where p.id=${r.packageIds[0]}`;
+      return { sameId: String(r.packageIds[0]) === before, updated: name === `upd-${run}`, findingsOnNewVersion: n };
+    });
+    await cell('재분석', async () => {
+      // 앞 칸의 성패와 무관하게 있는 행. 구 스키마와 Contract 칸에서도 분석 코드 자체가 실행된다.
+      const [{ id }] = await sql`select v.id from package_version v join package p on p.id=v.package_id join repository r on r.id=p.repository_id where r.github_node_id='EXISTING' order by v.ingested_at desc limit 1`;
+      return { findings: await analyzePackageVersion(Number(id)) };
+    });
+    await cell('4,000자 경로', async () => {
+      const p = `${noise(4000)}/SKILL.md`;
+      const r = await persistScan(scan(`L${run}`, [pkg(p)]));
+      const again = await persistScan(scan(`L${run}`, [pkg(p)]));
+      return { same: r.packageIds[0] === again.packageIds[0], newVersions: again.newVersions };
+    });
+    await cell('읽기(목록·검색·상세)', async () => {
+      const list = await listPackages({ limit: 5 });
+      const found = await searchPackages({ q: 'summary', filters: { types: [], capabilities: [] } });
+      const detail = await getPackageDetail('lab', 'existing', ['existing', 'SKILL.md']);
+      return { list: list.length, found: found.length, detail: detail ? 1 : 0 };
+    });
+  },
+  async parity() { // 같은 입력이면 판과 무관하게 같은 저장 결과. 삭제 표시와 복원까지.
+    const node = `PAR${run}`;
+    await persistScan(scan(node, stable.map((p) => pkg(p))));
+    await persistScan(scan(node, stable.slice(0, 2).map((p) => pkg(p))));
+    await persistScan(scan(node, stable.map((p) => pkg(p, { summary: 'second', files: [{ path: 'b.md', size: 2 }], meta: { z: null } }))));
+    console.log(`${label} 저장 결과 지문: ${await stateHash(node)}`);
+  },
+  async race() { // 같은 새 경로를 동시에 쓰는 두 트랜잭션, 20회.
+    const out: Record<string, number> = {};
+    await persistScan(scan(`R${run}`, []));
+    for (let i = 0; i < 20; i++) {
+      const go = () => persistScan(scan(`R${run}`, [pkg(`race/${i}/SKILL.md`)]));
+      for (const r of await Promise.allSettled([go(), go()])) {
+        const k = r.status === 'fulfilled' ? 'ok' : code(r.reason);
+        out[k] = (out[k] ?? 0) + 1;
+      }
+    }
+    const [{ n }] = await sql`select count(*)::int n from package p join repository r on r.id=p.repository_id where r.github_node_id=${`R${run}`}`;
+    console.log(`${label} 동시 삽입 40건: ${JSON.stringify(out)} 행 ${n}`);
+  },
+};
+for (const s of scenarios) await all[s]();
+await sql.end();
