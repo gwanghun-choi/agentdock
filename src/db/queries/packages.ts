@@ -31,6 +31,9 @@ export type PackageListItem = {
   summaryLanguage?: SummaryLanguage | null;
 };
 
+/** `db`, or a transaction reading alongside other queries. */
+export type PackageReader = Pick<typeof db, 'select'>;
+
 /**
  * The latest version of the row being tested. One subquery shape, written once.
  *
@@ -179,6 +182,7 @@ export const listPackages = cache(
     fullName,
     listingOnly = true,
     hiddenLanguages = [],
+    reader = db,
   }: {
     limit?: number;
     offset?: number;
@@ -188,8 +192,10 @@ export const listPackages = cache(
     listingOnly?: boolean;
     /** language.ts, HIDDEN_UNLESS_ASKED: the home page passes it, a repository's page does not. */
     hiddenLanguages?: readonly CjkLanguage[];
+    /** A transaction, for homeSnapshot.ts's one consistent read. */
+    reader?: PackageReader;
   } = {}): Promise<PackageListItem[]> =>
-    db
+    reader
       .select({
         id: packageTable.id,
         name: packageTable.name,
@@ -281,8 +287,9 @@ export const countPackagesByType = cache(async (): Promise<Record<string, number
 export const countVisibleByType = cache(
   async (
     hiddenLanguages: readonly CjkLanguage[],
+    reader: PackageReader = db,
   ): Promise<{ visible: Record<string, number>; hidden: number }> => {
-    const rows = await db
+    const rows = await reader
       .select({
         type: packageTable.type,
         visible: sql<number>`(count(*) filter (where ${visibleLanguage(hiddenLanguages)}))::int`,

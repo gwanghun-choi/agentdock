@@ -65,7 +65,7 @@ export const DECLARING_FILES = [
  * as leaf names because that is what a reader recognises; the full paths are on
  * every artifact's own row.
  */
-export function IndexFlow({ total }: { total: number }) {
+export function IndexFlow({ total }: { total: number | null }) {
   return (
     <ol className="flow">
       <li>
@@ -112,7 +112,8 @@ export function IndexFlow({ total }: { total: number }) {
               pseudo-element at a corpus above ten thousand, and production holds
               44,903 (2026-11-06). Beside "Browse all", which is what the listing
               shows; the line under "Recently indexed" says what the difference is. */}
-          <span className="count">{total.toLocaleString('en-US')}</span> artifacts indexed right now
+          <span className="count">{total?.toLocaleString('en-US') ?? '…'}</span> artifacts indexed
+          at the last complete sync
         </p>
       </li>
     </ol>

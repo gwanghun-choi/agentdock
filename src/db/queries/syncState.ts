@@ -75,7 +75,7 @@ export async function writeSweepState(source: string, state: SweepState): Promis
     });
 }
 
-const LAST_SUCCESS_KEY = 'sync:last_success';
+export const LAST_SUCCESS_KEY = 'sync:last_success';
 
 /**
  * When a scheduled sync last finished with every stage intact. A row in

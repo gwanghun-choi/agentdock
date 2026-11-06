@@ -1,0 +1,34 @@
+start 2026-11-06T02:33:39Z
+https://agentdock-delta.vercel.app/ 200 tls=0.029463 ttfb=2.492659 total=2.834494 bytes=30452
+https://agentdock-delta.vercel.app/ 200 tls=0.021263 ttfb=2.501619 total=2.850274 bytes=30489
+https://agentdock-delta.vercel.app/ 200 tls=0.022284 ttfb=2.288861 total=2.645217 bytes=30423
+https://agentdock-delta.vercel.app/ 200 tls=0.023903 ttfb=2.218871 total=2.580129 bytes=30448
+https://agentdock-delta.vercel.app/ 200 tls=0.039810 ttfb=2.297557 total=2.658265 bytes=30449
+https://agentdock-delta.vercel.app/ 200 tls=0.024775 ttfb=2.294484 total=2.640030 bytes=30489
+https://agentdock-delta.vercel.app/ 200 tls=0.017754 ttfb=2.336090 total=2.688264 bytes=30452
+https://agentdock-delta.vercel.app/ 200 tls=0.034941 ttfb=2.480676 total=2.824591 bytes=30419
+https://agentdock-delta.vercel.app/ 200 tls=0.047940 ttfb=2.248692 total=2.606193 bytes=30444
+https://agentdock-delta.vercel.app/ 200 tls=0.018382 ttfb=2.299835 total=2.661774 bytes=30449
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.022409 ttfb=0.358380 total=2.606864 bytes=18822
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.036078 ttfb=0.358034 total=2.593229 bytes=18800
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.038159 ttfb=0.374954 total=2.431492 bytes=18899
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.044252 ttfb=0.352536 total=2.428509 bytes=18813
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.234259 ttfb=0.545001 total=2.593375 bytes=18814
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.034099 ttfb=0.336766 total=2.516679 bytes=18900
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.020901 ttfb=0.341765 total=2.369695 bytes=18808
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.020684 ttfb=0.330076 total=2.361637 bytes=18918
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.024748 ttfb=0.366672 total=2.386010 bytes=18814
+https://agentdock-delta.vercel.app/artifacts 200 tls=0.018008 ttfb=0.331632 total=2.754056 bytes=18818
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.018985 ttfb=0.768208 total=0.768742 bytes=3293
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.018637 ttfb=0.748653 total=0.749206 bytes=3291
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.017207 ttfb=0.777514 total=0.777893 bytes=3293
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.020964 ttfb=0.566624 total=0.567290 bytes=3291
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.017406 ttfb=0.530433 total=0.530770 bytes=3295
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.019880 ttfb=0.552234 total=0.552571 bytes=3294
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.020660 ttfb=0.533806 total=0.534246 bytes=3294
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.027073 ttfb=0.555686 total=0.556059 bytes=3294
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.019613 ttfb=0.556975 total=0.557674 bytes=3293
+https://agentdock-delta.vercel.app/r/nobody/nothing 404 tls=0.019818 ttfb=0.535263 total=0.535304 bytes=3294
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+x-agentdock-commit: 94ec743a9ceb257bad4458c3242eb1dcf9763a0f
+x-vercel-id: icn1::iad1::x7srs-1793932512681-94ea09948890

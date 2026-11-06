@@ -74,5 +74,8 @@ for (dir of DIRS) {
   );
   failed ||= !result.ok;
 }
+// What a scheduled sync ends with, so the journeys read the page production serves.
+const { publishHomeSnapshot } = await import('../src/db/queries/homeSnapshot.ts');
+await publishHomeSnapshot();
 await sql.end();
 if (failed) process.exit(1);

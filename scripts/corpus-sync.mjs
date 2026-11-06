@@ -794,6 +794,27 @@ try {
       `renders; the ${held - listed} difference is on each repository's own page carrying its reason`,
   );
 
+  // What the home page reads instead of asking on every request
+  // (src/db/queries/homeSnapshot.ts). Only after every stage held: a run that lost a
+  // stage may have stored part of its work, and the page keeps the last complete
+  // result until a run ends whole. A failure here fails the run, and last_success
+  // stays put, so the two cannot say a run finished that the page did not get.
+  if (!failed && stageFailures.length === 0) {
+    await stage('home-snapshot', async () => {
+      const { publishHomeSnapshot } = await import('../src/db/queries/homeSnapshot.ts');
+      const home = await publishHomeSnapshot();
+      console.log(
+        home.written
+          ? `corpus-sync: home snapshot published, listed=${home.listed} hidden=${home.hidden}`
+          : 'corpus-sync: home snapshot not written, a newer one is already stored',
+      );
+    });
+  } else {
+    console.log(
+      `corpus-sync: home snapshot kept, not refreshed: the run failed (${stageFailures.join(',') || 'registry parse failure'})`,
+    );
+  }
+
   // Read before this run overwrites it, for the backlog trend. A backlog that
   // grows run after run is the signal a single PARTIAL_DEADLINE is not.
   if (scheduled) {

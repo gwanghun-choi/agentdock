@@ -84,6 +84,7 @@ async function gate(env = process.env, fetchImpl = fetch) {
 // this file's: an empty type is reported, and only "every type empty" fails.
 export const TYPES = ['skill', 'plugin', 'mcp_server', 'command', 'hook', 'agent'];
 const ERROR_PAGE = 'Something went wrong'; // src/app/error.tsx
+const HOME_COUNT = /chip-count">\d/; // src/app/page.tsx, TypeChips
 const EMPTY_CORPUS = 'No artifacts indexed yet'; // src/app/artifacts/page.tsx
 const NO_MATCH = 'No artifacts matched';
 
@@ -140,7 +141,14 @@ export async function smoke(base, sha, { fetchImpl = fetch, attempts = 6, delayM
         ? 'rendered the error boundary (the index could not be read)'
         : null;
 
-  await page('/', rendered);
+  // Not only the status: past its first-byte budget the home page streams, so an
+  // index that cannot be read after that is the error boundary under a 200, and its
+  // text is not in the HTML. The streamed counts are, in either case.
+  await page(
+    '/',
+    (res, body) =>
+      rendered(res, body) ?? (HOME_COUNT.test(body) ? null : 'no artifact count in the page'),
+  );
   // An empty corpus on a deployment that has been serving one means the
   // connection reaches a different database or schema.
   await page(

@@ -1,0 +1,422 @@
+{
+ "desktop": [
+  {
+   "lcp": [
+    {
+     "t": 168,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 61,
+    "search": 61,
+    "chips": 61,
+    "feed": 62,
+    "sceneLive": 2071
+   },
+   "stop": true,
+   "finalHead": 20,
+   "fcp": 168,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 47,
+    "search": 47,
+    "chips": 47,
+    "feed": 47,
+    "sceneLive": 988
+   },
+   "stop": true,
+   "finalHead": 15,
+   "fcp": 64,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 72,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 51,
+    "search": 51,
+    "chips": 51,
+    "feed": 51,
+    "sceneLive": 959
+   },
+   "stop": true,
+   "finalHead": 19,
+   "fcp": 72,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 100,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 77,
+    "search": 77,
+    "chips": 77,
+    "feed": 77,
+    "sceneLive": 955
+   },
+   "stop": true,
+   "finalHead": 19,
+   "fcp": 100,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 88,
+     "size": 187530,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 69,
+    "search": 69,
+    "chips": 69,
+    "feed": 69,
+    "sceneLive": 931
+   },
+   "stop": true,
+   "finalHead": 13,
+   "fcp": 88,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "tablet": [
+  {
+   "lcp": [
+    {
+     "t": 92,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 55,
+    "search": 55,
+    "chips": 55,
+    "feed": 55,
+    "sceneLive": 1021
+   },
+   "stop": true,
+   "finalHead": 17,
+   "fcp": 92,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 72,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 52,
+    "search": 52,
+    "chips": 52,
+    "feed": 52,
+    "sceneLive": 890
+   },
+   "stop": true,
+   "finalHead": 16,
+   "fcp": 72,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 47,
+    "search": 47,
+    "chips": 48,
+    "feed": 48,
+    "sceneLive": 934
+   },
+   "stop": true,
+   "finalHead": 16,
+   "fcp": 64,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 68,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 52,
+    "search": 52,
+    "chips": 52,
+    "feed": 52,
+    "sceneLive": 947
+   },
+   "stop": true,
+   "finalHead": 14,
+   "fcp": 68,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 92,
+     "size": 126909,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 72,
+    "search": 72,
+    "chips": 72,
+    "feed": 72,
+    "sceneLive": 944
+   },
+   "stop": true,
+   "finalHead": 14,
+   "fcp": 92,
+   "scene": "live",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "phone": [
+  {
+   "lcp": [
+    {
+     "t": 80,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 63,
+    "search": 63,
+    "chips": 63,
+    "feed": 63
+   },
+   "stop": true,
+   "finalHead": 13,
+   "fcp": 80,
+   "scene": "still",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 60,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 45,
+    "search": 45,
+    "chips": 45,
+    "feed": 45
+   },
+   "stop": true,
+   "finalHead": 15,
+   "fcp": 60,
+   "scene": "still",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 48,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 33,
+    "search": 34,
+    "chips": 34,
+    "feed": 34
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 48,
+   "scene": "still",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 64,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 48,
+    "search": 48,
+    "chips": 48,
+    "feed": 48
+   },
+   "stop": true,
+   "finalHead": 11,
+   "fcp": 64,
+   "scene": "still",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  },
+  {
+   "lcp": [
+    {
+     "t": 60,
+     "size": 58080,
+     "el": "h1"
+    }
+   ],
+   "cls": 0,
+   "shifts": [],
+   "t": {
+    "h1": 43,
+    "search": 43,
+    "chips": 43,
+    "feed": 43
+   },
+   "stop": true,
+   "finalHead": 10,
+   "fcp": 60,
+   "scene": "still",
+   "chips": "38,551",
+   "rows": 10,
+   "placeholders": 0,
+   "overflow": 0,
+   "errors": []
+  }
+ ],
+ "noJs": {
+  "h1": 1,
+  "search": 1,
+  "chipLinks": 7,
+  "firstChip": "38,551",
+  "rows": 30,
+  "skeletonVisible": false,
+  "browseLink": 1
+ },
+ "reducedMotion": {
+  "scene": "still",
+  "canvas": 0,
+  "errors": []
+ }
+}

@@ -150,6 +150,18 @@ test('Chinese descriptions are left out by default, counted out, and one click a
   expect(res?.status()).toBe(200);
 });
 
+test('the home page arrives whole when the data is inside its first-byte budget', async ({
+  request,
+}) => {
+  // No boundary, so no placeholder to swap and nothing that needs JavaScript: the
+  // counts and the feed are in the HTML. A streamed page would carry `<!--$?-->`.
+  const html = await (await request.get('/')).text();
+  expect(html).toMatch(/chip-count">\d/);
+  expect(html).toContain('id="recent-heading"');
+  expect(html).not.toContain('<!--$?-->');
+  expect(html).not.toContain('Loading artifacts');
+});
+
 // The feed's own filter is search.test.ts's (listPackages with
 // hiddenLanguages): the seed puts the Chinese row oldest, so it would not be
 // in the ten newest either way. What this checks is the disclosure and that

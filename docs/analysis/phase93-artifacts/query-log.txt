@@ -1,0 +1,27 @@
+### before: one warm GET /
+[1157] LOG:  duration: 385.744 ms  execute skz8awwy6v2: select "agentdock"."package"."type", (count(*) filter 
+[1158] LOG:  duration: 413.347 ms  execute 1wqu4gxn4xw3: select "agentdock"."package"."id", "agentdock"."packa
+[1157] LOG:  duration: 0.676 ms  bind skz8awwy6v2: select "agentdock"."package"."type", (count(*) filter (wher
+[1156] LOG:  duration: 1.886 ms  bind wu4q9gviay2: select "agentdock"."package"."id", "agentdock"."package"."n
+[1158] LOG:  duration: 0.047 ms  bind 1wqu4gxn4xw2: select "value" from "agentdock"."schema_meta" where "agent
+[1158] LOG:  duration: 0.008 ms  execute 1wqu4gxn4xw2: select "value" from "agentdock"."schema_meta" where "ag
+[1157] LOG:  duration: 389.153 ms  execute skz8awwy6v2: select "agentdock"."package"."type", (count(*) filter 
+[1156] LOG:  duration: 413.925 ms  execute wu4q9gviay2: select "agentdock"."package"."id", "agentdock"."packag
+### after: one warm GET /
+[1161] LOG:  duration: 0.429 ms  parse oupbjlf8x91: 
+[1161] LOG:  duration: 0.534 ms  bind oupbjlf8x91: 
+[1161] LOG:  duration: 0.324 ms  execute oupbjlf8x91: 
+[1161] LOG:  duration: 0.196 ms  parse oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" where
+[1161] LOG:  duration: 0.269 ms  bind oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" where 
+[1161] LOG:  duration: 0.082 ms  execute oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" whe
+[1161] LOG:  duration: 0.143 ms  parse oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock".
+[1161] LOG:  duration: 0.338 ms  bind oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock"."
+[1161] LOG:  duration: 0.044 ms  execute oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock
+[1161] LOG:  duration: 0.092 ms  bind oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" where 
+[1161] LOG:  duration: 0.044 ms  execute oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" whe
+[1161] LOG:  duration: 0.060 ms  bind oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock"."
+[1161] LOG:  duration: 0.025 ms  execute oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock
+[1161] LOG:  duration: 0.090 ms  bind oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" where 
+[1161] LOG:  duration: 0.042 ms  execute oupbjlf8x92: select "key", "value" from "agentdock"."schema_meta" whe
+[1161] LOG:  duration: 0.059 ms  bind oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock"."
+[1161] LOG:  duration: 0.027 ms  execute oupbjlf8x93: select "id" from "agentdock"."package" where ("agentdock

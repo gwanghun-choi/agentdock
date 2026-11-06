@@ -121,11 +121,12 @@ try {
     // The corpus sweep cursors: where each acquisition source stopped. They
     // describe a corpus that no longer exists, so leaving them would make the
     // next registry sync resume past everything this reset just removed.
+    // So does the home snapshot, whose rows would link to artifacts that are gone.
     // `last_boot` is a deployment fact, not corpus state, and stays.
     const cursors = await tx.unsafe(
-      `delete from "${schema}"."schema_meta" where key like 'corpus_sweep:%' returning 1`,
+      `delete from "${schema}"."schema_meta" where key like 'corpus_sweep:%' or key = 'home:snapshot' returning 1`,
     );
-    counts.push(['schema_meta (corpus_sweep cursors)', cursors.length]);
+    counts.push(['schema_meta (corpus_sweep cursors, home snapshot)', cursors.length]);
     return counts;
   });
 

@@ -36,7 +36,7 @@ function site(routes: Record<string, [number, string]>, commit: string | null) {
 }
 
 const healthy: Record<string, [number, string]> = {
-  '/': [200, '<h1>AgentDock</h1>'],
+  '/': [200, '<h1>AgentDock</h1><span class="chip-count">1,234</span>'],
   '/artifacts': [200, '<h1>Artifacts</h1><ol><li>x</li></ol>'],
   '/skills': [308, ''],
   '/artifacts?type=hook': [200, 'No artifacts matched the applied filters'],
@@ -64,6 +64,17 @@ describe('smoke', () => {
     expect(r.ok).toBe(false);
     expect(r.lines[0]).toContain('production serves bbbbbbb, expected aaaaaaa');
     expect(seen.filter((s) => s === 'HEAD /')).toHaveLength(2);
+  });
+
+  it('fails a home page that answered 200 and never got its counts', async () => {
+    // A read that fails after the first byte: the boundary's text is not in the HTML.
+    const { fetchImpl } = site(
+      { ...healthy, '/': [200, '<h1>AgentDock</h1><span class="chip-count"></span>'] },
+      A,
+    );
+    const r = await smoke('https://example.test', undefined, { fetchImpl, ...fast });
+    expect(r.ok).toBe(false);
+    expect(r.lines).toContain('FAIL /: no artifact count in the page');
   });
 
   it('fails on the error boundary, an empty corpus, a 5xx, or every type empty', async () => {

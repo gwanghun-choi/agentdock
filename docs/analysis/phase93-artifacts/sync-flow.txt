@@ -1,0 +1,25 @@
+## a stage fails (registry unreachable), a row was added
+{"version":1,"generatedAt":"2026-11-06T03:11:13.432Z","recen|2026-11-06 03:11:13.432+00
+corpus-sync: stage=registry FAILED — AgentDock could not reach the MCP registry. Retried once after 10 s; 0 page(s) were
+corpus-sync: home snapshot kept, not refreshed: the run failed (registry)
+  Status                        FAILED
+exit=1
+{"version":1,"generatedAt":"2026-11-06T03:11:13.432Z","recen|2026-11-06 03:11:13.432+00
+new row on home: 0 (expect 0)
+## a run with nothing failed
+corpus-sync: home snapshot published, listed=38542 hidden=131
+exit=0
+{"version":1,"generatedAt":"2026-11-06T03:30:08.014Z","recen|2026-11-06 03:30:08.014+00
+new row on home: 1 (expect 1)
+## home vs live, home | /artifacts total
+corpus-sync: home snapshot published, listed=38556 hidden=141
+feed identical to live true 10 rows; counts identical true hidden 141 141
+all          38556  38556 match
+lang=any     38697  38697 match
+agent          420    420 match
+command       7286   7286 match
+hook          1228   1228 match
+mcp_server     140    140 match
+plugin        2335   2335 match
+skill        27147  27147 match
+seeded fixture/ui-edge-cases: ok 9

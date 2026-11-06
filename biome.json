@@ -10,6 +10,7 @@
       "!.planning",
       "!.gstack",
       "!next-env.d.ts",
+      "!test-results",
       "!docs/analysis/*-artifacts",
       "!fixtures/mcp-registry/list-control-byte.json",
       "!fixtures/*/files",

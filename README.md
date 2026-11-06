@@ -190,6 +190,10 @@ AgentDock scheduled sync
 못한 refresh는 몇 개를 남겼는지 말합니다. 아무것도 출력하지 않는 상한선은
 "전부 훑었다"로 읽히기 때문입니다.
 
+실패 없이 끝난 실행은 홈 화면이 읽는 집계와 최신 10행을 `schema_meta`의 `home:snapshot`에
+기록합니다. 실패한 실행은 이전 값을 그대로 두고, 값이 없거나 48시간이 지나면 홈은 직접
+조회합니다(`src/db/queries/homeSnapshot.ts`).
+
 **실행과 실행 사이에는 `bun run ops:status`** 로 실행이 남긴 기록을 읽습니다. 마지막
 실행(`schema_meta`의 `sync:last_attempt`, `sync:last_success`), 현재 상태별
 `ingest_job` 수, 최근 24시간(`--hours=`) 안에 끝난 attempt의 outcome별 수와 worker의

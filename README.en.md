@@ -194,6 +194,11 @@ how much of the cap it left unspent; a refresh pass that could not reach every
 stale repository says how many it left behind. A cap that prints nothing reads
 as "we covered everything".
 
+A run that finished with nothing failed writes the counts and the ten newest rows the
+home page reads to `schema_meta`'s `home:snapshot`. A failed run leaves the previous
+value in place, and with no value, or one over 48 hours old, the home page asks the
+database directly (`src/db/queries/homeSnapshot.ts`).
+
 **Between runs, `bun run ops:status`** reads what the runs left behind — the last
 run (`schema_meta`'s `sync:last_attempt` and `sync:last_success`), every
 `ingest_job` by its current status, the attempts that finished in the last 24 h

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, type ReactNode, Suspense } from 'react';
 import { DockBoard } from '@/components/DockBoard';
 import { DockBoardStatic, DockStack } from '@/components/DockBoardStatic';
 import {
@@ -16,45 +16,144 @@ import {
 import { DECLARING_FILES, IndexFlow } from '@/components/IndexFlow';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
+import { RowsPlaceholder } from '@/components/RowsPlaceholder';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
+import { type HomeData, readHomeData } from '@/db/queries/homeSnapshot';
 import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
-import { countVisibleByType, listPackages } from '@/db/queries/packages';
-import { lastSyncSucceededAt } from '@/db/queries/syncState';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
 // CI, where there is no database.
 export const dynamic = 'force-dynamic';
 
-// The ten rows the board has always listed, from the one `listPackages` call
-// this page makes.
-const LIST_ROWS = 10;
+/**
+ * How long the first byte waits for the data. Inside it the page goes out whole, with
+ * no boundary at all: no placeholder to replace, nothing to shift, and complete with
+ * JavaScript off, which a streamed boundary is not (its content stays hidden there).
+ * An async component under Suspense emits its fallback even when its promise has
+ * already resolved (measured: 5 pending boundaries at an 18 ms first byte), hence
+ * the two branches in `withHome`. Past it the words and the search box go first and the data follows in the stream,
+ * which is the visit where the database is waking and the wait is seconds
+ * (Phase 91: 5.4 to 13.7 s after 8 minutes idle). A failure inside it is still a 500
+ * from the page; a later one is the error boundary under a 200, which is why
+ * release.mjs's smoke looks for the chips and not only for the status.
+ */
+const FIRST_BYTE_BUDGET_MS = 400;
+
+/** The data's half of a boundary: a function, so each caller keeps its own markup. */
+async function WithHome({
+  home,
+  children,
+}: {
+  home: Promise<HomeData>;
+  children: (data: HomeData) => ReactNode;
+}) {
+  return children(await home);
+}
+
+/** The chips' links work from the first byte; their counts arrive with the data. */
+function TypeChips({ total, byType }: { total: number | null; byType: Record<string, number> }) {
+  const pending = total === null;
+  return (
+    <nav aria-label="Artifact types" className="hero-types facet">
+      <div className="facet-chips">
+        <Link className="chip" href="/artifacts">
+          All <span className="chip-count">{pending ? '' : total.toLocaleString('en-US')}</span>
+        </Link>
+        {TYPE_FILTER_IDS.map((id) => (
+          <Link className="chip" href={`/artifacts?type=${id}`} key={id}>
+            {TYPE_FILTER_LABELS[id]}{' '}
+            <span className="chip-count">
+              {pending ? '' : (byType[id] ?? 0).toLocaleString('en-US')}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/**
+ * What each kind is, for a reader who knows what they want but not its name. Each
+ * tile is the same URL as the hero's chip for it, and its stack is the hero's stack
+ * for the same count (dockBoard.ts, plates()). What the tile adds is the type's
+ * documented definition from usageGuide.ts, the same one its detail pages print:
+ * what the kind is, never how good any one of them is. Catalogs have no entry: the
+ * search route does not filter on them, so there is no page to send a reader to.
+ * `byType` is null until the data arrives, and the tiles then keep the chips' order.
+ */
+function TypeGrid({ byType }: { byType: Record<string, number> | null }) {
+  // The largest tile goes to the kind with the most listed. A stable sort: kinds
+  // with the same count stay in the chips' order. This sizes a picture of the
+  // corpus; no artifact is ordered by it.
+  const byCount = byType
+    ? [...TYPE_FILTER_IDS].sort((a, b) => (byType[b] ?? 0) - (byType[a] ?? 0))
+    : TYPE_FILTER_IDS;
+  return (
+    <ul className="type-grid">
+      {byCount.map((id) => {
+        const listed = (byType?.[id] ?? 0).toLocaleString('en-US');
+        return (
+          <li key={id}>
+            {/* --digits sizes the number to its tile, whatever the count grows to:
+                29,084 ran 138px past the edge at 2560 (production, 2026-11-06). */}
+            <Link
+              className={`type-card hue-${id}`}
+              href={`/artifacts?type=${id}`}
+              style={{ '--digits': listed.length } as CSSProperties}
+            >
+              <span className="type-inner">
+                <DockStack count={byType?.[id] ?? 0} kind={id} />
+                <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
+                <span className="type-count">
+                  {!byType ? (
+                    '\u00a0'
+                  ) : byType[id] ? (
+                    <>
+                      <strong>{listed}</strong> listed
+                    </>
+                  ) : (
+                    'None listed yet'
+                  )}
+                </span>
+                <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
+                {/* The files the detectors match for this kind: IndexFlow's list. */}
+                <span className="type-files">
+                  {DECLARING_FILES.filter(([, kind]) => kind === id).map(([file]) => (
+                    <code key={file}>{file}</code>
+                  ))}
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+const sumOf = (byType: Record<string, number>) =>
+  Object.values(byType).reduce((sum, n) => sum + n, 0);
 
 export default async function HomePage() {
-  // Both the feed and the counts leave out HIDDEN_UNLESS_ASKED, as /artifacts
-  // does with no `lang`, so every number on a chip is the total the page it
-  // links to opens on.
-  const [recent, { visible: byType, hidden }, lastSync] = await Promise.all([
-    listPackages({ limit: LIST_ROWS, hiddenLanguages: HIDDEN_UNLESS_ASKED }),
-    countVisibleByType(HIDDEN_UNLESS_ASKED),
-    lastSyncSucceededAt(),
+  // The feed and the counts leave out HIDDEN_UNLESS_ASKED, as /artifacts does with
+  // no `lang`, so every number on a chip is the total the page it links to opens on,
+  // as of the last sync that finished whole (homeSnapshot.ts).
+  const home = readHomeData();
+  const ready = await Promise.race([
+    home,
+    new Promise<null>((resolve) => setTimeout(resolve, FIRST_BYTE_BUDGET_MS, null)),
   ]);
-  // The listing total is the sum of the per-type counts — one grouped query
-  // where countPackages() used to be, so this page still makes three.
-  const total = Object.values(byType).reduce((sum, n) => sum + n, 0);
-  // What the index holds, hidden languages included: the flow's count says
-  // "indexed", and these are indexed, only not listed by default.
-  const indexed = total + hidden;
+  const withHome = (fallback: ReactNode, render: (data: HomeData) => ReactNode) =>
+    ready ? (
+      render(ready)
+    ) : (
+      <Suspense fallback={fallback}>
+        <WithHome home={home}>{render}</WithHome>
+      </Suspense>
+    );
   const hiddenLabel = HIDDEN_UNLESS_ASKED.map((l) => LANGUAGE_LABELS[l]).join(' and ');
-  // Exact rather than approximate: the repository this artifact came from was
-  // read on this date. Not "the corpus was read on" — that is a different claim
-  // and this page does not have the number for it.
-  const newestRead = recent[0]?.scannedAt?.toISOString().slice(0, 10) ?? null;
-  // The bento's largest tile goes to the kind with the most listed. A stable sort:
-  // kinds with the same count stay in the chips' order. This sizes a picture of
-  // the corpus; no artifact is ordered by it.
-  const byCount = [...TYPE_FILTER_IDS].sort((a, b) => (byType[b] ?? 0) - (byType[a] ?? 0));
 
   return (
     <>
@@ -108,33 +207,31 @@ export default async function HomePage() {
 
           {/* The other way in, beside the box: every kind the index holds, with
               how many it lists. Each is the URL the artifacts page's own Type
-              chip produces and each count is that page's total on arrival — the
-              same grouped query this page already made for the tiles further
-              down (countVisibleByType), so this adds no query. The chips are
-              the artifacts page's chips, in the same scrolled row on a phone. */}
-          <nav aria-label="Artifact types" className="hero-types facet">
-            <div className="facet-chips">
-              <Link className="chip" href="/artifacts">
-                All <span className="chip-count">{total.toLocaleString('en-US')}</span>
-              </Link>
-              {TYPE_FILTER_IDS.map((id) => (
-                <Link className="chip" href={`/artifacts?type=${id}`} key={id}>
-                  {TYPE_FILTER_LABELS[id]}{' '}
-                  <span className="chip-count">{(byType[id] ?? 0).toLocaleString('en-US')}</span>
-                </Link>
-              ))}
-            </div>
-          </nav>
+              chip produces and each count is that page's total on arrival, as of the
+              last sync that finished whole. The chips are the artifacts page's
+              chips, in the same scrolled row on a phone. */}
+          {withHome(<TypeChips byType={{}} total={null} />, ({ visible }) => (
+            <TypeChips byType={visible} total={sumOf(visible)} />
+          ))}
         </div>
 
-        <DockBoard
-          blurbs={Object.fromEntries(
-            TYPE_FILTER_IDS.map((id) => [id, USAGE_GUIDES[id]?.what ?? '']),
-          )}
-          counts={byType}
-        >
-          <DockBoardStatic counts={byType} />
-        </DockBoard>
+        {/* Empty docks until the data arrives: the same box, so nothing moves, and no
+            figure that could be read as a count. The scene starts with the real one. */}
+        {withHome(
+          <div aria-hidden="true" className="dock-board" data-scene="still">
+            <DockBoardStatic counts={{}} />
+          </div>,
+          ({ visible }) => (
+            <DockBoard
+              blurbs={Object.fromEntries(
+                TYPE_FILTER_IDS.map((id) => [id, USAGE_GUIDES[id]?.what ?? '']),
+              )}
+              counts={visible}
+            >
+              <DockBoardStatic counts={visible} />
+            </DockBoard>
+          ),
+        )}
 
         {/* Three facts about what AgentDock does. Each is enforced somewhere in
             the codebase — the discovery gate below states the first at length,
@@ -161,53 +258,79 @@ export default async function HomePage() {
           among the 18) described a window, not the corpus, and the
           per-type counts the page does have are in the hero. */}
       <section aria-labelledby="recent-heading" className="board stage">
-        <div className="section-head">
-          <h2 id="recent-heading">Recently indexed</h2>
-          {recent.length > 0 ? (
-            <p className="board-meta">
-              {recent.length} most recent
-              {newestRead ? ` · newest read ${newestRead}` : ''}
-              {/* When a scheduled sync last reached its end with every stage
+        {withHome(
+          <>
+            {/* No id: the streamed heading has it, and with JavaScript off both stay. */}
+            <div className="section-head">
+              <h2>Recently indexed</h2>
+            </div>
+            {/* Only when the data missed the budget and nothing can swap it in. */}
+            <noscript>
+              <p className="board-scope">
+                <Link href="/artifacts">Browse all artifacts</Link>
+              </p>
+            </noscript>
+            <RowsPlaceholder />
+          </>,
+          ({ recent, visible, hidden, lastSync }) => {
+            const total = sumOf(visible);
+            // Exact rather than approximate: the repository this artifact came
+            // from was read on this date. Not "the corpus was read on" — that is
+            // a different claim and this page does not have the number for it.
+            const newestRead = recent[0]?.scannedAt?.toISOString().slice(0, 10) ?? null;
+            return (
+              <>
+                <div className="section-head">
+                  <h2 id="recent-heading">Recently indexed</h2>
+                  {recent.length > 0 ? (
+                    <p className="board-meta">
+                      {recent.length} most recent
+                      {newestRead ? ` · newest read ${newestRead}` : ''}
+                      {/* When a scheduled sync last reached its end with every stage
                   intact (corpus-sync.mjs). Absent until one has: a green job
                   that stopped half way does not write it. "Without errors",
                   not "complete": every run stops at its caps and leaves work
                   queued (AGENTS.md: every cap says what it dropped). */}
-              {lastSync
-                ? ` · last sync without errors ${lastSync.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-                : ''}
-            </p>
-          ) : null}
-          {recent.length > 0 ? (
-            <p className="board-actions">
-              {/* The listing's two other date orders, each a URL the sort
+                      {lastSync
+                        ? ` · last sync without errors ${lastSync.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+                        : ''}
+                    </p>
+                  ) : null}
+                  {recent.length > 0 ? (
+                    <p className="board-actions">
+                      {/* The listing's two other date orders, each a URL the sort
                   chips on /artifacts produce. The page there says what each
                   date is a date of. */}
-              <Link href="/artifacts?sort=added">Newly added</Link>
-              <Link href="/artifacts?sort=changed">Content changed</Link>
-              <Link href="/artifacts">
-                Browse all {total.toLocaleString('en-US')} artifacts <ArrowRightIcon />
-              </Link>
-            </p>
-          ) : null}
-        </div>
-        {hidden > 0 ? (
-          <p className="board-scope">
-            Not listed by default: {hidden.toLocaleString('en-US')}{' '}
-            {hidden === 1 ? 'artifact' : 'artifacts'} with a description written in {hiddenLabel}.{' '}
-            <Link href="/artifacts?lang=any">List every language</Link>
-          </p>
-        ) : null}
-        {/* Empty only when nothing is listed in any language: with hidden rows
+                      <Link href="/artifacts?sort=added">Newly added</Link>
+                      <Link href="/artifacts?sort=changed">Content changed</Link>
+                      <Link href="/artifacts">
+                        Browse all {total.toLocaleString('en-US')} artifacts <ArrowRightIcon />
+                      </Link>
+                    </p>
+                  ) : null}
+                </div>
+                {hidden > 0 ? (
+                  <p className="board-scope">
+                    Not listed by default: {hidden.toLocaleString('en-US')}{' '}
+                    {hidden === 1 ? 'artifact' : 'artifacts'} with a description written in{' '}
+                    {hiddenLabel}. <Link href="/artifacts?lang=any">List every language</Link>
+                  </p>
+                ) : null}
+                {/* Empty only when nothing is listed in any language: with hidden rows
             the line above already says where they are. */}
-        {recent.length > 0 ? (
-          <PackageRows items={recent} preview />
-        ) : hidden === 0 ? (
-          <div className="empty">
-            <p className="muted">
-              Nothing indexed yet. The scheduled sync fills this the next time it runs.
-            </p>
-          </div>
-        ) : null}
+                {recent.length > 0 ? (
+                  <PackageRows items={recent} preview />
+                ) : hidden === 0 ? (
+                  <div className="empty">
+                    <p className="muted">
+                      Nothing indexed yet. The scheduled sync fills this the next time it runs.
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            );
+          },
+        )}
       </section>
 
       {/* What used to be the submit form's job — telling a visitor how a
@@ -225,7 +348,11 @@ export default async function HomePage() {
           </div>
           {/* The pipeline: what happens to a repository once it is found, before
               the conditions for finding it. */}
-          <IndexFlow total={indexed} />
+          {/* What the index holds, hidden languages included: the flow's count says
+              "indexed", and these are indexed, only not listed by default. */}
+          {withHome(<IndexFlow total={null} />, ({ visible, hidden }) => (
+            <IndexFlow total={sumOf(visible) + hidden} />
+          ))}
         </div>
       </section>
 
@@ -308,54 +435,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* What each kind is, for a reader who knows what they want but not its
-          name. Each tile is the same URL as the hero's chip for it, and its stack
-          is the hero's stack for the same count (dockBoard.ts, plates()). What the
-          tile adds is the type's documented definition from usageGuide.ts, the
-          same one its detail pages print: what the kind is, never how good any one
-          of them is. Catalogs have no entry: the search route does not filter on
-          them, so there is no page to send a reader to. */}
       <section aria-labelledby="types-heading" className="types stage">
         <div className="section-head">
           <h2 id="types-heading">Browse by type</h2>
         </div>
-        <ul className="type-grid">
-          {byCount.map((id) => {
-            const listed = (byType[id] ?? 0).toLocaleString('en-US');
-            return (
-              <li key={id}>
-                {/* --digits sizes the number to its tile, whatever the count grows to:
-                    29,084 ran 138px past the edge at 2560 (production, 2026-11-06). */}
-                <Link
-                  className={`type-card hue-${id}`}
-                  href={`/artifacts?type=${id}`}
-                  style={{ '--digits': listed.length } as CSSProperties}
-                >
-                  <span className="type-inner">
-                    <DockStack count={byType[id] ?? 0} kind={id} />
-                    <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
-                    <span className="type-count">
-                      {byType[id] ? (
-                        <>
-                          <strong>{listed}</strong> listed
-                        </>
-                      ) : (
-                        'None listed yet'
-                      )}
-                    </span>
-                    <span className="type-what">{USAGE_GUIDES[id]?.what}</span>
-                    {/* The files the detectors match for this kind: IndexFlow's list. */}
-                    <span className="type-files">
-                      {DECLARING_FILES.filter(([, kind]) => kind === id).map(([file]) => (
-                        <code key={file}>{file}</code>
-                      ))}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {withHome(<TypeGrid byType={null} />, ({ visible }) => (
+          <TypeGrid byType={visible} />
+        ))}
       </section>
     </>
   );

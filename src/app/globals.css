@@ -556,6 +556,13 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+/* The home page's chips before their counts arrive: room for one, or the row wraps
+   differently when it does and moves the heading (25px at 1440, 3 rows against 2). */
+.chip-count:empty {
+  display: inline-block;
+  min-width: 5.5ch;
+}
+
 /* Three facts about what AgentDock does, under the words, not across the ring.
    Not on a phone, where the same facts are in the indexing section and the first
    artifact is what comes next. */

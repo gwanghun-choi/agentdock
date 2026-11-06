@@ -1,0 +1,13 @@
+desktop head 19 fcp 88 lcp 88 h1 h1 61 chips 61 feed 62 cls max 0.0000 scene live overflow 0 errors 0
+tablet head 16 fcp 72 lcp 72 h1 h1 52 chips 52 feed 52 cls max 0.0000 scene live overflow 0 errors 0
+phone head 11 fcp 60 lcp 60 h1 h1 45 chips 45 feed 45 cls max 0.0000 scene still overflow 0 errors 0
+noJs {"h1":1,"search":1,"chipLinks":7,"firstChip":"38,551","rows":30,"skeletonVisible":false,"browseLink":1}
+reducedMotion {"scene":"still","canvas":0,"errors":[]}
+desktop head 408 fcp 452 lcp 452 h1 h1 440 chips 1646 feed 1943 cls max 0.0000 scene live overflow 0 errors 0
+tablet head 409 fcp 468 lcp 468 h1 h1 458 chips 1641 feed 1937 cls max 0.0000 scene live overflow 0 errors 0
+phone head 408 fcp 444 lcp 444 h1 h1 432 chips 1629 feed 1635 cls max 0.0421 scene still overflow 0 errors 0
+searchWhilePending {"placeholders":50,"url":"/artifacts?q=review"}
+backAfterSearch {"chips":"38,551","rows":10,"skeleton":0}
+chipWhilePending "/artifacts?type=hook"
+noJs {"h1":1,"search":1,"chipLinks":14,"firstChip":"","rows":0,"skeletonVisible":true,"browseLink":1}
+reducedMotion {"scene":"still","canvas":0,"errors":[]}

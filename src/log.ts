@@ -110,6 +110,12 @@ export type SearchLog = {
   durationMs: number;
 };
 
+/** A home request that read live because homeSnapshot.ts had nothing it could use. */
+export type HomeSnapshotLog = {
+  event: 'home_snapshot';
+  fallback: 'missing' | 'unreadable' | 'stale';
+};
+
 /**
  * One line, one shape. The field set is closed on purpose: a free-form payload
  * parameter is how a response body, a header, or a connection string ends up in
@@ -117,6 +123,6 @@ export type SearchLog = {
  * nullable string with a documented provenance, or a closed union — there is no
  * key an arbitrary object could be assigned to.
  */
-export function log(entry: IngestLog | WorkerLog | SearchLog): void {
+export function log(entry: IngestLog | WorkerLog | SearchLog | HomeSnapshotLog): void {
   console.log(JSON.stringify({ ts: new Date().toISOString(), ...entry }));
 }
