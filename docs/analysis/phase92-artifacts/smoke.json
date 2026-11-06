@@ -1,0 +1,182 @@
+{
+ "routes": [
+  {
+   "p": "/",
+   "status": 200,
+   "want": 200,
+   "ms": 4982,
+   "count": null,
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts",
+   "status": 200,
+   "want": 200,
+   "ms": 2607,
+   "count": "44,746",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?lang=any",
+   "status": 200,
+   "want": 200,
+   "ms": 2287,
+   "count": "46,672",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?q=code%20review",
+   "status": 200,
+   "want": 200,
+   "ms": 1881,
+   "count": "1,827",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?q=%EC%BD%94%EB%93%9C%20%EB%A6%AC%EB%B7%B0",
+   "status": 200,
+   "want": 200,
+   "ms": 1664,
+   "count": "9",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?q=%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%9F%A5",
+   "status": 200,
+   "want": 200,
+   "ms": 2057,
+   "count": null,
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?q=zzzzqqqqxxxx",
+   "status": 200,
+   "want": 200,
+   "ms": 1321,
+   "count": null,
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?type=hook",
+   "status": 200,
+   "want": 200,
+   "ms": 933,
+   "count": "504",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?type=mcp_server",
+   "status": 200,
+   "want": 200,
+   "ms": 803,
+   "count": "545",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?type=agent&sort=name",
+   "status": 200,
+   "want": 200,
+   "ms": 1251,
+   "count": "5,080",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?page=2",
+   "status": 200,
+   "want": 200,
+   "ms": 1806,
+   "count": "44,746",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/artifacts?q=%3Cscript%3Ealert(1)%3C/script%3E",
+   "status": 200,
+   "want": 200,
+   "ms": 1800,
+   "count": "1,901",
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/r/griddynamics/rosetta",
+   "status": 404,
+   "want": 404,
+   "ms": 1040,
+   "count": null,
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/r/nobody/nothing",
+   "status": 404,
+   "want": 404,
+   "ms": 967,
+   "count": null,
+   "commit": "74968bb",
+   "csp": true
+  },
+  {
+   "p": "/skills",
+   "status": 308,
+   "want": 308,
+   "ms": 12,
+   "count": null,
+   "commit": "74968bb",
+   "csp": false
+  },
+  {
+   "p": "/r/mixpeek/amux/.claude/settings.json",
+   "status": 200,
+   "want": 200,
+   "redactedShown": true,
+   "commitLinks": true
+  },
+  {
+   "p": "/r/jnMetaCode/ai-coding-guide/codex/templates",
+   "status": 200,
+   "want": 200,
+   "redactedShown": false,
+   "commitLinks": true
+  }
+ ],
+ "checks": {
+  "scene": "live",
+  "panel": 1,
+  "searchCount": "5,534",
+  "detailH1": "042-planning-openspec",
+  "back": "/artifacts?q=review&sort=name",
+  "mouseCap": "block",
+  "desktopErrors": [],
+  "tablet": {
+   "chord": "none",
+   "slash": "none",
+   "overflow": false,
+   "errors": []
+  },
+  "tablet-1180": {
+   "chord": "none",
+   "slash": "none",
+   "overflow": false,
+   "errors": []
+  },
+  "phone": {
+   "chord": "none",
+   "slash": "none",
+   "overflow": false,
+   "errors": []
+  },
+  "nonGetRequests": []
+ },
+ "browser": "156.0.8078.4"
+}
