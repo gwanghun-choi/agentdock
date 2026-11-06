@@ -2223,6 +2223,8 @@ textarea {
   color: var(--fg);
   font-family: var(--mono);
   font-size: 0.95em;
+  /* A query of one long word, printed back: it ran 268px past a 390px screen. */
+  overflow-wrap: anywhere;
 }
 
 .result-q::before {
@@ -4400,6 +4402,136 @@ body:has(.types) .site-footer {
 
 .listing .search-row input[type="search"] {
   box-shadow: var(--shadow-lift);
+}
+
+/* A stream needs a script to show what arrives. Without one a skeleton promises rows that
+   cannot come; the noscript line beside it says what to do instead. */
+@media (scripting: none) {
+  .home-pending {
+    display: none;
+  }
+}
+
+/* A query of one long word, printed back: "No exact match for …" ran 268px past a 390px
+   screen. */
+.result-bar p,
+.empty p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Where the file is, in the name's column. A row's name can repeat; its path cannot. */
+.row-where {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-3);
+  margin: 0 0 var(--s-1);
+  max-width: none;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+.row-where .path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.row-where svg {
+  width: 12px;
+  height: 12px;
+}
+
+.row-part,
+.row-same {
+  color: var(--faint);
+}
+
+.row-part code {
+  font-size: inherit;
+  overflow-wrap: anywhere;
+}
+
+/* On a phone the description goes first: above it, a path wrapped to two lines put the
+   first result's description off a 360x800 screen (848px; e2e/journeys). */
+@media (max-width: 40rem) {
+  .rows .row-detail:has(> .row-where) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rows .row-detail > .row-where {
+    order: 1;
+  }
+
+  .rows .row-detail > .row-meta {
+    order: 2;
+  }
+}
+
+/* The field with text in it: its own clear button at the trailing edge, and no caps.
+   Here, after every breakpoint's padding: the caps' padding left the browser's own button
+   120px short of the edge, in the middle of the box. Padding, not width, so nothing
+   outside the field moves when the button appears. :placeholder-shown, so a query the
+   server rendered or the browser restored counts as much as one typed. */
+.field-clear {
+  display: none;
+}
+
+:root[data-hotkeys] .field input::-webkit-search-cancel-button {
+  display: none;
+}
+
+:root[data-hotkeys] .field input:not(:placeholder-shown) ~ .field-clear {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+:root[data-hotkeys] .field input:not(:placeholder-shown) ~ .field-clear:hover {
+  color: var(--fg);
+}
+
+:root[data-hotkeys] .field input:not(:placeholder-shown) ~ .field-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--fg);
+}
+
+/* Beats the magnifier's rule, which reaches every svg in a field. */
+:root .search-row .field .field-clear svg,
+:root .launcher .field .field-clear svg {
+  position: static;
+  left: auto;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+  pointer-events: none;
+}
+
+:root[data-hotkeys] .search-row .field input[type="search"]:not(:placeholder-shown),
+:root[data-hotkeys] .launcher .field input[type="search"]:not(:placeholder-shown) {
+  padding-right: 2.75rem;
+}
+
+.search-row .field:has(input:not(:placeholder-shown))::before,
+.search-row .field:has(input:not(:placeholder-shown))::after {
+  opacity: 0;
+}
+
+/* No caps and no button of ours with JavaScript off: the browser's own, at the edge. */
+:root:not([data-hotkeys]) .search-row .field input[type="search"] {
+  padding-right: var(--s-3);
 }
 
 @media (min-width: 64rem) {

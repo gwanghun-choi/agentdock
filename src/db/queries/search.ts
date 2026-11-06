@@ -10,6 +10,8 @@ import { NOT_LISTED_BECAUSE, type PackageListItem } from './packages';
 
 export type SearchResultItem = PackageListItem & {
   rank: number;
+  /** The plugin directory that holds this artifact, '' at the root; null when none does. */
+  parentPath?: string | null;
   /** Which stored fields hold a query word, in no order — see `matchedIn`. */
   matchedIn?: MatchField[];
   /** `name` / `summary` with every query word delimited (src/components/Marked.tsx). */
@@ -728,7 +730,7 @@ async function fuzzySearch(
   // Reused in both SELECT and ORDER BY, same reason rankExpr's `rank` is
   // (Drizzle emits no SQL-level alias for a computed sql<T> projection).
   // Schema-qualified on purpose. src/db/client.ts pins search_path to the one
-  // AgentDock schema and assertSchemaIsolation refuses to boot on anything
+  // AgentDock schema and assertSchemaIsolation ends the process on anything
   // wider (client.test.ts rejects 'agentdock, public' explicitly), so an
   // unqualified pg_trgm function or operator resolves to nothing and raises
   // 42883 — which the catch below would swallow into a permanent, silent
@@ -750,6 +752,7 @@ async function fuzzySearch(
         summary: packageTable.summary,
         type: packageTable.type,
         sourcePath: packageTable.sourcePath,
+        parentPath: packageTable.parentPath,
         fullName: repository.fullName,
         stars: repository.stars,
         scannedAt: repository.scannedAt,
@@ -890,6 +893,7 @@ export const searchPackages = cache(
         summary: packageTable.summary,
         type: packageTable.type,
         sourcePath: packageTable.sourcePath,
+        parentPath: packageTable.parentPath,
         fullName: repository.fullName,
         stars: repository.stars,
         scannedAt: repository.scannedAt,

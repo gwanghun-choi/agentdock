@@ -135,5 +135,34 @@ export function SearchHotkey() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [router]);
 
+  // FieldClear, on the document so the server-rendered markup needs no handler of its
+  // own. A field keeps what is in it until the form is submitted, as the browser's own
+  // button did.
+  useEffect(() => {
+    const empty = (field: HTMLInputElement | null | undefined) => {
+      if (!field) return;
+      field.value = '';
+      field.focus();
+    };
+    const onClick = (event: MouseEvent) => {
+      const button = (event.target as Element).closest?.('.field-clear');
+      empty(button?.parentElement?.querySelector('input'));
+    };
+    // Chromium and Firefox empty a search field on Escape themselves; Playwright's WebKit
+    // does not (measured 2026-11-06). In the launcher Escape closes the dialog, as it should.
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as Element;
+      if (event.key === 'Escape' && target.matches?.('.field input') && !target.closest('dialog')) {
+        empty(target as HTMLInputElement);
+      }
+    };
+    document.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   return null;
 }

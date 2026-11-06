@@ -1,6 +1,23 @@
 import Link from 'next/link';
-import { SearchIcon } from '@/components/Icon';
+import { CloseIcon, SearchIcon } from '@/components/Icon';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
+
+/**
+ * Clears the search field it follows. A button because the browser's own, which it was,
+ * sat wherever the field's right padding ended: 120px short of the edge beside the
+ * shortcut caps. It also took no focus and Firefox has none.
+ *
+ * The stylesheet shows it while the field holds text and only under `html[data-hotkeys]`,
+ * and SearchHotkey.tsx does the clearing, so this adds no client component. With
+ * JavaScript off this is not drawn and the browser's own stays.
+ */
+export function FieldClear() {
+  return (
+    <button aria-label="Clear search" className="field-clear" type="button">
+      <CloseIcon />
+    </button>
+  );
+}
 
 /**
  * The command palette, at the size the answer is worth.
@@ -50,6 +67,7 @@ export function SearchLauncher() {
             placeholder="Name, description, repository or path"
             type="search"
           />
+          <FieldClear />
         </span>
         <button type="submit">Search</button>
       </form>

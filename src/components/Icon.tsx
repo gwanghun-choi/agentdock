@@ -60,6 +60,15 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
+export function CloseIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </Svg>
+  );
+}
+
 /** Used for every GitHub link. The point it must make is "this leaves
  *  AgentDock", which is exactly what this glyph says and what a brand mark
  *  would not. */

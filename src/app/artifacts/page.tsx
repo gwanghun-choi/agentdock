@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ArrowLeftIcon, ArrowRightIcon, InfoIcon, SearchIcon } from '@/components/Icon';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
+import { FieldClear } from '@/components/SearchLauncher';
 import {
   defaultSort,
   pageWindow,
@@ -537,6 +538,7 @@ export default async function ArtifactsPage({
               construction — there is no node for the accessibility tree to
               reach — which is exactly what this is. SearchHotkey.tsx makes the
               key work; the field only says that it does. */}
+          <FieldClear />
         </span>
         <button type="submit">Search</button>
       </div>

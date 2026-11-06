@@ -8,8 +8,8 @@ import type { PackageListItem } from '@/db/queries/packages';
 import type { MatchField, SearchResultItem } from '@/db/queries/search';
 
 /**
- * Dense bordered rows, not cards. Three lines per item so a screenful still
- * holds twenty: a title line, a clamped description, and a metadata line. The
+ * Dense bordered rows, not cards. Four short lines per item: a title line, where the
+ * file is, a clamped description, and a metadata line. The
  * path is never clamped — a truncated path is a useless path.
  *
  * The type badge is in a column of its own rather than inline in the title.
@@ -94,50 +94,73 @@ export function PackageRows({
 }) {
   return (
     <ul className="rows">
-      {items.map((p) => (
-        <li key={p.id}>
-          <div className="row-type">
-            <ArtifactBadge type={p.type} />
-          </div>
-          <div className="row-main">
-            <p className="row-title">
-              <Link href={detailHref(p.fullName, p.sourcePath, p.type)}>
-                <Marked plain={p.name} value={p.nameMarked} />
-              </Link>
-              {showRepo ? <span className="repo">{p.fullName}</span> : null}
-            </p>
-            {/* One box, so the home feed can lay the whole of it beside the list as
+      {items.map((p, i) => {
+        const path = (
+          <span className="path">
+            <FileIcon />{' '}
+            <Marked
+              plain={p.sourcePath}
+              value={
+                pathQuery && p.matchedIn?.includes('path')
+                  ? markSubstring(p.sourcePath, pathQuery)
+                  : null
+              }
+            />
+          </span>
+        );
+        return (
+          <li key={p.id}>
+            <div className="row-type">
+              <ArtifactBadge type={p.type} />
+            </div>
+            <div className="row-main">
+              <p className="row-title">
+                <Link href={detailHref(p.fullName, p.sourcePath, p.type)}>
+                  <Marked plain={p.name} value={p.nameMarked} />
+                </Link>
+                {showRepo ? <span className="repo">{p.fullName}</span> : null}
+              </p>
+              {/* One box, so the home feed can lay the whole of it beside the list as
                 the row's preview. `data-name` is what that preview heads itself
                 with, from the stylesheet: the link above stays the only name in
                 the accessibility tree. */}
-            <div className="row-detail" data-name={p.name}>
-              {p.summary ? (
-                <p className="row-desc" lang={htmlLang(p.summaryLanguage)}>
-                  <Marked plain={p.summary} value={p.summaryMarked} />
-                </p>
-              ) : null}
-              <p className="row-meta">
-                <MatchWhy fields={p.matchedIn} />
-                <span className="path">
-                  <FileIcon />{' '}
-                  <Marked
-                    plain={p.sourcePath}
-                    value={
-                      pathQuery && p.matchedIn?.includes('path')
-                        ? markSubstring(p.sourcePath, pathQuery)
-                        : null
-                    }
-                  />
-                </span>
-                {/* The description's writing system, for the classes an English
+              <div className="row-detail" data-name={p.name}>
+                {/* Right under the name, because with several rows of one name it is what
+                  tells them apart (`ponytail`: three in one repository, 2026-11-06). The
+                  home feed's rows have a name each and a pane to fit. */}
+                {preview ? null : (
+                  <p className="row-where">
+                    {path}
+                    {p.parentPath != null ? (
+                      <span className="row-part">
+                        in the plugin at <code>{p.parentPath || 'the repository root'}</code>
+                      </span>
+                    ) : null}
+                    {i > 0 &&
+                    items[i - 1].name === p.name &&
+                    items[i - 1].fullName === p.fullName &&
+                    items[i - 1].sourcePath !== p.sourcePath ? (
+                      <span className="row-same">a separate file from the row above</span>
+                    ) : null}
+                  </p>
+                )}
+                {p.summary ? (
+                  <p className="row-desc" lang={htmlLang(p.summaryLanguage)}>
+                    <Marked plain={p.summary} value={p.summaryMarked} />
+                  </p>
+                ) : null}
+                <p className="row-meta">
+                  <MatchWhy fields={p.matchedIn} />
+                  {preview ? path : null}
+                  {/* The description's writing system, for the classes an English
                   page would not lead a reader to expect. Said once, in words:
                   the description beside it is the author's, untranslated. */}
-                {languageNote(p.summaryLanguage) ? (
-                  <span title="The description's writing system. AgentDock shows it as written and does not translate it.">
-                    {languageNote(p.summaryLanguage)}
-                  </span>
-                ) : null}
-                {/* The repository's star count, in the metadata line beside the
+                  {languageNote(p.summaryLanguage) ? (
+                    <span title="The description's writing system. AgentDock shows it as written and does not translate it.">
+                      {languageNote(p.summaryLanguage)}
+                    </span>
+                  ) : null}
+                  {/* The repository's star count, in the metadata line beside the
                   path and the read date — the register of "facts about where
                   this came from", never a rank or a score. It is not a sort
                   key, not a badge, and not styled to compete with the name:
@@ -146,58 +169,59 @@ export function PackageRows({
                   that rendered at a different size and baseline in every font
                   the icons beside it did not. src/db/queries/search.ts consults
                   it for nothing. */}
-                <span
-                  className="row-stars"
-                  title={`${p.stars.toLocaleString('en-US')} GitHub stars`}
-                >
-                  <StarIcon /> {compactStars(p.stars)}
-                </span>
-                {p.scannedAt ? (
-                  <span>
-                    <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}
+                  <span
+                    className="row-stars"
+                    title={`${p.stars.toLocaleString('en-US')} GitHub stars`}
+                  >
+                    <StarIcon /> {compactStars(p.stars)}
                   </span>
-                ) : null}
-                {/* The order's own date beside the read date, each in its own
+                  {p.scannedAt ? (
+                    <span>
+                      <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}
+                    </span>
+                  ) : null}
+                  {/* The order's own date beside the read date, each in its own
                   words, so "added", "changed" and "read" are never one number. */}
-                {date === 'added' && p.addedAt ? (
-                  <span>first indexed {p.addedAt.toISOString().slice(0, 10)}</span>
-                ) : null}
-                {date === 'changed' && p.changedAt ? (
-                  <span>content changed {p.changedAt.toISOString().slice(0, 10)}</span>
-                ) : null}
-                {p.commitSha ? (
-                  <span title={p.commitSha}>
-                    commit <code>{p.commitSha.slice(0, 7)}</code>
-                  </span>
-                ) : null}
-                {preview ? (
-                  // The row's name is the same address and the keyboard's way there: a second
-                  // tab stop in each of ten rows would only slow it down.
-                  <Link
-                    className="row-open"
-                    href={detailHref(p.fullName, p.sourcePath, p.type)}
-                    tabIndex={-1}
-                  >
-                    Read all of it
-                    <span className="sr-only">: {p.name}</span>
-                    <ArrowRightIcon />
-                  </Link>
-                ) : null}
-                {p.commitSha ? (
-                  <a
-                    className="row-source"
-                    href={permalink(p.fullName, p.commitSha, p.sourcePath)}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    <ExternalIcon /> source on GitHub
-                  </a>
-                ) : null}
-              </p>
+                  {date === 'added' && p.addedAt ? (
+                    <span>first indexed {p.addedAt.toISOString().slice(0, 10)}</span>
+                  ) : null}
+                  {date === 'changed' && p.changedAt ? (
+                    <span>content changed {p.changedAt.toISOString().slice(0, 10)}</span>
+                  ) : null}
+                  {p.commitSha ? (
+                    <span title={p.commitSha}>
+                      commit <code>{p.commitSha.slice(0, 7)}</code>
+                    </span>
+                  ) : null}
+                  {preview ? (
+                    // The row's name is the same address and the keyboard's way there: a second
+                    // tab stop in each of ten rows would only slow it down.
+                    <Link
+                      className="row-open"
+                      href={detailHref(p.fullName, p.sourcePath, p.type)}
+                      tabIndex={-1}
+                    >
+                      Read all of it
+                      <span className="sr-only">: {p.name}</span>
+                      <ArrowRightIcon />
+                    </Link>
+                  ) : null}
+                  {p.commitSha ? (
+                    <a
+                      className="row-source"
+                      href={permalink(p.fullName, p.commitSha, p.sourcePath)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <ExternalIcon /> source on GitHub
+                    </a>
+                  ) : null}
+                </p>
+              </div>
             </div>
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
