@@ -1,0 +1,26 @@
+-- Expand: two unique indexes, no data change, no column change. Nothing is dropped here;
+-- 0012 is the half that drops, and it is a separate deploy behind a person.
+--
+-- A btree entry is limited to about 2,700 bytes and git limits no path, so a tree with
+-- one very long path failed the upsert with 54000 and lost that repository's whole
+-- transaction: index row size 3872 exceeds maximum for "package_identity", reproduced
+-- 2026-11-06. These hold the path's SHA-256 (sourcePathDigest in src/db/schema.ts). The
+-- old constraints stay until 0012, so long paths keep failing until then.
+--
+-- Two paths were different identities before and are after: equal digests would need a
+-- SHA-256 collision, so this can neither merge rows nor fail on rows that exist.
+--
+-- Not CONCURRENTLY: scripts/migrate.mjs runs each migration in a transaction. A plain
+-- CREATE INDEX takes SHARE, so writes wait and reads do not. Both locks are held until
+-- commit. Measured: docs/analysis/agentdock-phase94-hardening.md §10. package comes first
+-- because persistScan writes package and then capability_finding: the other order can
+-- deadlock with a Sync holding package and waiting for this lock on capability_finding.
+--
+-- Both sides of the code work against this: code from before it still names source_path
+-- in ON CONFLICT, and that constraint is still here. Code from after it names the digest.
+--
+-- Rollback: nothing to run. Revert the code that uses it and leave this file, its record
+-- and the indexes in place: the old code does not mind them, and checkHistory stops every
+-- Sync if the database records a file the checkout does not have.
+CREATE UNIQUE INDEX "package_identity_digest" ON "agentdock"."package" USING btree ("repository_id","type",sha256(replace(source_path, '\', '\\')::bytea));--> statement-breakpoint
+CREATE UNIQUE INDEX "capability_finding_identity_digest" ON "agentdock"."capability_finding" USING btree ("package_version_id","detector_id","category",sha256(replace(source_path, '\', '\\')::bytea),"start_line","summary");

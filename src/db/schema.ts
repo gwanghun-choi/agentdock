@@ -130,6 +130,31 @@ const tsvector = customType<{ data: string; driverData: string }>({
   dataType: () => 'tsvector',
 });
 
+/**
+ * What a unique index holds of a source path: the SHA-256 of its bytes, 32 of them
+ * whatever the path's length. A btree entry is limited to about 2,700 bytes and git
+ * limits no path, so a path of 3,840 characters failed the upsert with 54000 and lost
+ * the repository's whole transaction (reproduced 2026-11-06). `source_path` keeps the
+ * whole path, and two paths differing anywhere stay two identities, at the end as
+ * much as at the start, which an index over a prefix would merge.
+ *
+ * An index on the expression, not a generated column: adding the column rewrote each
+ * table under ACCESS EXCLUSIVE and stopped reads for 3,315 ms at 45,287 packages, where
+ * building the index stops none. The price is that Drizzle's onConflict target takes
+ * columns only, so persist.ts writes this one target itself. The `replace` is there
+ * because an index expression must be immutable: convert_to is only stable, and a
+ * text-to-bytea cast reads backslashes as escapes unless they are doubled.
+ */
+export const sourcePathDigest = sql`sha256(replace(source_path, '\\', '\\\\')::bytea)`;
+
+/**
+ * The ON CONFLICT target of capability_finding_identity_digest, the same columns in the
+ * same order. Named rather than omitted: with no target, DO NOTHING also passes over a
+ * conflict on the primary key, and the version would commit as analyzed with its
+ * findings gone.
+ */
+export const findingIdentity = sql`(package_version_id, detector_id, category, ${sourcePathDigest}, start_line, summary)`;
+
 export const packageTable = agentdock.table(
   'package',
   {
@@ -194,6 +219,9 @@ export const packageTable = agentdock.table(
   (t) => [
     // Stable across re-ingestion and across repository rename, because
     // repository_id is keyed on the immutable node id.
+    uniqueIndex('package_identity_digest').on(t.repositoryId, t.type, sourcePathDigest),
+    // Until 0012: it still refuses a path too long for a btree entry, and code from
+    // before 0011 still names it in ON CONFLICT. drizzle/0011_path_digest_identity.sql.
     unique('package_identity').on(t.repositoryId, t.type, t.sourcePath),
     index('package_live_idx').on(t.type, t.updatedAt.desc()),
     index('package_search_vector_idx').using('gin', t.searchVector),
@@ -324,8 +352,16 @@ export const capabilityFinding = agentdock.table(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    // Any onConflict target for this table must name the same columns, in
-    // the same order, as this constraint — persist.ts:136-138's convention.
+    // findingIdentity above is this index's ON CONFLICT target.
+    uniqueIndex('capability_finding_identity_digest').on(
+      t.packageVersionId,
+      t.detectorId,
+      t.category,
+      sourcePathDigest,
+      t.startLine,
+      t.summary,
+    ),
+    // Until 0012, for the same two reasons as package_identity.
     unique('capability_finding_identity').on(
       t.packageVersionId,
       t.detectorId,

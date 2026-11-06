@@ -78,6 +78,13 @@
       "when": 1792578824084,
       "tag": "0010_version_content_hash_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793949763643,
+      "tag": "0011_path_digest_identity",
+      "breakpoints": true
     }
   ]
 }

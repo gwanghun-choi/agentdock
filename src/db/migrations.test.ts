@@ -28,10 +28,10 @@ describe.skipIf(!DB_URL)('drizzle/ migrations match src/db/schema.ts', () => {
 
   async function shape(schema: string) {
     const columns = await sql<
-      { t: string; c: string; type: string; nullable: string; d: string | null }[]
+      { t: string; c: string; type: string; nullable: string; d: string | null; g: string | null }[]
     >`
       select table_name as t, column_name as c, udt_name as type, is_nullable as nullable,
-             column_default as d
+             column_default as d, generation_expression as g
         from information_schema.columns where table_schema = ${schema}
          and table_name <> '__drizzle_migrations'
        order by 1, 2`;
@@ -44,7 +44,9 @@ describe.skipIf(!DB_URL)('drizzle/ migrations match src/db/schema.ts', () => {
         join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = ${schema} and c.relname <> '__drizzle_migrations' order by 1, 2`;
     return {
-      columns: columns.map((r) => `${r.t}.${r.c} ${r.type} ${r.nullable} ${strip(r.d, schema)}`),
+      columns: columns.map(
+        (r) => `${r.t}.${r.c} ${r.type} ${r.nullable} ${strip(r.d, schema)} ${strip(r.g, schema)}`,
+      ),
       indexes: indexes.map((r) => `${r.name}: ${strip(r.def, schema)}`),
       constraints: constraints.map((r) => `${r.t}.${r.name}: ${strip(r.def, schema)}`),
     };
