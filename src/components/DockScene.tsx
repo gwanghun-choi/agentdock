@@ -1049,8 +1049,10 @@ function Station({
       input.current.burst = 1;
       wake();
     };
-    const seen = new IntersectionObserver(([entry]) => {
-      input.current.inView = entry.isIntersecting;
+    // The last entry: changes delivered together arrive oldest first, and the first of a
+    // scroll away and back would leave the scene believing it is still off screen.
+    const seen = new IntersectionObserver((entries) => {
+      input.current.inView = entries[entries.length - 1].isIntersecting;
       wake();
     });
     seen.observe(hero);
