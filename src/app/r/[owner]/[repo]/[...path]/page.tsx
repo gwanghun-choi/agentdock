@@ -4,7 +4,9 @@ import { isBundledScript } from '@/analyze/files';
 import { ANALYZE_CAPS } from '@/analyze/types';
 import { ArtifactBadge, artifactTypeLabel } from '@/components/ArtifactBadge';
 import { CapabilityPanel } from '@/components/CapabilityPanel';
+import { CargoBox } from '@/components/CargoBox';
 import { CopyButton } from '@/components/CopyButton';
+import { DetailSignature } from '@/components/DetailSignature';
 import { HiddenContentPanel } from '@/components/HiddenContentPanel';
 import {
   detailHref,
@@ -85,7 +87,7 @@ const CAPABILITY_NOT_CHECKED = [
 /** One related artifact: its type, its name as a link, its path. */
 function RelatedRow({ fullName, item }: { fullName: string; item: RelatedPackage }) {
   return (
-    <li>
+    <li className={`related-card hue-${item.type}`} data-tilt="">
       <ArtifactBadge type={item.type} />{' '}
       <Link href={detailHref(fullName, item.sourcePath, item.type)}>{item.name}</Link>{' '}
       <span className="muted path">{item.sourcePath}</span>
@@ -208,7 +210,10 @@ export default async function PackagePage({ params }: Props) {
       {/* Where this page sits: the listing, this type's listing (catalog has
           none — the search route does not filter on it), the repository, then
           this artifact. Every step is a page a reader can go back up to. */}
-      <div className={`detail-top stage hue-${detail.type}`}>
+      {/* How far down the page, in the kind's colour. The stylesheet ties it to scrolling. Out
+          here because the opening below isolates, and inside it this would sit under the header. */}
+      <div aria-hidden="true" className={`read-progress hue-${detail.type}`} />
+      <div className={`detail-top stage hue-${detail.type}`} data-kind={detail.type}>
         <nav aria-label="Breadcrumb" className="crumbs">
           <ol>
             <li>
@@ -297,30 +302,41 @@ export default async function PackagePage({ params }: Props) {
               </a>
             </div>
           </div>
-          {/* The four facts a reader checks first, each said in full again under Details:
+          <CargoBox name={detail.name} sha={detail.commitSha} type={detail.type} />
+        </div>
+        {/* What only this kind has, from what the file itself declares. */}
+        <DetailSignature
+          argumentHint={detail.argumentHint}
+          components={related.components}
+          files={detail.files}
+          fullName={detail.fullName}
+          meta={detail.meta}
+          slug={detail.slug}
+          type={detail.type}
+        />
+        {/* The four facts a reader checks first, each said in full again under Details:
             which commit, how recently read, how recently changed upstream, GitHub's
             number. A record of where this came from, never a rating of it. */}
-          <dl className="detail-glance">
-            <div>
-              <dt>Commit read</dt>
-              <dd>
-                <code>{detail.commitSha.slice(0, 7)}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>Last read</dt>
-              <dd>{detail.scannedAt ? detail.scannedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
-            </div>
-            <div>
-              <dt>Changed upstream</dt>
-              <dd>{detail.pushedAt ? detail.pushedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
-            </div>
-            <div>
-              <dt>GitHub stars</dt>
-              <dd>{detail.stars.toLocaleString('en-US')}</dd>
-            </div>
-          </dl>
-        </div>
+        <dl className="detail-glance">
+          <div>
+            <dt>Commit read</dt>
+            <dd>
+              <code>{detail.commitSha.slice(0, 7)}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Last read</dt>
+            <dd>{detail.scannedAt ? detail.scannedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
+          </div>
+          <div>
+            <dt>Changed upstream</dt>
+            <dd>{detail.pushedAt ? detail.pushedAt.toISOString().slice(0, 10) : 'unknown'}</dd>
+          </div>
+          <div>
+            <dt>GitHub stars</dt>
+            <dd>{detail.stars.toLocaleString('en-US')}</dd>
+          </div>
+        </dl>
       </div>
 
       <div className="detail-body">
@@ -550,9 +566,9 @@ export default async function PackagePage({ params }: Props) {
               </p>
             ) : null}
             {related.container || related.components.length > 0 ? (
-              <ul className="notes">
+              <ul className="related-grid">
                 {related.container ? (
-                  <li>
+                  <li className="related-card hue-plugin" data-tilt="">
                     Inside the plugin{' '}
                     <Link
                       href={detailHref(detail.fullName, related.container.sourcePath, 'plugin')}
@@ -573,7 +589,7 @@ export default async function PackagePage({ params }: Props) {
             {related.siblings.length > 0 ? (
               <>
                 <h3>Other components of the same plugin</h3>
-                <ul className="notes">
+                <ul className="related-grid">
                   {related.siblings.map((c) => (
                     <RelatedRow
                       fullName={detail.fullName}
@@ -587,7 +603,7 @@ export default async function PackagePage({ params }: Props) {
             {related.elsewhere.length > 0 ? (
               <>
                 <h3>Elsewhere in {detail.fullName}</h3>
-                <ul className="notes">
+                <ul className="related-grid">
                   {related.elsewhere.map((c) => (
                     <RelatedRow
                       fullName={detail.fullName}
