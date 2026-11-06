@@ -1,4 +1,5 @@
 import { artifactTypeLabel } from '@/components/ArtifactBadge';
+import { CommitPrint } from '@/components/CommitPrint';
 import { CommitIcon, DockIcon, FileIcon, RepoIcon } from '@/components/Icon';
 
 /** Each declaring file and the kind it declares, in the kind's own hue: the same
@@ -65,7 +66,7 @@ export const DECLARING_FILES = [
  * as leaf names because that is what a reader recognises; the full paths are on
  * every artifact's own row.
  */
-export function IndexFlow({ total }: { total: number | null }) {
+export function IndexFlow({ total, sha }: { total: number | null; sha?: string | null }) {
   return (
     <ol className="flow">
       <li>
@@ -104,6 +105,15 @@ export function IndexFlow({ total }: { total: number | null }) {
         <p className="flow-title">
           <CommitIcon /> Filed against the commit it read
         </p>
+        {/* The newest row's own commit, drawn: the shape every artifact on this site carries. */}
+        {sha ? (
+          <p className="flow-print">
+            <CommitPrint sha={sha} />
+            <span>
+              the newest one: <code>{sha.slice(0, 7)}</code>
+            </span>
+          </p>
+        ) : null}
         <p className="flow-count">
           {/* Every indexed artifact the listing predicate admits, the languages the
               listings leave out by default included (page.tsx, `indexed`), from the

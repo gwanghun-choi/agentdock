@@ -1,9 +1,11 @@
 import localFont from 'next/font/local';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { DockIcon, SearchIcon } from '@/components/Icon';
+import { ArrowRightIcon, DockIcon, SearchIcon } from '@/components/Icon';
+import { PointerTilt } from '@/components/PointerTilt';
 import { SearchHotkey } from '@/components/SearchHotkey';
 import { SearchLauncher } from '@/components/SearchLauncher';
+import { TYPE_FILTER_IDS } from '@/components/typeFilters';
 import './globals.css';
 
 // One typeface for every word on the site, served from this origin. It was the
@@ -47,13 +49,22 @@ export const metadata = {
 const FOOTER_DISCLAIMER =
   'AgentDock reads files and reports what it read. It does not run them, and it cannot say whether an artifact is safe. Read anything before you use it.';
 
+// Shorter than the listing's labels: a column of links, not filter names.
+const FOOTER_KINDS = {
+  skill: 'Skills',
+  plugin: 'Plugins',
+  mcp_server: 'MCP servers',
+  command: 'Commands',
+  hook: 'Hooks',
+  agent: 'Subagents',
+} as const;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // Declaring both schemes lets the browser pick form controls, scrollbars and
-    // the default canvas without a script. No toggle, no stored preference, no
-    // anti-flash inline script — which is convenient, because an inline script is
-    // exactly what the policy exists to forbid.
-    <html lang="en" className={brand.variable} style={{ colorScheme: 'light dark' }}>
+    // One scheme, the stage's, from the hero to the footer (Phase 97). The page used to turn
+    // light under the hero on a light system, which made the listing and the detail page a
+    // different site. Declared here so form controls and scrollbars agree.
+    <html lang="en" className={brand.variable} style={{ colorScheme: 'dark' }}>
       <body>
         <a href="#main" className="skip-link">
           Skip to content
@@ -95,6 +106,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             pieces of JavaScript this layout loads, and every page is complete
             without it. */}
         <SearchHotkey />
+        <PointerTilt />
 
         {/* The skip link's destination, and the one main landmark per page. */}
         <main id="main" className="wrap">
@@ -102,9 +114,42 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </main>
 
         <footer className="site-footer stage">
-          <div className="wrap">
-            <p>{FOOTER_DISCLAIMER}</p>
+          <div className="wrap footer-grid">
+            <div className="footer-close">
+              <p className="footer-line">Read it before you use it.</p>
+              <p>{FOOTER_DISCLAIMER}</p>
+              <Link className="footer-cta" href="/artifacts">
+                Into the index <ArrowRightIcon />
+              </Link>
+            </div>
+            <nav aria-label="Kinds, from the footer" className="footer-links">
+              <p>Kinds</p>
+              <ul>
+                {TYPE_FILTER_IDS.map((id) => (
+                  <li className={`hue-${id}`} key={id}>
+                    <Link href={`/artifacts?type=${id}`}>{FOOTER_KINDS[id]}</Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <nav aria-label="Orders, from the footer" className="footer-links">
+              <p>By date</p>
+              <ul>
+                <li>
+                  <Link href="/artifacts?sort=added">First indexed</Link>
+                </li>
+                <li>
+                  <Link href="/artifacts?sort=changed">Changed upstream</Link>
+                </li>
+                <li>
+                  <Link href="/#policy-heading">How one gets indexed</Link>
+                </li>
+              </ul>
+            </nav>
           </div>
+          {/* The name from the stylesheet: the brand link at the top of the page is the name,
+              this is the sign on the building. */}
+          <div className="footer-mark" />
         </footer>
       </body>
     </html>

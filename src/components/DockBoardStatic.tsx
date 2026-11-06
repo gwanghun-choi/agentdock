@@ -356,19 +356,6 @@ function figureHeight(kind: DockKind, n: number) {
   }
 }
 
-/**
- * One kind's figure on its own, for a Browse by type tile: the same figure and plate
- * count as its dock on the ring, one group per plate so the stylesheet can move them.
- * No WebGL and no script. Zero plates is the empty socket with the kind's fixed parts.
- */
-export function DockStack({ kind, count }: { kind: DockKind; count: number }) {
-  return (
-    <svg aria-hidden="true" className={`dock-stack dock dock-${kind}`} viewBox="-66 -112 132 148">
-      <Figure count={count} kind={kind} />
-    </svg>
-  );
-}
-
 export function DockBoardStatic({ counts }: { counts: DockCounts }) {
   // Back to front, so a nearer dock paints over a farther one.
   const docks = [...DOCKS].sort((a, b) => project(a.x, 0, a.z)[1] - project(b.x, 0, b.z)[1]);

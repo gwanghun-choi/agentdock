@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, Suspense } from 'react';
+import { ArtifactYard } from '@/components/ArtifactYard';
 import { DockBoard } from '@/components/DockBoard';
-import { DockBoardStatic, DockStack } from '@/components/DockBoardStatic';
+import { DockBoardStatic } from '@/components/DockBoardStatic';
 import {
   ArchiveIcon,
   ArrowRightIcon,
@@ -14,6 +15,7 @@ import {
   StarIcon,
 } from '@/components/Icon';
 import { DECLARING_FILES, IndexFlow } from '@/components/IndexFlow';
+import { KindArt } from '@/components/KindArt';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { RowsPlaceholder } from '@/components/RowsPlaceholder';
@@ -89,36 +91,33 @@ function TypeChips({ total, byType }: { total: number | null; byType: Record<str
 }
 
 /**
- * What each kind is, for a reader who knows what they want but not its name. Each
- * tile is the same URL as the hero's chip for it, and its stack is the hero's stack
- * for the same count (dockBoard.ts, plates()). What the tile adds is the type's
- * documented definition from usageGuide.ts, the same one its detail pages print:
- * what the kind is, never how good any one of them is. Catalogs have no entry: the
- * search route does not filter on them, so there is no page to send a reader to.
- * `byType` is null until the data arrives, and the tiles then keep the chips' order.
+ * What each kind is, for a reader who knows what they want but not its name: six boxes stacked as
+ * the window comes down, each on its kind's own ground, with its kind's own drawing. Each is the
+ * same URL as the hero's chip for it. The words are the type's documented definition from
+ * usageGuide.ts, the same one its detail pages print: what the kind is, never how good any one of
+ * them is. Catalogs have no entry: the search route does not filter on them, so there is no page
+ * to send a reader to. `byType` is null until the data arrives, and the kinds then keep the chips'
+ * order.
  */
-function TypeGrid({ byType }: { byType: Record<string, number> | null }) {
-  // The largest tile goes to the kind with the most listed. A stable sort: kinds
-  // with the same count stay in the chips' order. This sizes a picture of the
-  // corpus; no artifact is ordered by it.
+function KindStack({ byType }: { byType: Record<string, number> | null }) {
+  // The first box goes to the kind with the most listed. A stable sort: kinds with the same count
+  // stay in the chips' order. This orders six kinds; no artifact is ordered by it.
   const byCount = byType
     ? [...TYPE_FILTER_IDS].sort((a, b) => (byType[b] ?? 0) - (byType[a] ?? 0))
     : TYPE_FILTER_IDS;
   return (
-    <ul className="type-grid">
-      {byCount.map((id) => {
+    <ol className="type-grid">
+      {byCount.map((id, i) => {
         const listed = (byType?.[id] ?? 0).toLocaleString('en-US');
         return (
-          <li key={id}>
-            {/* --digits sizes the number to its tile, whatever the count grows to:
-                29,084 ran 138px past the edge at 2560 (production, 2026-11-06). */}
+          <li className={`kind-slot hue-${id}`} key={id} style={{ '--i': i } as CSSProperties}>
             <Link
               className={`type-card hue-${id}`}
+              data-tilt=""
               href={`/artifacts?type=${id}`}
               style={{ '--digits': listed.length } as CSSProperties}
             >
               <span className="type-inner">
-                <DockStack count={byType?.[id] ?? 0} kind={id} />
                 <span className="type-name">{TYPE_FILTER_LABELS[id]}</span>
                 <span className="type-count">
                   {!byType ? (
@@ -138,12 +137,20 @@ function TypeGrid({ byType }: { byType: Record<string, number> | null }) {
                     <code key={file}>{file}</code>
                   ))}
                 </span>
+                <span className="type-go">
+                  Browse them <ArrowRightIcon />
+                </span>
               </span>
+              <KindArt kind={id} />
             </Link>
+            {/* A plain link: a prefetch would spend a read on a redirect nobody asked for. */}
+            <a className="kind-random" href={`/artifacts/random?type=${id}`} rel="nofollow">
+              Open one at random
+            </a>
           </li>
         );
       })}
-    </ul>
+    </ol>
   );
 }
 
@@ -399,6 +406,33 @@ export default async function HomePage() {
         )}
       </section>
 
+      <section aria-labelledby="types-heading" className="types stage">
+        <div className="section-head">
+          <h2 id="types-heading">Six kinds of file. Each does something else.</h2>
+          <p className="section-lede">
+            Everything in the index is one of these, recognised by the file that declares it.
+          </p>
+        </div>
+        {withHome(<KindStack byType={null} />, ({ visible }) => (
+          <KindStack byType={visible} />
+        ))}
+      </section>
+
+      <section aria-labelledby="yard-heading" className="yard-section stage">
+        <div className="section-head">
+          <h2 id="yard-heading">The yard, as it stands</h2>
+        </div>
+        {withHome(<ArtifactYard total={null} />, ({ visible }) => (
+          <ArtifactYard total={sumOf(visible)} />
+        ))}
+        <noscript>
+          <p className="muted">
+            This map needs JavaScript. <Link href="/artifacts">Browse all artifacts</Link> holds the
+            same rows.
+          </p>
+        </noscript>
+      </section>
+
       {/* What used to be the submit form's job — telling a visitor how a
           repository gets in here — stated as the policy it actually is. */}
       <section aria-labelledby="policy-heading" className="pipeline stage">
@@ -416,8 +450,8 @@ export default async function HomePage() {
               the conditions for finding it. */}
           {/* What the index holds, hidden languages included: the flow's count says
               "indexed", and these are indexed, only not listed by default. */}
-          {withHome(<IndexFlow total={null} />, ({ visible, hidden }) => (
-            <IndexFlow total={sumOf(visible) + hidden} />
+          {withHome(<IndexFlow total={null} />, ({ visible, hidden, recent }) => (
+            <IndexFlow sha={recent[0]?.commitSha} total={sumOf(visible) + hidden} />
           ))}
         </div>
       </section>
@@ -425,8 +459,8 @@ export default async function HomePage() {
       {/* The four conditions, joined to what they decide.
 
           The two ends are named: a repository AgentDock has found goes in, and a
-          repository AgentDock reads comes out. The rail between them is a bracket,
-          not an arrow, and the line under it says so in words. All four have to
+          repository AgentDock reads comes out. No arrow runs between them, and the
+          line under them says so in words. All four have to
           hold; there is no first one, no order between them, and nothing here is
           a stage a repository passes through: src/corpus/policy.ts evaluates them
           as one predicate, and a chain of arrows would draw a pipeline that does
@@ -453,7 +487,7 @@ export default async function HomePage() {
             <RepoIcon /> A repository AgentDock has found
           </p>
           <dl className="stats">
-            <div className="floor stage">
+            <div className="floor">
               <dt>
                 <StarIcon /> Stars
               </dt>
@@ -499,15 +533,6 @@ export default async function HomePage() {
           </p>
           <p className="gate-note">All four hold at once. They are conditions, not steps.</p>
         </div>
-      </section>
-
-      <section aria-labelledby="types-heading" className="types stage">
-        <div className="section-head">
-          <h2 id="types-heading">Browse by type</h2>
-        </div>
-        {withHome(<TypeGrid byType={null} />, ({ visible }) => (
-          <TypeGrid byType={visible} />
-        ))}
       </section>
     </>
   );
