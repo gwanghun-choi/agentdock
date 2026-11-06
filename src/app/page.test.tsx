@@ -91,7 +91,7 @@ describe('the home page and its first byte', () => {
     expect(rest).toContain('a-skill');
   });
 
-  it('hands a read that fails after the first byte to the error boundary', async () => {
+  const late = async () => {
     let fail = (_: Error) => {};
     readHomeData.mockReturnValue(
       new Promise((_, reject) => {
@@ -105,10 +105,82 @@ describe('the home page and its first byte', () => {
         errors.push(e);
       },
     });
-    fail(new Error('down after the budget'));
+    return { fail, errors, stream };
+  };
+
+  it('keeps search and the links, and says so, when the read fails after the first byte', async () => {
+    const lines = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { fail, errors, stream } = await late();
+    fail(Object.assign(new Error('down after the budget: secret-host'), { code: '42703' }));
     const html = await new Response(stream).text();
-    expect(errors).toHaveLength(5);
+    // Nothing thrown: app/error.tsx would have replaced the search box and the chips.
+    expect(errors).toHaveLength(0);
+    expect(html).toContain('name="q"');
+    expect(html).toContain('href="/artifacts?type=skill"');
+    expect(html).toContain('could not read its index');
+    expect(html).toContain('Try again');
+    // Nothing that reads as data, and release.mjs's smoke fails on this.
     expect(html).not.toMatch(/chip-count">\d/);
+    expect(html).not.toContain('a-skill');
+    const logged = lines.mock.calls.flat().join(' ');
+    expect(logged.match(/home_unavailable/g)).toHaveLength(1);
+    expect(logged).toContain('"reason":"failed"');
+    expect(logged).toContain('"code":"42703"');
+    expect(logged).not.toContain('secret-host');
+    lines.mockRestore();
+  });
+
+  it('still shows data that arrives at the slowest wake measured', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let arrive = (_: HomeData) => {};
+      const pending = (async () => {
+        readHomeData.mockReturnValue(
+          new Promise((resolve) => {
+            arrive = resolve;
+          }),
+        );
+        return renderToReadableStream(await HomePage());
+      })();
+      await vi.advanceTimersByTimeAsync(400);
+      const body = new Response(await pending).text();
+      await vi.advanceTimersByTimeAsync(13_700);
+      arrive(data);
+      const html = await body;
+      expect(html).toContain('a-skill');
+      expect(html).not.toContain('could not read its index');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up on a read that never ends, rather than holding the stream open', async () => {
+    const lines = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      const pending = (async () => {
+        readHomeData.mockReturnValue(new Promise(() => {}));
+        return renderToReadableStream(await HomePage());
+      })();
+      await vi.advanceTimersByTimeAsync(400);
+      const stream = await pending;
+      const body = new Response(stream).text();
+      await vi.advanceTimersByTimeAsync(20_000);
+      const html = await body;
+      expect(html).toContain('could not read its index');
+      expect(lines.mock.calls.flat().join(' ')).toContain('"reason":"deadline"');
+    } finally {
+      vi.useRealTimers();
+      lines.mockRestore();
+    }
+  });
+
+  it('tells a reader with JavaScript off what to do, and takes the skeleton away', async () => {
+    const { fail, stream } = await late();
+    fail(new Error('end the stream'));
+    const html = await new Response(stream).text();
+    expect(html).toMatch(/<noscript>.*cannot fill in by itself.*<\/noscript>/s);
+    expect(html).toContain('class="home-pending"');
   });
 
   it('is a failed page, not a placeholder, when the read fails inside the budget', async () => {

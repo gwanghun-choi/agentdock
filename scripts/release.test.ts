@@ -37,7 +37,7 @@ function site(routes: Record<string, [number, string]>, commit: string | null) {
 
 const healthy: Record<string, [number, string]> = {
   '/': [200, '<h1>AgentDock</h1><span class="chip-count">1,234</span>'],
-  '/artifacts': [200, '<h1>Artifacts</h1><ol><li>x</li></ol>'],
+  '/artifacts': [200, '<h1>Artifacts</h1><p class="result-count">1</p>'],
   '/skills': [308, ''],
   '/artifacts?type=hook': [200, 'No artifacts matched the applied filters'],
 };
@@ -67,7 +67,7 @@ describe('smoke', () => {
   });
 
   it('fails a home page that answered 200 and never got its counts', async () => {
-    // A read that fails after the first byte: the boundary's text is not in the HTML.
+    // A read that fails after the first byte: the page says so, without counts.
     const { fetchImpl } = site(
       { ...healthy, '/': [200, '<h1>AgentDock</h1><span class="chip-count"></span>'] },
       A,
@@ -77,6 +77,14 @@ describe('smoke', () => {
     expect(r.lines).toContain('FAIL /: no artifact count in the page');
   });
 
+  it('fails a listing that answered 200 and never got its rows', async () => {
+    // /artifacts streams from its first byte, so this is every outage of that route.
+    const { fetchImpl } = site({ ...healthy, '/artifacts': [200, '<h1>Artifacts</h1>'] }, A);
+    const r = await smoke('https://example.test', undefined, { fetchImpl, ...fast });
+    expect(r.ok).toBe(false);
+    expect(r.lines).toContain('FAIL /artifacts: no result count in the page');
+  });
+
   it('fails on the error boundary, an empty corpus, a 5xx, or every type empty', async () => {
     const broken = site(
       {
@@ -84,6 +92,9 @@ describe('smoke', () => {
         '/': [200, '<h1>Something went wrong</h1>'],
         '/artifacts': [200, 'No artifacts indexed yet.'],
         '/artifacts?q=mcp': [500, ''],
+        ...Object.fromEntries(
+          TYPES.map((t) => [`/artifacts?type=${t}`, [200, '<p class="result-count">1</p>']]),
+        ),
       },
       A,
     );

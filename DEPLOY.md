@@ -28,7 +28,7 @@ AgentDock is built to live in a database that belongs to something else.
 
 | Layer | What holds it |
 |---|---|
-| Connection | `search_path` is pinned to one schema on every connection, and the process refuses to boot if it is not |
+| Connection | `search_path` is pinned to one schema on every connection, and the process ends moments after booting if it is not |
 | ORM | every table hangs off `pgSchema()`, so every emitted statement is schema-qualified — `search_path` is a default, not a fence |
 | Migrations | `bun run check:boundaries` rejects generated SQL naming any schema AgentDock does not own, or leaving a target unqualified |
 | Database | the connecting role is not a superuser, cannot create databases, roles or schemas, and holds no privilege on any object outside its two schemas |

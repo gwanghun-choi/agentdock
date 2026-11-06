@@ -59,6 +59,9 @@ export const db = drizzle(
   { schema },
 );
 
+/** The connection answered, and it is the wrong one: not a database that is down. */
+export class SchemaIsolationError extends Error {}
+
 /**
  * Refuses to let the process continue against a connection that is not confined
  * to a schema AgentDock owns. A mistyped connection string is otherwise silent
@@ -72,7 +75,7 @@ export async function assertSchemaIsolation(client = sql): Promise<void> {
   // The role actually connected is not quoted: it is the URL's user, and this
   // message also lands in the sync's public Actions log (scripts/corpus-sync.mjs).
   if (row.user !== AGENTDOCK_ROLE) {
-    throw new Error(
+    throw new SchemaIsolationError(
       `Refusing to start: connected as a role other than "${AGENTDOCK_ROLE}". ` +
         'Check the DATABASE_URL this process was given.',
     );
@@ -80,7 +83,7 @@ export async function assertSchemaIsolation(client = sql): Promise<void> {
 
   const path = row.path.trim();
   if (!/^agentdock(_test)?$/.test(path)) {
-    throw new Error(
+    throw new SchemaIsolationError(
       `Refusing to start: search_path is "${path}", expected exactly one AgentDock schema. ` +
         'Any other entry means an unqualified statement could reach another application.',
     );

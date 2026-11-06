@@ -87,6 +87,7 @@ const ERROR_PAGE = 'Something went wrong'; // src/app/error.tsx
 const HOME_COUNT = /chip-count">\d/; // src/app/page.tsx, TypeChips
 const EMPTY_CORPUS = 'No artifacts indexed yet'; // src/app/artifacts/page.tsx
 const NO_MATCH = 'No artifacts matched';
+const RESULT_COUNT = 'class="result-count"'; // src/app/artifacts/page.tsx
 
 /**
  * @param {string} base
@@ -141,9 +142,16 @@ export async function smoke(base, sha, { fetchImpl = fetch, attempts = 6, delayM
         ? 'rendered the error boundary (the index could not be read)'
         : null;
 
+  // /artifacts streams from its first byte (loading.tsx), so a read that fails is a 200
+  // with no error text in the HTML: every outage and every broken search passed this
+  // step until 2026-11-06. What has to be there is the answer: a count or a no-match.
+  const listed = (res, body) =>
+    rendered(res, body) ??
+    (body.includes(RESULT_COUNT) || body.includes(NO_MATCH) ? null : 'no result count in the page');
+
   // Not only the status: past its first-byte budget the home page streams, so an
-  // index that cannot be read after that is the error boundary under a 200, and its
-  // text is not in the HTML. The streamed counts are, in either case.
+  // index that cannot be read after that says so under a 200. The streamed counts are
+  // in the HTML when it could.
   await page(
     '/',
     (res, body) =>
@@ -151,17 +159,15 @@ export async function smoke(base, sha, { fetchImpl = fetch, attempts = 6, delayM
   );
   // An empty corpus on a deployment that has been serving one means the
   // connection reaches a different database or schema.
-  await page(
-    '/artifacts',
-    (res, body) =>
-      rendered(res, body) ?? (body.includes(EMPTY_CORPUS) ? 'the corpus is empty' : null),
+  await page('/artifacts', (res, body) =>
+    body.includes(EMPTY_CORPUS) ? 'the corpus is empty' : listed(res, body),
   );
-  await page('/artifacts?q=mcp', rendered);
+  await page('/artifacts?q=mcp', listed);
   await page('/skills', (res) => (res.status === 308 ? null : `HTTP ${res.status}, expected 308`));
 
   const empty = [];
   for (const type of TYPES) {
-    const body = await page(`/artifacts?type=${type}`, rendered);
+    const body = await page(`/artifacts?type=${type}`, listed);
     if (body.includes(NO_MATCH)) empty.push(type);
   }
   if (empty.length > 0) lines.push(`note no rows of type: ${empty.join(', ')}`);

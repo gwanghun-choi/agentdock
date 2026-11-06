@@ -170,8 +170,8 @@ set `DATABASE_URL` to the **direct** string instead. That changes no code and no
 isolation property. `idle_timeout` keeps idle connections from holding the
 compute awake, and a personal project's concurrency is well inside a small
 compute's direct-connection limit. Either way, `register()` runs
-`assertSchemaIsolation()` on every cold start: a connection that is not
-`agentdock_app` confined to `agentdock` refuses to serve.
+`assertSchemaIsolation()` on every cold start, without holding requests for it: a
+connection that is not `agentdock_app` confined to `agentdock` ends the process.
 
 ### Preview deployments
 

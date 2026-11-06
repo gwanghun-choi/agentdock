@@ -42,6 +42,16 @@ describe.skipIf(!DB_URL)('assertSchemaIsolation', () => {
     }
   });
 
+  // What register() ends the process on, and nothing else in the file checks the class.
+  it.each([
+    ['a role other than the one', [{ user: 'someone', path: 'agentdock' }]],
+    ['a wider search_path', [{ user: 'agentdock_app', path: 'agentdock, public' }]],
+  ])('throws SchemaIsolationError on %s', async (_, rows) => {
+    const { assertSchemaIsolation, SchemaIsolationError } = await import('./client');
+    const answer = (async () => rows) as unknown as Parameters<typeof assertSchemaIsolation>[0];
+    await expect(assertSchemaIsolation(answer)).rejects.toBeInstanceOf(SchemaIsolationError);
+  });
+
   // A property of the server's pg_hba, not of AgentDock. The disposable test
   // database authenticates by trust so no password exists anywhere
   // (scripts/sql/bootstrap-test-database.sql); against a password-checked

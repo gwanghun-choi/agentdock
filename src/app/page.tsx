@@ -17,11 +17,14 @@ import { DECLARING_FILES, IndexFlow } from '@/components/IndexFlow';
 import { LANGUAGE_LABELS } from '@/components/language';
 import { PackageRows } from '@/components/PackageRows';
 import { RowsPlaceholder } from '@/components/RowsPlaceholder';
+import { FieldClear } from '@/components/SearchLauncher';
 import { TYPE_FILTER_IDS, TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { type HomeData, readHomeData } from '@/db/queries/homeSnapshot';
 import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
+import { errorCode } from '@/ingest/errors';
+import { log } from '@/log';
 
 // Read at request time. Nothing here may be prerendered: `next build` runs in
 // CI, where there is no database.
@@ -36,20 +39,31 @@ export const dynamic = 'force-dynamic';
  * the two branches in `withHome`. Past it the words and the search box go first and the data follows in the stream,
  * which is the visit where the database is waking and the wait is seconds
  * (Phase 91: 5.4 to 13.7 s after 8 minutes idle). A failure inside it is still a 500
- * from the page; a later one is the error boundary under a 200, which is why
- * release.mjs's smoke looks for the chips and not only for the status.
+ * from the page. A later one cannot be: the status has gone out, so the page says so in
+ * its own markup (`failed` in withHome), and release.mjs's smoke looks for the chips and
+ * not only for the status.
  */
 const FIRST_BYTE_BUDGET_MS = 400;
+
+/**
+ * How long the stream holds a boundary open for the data. Above the slowest wake measured
+ * (13.7 s, as above) and under postgres.js's 30 s connect timeout, which is what would
+ * otherwise end the wait, with nothing shown until then.
+ */
+const DATA_DEADLINE_MS = 20_000;
 
 /** The data's half of a boundary: a function, so each caller keeps its own markup. */
 async function WithHome({
   home,
+  failed,
   children,
 }: {
-  home: Promise<HomeData>;
+  home: Promise<HomeData | null>;
+  failed: ReactNode;
   children: (data: HomeData) => ReactNode;
 }) {
-  return children(await home);
+  const data = await home;
+  return data ? children(data) : failed;
 }
 
 /** The chips' links work from the first byte; their counts arrive with the data. */
@@ -145,12 +159,36 @@ export default async function HomePage() {
     home,
     new Promise<null>((resolve) => setTimeout(resolve, FIRST_BYTE_BUDGET_MS, null)),
   ]);
-  const withHome = (fallback: ReactNode, render: (data: HomeData) => ReactNode) =>
+  // Past the first byte a failure is a state of the page, not an exception: thrown here it
+  // reaches app/error.tsx, which replaces the search box and the chips as well, and needs
+  // JavaScript to say anything. The one read shared by every boundary, so one log line.
+  const late = ready
+    ? null
+    : Promise.race([
+        home,
+        new Promise<never>((_, reject) =>
+          setTimeout(reject, DATA_DEADLINE_MS, new Error('deadline')),
+        ),
+      ]).catch((error: Error) => {
+        log({
+          event: 'home_unavailable',
+          reason: error.message === 'deadline' ? 'deadline' : 'failed',
+          code: errorCode(error),
+        });
+        return null;
+      });
+  const withHome = (
+    fallback: ReactNode,
+    render: (data: HomeData) => ReactNode,
+    failed: ReactNode = fallback,
+  ) =>
     ready ? (
       render(ready)
     ) : (
       <Suspense fallback={fallback}>
-        <WithHome home={home}>{render}</WithHome>
+        <WithHome failed={failed} home={late as Promise<HomeData | null>}>
+          {render}
+        </WithHome>
       </Suspense>
     );
   const hiddenLabel = HIDDEN_UNLESS_ASKED.map((l) => LANGUAGE_LABELS[l]).join(' and ');
@@ -201,6 +239,7 @@ export default async function HomePage() {
                 placeholder="Search skills, plugins, MCP servers…"
                 type="search"
               />
+              <FieldClear />
             </span>
             <button type="submit">Search</button>
           </form>
@@ -264,13 +303,19 @@ export default async function HomePage() {
             <div className="section-head">
               <h2>Recently indexed</h2>
             </div>
-            {/* Only when the data missed the budget and nothing can swap it in. */}
+            {/* Only when the data missed the budget and nothing can swap it in. A stream
+                needs a script to show what arrives, so the skeleton goes as well
+                (globals.css, `scripting: none`): it would otherwise promise rows forever. */}
             <noscript>
               <p className="board-scope">
-                <Link href="/artifacts">Browse all artifacts</Link>
+                The index is taking longer than usual to answer, and this page cannot fill in by
+                itself with JavaScript off. <a href="/">Reload</a> in a few seconds, or{' '}
+                <Link href="/artifacts">browse all artifacts</Link>.
               </p>
             </noscript>
-            <RowsPlaceholder />
+            <div className="home-pending">
+              <RowsPlaceholder />
+            </div>
           </>,
           ({ recent, visible, hidden, lastSync }) => {
             const total = sumOf(visible);
@@ -330,6 +375,27 @@ export default async function HomePage() {
               </>
             );
           },
+          // No counts and no rows: nothing here could be read, and an old figure would
+          // look like a current one. Search and the links above do not depend on this read.
+          <>
+            <div className="section-head">
+              <h2 id="recent-heading">Recently indexed</h2>
+            </div>
+            <div className="empty home-unavailable" role="alert">
+              <p className="muted">
+                AgentDock could not read its index just now, so the newest artifacts and the counts
+                are missing from this page.
+              </p>
+              <p className="actions">
+                <a className="btn" href="/">
+                  Try again
+                </a>
+                <Link className="btn btn-quiet" href="/artifacts">
+                  Browse all artifacts <ArrowRightIcon />
+                </Link>
+              </p>
+            </div>
+          </>,
         )}
       </section>
 

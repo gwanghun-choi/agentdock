@@ -116,6 +116,14 @@ export type HomeSnapshotLog = {
   fallback: 'missing' | 'unreadable' | 'stale';
 };
 
+/** A home request whose first byte had gone when its read failed or ran out of time. */
+export type HomeUnavailableLog = {
+  event: 'home_unavailable';
+  reason: 'failed' | 'deadline';
+  /** errorCode(): the SQLSTATE or system code, never the message. */
+  code: string | null;
+};
+
 /**
  * One line, one shape. The field set is closed on purpose: a free-form payload
  * parameter is how a response body, a header, or a connection string ends up in
@@ -123,6 +131,11 @@ export type HomeSnapshotLog = {
  * nullable string with a documented provenance, or a closed union — there is no
  * key an arbitrary object could be assigned to.
  */
-export function log(entry: IngestLog | WorkerLog | SearchLog | HomeSnapshotLog): void {
-  console.log(JSON.stringify({ ts: new Date().toISOString(), ...entry }));
+export function log(
+  entry: IngestLog | WorkerLog | SearchLog | HomeSnapshotLog | HomeUnavailableLog,
+): void {
+  // An error's level as well, for a log filter: nothing else reports this one, because
+  // the page handled it (app/page.tsx).
+  const write = entry.event === 'home_unavailable' ? console.error : console.log;
+  write(JSON.stringify({ ts: new Date().toISOString(), ...entry }));
 }
