@@ -716,7 +716,7 @@ test.describe('the dock board', () => {
     await expect(pause(page)).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('the drift stops off screen and after twenty seconds alone', async ({ page }) => {
+  test('the tour stops off screen and after one lap alone', async ({ page }) => {
     test.slow();
     await countDraws(page);
     await page.goto('/');
@@ -735,7 +735,7 @@ test.describe('the dock board', () => {
     const back = await draws(page);
     await expect.poll(() => draws(page)).toBeGreaterThan(back);
 
-    await page.waitForTimeout(20_000);
+    await page.waitForTimeout(45_000);
     await expectAtRest(page);
     // A pointer wakes it.
     const rested = await draws(page);
@@ -761,7 +761,7 @@ test.describe('the dock board', () => {
     await expect(close).toBeVisible();
 
     // Its number is the chip's, and its link is the chip's.
-    const link = panel.getByRole('link');
+    const link = panel.getByRole('link', { name: /^Browse/ });
     const href = (await link.getAttribute('href')) as string;
     const shown = (await panel.locator('strong').textContent()) as string;
     const chip = page.locator(`.hero-types a[href="${href}"]`);
@@ -803,7 +803,7 @@ test.describe('the dock board', () => {
     // Picked again, the link goes where the chip goes, and Back comes home.
     spot = await findDock(page);
     await page.mouse.click(spot.x, spot.y);
-    await panel.getByRole('link').click();
+    await panel.getByRole('link', { name: /^Browse/ }).click();
     await page.waitForURL(/\/artifacts\?type=/);
     await expect(page.locator('canvas')).toHaveCount(0);
     await page.goBack();
@@ -825,9 +825,14 @@ test.describe('the dock board', () => {
     await expect(panel).toContainText('Subagents');
     // The loop was stopped and no pointer moved: the key alone has to wake it.
     await expect.poll(() => draws(page)).toBeGreaterThan(rested);
+    // The panel's first link is its first real row, once the rows have come.
+    await expect(panel.locator('.dock-examples a').first()).toBeVisible();
     await page.keyboard.press('Tab');
-    await expect(panel.getByRole('link')).toBeFocused();
-    await expect(panel.getByRole('link')).toHaveAttribute('href', '/artifacts?type=agent');
+    await expect(panel.locator('.dock-examples a').first()).toBeFocused();
+    await expect(panel.getByRole('link', { name: /^Browse/ })).toHaveAttribute(
+      'href',
+      '/artifacts?type=agent',
+    );
     // Escape from the link: the panel goes, and the focus goes back to the chip.
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
@@ -2188,5 +2193,172 @@ test.describe('on a phone', () => {
       await page.locator('#setup').scrollIntoViewIfNeeded();
       await noHorizontalOverflow(page);
     }
+  });
+});
+
+// Phase 95: the dock in focus, steered. The scene's half runs on SwiftShader, so it is about
+// what changes and when, never how it looks.
+test.describe('the tour round the docks', () => {
+  const panel = (page: Page) => page.locator('.dock-panel');
+  const kindOf = (page: Page) => panel(page).getAttribute('data-kind');
+
+  test('the arrows work in the drawing, where nothing turns by itself', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.dock-board')).toHaveAttribute('data-scene', 'still');
+    await expect(panel(page)).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Next type' }).click();
+    const first = await kindOf(page);
+    await expect(page.locator('.dock-board')).toHaveAttribute('data-focus', first as string);
+
+    await page.keyboard.press('ArrowRight');
+    await expect(panel(page)).not.toHaveAttribute('data-kind', first as string);
+    await page.keyboard.press('ArrowLeft');
+    await expect(panel(page)).toHaveAttribute('data-kind', first as string);
+
+    // The drawing moves over: the panel never covers the dock it describes.
+    const dock = page.locator(`.dock-still .dock-${first} .dock-top`).first();
+    const [a, b] = [await dock.boundingBox(), await panel(page).boundingBox()];
+    expect((a?.x ?? 0) + (a?.width ?? 0)).toBeLessThanOrEqual(b?.x ?? 0);
+
+    await panel(page).getByRole('button', { name: 'Close' }).click();
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('the chips are a row to the arrow keys', async ({ page }) => {
+    await page.goto('/');
+    const chips = page.locator('.hero-types a');
+    await chips.nth(1).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(chips.nth(2)).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(chips.nth(1)).toBeFocused();
+  });
+
+  test('the panel lists real rows, each a link to its page', async ({ page }) => {
+    await page.goto('/');
+    const replies: number[] = [];
+    page.on('response', (r) => {
+      if (r.url().includes('/api/docks/')) replies.push(r.status());
+    });
+    await page.locator('.hero-types a[href$="type=skill"]').focus();
+    const row = panel(page).locator('.dock-examples a').first();
+    await expect(row).toBeVisible();
+    expect(replies).toEqual([200]);
+    await expect(row).toHaveAttribute('href', /^\/r\//);
+    await row.click();
+    await expect(page).toHaveURL(/\/r\//);
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('the examples route takes a kind from the list, and is cacheable', async ({ request }) => {
+    const known = await request.get('/api/docks/mcp_server');
+    expect(known.status()).toBe(200);
+    expect(known.headers()['cache-control']).toContain('s-maxage=');
+    const rows = await known.json();
+    expect(rows.length).toBeLessThanOrEqual(3);
+    expect(new Set(rows.map((r: { fullName: string }) => r.fullName)).size).toBe(rows.length);
+    expect((await request.get('/api/docks/catalog')).status()).toBe(404);
+    expect((await request.get("/api/docks/'%20or%201=1")).status()).toBe(404);
+  });
+
+  test('one at random lands on a real page of that kind, or on the listing', async ({ page }) => {
+    await page.goto('/artifacts/random?type=skill');
+    await expect(page).toHaveURL(/\/r\//);
+    await expect(page.locator('.detail-head .badge-skill')).toBeVisible();
+    await page.goto('/artifacts/random?type=nonsense');
+    await expect(page).toHaveURL(/\/artifacts$/);
+    await page.goto('/artifacts?type=skill');
+    await expect(page.getByRole('link', { name: 'Open one at random' })).toHaveAttribute(
+      'rel',
+      'nofollow',
+    );
+  });
+
+  test('a code block copies itself, from the page', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/r/anthropics/skills/skills/mcp-builder');
+    const block = page.locator('.body .code-block').first();
+    await block.getByRole('button', { name: 'Copy code' }).click();
+    await expect(block.locator('.copy-status')).toHaveText(/copied/i);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      await block.locator('pre').textContent(),
+    );
+  });
+
+  test.describe('on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('a swipe through the cards lights the drawing, and the page stays put', async ({
+      page,
+    }) => {
+      await page.goto('/');
+      const cards = page.locator('.dock-cards');
+      await expect(cards.locator('.dock-card')).toHaveCount(6);
+      await expect(panel(page)).toBeHidden();
+      await cards.evaluate((el) => el.scrollTo({ left: el.clientWidth * 2 }));
+      const third = await cards.locator('.dock-card').nth(2).getAttribute('data-kind');
+      await expect(page.locator('.dock-board')).toHaveAttribute('data-focus', third as string);
+      await noHorizontalOverflow(page);
+      // A tap's worth of target.
+      const link = cards.locator('.dock-card').nth(2).getByRole('link').first();
+      expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    });
+  });
+
+  test.describe('in the scene', () => {
+    test.use({
+      contextOptions: { reducedMotion: 'no-preference' },
+      storageState: async ({ baseURL }, use) =>
+        use({
+          cookies: [],
+          origins: [
+            {
+              origin: baseURL as string,
+              localStorage: [{ name: 'agentdock:scene', value: 'on' }],
+            },
+          ],
+        }),
+    });
+    test.setTimeout(180_000);
+
+    test('it moves on by itself, gives way to a drag, and Pause stops it', async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      await page.goto('/');
+      await expect(page.locator('.dock-board')).toHaveAttribute('data-scene', 'live', {
+        timeout: 40_000,
+      });
+      await expect(panel(page)).toBeVisible({ timeout: 60_000 });
+      const first = await kindOf(page);
+      await expect(panel(page)).not.toHaveAttribute('data-kind', first as string, {
+        timeout: 90_000,
+      });
+
+      // A drag on the empty stage turns the ring, and does not count as a pick.
+      await page.mouse.move(1000, 200);
+      await page.mouse.down();
+      await page.mouse.move(1200, 200, { steps: 6 });
+      await page.mouse.up();
+      await expect(page.locator('.hero')).not.toHaveAttribute('data-dragging', '');
+      await expect(panel(page).getByRole('button', { name: 'Close' })).toHaveCount(0);
+
+      // Escape is obeyed: the next frame must not bring back what was just closed.
+      await page.locator('.hero-types a[href$="type=hook"]').focus();
+      await expect(panel(page)).toHaveAttribute('data-kind', 'hook');
+      await page.keyboard.press('Escape');
+      await expect(panel(page)).toHaveCount(0);
+      await page.waitForTimeout(1_500);
+      await expect(panel(page)).toHaveCount(0);
+      // And the tour comes back by itself.
+      await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+      await expect(panel(page)).toBeVisible({ timeout: 90_000 });
+
+      await page.getByRole('button', { name: 'Pause motion' }).click();
+      const held = await kindOf(page);
+      await page.waitForTimeout(8_000);
+      await expect(panel(page)).toHaveAttribute('data-kind', held as string);
+      expect(errors).toEqual([]);
+    });
   });
 });
