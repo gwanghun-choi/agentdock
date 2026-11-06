@@ -27,6 +27,18 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
+async function axeIds(page: Page) {
+  await page.addScriptTag({ content: AXE });
+  return page.evaluate(async () => {
+    const { violations } = await (
+      window as unknown as {
+        axe: { run: () => Promise<{ violations: { id: string }[] }> };
+      }
+    ).axe.run();
+    return violations.map((v) => v.id);
+  });
+}
+
 test('search: Enter shows results for the query and keeps it in the field', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
@@ -477,7 +489,21 @@ test('home: the page has no motion past five seconds, and none under reduced mot
 // scene runs on SwiftShader (playwright.config.ts); every test here is about
 // what the page does with the scene, not how it looks.
 test.describe('the dock board', () => {
-  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+  test.use({
+    contextOptions: { reducedMotion: 'no-preference' },
+    // These runners have no GPU, where the scene waits to be asked for. This is that
+    // answer, stored, so the journeys below are about the scene and not about the asking.
+    storageState: async ({ baseURL }, use) =>
+      use({
+        cookies: [],
+        origins: [
+          {
+            origin: baseURL as string,
+            localStorage: [{ name: 'agentdock:scene', value: 'on' }],
+          },
+        ],
+      }),
+  });
   // These run a real scene with no GPU: a runner's two cores spend the default 30 s on the
   // longest of them with nothing wrong (2026-11-06, CI 42076948384).
   test.setTimeout(120_000);
@@ -502,6 +528,8 @@ test.describe('the dock board', () => {
   const draws = (page: Page) =>
     page.evaluate(() => (window as unknown as { __draws: number }).__draws);
   const board = (page: Page) => page.locator('.dock-board');
+  const unasked = (page: Page) =>
+    page.addInitScript(() => localStorage.removeItem('agentdock:scene'));
 
   /** A stage that holds still: Pause is stored, so there is no entrance and no drift. */
   const stillStage = (page: Page) =>
@@ -585,7 +613,11 @@ test.describe('the dock board', () => {
       [stage.x + stage.width * 0.75, stage.y + stage.height * 0.5],
     );
     expect(open).toContain('hero');
-    for (const selector of ['#q', '.hero-search button', '.hero-types a[href$="type=hook"]']) {
+    for (const selector of [
+      '#q',
+      '.hero-search button[type="submit"]',
+      '.hero-types a[href$="type=hook"]',
+    ]) {
       const box = await page.locator(selector).boundingBox();
       if (!box) throw new Error(`no ${selector}`);
       expect(
@@ -962,9 +994,10 @@ test.describe('the dock board', () => {
     ).toEqual([]);
   });
 
-  test('under reduced motion it never loads, and a chip still lights its dock', async ({
+  test('under reduced motion it does not load by itself, and a chip still lights its dock', async ({
     page,
   }) => {
+    await unasked(page);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.locator('html[data-hotkeys]').waitFor();
@@ -980,6 +1013,205 @@ test.describe('the dock board', () => {
     await expect(pause(page)).toHaveCount(0);
   });
 
+  test.describe('nothing asked for yet', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    /** What a browser says when asked which renderer it has. */
+    const rendererNamed = (page: Page, name: string) =>
+      page.addInitScript((said) => {
+        const read = WebGL2RenderingContext.prototype.getParameter;
+        WebGL2RenderingContext.prototype.getParameter = function (this: unknown, p: number) {
+          return p === 0x9246 ? said : read.call(this, p);
+        } as typeof read;
+      }, name);
+    const view = (page: Page) => page.getByRole('button', { name: 'View in 3D' });
+    const leave = (page: Page) => page.getByRole('button', { name: 'Show the drawing' });
+    /** The scene's chunk, the one script on this page far bigger than the rest. */
+    const sceneChunk = (page: Page) => {
+      const sizes: number[] = [];
+      page.on('response', async (r) => {
+        if (r.url().endsWith('.js')) sizes.push((await r.body().catch(() => '')).length);
+      });
+      return () => sizes.filter((n) => n > 400_000);
+    };
+
+    test('with no GPU: the drawing, nothing downloaded, and the scene on request', async ({
+      page,
+    }) => {
+      const errors = collectErrors(page);
+      const chunks = sceneChunk(page);
+      await page.goto('/');
+      await expect(view(page)).toBeVisible({ timeout: 20_000 });
+      await page.waitForLoadState('networkidle');
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+      await expect(board(page).locator('canvas')).toHaveCount(0);
+      await expect(board(page).locator('svg')).toBeVisible();
+      expect(chunks()).toEqual([]);
+
+      // Search and the types do not wait on any of this.
+      await page.locator('.hero-types a[href$="type=skill"]').focus();
+      await expect(page.locator('.dock-panel')).toContainText('Agent Skills');
+      await page.keyboard.press('Escape');
+
+      await view(page).focus();
+      await page.keyboard.press('Enter');
+      // The same button, so the focus stays on it through the swap.
+      await expect(leave(page)).toBeFocused();
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      expect(chunks().length).toBe(1);
+
+      // The answer holds on the next visit, without slowing to ask again.
+      await page.reload();
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      await leave(page).click();
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+      await expect(board(page).locator('canvas')).toHaveCount(0);
+      await expect(view(page)).toBeFocused();
+      await page.reload();
+      await expect(view(page)).toBeVisible({ timeout: 20_000 });
+      await expect(board(page).locator('canvas')).toHaveCount(0);
+      expect(errors).toEqual([]);
+    });
+
+    test('with a GPU: the scene starts by itself, and can be left for good', async ({ page }) => {
+      await rendererNamed(page, 'ANGLE (Intel, Vulkan 1.4, Intel Mesa driver)');
+      await page.goto('/');
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      await leave(page).click();
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+      await page.reload();
+      await expect(view(page)).toBeVisible({ timeout: 20_000 });
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+    });
+
+    test('a browser that hides its renderer: frame times end the scene, unless asked for', async ({
+      page,
+    }) => {
+      await rendererNamed(page, 'Apple GPU');
+      // Six frames a second, whatever this runner can do.
+      await page.addInitScript(() => {
+        const raf = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = (run) => {
+          setTimeout(() => raf(run), 160);
+          return 0;
+        };
+      });
+      await page.goto('/');
+      await expect(board(page).locator('canvas')).toHaveCount(1, { timeout: 20_000 });
+      await expect(view(page)).toBeVisible({ timeout: 60_000 });
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+      await expect(board(page).locator('canvas')).toHaveCount(0);
+      // Not stored: it was this machine's answer today, not the reader's.
+      expect(await page.evaluate(() => localStorage.getItem('agentdock:scene'))).toBeNull();
+
+      await view(page).click();
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      // Past the same steps and windows that ended it above.
+      await page.waitForTimeout(16_000);
+      await expect(board(page)).toHaveAttribute('data-scene', 'live');
+    });
+
+    test('with no WebGL: the drawing, and no button that could only fail', async ({ page }) => {
+      await page.addInitScript(() => {
+        const get = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (
+          this: HTMLCanvasElement,
+          type: string,
+          ...rest: unknown[]
+        ) {
+          return type.startsWith('webgl') ? null : get.call(this, type as '2d', ...(rest as []));
+        } as typeof get;
+      });
+      await page.goto('/');
+      await page.locator('html[data-hotkeys]').waitFor();
+      await page.waitForLoadState('networkidle');
+      await expect(board(page).locator('svg')).toBeVisible();
+      await expect(view(page)).toHaveCount(0);
+      await page.fill('#q', 'review');
+      await page.press('#q', 'Enter');
+      await expect(page).toHaveURL(/q=review/);
+    });
+
+    test('under reduced motion: asked for, it arrives holding still', async ({ page }) => {
+      await countDraws(page);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto('/');
+      await view(page).click({ timeout: 20_000 });
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      await expect(pause(page)).toHaveAttribute('aria-pressed', 'true');
+      await page.waitForTimeout(3000);
+      const before = await draws(page);
+      await page.waitForTimeout(1000);
+      expect(await draws(page)).toBe(before);
+    });
+
+    test('a stored answer under reduced motion arrives holding still as well', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('agentdock:scene', 'on'));
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto('/');
+      await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+      await expect(pause(page)).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    test('a request to save data: the drawing, and the scene only on request', async ({ page }) => {
+      await rendererNamed(page, 'ANGLE (Intel, Vulkan 1.4, Intel Mesa driver)');
+      await page.addInitScript(() =>
+        Object.defineProperty(navigator, 'connection', { value: { saveData: true } }),
+      );
+      const chunks = sceneChunk(page);
+      await page.goto('/');
+      await expect(view(page)).toBeVisible({ timeout: 20_000 });
+      await page.waitForLoadState('networkidle');
+      await expect(board(page)).toHaveAttribute('data-scene', 'still');
+      expect(chunks()).toEqual([]);
+    });
+
+    test('a scene that fails says so to the reader who asked, and leaves other focus alone', async ({
+      page,
+    }) => {
+      await page.route(/\.js$/, async (route) => {
+        const response = await route.fetch();
+        const body = await response.body();
+        // The scene's chunk, and only it.
+        if (body.length > 400_000) await route.abort();
+        else await route.fulfill({ response, body });
+      });
+      await page.goto('/');
+      await view(page).click({ timeout: 20_000 });
+      await expect(board(page)).toHaveAttribute('data-scene', 'failed', { timeout: 20_000 });
+      await expect(page.getByRole('status').filter({ hasText: 'could not start' })).toBeVisible();
+      await expect(board(page).locator('svg')).toBeVisible();
+
+      // Asked for on an earlier visit, with the reader typing elsewhere.
+      await page.reload();
+      await page.locator('#q').click();
+      await page.keyboard.type('rev');
+      await expect(board(page)).toHaveAttribute('data-scene', 'failed', { timeout: 20_000 });
+      await expect(page.locator('#q')).toBeFocused();
+      await expect(page.locator('#q')).toHaveValue('rev');
+    });
+
+    test('axe finds nothing in the drawing with its button', async ({ page }) => {
+      await page.goto('/');
+      await expect(view(page)).toBeVisible({ timeout: 20_000 });
+      expect(await axeIds(page)).toEqual([]);
+    });
+
+    test('in and out of the scene leaves one canvas and no error', async ({ page }) => {
+      const errors = collectErrors(page);
+      await page.goto('/');
+      for (let i = 0; i < 4; i++) {
+        await view(page).click({ timeout: 20_000 });
+        await expect(board(page)).toHaveAttribute('data-scene', 'live', { timeout: 20_000 });
+        await expect(board(page).locator('canvas')).toHaveCount(1);
+        await leave(page).click();
+        await expect(board(page).locator('canvas')).toHaveCount(0);
+        await page.waitForTimeout(400); // R3F's own context loss comes after the unmount
+      }
+      expect(errors).toEqual([]);
+    });
+  });
+
   test('the listing and the detail pages load no scene', async ({ page }) => {
     for (const path of ['/artifacts?q=review', '/r/fixture/ui-edge-cases']) {
       await page.goto(path);
@@ -988,6 +1220,195 @@ test.describe('the dock board', () => {
       await expect(page.locator('canvas')).toHaveCount(0);
     }
   });
+});
+
+test.describe('the search field', () => {
+  const clear = (page: Page) => page.getByRole('button', { name: 'Clear search' });
+
+  for (const [where, path, go] of [
+    ['home', '/', null],
+    ['artifacts', '/artifacts', null],
+    ['launcher', '/r/fixture/ui-edge-cases', 'launcher'],
+  ] as const) {
+    test(`${where}: the clear button sits at the edge of the field, and nothing moves`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+      await page.locator('html[data-hotkeys]').waitFor();
+      // /artifacts streams, and the page's own field replaces the loading state's.
+      if (path === '/artifacts') await page.locator('.result-count').waitFor();
+      if (go) await page.keyboard.press('/');
+      const field = go ? page.locator('#launcher-q') : page.locator('#q');
+      await expect(clear(page).locator('visible=true')).toHaveCount(0);
+      const box = await field.boundingBox();
+
+      await field.fill('a'.repeat(300));
+      const button = clear(page).locator('visible=true');
+      await expect(button).toHaveCount(1);
+      const at = (await button.boundingBox()) as NonNullable<
+        Awaited<ReturnType<typeof button.boundingBox>>
+      >;
+      const whole = box as NonNullable<typeof box>;
+      expect(Math.abs(at.x + at.width - (whole.x + whole.width))).toBeLessThanOrEqual(1);
+      expect(await field.boundingBox()).toEqual(box);
+      // A long query stops short of it.
+      const right = await field.evaluate((e) => parseFloat(getComputedStyle(e).paddingRight));
+      expect(right).toBeGreaterThanOrEqual(at.width - 1);
+
+      // Hover, focus and blur leave it where it is, and the caps do not come back over it.
+      await button.hover();
+      expect(await button.boundingBox()).toEqual(at);
+      await button.focus();
+      expect(await button.boundingBox()).toEqual(at);
+      if (!go) {
+        const caps = await page
+          .locator('.search-row .field')
+          .first()
+          .evaluate((e) => getComputedStyle(e, '::after').opacity);
+        expect(caps).toBe('0');
+      }
+
+      await button.click();
+      await expect(field).toHaveValue('');
+      await expect(field).toBeFocused();
+      await expect(clear(page).locator('visible=true')).toHaveCount(0);
+      expect(await field.boundingBox()).toEqual(box);
+    });
+  }
+
+  test('the keyboard reaches it, Enter clears, and Escape clears from the field', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.locator('html[data-hotkeys]').waitFor();
+    await page.fill('#q', 'review');
+    await page.locator('#q').focus();
+    await page.keyboard.press('Tab');
+    await expect(clear(page).first()).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#q')).toHaveValue('');
+    await expect(page.locator('#q')).toBeFocused();
+    // Empty, it is out of the tab order: the next stop is Search.
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.hero-search button[type="submit"]')).toBeFocused();
+
+    await page.fill('#q', 'review');
+    await page.locator('#q').focus();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#q')).toHaveValue('');
+  });
+
+  test('a query from the URL has the button, and clearing does not search', async ({ page }) => {
+    await page.goto('/artifacts?q=review');
+    await page.locator('html[data-hotkeys]').waitFor();
+    await page.locator('.result-count').waitFor();
+    const url = page.url();
+    await clear(page).first().click();
+    await expect(page.locator('#q')).toHaveValue('');
+    expect(page.url()).toBe(url);
+    await expect(page.locator('.rows > li').first()).toBeVisible();
+  });
+
+  for (const width of [390, 640, 768, 1024, 1280, 1440, 1920, 2560]) {
+    test(`at ${width}px the button is inside the field and the row fits`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      for (const path of ['/', '/artifacts']) {
+        await page.goto(path);
+        await page.locator('html[data-hotkeys]').waitFor();
+        if (path === '/artifacts') await page.locator('.result-count').waitFor();
+        await page.fill('#q', 'ponytail');
+        const field = (await page.locator('#q').boundingBox()) as { x: number; width: number };
+        const at = (await clear(page).first().boundingBox()) as { x: number; width: number };
+        expect(Math.abs(at.x + at.width - (field.x + field.width))).toBeLessThanOrEqual(1);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+          true,
+        );
+      }
+    });
+  }
+
+  test('axe finds nothing with the button showing', async ({ page }) => {
+    await page.goto('/artifacts');
+    await page.locator('html[data-hotkeys]').waitFor();
+    await page.locator('.result-count').waitFor();
+    await page.fill('#q', 'review');
+    expect(await axeIds(page)).toEqual([]);
+  });
+});
+
+test.describe('rows of one name', () => {
+  // A plugin and the command inside it, one name in one repository
+  // (fixtures/anthropics-claude-code).
+  const twins = (page: Page) =>
+    page
+      .locator('.rows > li')
+      .filter({ has: page.locator('.row-title a', { hasText: /^feature-dev$/ }) })
+      .filter({ has: page.locator('.repo', { hasText: 'anthropics/claude-code' }) });
+
+  test('each says where its file is, and which is inside which', async ({ page }) => {
+    await page.goto('/artifacts?q=feature-dev');
+    const rows = twins(page);
+    await expect(rows).toHaveCount(2);
+    const paths = await rows.locator('.row-where .path').allInnerTexts();
+    expect(paths.map((p) => p.trim()).sort()).toEqual([
+      'plugins/feature-dev/.claude-plugin/plugin.json',
+      'plugins/feature-dev/commands/feature-dev.md',
+    ]);
+    await expect(rows.locator('.badge-plugin')).toHaveCount(1);
+    await expect(rows.locator('.badge-command')).toHaveCount(1);
+    await expect(
+      rows.filter({ has: page.locator('.badge-command') }).locator('.row-part'),
+    ).toContainText('plugins/feature-dev');
+    await expect(rows.locator('.row-same')).toHaveCount(1);
+
+    // Each is its own page, and Back returns to the same list.
+    const first = page.url();
+    await rows.nth(1).locator('.row-title a').click();
+    await expect(page).toHaveURL(/\/r\//);
+    await page.goBack();
+    await expect(page).toHaveURL(first);
+    await expect(rows).toHaveCount(2);
+  });
+
+  test('filters and orders narrow them as artifacts, and the count says so', async ({ page }) => {
+    await page.goto('/artifacts?q=feature-dev&type=command');
+    await expect(twins(page)).toHaveCount(1);
+    await page.goto('/artifacts?q=feature-dev&sort=name');
+    await expect(twins(page)).toHaveCount(2);
+    await page.goto('/artifacts?q=feature-dev');
+    await page.locator('.result-count').waitFor();
+    const shown = await page.locator('.rows:not([aria-hidden]) > li').count();
+    await expect(page.locator('.result-count')).toContainText(`${shown} artifacts`);
+  });
+
+  for (const q of [
+    '"quoted"',
+    `<script>window.__x=1</script>`,
+    "' or 1=1 --",
+    'a%20b',
+    'REVIEW',
+    '   ',
+    'コードレビュー',
+    '코드 리뷰',
+    '𝕏😀',
+    'x'.repeat(500),
+    'no-such-word-anywhere',
+  ]) {
+    test(`a query of ${JSON.stringify(q.slice(0, 16))} answers, unbroken and escaped`, async ({
+      page,
+    }) => {
+      const errors = collectErrors(page);
+      await page.goto('/artifacts');
+      await page.fill('#q', q);
+      await page.press('#q', 'Enter');
+      await expect(page.locator('main h1')).toBeVisible();
+      expect(
+        await page.evaluate(() => (window as unknown as { __x?: number }).__x),
+      ).toBeUndefined();
+      expect(await page.locator('main script:has-text("__x")').count()).toBe(0);
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 test('home: the entrance never widens a phone page, frame by frame', async ({ page }) => {
@@ -1121,7 +1542,7 @@ test('highlight and reason: query words are marked as text, and the row says whe
   await expect(page.locator('.row-why').first()).toContainText('Matched in');
   // A path query marks the path where the substring test matched.
   await page.goto('/artifacts?q=.claude/agents');
-  await expect(page.locator('.row-meta .path mark').first()).toHaveText('.claude/agents');
+  await expect(page.locator('.row-where .path mark').first()).toHaveText('.claude/agents');
 });
 
 test('a query holding markup is shown as text and runs nothing', async ({ page }) => {
@@ -1734,6 +2155,17 @@ test.describe('on a phone', () => {
     await page.locator('.rows .row-title a').first().tap();
     await page.waitForURL(/\/r\//);
     await noHorizontalOverflow(page);
+  });
+
+  test('a query of one long word fits, with results and without', async ({ page }) => {
+    for (const q of ['x'.repeat(200), `${'zq'.repeat(100)}`]) {
+      await page.goto(`/artifacts?q=${q}`);
+      await expect(page.locator('main h1')).toBeVisible();
+      await page.locator('.result-bar, main .empty').first().waitFor();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    }
   });
 
   test('related lists and date orders fit 320px', async ({ page }) => {
