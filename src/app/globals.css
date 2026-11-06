@@ -1210,12 +1210,14 @@ main {
     margin-bottom: var(--s-3);
   }
 
+  /* The cards are the picture here. With both, the first artifact fell off a 390×844 screen
+     (y = 936), and a drawing this size has no print to read anyway. */
   .dock-board {
-    height: 6rem;
+    display: none;
   }
 
-  .dock text {
-    display: none;
+  .dock-card-what {
+    -webkit-line-clamp: 2;
   }
 }
 

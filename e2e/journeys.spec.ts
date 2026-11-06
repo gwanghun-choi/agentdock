@@ -2289,9 +2289,7 @@ test.describe('the tour round the docks', () => {
   test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test('a swipe through the cards lights the drawing, and the page stays put', async ({
-      page,
-    }) => {
+    test('a swipe moves the focus through the cards, and the page stays put', async ({ page }) => {
       await page.goto('/');
       const cards = page.locator('.dock-cards');
       await expect(cards.locator('.dock-card')).toHaveCount(6);
