@@ -44,6 +44,8 @@ const DIRS = [
 // the first-screen journeys measure — are the ones they were before Phase 62.
 DIRS.unshift('e2e/fixtures/language-visibility');
 
+const { MIN_REPOSITORY_STARS } = await import('../src/corpus/policy.ts');
+
 let dir = '';
 globalThis.fetch = async (input) => {
   const url = new URL(String(input));
@@ -53,7 +55,14 @@ globalThis.fetch = async (input) => {
       const { sha } = JSON.parse(readFileSync(`${dir}/tree.json`, 'utf8'));
       return Response.json({ sha });
     }
-    return new Response(readFileSync(`${dir}/repo.json`));
+    // Three of these repositories were captured below today's discovery floor
+    // (321, 1,234 and 3,882 stars; the floor became 5000 on 2026-11-16) and the
+    // pipeline would decline them. The journeys test the pages, not the gate —
+    // src/ingest/pipeline.test.ts and src/corpus/policy.test.ts do — so the
+    // stub answers at least the floor and the captured files stay as captured.
+    const repo = JSON.parse(readFileSync(`${dir}/repo.json`, 'utf8'));
+    repo.stargazers_count = Math.max(repo.stargazers_count, MIN_REPOSITORY_STARS);
+    return Response.json(repo);
   }
   if (url.hostname === 'raw.githubusercontent.com') {
     const path = decodeURIComponent(url.pathname.split('/').slice(4).join('/'));
