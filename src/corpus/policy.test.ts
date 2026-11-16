@@ -24,6 +24,17 @@ describe('the star floor', () => {
     expect(discoveryRejection({ ...ELIGIBLE, stars: MIN_REPOSITORY_STARS - 1 })).not.toBeNull();
   });
 
+  // The literals, beside the symbolic cases above: those pass at any floor, and
+  // this one fails if the policy decided on 2026-11-16 moves by accident.
+  it.each([
+    [4999, 'below_star_floor' as const],
+    [5000, null],
+    [5001, null],
+  ])('with the floor at 5000, %i stars answers %s', (stars, expected) => {
+    expect(MIN_REPOSITORY_STARS).toBe(5000);
+    expect(discoveryRejection({ ...ELIGIBLE, stars })).toBe(expected);
+  });
+
   it('turns away a repository with no stars at all', () => {
     expect(discoveryRejection({ ...ELIGIBLE, stars: 0 })).toBe('below_star_floor');
   });

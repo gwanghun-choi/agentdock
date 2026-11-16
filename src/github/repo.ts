@@ -20,6 +20,13 @@ export async function fetchRepoMetadata(owner: string, repo: string): Promise<Re
   }
 
   const json = JSON.parse(await readCapped(response, MAX_METADATA_BYTES));
+  // The discovery gate compares this to MIN_REPOSITORY_STARS. A missing count
+  // read as 0 would decline the repository and report it as below the floor —
+  // a number GitHub never sent. Unavailable is retried on a later run instead.
+  const stars = json.stargazers_count;
+  if (!Number.isSafeInteger(stars) || stars < 0) {
+    throw new GitHubError('unavailable', `GitHub returned no star count for ${owner}/${repo}.`);
+  }
   return {
     githubNodeId: String(json.node_id),
     fullName: String(json.full_name),
@@ -31,7 +38,7 @@ export async function fetchRepoMetadata(owner: string, repo: string): Promise<Re
     // The only SPDX-shaped source there is, and it is null on a 167k-star
     // repository — so "unknown" is the common path, not the edge case.
     licenseSpdx: json.license?.spdx_id ?? null,
-    stars: Number(json.stargazers_count ?? 0),
+    stars,
     isFork: Boolean(json.fork),
     isArchived: Boolean(json.archived),
     topics: Array.isArray(json.topics) ? json.topics.map(String) : [],

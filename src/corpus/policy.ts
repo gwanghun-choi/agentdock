@@ -35,7 +35,10 @@
  * ponytail: promote to a parsed environment variable the first time two
  * deployments genuinely need different floors.
  */
-export const MIN_REPOSITORY_STARS = 50;
+// Raised from 50 on 2026-11-16 (Phase 98-99). At 50 the corpus grew about
+// 2,830 artifacts a day and filled the database's storage allowance on
+// 2026-11-15 (SQLSTATE 53100, docs/analysis/agentdock-phase98-sync-53100.md).
+export const MIN_REPOSITORY_STARS = 5000;
 
 /** Why automatic discovery will not read a repository. Null means it will. */
 export type DiscoveryRejection = 'forked' | 'archived' | 'below_star_floor';

@@ -74,7 +74,7 @@ only matching paths are fetched.
 A repository is added by automatic discovery when **all** of these hold:
 
 - public
-- at least **50 GitHub stars**
+- at least **5000 GitHub stars**
 - not a fork
 - not archived
 - and it actually contains a supported artifact file
@@ -163,7 +163,7 @@ AgentDock scheduled sync
     no artifacts found           0
 
   Declined by discovery policy   0
-    below 50 stars               0
+    below 5000 stars             0
     archived on GitHub           0
     a fork                       0
 
@@ -687,7 +687,7 @@ rather than remembered:
 | `no-host-sprawl` | a GitHub hostname named outside `src/github/` | `git grep` answers "what can this reach" completely. Every URL is built from two validated parts. |
 | `no-verdict-vocabulary` | *safe*, *clean*, *verified*, *trusted*, *approved*, *malicious*, *grade*, *risk score* in UI copy | No page ever renders a safety verdict. |
 
-The 50-star floor is **not** part of this. It is a scheduling rule about a
+The 5000-star floor is **not** part of this. It is a scheduling rule about a
 request budget and buys no assurance about anything it admits.
 
 Every artifact body is stored as a capped excerpt with attribution, never as a

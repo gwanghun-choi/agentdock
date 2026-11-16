@@ -259,6 +259,17 @@ describe.skipIf(!DB_URL)('ingestRepository', () => {
       expect(await repositoryRowCount()).toBe(1);
     });
 
+    it('holds a repository whose star count GitHub did not send, rather than declining it', async () => {
+      stubGitHub({ repo: withMeta({ stargazers_count: undefined }) });
+
+      const result = await ingestRepository(FULL_NAME);
+
+      // `unavailable` is retryable (retry.ts); `below_star_floor` would be a
+      // permanent "succeeded" built on a number GitHub never returned.
+      expect(result).toMatchObject({ ok: false, outcome: 'unavailable' });
+      expect(await repositoryRowCount()).toBe(0);
+    });
+
     it('reads no file at all when it declines, so the raw host is never contacted', async () => {
       stubGitHub({ repo: withMeta({ stargazers_count: 0 }) });
 

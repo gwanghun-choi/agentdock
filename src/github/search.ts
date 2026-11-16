@@ -29,7 +29,7 @@ const MAX_PAGES = RESULT_CAP / PER_PAGE;
  */
 export type StarRange = { min: number; max: number | null };
 
-export type SearchItem = { fullName: string; stars: number };
+export type SearchItem = { fullName: string; stars: number | null };
 
 /**
  * The topics swept, each with the repository count measured on 2026-08-11 so a
@@ -202,7 +202,9 @@ export async function searchRepositories(
     if (!parts) continue;
     items.push({
       fullName: `${parts.owner}/${parts.repo}`.toLowerCase(),
-      stars: typeof record.stargazers_count === 'number' ? record.stargazers_count : 0,
+      // Null, not 0: a hint orders the backlog (seeds.ts, KNOWN_ELIGIBLE), and an
+      // absent count is "not known", never "below the floor".
+      stars: typeof record.stargazers_count === 'number' ? record.stargazers_count : null,
     });
   }
   return { totalCount, items };

@@ -208,6 +208,12 @@ describe('searchRepositories', () => {
     expect(result.items).toEqual([{ fullName: 'good/repo', stars: 3 }]);
   });
 
+  it('reads an absent star count as not known, never as zero', async () => {
+    stubSearch(() => ({ total_count: 1, items: [{ full_name: 'owner/repo' }] }));
+    const result = await searchRepositories('q', 1);
+    expect(result.items).toEqual([{ fullName: 'owner/repo', stars: null }]);
+  });
+
   it('survives a response with no items array and no count', async () => {
     stubSearch(() => ({}) as never);
     await expect(searchRepositories('q', 1)).resolves.toEqual({ totalCount: 0, items: [] });

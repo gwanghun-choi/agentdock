@@ -71,7 +71,7 @@ marketplace도, installer도, package manager도 아니며, GitHub 전체를 색
 자동 discovery는 다음을 **모두** 만족할 때만 repository를 추가합니다.
 
 - public repository
-- GitHub Stars **50 이상**
+- GitHub Stars **5000 이상**
 - fork 아님
 - archived 아님
 - 그리고 실제로 지원하는 artifact 파일이 들어 있을 것
@@ -159,7 +159,7 @@ AgentDock scheduled sync
     no artifacts found           0
 
   Declined by discovery policy   0
-    below 50 stars               0
+    below 5000 stars             0
     archived on GitHub           0
     a fork                       0
 
@@ -660,7 +660,7 @@ artifact와, 아무도 분석하지 않은 artifact는 다르게 표시됩니다
 | `no-host-sprawl` | `src/github/` 밖에 GitHub 호스트명이 등장 | "이 코드가 어디에 접속할 수 있는가"에 `git grep`이 완전하게 답합니다. 모든 URL은 검증된 두 조각으로 조립됩니다. |
 | `no-verdict-vocabulary` | UI 문구의 *safe*, *clean*, *verified*, *trusted*, *approved*, *malicious*, *grade*, *risk score* | 어떤 페이지도 안전성 판정을 렌더링하지 않습니다. |
 
-**50 star 하한선은 여기에 포함되지 않습니다.** request budget에 관한 scheduling
+**5000 star 하한선은 여기에 포함되지 않습니다.** request budget에 관한 scheduling
 규칙일 뿐이며, 통과시킨 대상에 대해 어떤 보증도 사지 않습니다.
 
 모든 artifact 본문은 출처를 붙인 상한 있는 발췌로 저장되며 미러가 아닙니다.
