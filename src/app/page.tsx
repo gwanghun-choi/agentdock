@@ -491,7 +491,7 @@ export default async function HomePage() {
               <dt>
                 <StarIcon /> Stars
               </dt>
-              <dd>
+              <dd style={{ '--chars': `${MIN_REPOSITORY_STARS}+`.length } as CSSProperties}>
                 {MIN_REPOSITORY_STARS}+<small>on GitHub, at the time it is first read</small>
               </dd>
               <dd className="notice">

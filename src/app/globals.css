@@ -5339,7 +5339,15 @@ code {
 }
 
 .stats .floor dd:not(.notice) {
-  font-size: clamp(7rem, 32vw, 30rem);
+  /* Drawn for the three characters of "50+". Each bound is divided by the
+     floor's own length (--chars, set from MIN_REPOSITORY_STARS), so "50+" is
+     what it was and "5000+" fits 320px: it overflowed by the full width at
+     the 7rem minimum (e2e, 2026-11-16). */
+  font-size: clamp(
+    calc(21rem / var(--chars, 3)),
+    calc(96vw / var(--chars, 3)),
+    calc(90rem / var(--chars, 3))
+  );
   font-weight: 760;
   letter-spacing: -0.07em;
   line-height: 0.8;
