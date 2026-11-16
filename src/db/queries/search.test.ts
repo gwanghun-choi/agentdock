@@ -226,10 +226,46 @@ describe.skipIf(!DB_URL)('the search query', () => {
     });
   });
 
+  // Phase 99's report, reproduced: `ponytail` listed one skill three times
+  // (skills/, .openclaw/skills/, and a copy elsewhere) above its own relatives.
+  it('lists the same artifact once, the exact name first, and counts what it lists', async () => {
+    const r = await repo('ponyq', { stars: 190_000 });
+    const skill = await artifact(r, 'skills/ponyqword/SKILL.md', [{ hash: 'pq-1' }], {
+      name: 'ponyqword',
+    });
+    const mirror = await artifact(r, '.openclaw/skills/ponyqword/SKILL.md', [{ hash: 'pq-2' }], {
+      name: 'ponyqword',
+    });
+    const plugin = await artifact(r, '.claude-plugin/plugin.json', [{ hash: 'pq-3' }], {
+      type: 'plugin',
+      name: 'ponyqword',
+    });
+    const gain = await artifact(r, 'skills/ponyqword-gain/SKILL.md', [{ hash: 'pq-4' }], {
+      name: 'ponyqword-gain',
+    });
+
+    const results = await search.searchPackages({ q: 'ponyqword' });
+    const ids = results.map((x) => x.id);
+    expect(ids).not.toContain(mirror);
+    expect(new Set(ids)).toEqual(new Set([skill, plugin, gain]));
+    // Exact names (the skill and the plugin, two kinds) above the prefix match.
+    expect(ids.indexOf(gain)).toBe(2);
+    expect(await search.countSearchResults({ q: 'ponyqword' })).toBe(3);
+    // A type filter counts groups too: the two skills, not three paths.
+    const skills = { types: ['skill'], capabilities: [] };
+    expect(
+      (await search.searchPackages({ q: 'ponyqword', filters: skills })).map((x) => x.id),
+    ).toEqual([skill, gain]);
+    expect(await search.countSearchResults({ q: 'ponyqword', filters: skills })).toBe(2);
+  });
+
   it("does not rank parse_status = 'partial' below an otherwise equal 'ok' row", async () => {
     const r = await repo('partial-rank');
+    // Two repositories: one name twice in one repository is one artifact at two
+    // paths since Phase 99 (packages.ts, `variant`), and search lists it once.
+    const r2 = await repo('partial-rank-2');
     await artifact(r, 'ok/SKILL.md', [{ hash: 'pr-ok' }], { name: 'partialrankword item' });
-    await artifact(r, 'partial/SKILL.md', [{ hash: 'pr-partial', status: 'partial' }], {
+    await artifact(r2, 'partial/SKILL.md', [{ hash: 'pr-partial', status: 'partial' }], {
       name: 'partialrankword item',
     });
 
@@ -410,10 +446,13 @@ describe.skipIf(!DB_URL)('the search query', () => {
 
     it('breaks a relevance tie by updated_at DESC', async () => {
       const r = await repo('tie-break-updated-at');
+      // Two repositories: one name twice in one repository is one artifact at two
+      // paths since Phase 99 (packages.ts, `variant`), and search lists it once.
+      const r2 = await repo('tie-break-updated-at-2');
       const olderId = await artifact(r, 'a/SKILL.md', [{ hash: 'tb1' }], {
         name: 'tiebreakword item',
       });
-      const newerId = await artifact(r, 'b/SKILL.md', [{ hash: 'tb2' }], {
+      const newerId = await artifact(r2, 'b/SKILL.md', [{ hash: 'tb2' }], {
         name: 'tiebreakword item',
       });
       await sql`UPDATE package SET updated_at = now() - interval '2 days' WHERE id = ${olderId}`;
@@ -421,15 +460,20 @@ describe.skipIf(!DB_URL)('the search query', () => {
 
       const results = await search.searchPackages({ q: 'tiebreakword' });
       const ids = results.map((x) => x.id);
+      // Both present first: with one missing, indexOf's -1 passed this vacuously.
+      expect(ids).toContain(olderId);
       expect(ids.indexOf(newerId)).toBeLessThan(ids.indexOf(olderId));
     });
 
     it('breaks a further tie (same updated_at) by id ASC', async () => {
       const r = await repo('tie-break-id');
+      // Two repositories: one name twice in one repository is one artifact at two
+      // paths since Phase 99 (packages.ts, `variant`), and search lists it once.
+      const r2 = await repo('tie-break-id-2');
       const idA = await artifact(r, 'a/SKILL.md', [{ hash: 'idtb1' }], {
         name: 'idtiebreakword item',
       });
-      const idB = await artifact(r, 'b/SKILL.md', [{ hash: 'idtb2' }], {
+      const idB = await artifact(r2, 'b/SKILL.md', [{ hash: 'idtb2' }], {
         name: 'idtiebreakword item',
       });
       // now() rather than a JS Date value: both rows get the identical
@@ -534,8 +578,11 @@ describe.skipIf(!DB_URL)('the search query', () => {
 
     it("does not rank parse_status = 'partial' below an otherwise equal 'ok' row (no ranking penalty)", async () => {
       const r = await repo('rank-partial');
+      // Two repositories: one name twice in one repository is one artifact at two
+      // paths since Phase 99 (packages.ts, `variant`), and search lists it once.
+      const r2 = await repo('rank-partial-2');
       await artifact(r, 'ok/SKILL.md', [{ hash: 'rankp-ok' }], { name: 'rankpartialword item' });
-      await artifact(r, 'partial/SKILL.md', [{ hash: 'rankp-partial', status: 'partial' }], {
+      await artifact(r2, 'partial/SKILL.md', [{ hash: 'rankp-partial', status: 'partial' }], {
         name: 'rankpartialword item',
       });
 

@@ -276,6 +276,187 @@ describe.skipIf(!DB_URL)('the listing queries', () => {
     });
   });
 
+  /**
+   * One artifact published at several paths of one repository (Phase 99). The
+   * fixtures mirror the pairs measured on GitHub in packages.ts's comment on
+   * sameArtifactAt; each name is the case it stands for.
+   */
+  describe('the same artifact at several paths (variant)', () => {
+    async function named(
+      repositoryId: number,
+      sourcePath: string,
+      name: string,
+      hash: string,
+      {
+        type = 'skill',
+        parentPath = null,
+        summary = 'Lazy senior dev mode.',
+        status = 'ok',
+      }: { type?: string; parentPath?: string | null; summary?: string; status?: string } = {},
+    ): Promise<number> {
+      const [row] = await sql<{ id: number }[]>`
+        INSERT INTO package (repository_id, type, source_path, name, slug, summary, parent_path)
+        VALUES (${repositoryId}, ${type}, ${sourcePath}, ${name}, ${name}, ${summary}, ${parentPath})
+        RETURNING id`;
+      const id = Number(row.id);
+      await sql`
+        INSERT INTO package_version (package_id, commit_sha, content_hash, parse_status)
+        VALUES (${id}, ${'c'.repeat(40)}, ${hash}, ${status})`;
+      return id;
+    }
+    const reasons = async (fullName: string) =>
+      Object.fromEntries(
+        (
+          await packages.getRepositoryPackages('test-owner', fullName.slice('test-owner/'.length))
+        )?.packages.map((p) => [p.sourcePath, p.notListedBecause]) ?? [],
+      );
+
+    it('lists one row for the same name and different content in one repository', async () => {
+      const r = await repo('var-pony', { stars: 190_000 });
+      await named(r, '.openclaw/skills/ponytail/SKILL.md', 'ponytail', 'h-openclaw');
+      await named(r, 'skills/ponytail/SKILL.md', 'ponytail', 'h-skills');
+      await named(r, 'skills/ponytail-gain/SKILL.md', 'ponytail-gain', 'h-gain');
+
+      // The path outside a dot-directory is the one listed, whichever was read first.
+      expect((await listed(`${PREFIX}-var-pony`)).sort()).toEqual([
+        'skills/ponytail-gain/SKILL.md',
+        'skills/ponytail/SKILL.md',
+      ]);
+      expect(await reasons(`${PREFIX}-var-pony`)).toMatchObject({
+        '.openclaw/skills/ponytail/SKILL.md': 'variant',
+        'skills/ponytail/SKILL.md': null,
+        'skills/ponytail-gain/SKILL.md': null,
+      });
+    });
+
+    it('keeps same-named skills of two different plugins apart', async () => {
+      const r = await repo('var-plugins');
+      await named(r, 'external_plugins/discord/skills/access/SKILL.md', 'access', 'h-d', {
+        parentPath: 'external_plugins/discord',
+      });
+      await named(r, 'external_plugins/telegram/skills/access/SKILL.md', 'access', 'h-t', {
+        parentPath: 'external_plugins/telegram',
+      });
+      expect(Object.values(await reasons(`${PREFIX}-var-plugins`))).toEqual([null, null]);
+    });
+
+    it('keeps a skill inside a plugin apart from a same-named one outside it', async () => {
+      const r = await repo('var-honey');
+      await named(r, '.openclaw/skills/honey-gain/SKILL.md', 'honey-gain', 'h-1');
+      await named(r, 'plugins/honey/skills/honey-gain/SKILL.md', 'honey-gain', 'h-2', {
+        parentPath: 'plugins/honey',
+      });
+      expect(Object.values(await reasons(`${PREFIX}-var-honey`))).toEqual([null, null]);
+    });
+
+    it('never groups across repositories by name alone', async () => {
+      const a = await repo('var-x-a', { stars: 190_000 });
+      const b = await repo('var-x-b', { stars: 84_700 });
+      await named(a, 'skills/ponytail/SKILL.md', 'ponytail', 'h-a');
+      await named(b, 'skills/ponytail/SKILL.md', 'ponytail', 'h-b');
+      expect(await listed(`${PREFIX}-var-x-a`)).toEqual(['skills/ponytail/SKILL.md']);
+      expect(await listed(`${PREFIX}-var-x-b`)).toEqual(['skills/ponytail/SKILL.md']);
+    });
+
+    it('keeps a translation listed: a description in another writing system', async () => {
+      const r = await repo('var-lang');
+      await named(r, 'skills/agent-eval/SKILL.md', 'agent-eval', 'h-en', {
+        summary: 'Evaluate agents against a fixed task set.',
+      });
+      await named(r, 'docs/zh-CN/skills/agent-eval/SKILL.md', 'agent-eval', 'h-zh', {
+        summary: '针对固定任务集评估智能体的表现和稳定性',
+      });
+      expect(Object.values(await reasons(`${PREFIX}-var-lang`))).toEqual([null, null]);
+    });
+
+    it('never groups kinds whose name AgentDock derives, nor two kinds', async () => {
+      const r = await repo('var-kinds');
+      await named(r, '.claude-plugin/plugin.json', 'ponytail', 'h-p', { type: 'plugin' });
+      await named(r, 'skills/ponytail/SKILL.md', 'ponytail', 'h-s');
+      await named(r, 'a/.claude-plugin/plugin.json', 'ponytail', 'h-p2', { type: 'plugin' });
+      expect(Object.values(await reasons(`${PREFIX}-var-kinds`))).toEqual([null, null, null]);
+    });
+
+    it('does not hide a row behind a variant AgentDock could not parse', async () => {
+      const r = await repo('var-failed');
+      await named(r, 'skills/x/SKILL.md', 'x', 'h-ok-ish', { status: 'failed' });
+      await named(r, '.agents/skills/x/SKILL.md', 'x', 'h-ok');
+      expect(await reasons(`${PREFIX}-var-failed`)).toMatchObject({
+        'skills/x/SKILL.md': 'unparsed',
+        '.agents/skills/x/SKILL.md': null,
+      });
+    });
+
+    // Code review, 2026-11-16: two repositories at equal stars holding one pair
+    // of files at swapped paths. Before the duplicate test asked whether its
+    // survivor was itself a variant, all four rows deferred to one another.
+    it('never hides a whole group when two repositories swap the same pair of files', async () => {
+      const r1 = await repo('var-swap-1', { stars: 7000 });
+      const r2 = await repo('var-swap-2', { stars: 7000 });
+      await named(r1, '.openclaw/skills/q/SKILL.md', 'q', 'h-C');
+      await named(r2, '.openclaw/skills/q/SKILL.md', 'q', 'h-A');
+      await named(r1, 'skills/q/SKILL.md', 'q', 'h-A');
+      await named(r2, 'skills/q/SKILL.md', 'q', 'h-C');
+      const shown = [
+        ...(await listed(`${PREFIX}-var-swap-1`)),
+        ...(await listed(`${PREFIX}-var-swap-2`)),
+      ];
+      expect(shown).toEqual(['skills/q/SKILL.md', 'skills/q/SKILL.md']);
+    });
+
+    it('counts the group once, so a total and its pages agree', async () => {
+      const before = await packages.countPackages();
+      const r = await repo('var-count');
+      await named(r, 'skills/y/SKILL.md', 'y', 'h-y1');
+      await named(r, '.openclaw/skills/y/SKILL.md', 'y', 'h-y2');
+      await named(r, '.agents/skills/y/SKILL.md', 'y', 'h-y3');
+      expect((await packages.countPackages()) - before).toBe(1);
+    });
+
+    it('names the other sources on the page and counts them for the card', async () => {
+      const r = await repo('var-src', { stars: 900 });
+      const copy = await repo('var-src-copy', { stars: 10 });
+      const listedId = await named(r, 'skills/z/SKILL.md', 'z', 'h-z');
+      const variant = await named(r, '.openclaw/skills/z/SKILL.md', 'z', 'h-z-other');
+      await named(copy, 'vendor/z/SKILL.md', 'z', 'h-z');
+
+      const counts = await packages.countOtherSources([listedId, variant]);
+      expect(counts.get(listedId)).toBe(2);
+      // The hidden variant is not byte-identical to the copy: its one other source.
+      expect(counts.get(variant)).toBe(1);
+
+      const { sources, total } = await packages.getOtherSources(variant);
+      expect(total).toBe(1);
+      expect(sources).toEqual([
+        {
+          name: 'z',
+          type: 'skill',
+          sourcePath: 'skills/z/SKILL.md',
+          fullName: `${PREFIX}-var-src`,
+          identical: false,
+          listed: true,
+        },
+      ]);
+      const fromListed = await packages.getOtherSources(listedId);
+      expect(fromListed.sources.map((s) => [s.fullName, s.identical, s.listed])).toEqual([
+        [`${PREFIX}-var-src`, false, false],
+        [`${PREFIX}-var-src-copy`, true, false],
+      ]);
+    });
+
+    it('keeps a grouped row at its own URL', async () => {
+      const r = await repo('var-url');
+      await named(r, 'skills/w/SKILL.md', 'w', 'h-w1');
+      await named(r, '.openclaw/skills/w/SKILL.md', 'w', 'h-w2');
+      const detail = await packages.getPackageDetail('test-owner', 'listing-spec-var-url', [
+        '.openclaw',
+        'skills',
+        'w',
+      ]);
+      expect(detail?.sourcePath).toBe('.openclaw/skills/w/SKILL.md');
+    });
+  });
+
   describe('listingOnly', () => {
     it('returns suppressed rows with reasons when it is false, and only listed rows when true', async () => {
       const r = await repo('both', { stars: 1 });

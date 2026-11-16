@@ -1,0 +1,23 @@
+-- Additive: one btree index, no data change, no column change.
+--
+-- NOT_LISTED_BECAUSE's `variant` test (src/db/queries/packages.ts) asks, for
+-- every candidate row of every listing, search and count, whether its
+-- repository holds another artifact of the same kind and name. Without this
+-- index that probe reads every row of the repository and kind. Measured
+-- 2026-11-16 on a local PostgreSQL 17, 89k synthetic packages with one
+-- repository of 1,068 skills: the count of every listed row 2,188 -> 779 ms
+-- (629 ms before the test existed), that repository's own page 350 -> 13 ms.
+-- 3.5 MB at 89k rows.
+--
+-- Not CONCURRENTLY: scripts/migrate.mjs runs each migration in a transaction.
+-- A plain CREATE INDEX blocks writes to package (not reads) while it builds;
+-- run it outside a sync window.
+--
+-- Numbered 0012: the Phase 94 contract patch
+-- (docs/analysis/phase94-artifacts/contract-0012.patch, untracked) was written
+-- as 0012 against 0011 and must be regenerated as 0013 before it is applied.
+--
+-- Rollback (no code depends on the index for correctness, only for speed):
+--   DROP INDEX "agentdock"."package_variant_probe_idx";
+--   DELETE FROM "agentdock"."__drizzle_migrations" WHERE created_at = <0012's "when" in meta/_journal.json>;
+CREATE INDEX "package_variant_probe_idx" ON "agentdock"."package" USING btree ("repository_id","type",lower("name"));

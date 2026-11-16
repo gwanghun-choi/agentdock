@@ -49,6 +49,7 @@ export default async function RepositoryPage({ params }: Props) {
     fork: notListed.filter((p) => p.notListedBecause === 'fork').length,
     duplicate: notListed.filter((p) => p.notListedBecause === 'duplicate').length,
     unparsed: notListed.filter((p) => p.notListedBecause === 'unparsed').length,
+    variant: notListed.filter((p) => p.notListedBecause === 'variant').length,
   };
   // Says where the artifact is, or what AgentDock did, never what it is worth.
   // "A fork on GitHub" is a location. "Byte-identical to" is a measurement.
@@ -64,6 +65,9 @@ export default async function RepositoryPage({ params }: Props) {
       : null,
     byReason.unparsed > 0
       ? `${byReason.unparsed} ${byReason.unparsed === 1 ? 'has' : 'have'} a file whose frontmatter AgentDock could not read`
+      : null,
+    byReason.variant > 0
+      ? `${byReason.variant} ${byReason.variant === 1 ? 'is the same artifact as another one listed from this repository, at a second path' : 'are the same artifact as another one listed from this repository, at a second path'}`
       : null,
   ].filter((line) => line !== null);
   // What AgentDock is currently doing about this repository. A succeeded job

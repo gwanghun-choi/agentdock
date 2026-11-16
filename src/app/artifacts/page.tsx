@@ -21,6 +21,7 @@ import { USAGE_GUIDES } from '@/components/usageGuide';
 import { MIN_REPOSITORY_STARS } from '@/corpus/policy';
 import { readHomeData } from '@/db/queries/homeSnapshot';
 import { HIDDEN_UNLESS_ASKED } from '@/db/queries/language';
+import { countOtherSources } from '@/db/queries/packages';
 import {
   ANY_LANGUAGE,
   ARTIFACT_TYPE_IDS,
@@ -501,6 +502,9 @@ export default async function ArtifactsPage({
     searchPackages({ q, filters, limit: SEARCH_CAPS.pageSize, offset, mode, sort }),
     countSearchResults({ q, filters, mode }),
   ]);
+  // One statement for the 25 rows on screen, so a card can say where else the
+  // same artifact was read. Inside the timed span: the search line is the page.
+  const otherSources = await countOtherSources(items.map((item) => item.id));
   const durationMs = Date.now() - start;
 
   log({
@@ -921,7 +925,7 @@ export default async function ArtifactsPage({
               </p>
             ) : null}
           </div>
-          <PackageRows date={sort} items={items} />
+          <PackageRows date={sort} items={items} otherSources={otherSources} />
         </div>
       </>
     );
@@ -984,7 +988,7 @@ export default async function ArtifactsPage({
           <AppliedFilters filters={filters} q={q} sort={sort} />
           <SortLinks filters={filters} q={q} sort={sort} />
         </div>
-        <PackageRows date={sort} items={items} pathQuery={pathQuery} />
+        <PackageRows date={sort} items={items} otherSources={otherSources} pathQuery={pathQuery} />
         <Pager filters={filters} last={last} page={page} q={q} sort={sort} />
       </div>
     </>

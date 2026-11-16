@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
 import { cache } from 'react';
 import type { FileEntry } from '@/analyze/types';
 import { sourcePathCandidates } from '@/components/hrefs';
@@ -9,11 +9,12 @@ import {
   type CjkLanguage,
   SUMMARY_LANGUAGE,
   type SummaryLanguage,
+  summaryLanguage,
   visibleLanguage,
 } from './language';
 
 /** Why an artifact is not in AgentDock's listings. Null means it is. */
-export type NotListedReason = 'fork' | 'duplicate' | 'unparsed';
+export type NotListedReason = 'fork' | 'duplicate' | 'unparsed' | 'variant';
 
 export type PackageListItem = {
   id: number;
@@ -47,6 +48,117 @@ function latestVersion(column: 'parse_status' | 'content_hash', packageId = pack
     select v.${sql.raw(column)} from ${packageVersion} v
     where v.package_id = ${packageId}
     order by v.ingested_at desc limit 1
+  )`;
+}
+
+/** The columns the group tests below read, from the outer row or an alias. */
+type GroupColumns = {
+  id: SQLWrapper;
+  repositoryId: SQLWrapper;
+  type: SQLWrapper;
+  name: SQLWrapper;
+  parentPath: SQLWrapper;
+  summary: SQLWrapper;
+  sourcePath: SQLWrapper;
+  meta: SQLWrapper;
+};
+
+const OUTER: GroupColumns = {
+  id: packageTable.id,
+  repositoryId: packageTable.repositoryId,
+  type: packageTable.type,
+  name: packageTable.name,
+  parentPath: packageTable.parentPath,
+  summary: packageTable.summary,
+  sourcePath: packageTable.sourcePath,
+  meta: packageTable.meta,
+};
+
+/** An alias's columns. The alias is a literal in this file, never an input. */
+function aliased(alias: 'p2' | 'p3' | 'p4' | 't'): GroupColumns {
+  const c = (column: string) => sql.raw(`${alias}.${column}`);
+  return {
+    id: c('id'),
+    repositoryId: c('repository_id'),
+    type: c('type'),
+    name: c('name'),
+    parentPath: c('parent_path'),
+    summary: c('summary'),
+    sourcePath: c('source_path'),
+    meta: c('meta'),
+  };
+}
+
+/**
+ * The kinds whose name the author writes into the file (a skill's and a
+ * subagent's frontmatter `name`, a command's file name). A plugin, an MCP
+ * server and a hook configuration are named by AgentDock from a path or a
+ * manifest, so an equal name there says nothing and those never group.
+ */
+const VARIANT_TYPES = ['skill', 'command', 'agent'] as const;
+
+/**
+ * `c` is the same artifact as `t` published at a second path: same repository,
+ * same kind, same name ignoring case, inside the same plugin (or both outside
+ * any), and a description in the same writing system. Every term is a stored
+ * fact; nothing here scores text.
+ *
+ * Measured 2026-11-16 against the files on GitHub, which is why each term is
+ * here and why a text-similarity threshold is not:
+ *
+ * - DietrichGebert/ponytail `skills/ponytail` and `.openclaw/skills/ponytail`
+ *   are 0.95 similar (difflib ratio) and are one skill laid out for a second
+ *   agent. Both sit outside any plugin directory: they group.
+ * - anthropics/claude-plugins-official `external_plugins/discord/skills/access`
+ *   and `.../telegram/skills/access` are 0.90 similar and do different things —
+ *   one per chat service. Their plugins differ: they do not group. A threshold
+ *   between 0.90 and 0.95 would be a guess that the next pair breaks.
+ * - cheaper-inference/OmniRoute `skills/ponytail` is 0.26 similar to
+ *   DietrichGebert's: a different skill with the same name in another
+ *   repository. Repositories never group here; byte-identical copies across
+ *   repositories are the `duplicate` reason's, which needs equal bytes.
+ * - affaan-m/everything-claude-code keeps `docs/ja-JP/skills/<name>` beside
+ *   `skills/<name>`. The writing-system term keeps a translation listed, so
+ *   the language filter still finds it.
+ *
+ * Green-PT/honey-for-devs's `.openclaw/skills/honey-gain` and
+ * `plugins/honey/skills/honey-gain` (0.94) do NOT group: one is inside a plugin
+ * and one is not, which is exactly the discord/telegram shape. That is the
+ * conservative side of the line, on purpose.
+ */
+function sameArtifactAt(c: GroupColumns, t: GroupColumns) {
+  return sql`${c.repositoryId} = ${t.repositoryId}
+    and ${c.type} = ${t.type}
+    and ${t.type} in (${sql.join(
+      VARIANT_TYPES.map((v) => sql`${v}`),
+      sql`, `,
+    )})
+    and lower(${c.name}) = lower(${t.name})
+    and ${c.parentPath} is not distinct from ${t.parentPath}
+    and ${c.id} <> ${t.id}
+    and ${summaryLanguage(sql`${c.summary}`)} is not distinct from ${summaryLanguage(sql`${t.summary}`)}`;
+}
+
+/**
+ * Which path of a group is the one listed: lowest wins. Outside a dot-directory
+ * first (`skills/x` before `.openclaw/skills/x` and `.agents/skills/x`, which
+ * are layouts for another agent), then the shallower path, then the shorter,
+ * then the earlier-indexed id, so the order is total and one member survives.
+ * Stars are not in it — every member is in one repository — and it says which
+ * path the listing shows, not which file came first.
+ */
+function groupRank(c: GroupColumns) {
+  return sql`(${c.sourcePath} ~ ${'(^|/)\\.'},
+    length(${c.sourcePath}) - length(replace(${c.sourcePath}, '/', '')),
+    length(${c.sourcePath}),
+    ${c.id})`;
+}
+
+/** The latest version's parse status for an aliased row. */
+function latestParseOf(c: GroupColumns) {
+  return sql`(
+    select z.parse_status from ${packageVersion} z
+    where z.package_id = ${c.id} order by z.ingested_at desc limit 1
   )`;
 }
 
@@ -158,7 +270,28 @@ export const NOT_LISTED_BECAUSE = sql<NotListedReason | null>`case
       and p2.meta->>'detectionConfidence' is distinct from 'shape-only'
       and (r2.stars > ${repository.stars}
            or (r2.stars = ${repository.stars} and p2.id < ${packageTable.id}))
+      -- The surviving copy must not itself be a variant (below). Without this,
+      -- two repositories holding one pair of files at swapped paths hide all
+      -- four rows: each copy defers to a row that defers elsewhere. Asking the
+      -- variant test of p2 directly is not recursive — it reads no duplicate.
+      -- ponytail: measured 2026-11-16, 89k synthetic rows with 1 in 17 sharing a
+      -- hash: the full listed count 779 -> 964 ms (629 ms before Phase 99). Revisit
+      -- with a stored listed flag when a live count passes 1 s in production.
+      and not exists (
+        select 1 from ${packageTable} p4
+        where ${sameArtifactAt(aliased('p4'), aliased('p2'))}
+          and p4.delisted_at is null
+          and ${groupRank(aliased('p4'))} < ${groupRank(aliased('p2'))}
+          and ${latestParseOf(aliased('p4'))} is distinct from 'failed'
+      )
   ) then 'duplicate'
+  when exists (
+    select 1 from ${packageTable} p3
+    where ${sameArtifactAt(aliased('p3'), OUTER)}
+      and p3.delisted_at is null
+      and ${groupRank(aliased('p3'))} < ${groupRank(OUTER)}
+      and ${latestParseOf(aliased('p3'))} is distinct from 'failed'
+  ) then 'variant'
   else null
 end`;
 
@@ -653,6 +786,114 @@ export const getRelatedPackages = cache(
       elsewhere: rest.filter((r) => !r.sibling).map(strip),
       siblingTotal,
       elsewhereTotal: (rest[0]?.total ?? 0) - siblingTotal,
+    };
+  },
+);
+
+/**
+ * The other places the artifact aliased `t` is published: the same artifact at
+ * another path of its repository (sameArtifactAt — what the `variant` reason
+ * folds into one listed row), and byte-identical copies anywhere (what the
+ * `duplicate` reason folds). A UNION of ids, so a path that is both counts once.
+ * Shape-only plugins never match on content, for the reason NOT_LISTED_BECAUSE
+ * gives.
+ */
+function otherSourceIds() {
+  const t = aliased('t');
+  return sql`
+    select p3.id from ${packageTable} p3
+    where ${sameArtifactAt(aliased('p3'), t)} and p3.delisted_at is null
+    union
+    select p2.id from ${packageVersion} v2
+    join ${packageTable} p2 on p2.id = v2.package_id
+    where v2.content_hash = (
+        select z.content_hash from ${packageVersion} z
+        where z.package_id = t.id order by z.ingested_at desc limit 1
+      )
+      and v2.id = (
+        select z.id from ${packageVersion} z
+        where z.package_id = p2.id order by z.ingested_at desc limit 1
+      )
+      and p2.id <> t.id
+      and p2.delisted_at is null
+      and p2.meta->>'detectionConfidence' is distinct from 'shape-only'
+      and t.meta->>'detectionConfidence' is distinct from 'shape-only'`;
+}
+
+/**
+ * How many other sources each of `ids` has, for the result cards. Missing from
+ * the map means none. One statement for a page of 25 rows.
+ */
+export async function countOtherSources(ids: readonly number[]): Promise<Map<number, number>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.execute<{ id: number; n: number }>(sql`
+    select t.id::int as id, (select count(*) from (${otherSourceIds()}) s)::int as n
+    from ${packageTable} t
+    where t.id in (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )})`);
+  return new Map(rows.filter((r) => r.n > 0).map((r) => [Number(r.id), Number(r.n)]));
+}
+
+export type OtherSource = {
+  name: string;
+  type: string;
+  sourcePath: string;
+  fullName: string;
+  /** Equal bytes; false is the same artifact at another path of the repository. */
+  identical: boolean;
+  /** This is the row the listings show for the group. */
+  listed: boolean;
+};
+
+/** How many other sources the detail page names before saying how many it left out. */
+export const OTHER_SOURCES_LIMIT = 20;
+
+/**
+ * The other sources of one artifact, for its page: the row the listings show
+ * first, then the same repository, then by repository and path. Each keeps its
+ * own page, commit and install instructions — this lists where they are and
+ * mixes nothing between them.
+ */
+export const getOtherSources = cache(
+  async (packageId: number): Promise<{ sources: OtherSource[]; total: number }> => {
+    const latestHash = (id: SQLWrapper) => sql`(
+      select z.content_hash from ${packageVersion} z
+      where z.package_id = ${id} order by z.ingested_at desc limit 1
+    )`;
+    const rows = await db
+      .select({
+        name: packageTable.name,
+        type: packageTable.type,
+        sourcePath: packageTable.sourcePath,
+        fullName: repository.fullName,
+        identical: sql<boolean>`${latestHash(packageTable.id)} is not distinct from ${latestHash(sql`${packageId}::bigint`)}`,
+        listed: sql<boolean>`${NOT_LISTED_BECAUSE} is null`,
+        total: sql<number>`(count(*) over ())::int`,
+      })
+      .from(packageTable)
+      .innerJoin(repository, eq(packageTable.repositoryId, repository.id))
+      .where(
+        sql`${packageTable.id} in (select s.id from ${packageTable} t, lateral (${otherSourceIds()}) s where t.id = ${packageId})`,
+      )
+      .orderBy(
+        sql`${NOT_LISTED_BECAUSE} is null desc`,
+        sql`${packageTable.repositoryId} = (select t.repository_id from ${packageTable} t where t.id = ${packageId}) desc`,
+        sql`lower(${repository.fullName})`,
+        packageTable.sourcePath,
+      )
+      .limit(OTHER_SOURCES_LIMIT);
+    return {
+      sources: rows.map(({ name, type, sourcePath, fullName, identical, listed }) => ({
+        name,
+        type,
+        sourcePath,
+        fullName,
+        identical,
+        listed,
+      })),
+      total: rows[0]?.total ?? 0,
     };
   },
 );

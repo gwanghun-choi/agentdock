@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DETECTORS } from '@/detect';
+import { assignParentPaths } from '@/detect/nesting';
 import { collectCandidates } from '@/detect/run';
 import { caseMetrics } from './searchMetrics';
 
@@ -279,6 +280,8 @@ type Row = {
   path: string;
   name: string;
   summary: string | null;
+  /** nesting.ts's containment, as the pipeline stores it. */
+  parentPath?: string | null;
 };
 
 async function corpus(): Promise<Row[]> {
@@ -292,7 +295,12 @@ async function corpus(): Promise<Row[]> {
     }
     const repo = JSON.parse(readFileSync(`fixtures/${slug}/repo.json`, 'utf8'));
     const captured = new Set(readdirSync(`fixtures/${slug}/files`).map(decodeURIComponent));
-    for (const pass of collectCandidates(DETECTORS, tree)) {
+    // The pipeline's own nesting pass (pipeline.ts). Without it every row is
+    // top-level, and two same-named commands of two plugins read as one
+    // artifact at two paths (`variant`, packages.ts) — which they are not.
+    const passes = collectCandidates(DETECTORS, tree);
+    assignParentPaths(passes.flatMap((p) => p.candidates));
+    for (const pass of passes) {
       for (const c of pass.candidates) {
         if (c.needs.length === 0 || !captured.has(c.needs[0])) continue;
         const r = await pass.detector.parse(c, async (p) =>
@@ -307,6 +315,7 @@ async function corpus(): Promise<Row[]> {
           path: c.sourcePath,
           name: r.artifact.name,
           summary: r.artifact.summary,
+          parentPath: c.parentPath ?? null,
         });
       }
     }
@@ -380,8 +389,9 @@ describe.skipIf(!DB_URL)('search evaluation set', () => {
         repoIds.set(row.repo, id);
       }
       const [p] = await sql<{ id: number }[]>`
-        INSERT INTO package (repository_id, type, source_path, name, slug, summary)
-        VALUES (${id}, ${row.type}, ${row.path}, ${row.name}, ${row.name}, ${row.summary})
+        INSERT INTO package (repository_id, type, source_path, name, slug, summary, parent_path)
+        VALUES (${id}, ${row.type}, ${row.path}, ${row.name}, ${row.name}, ${row.summary},
+                ${row.parentPath ?? null})
         ON CONFLICT DO NOTHING
         RETURNING id`;
       if (!p) continue;

@@ -27,6 +27,7 @@ import { TYPE_FILTER_LABELS } from '@/components/typeFilters';
 import { USAGE_GUIDES } from '@/components/usageGuide';
 import { getCapabilityFindings, splitHiddenContent } from '@/db/queries/capabilities';
 import {
+  getOtherSources,
   getPackageDetail,
   getRelatedPackages,
   getVersionHistory,
@@ -139,10 +140,11 @@ export default async function PackagePage({ params }: Props) {
   }
 
   // Independent reads, one round trip of latency instead of three.
-  const [findings, related, history] = await Promise.all([
+  const [findings, related, history, others] = await Promise.all([
     getCapabilityFindings(detail.packageVersionId),
     getRelatedPackages(detail),
     getVersionHistory(detail.id),
+    getOtherSources(detail.id),
   ]);
   // The general list and the Hidden Content panel below never show the same
   // row twice — see splitHiddenContent's own doc.
@@ -558,6 +560,45 @@ export default async function PackagePage({ params }: Props) {
           which already has a measured ranking (search.eval.test.ts), rather
           than ranking "similar" artifacts with a second, unmeasured one. */}
             <h2 id="related">Related artifacts</h2>
+            {others.sources.length > 0 ? (
+              <>
+                {/* Where else this same artifact was read, each at its own page,
+                commit and install instructions — nothing here is merged into
+                this page. Search lists one row per group, and says which. */}
+                <h3 id="sources">Other sources of this artifact</h3>
+                <p className="muted">
+                  This page is {detail.fullName} at {detail.sourcePath}. Search lists the same
+                  artifact once; each source below keeps its own page and commit.
+                </p>
+                <ul className="related-grid">
+                  {others.sources.map((o) => (
+                    <li
+                      className={`related-card hue-${o.type}`}
+                      data-tilt=""
+                      key={`${o.fullName}:${o.type}:${o.sourcePath}`}
+                    >
+                      <Link href={detailHref(o.fullName, o.sourcePath, o.type)}>
+                        {o.fullName === detail.fullName ? o.sourcePath : o.fullName}
+                      </Link>{' '}
+                      <span className="muted path">
+                        {o.fullName !== detail.fullName
+                          ? o.sourcePath
+                          : o.identical
+                            ? 'in this repository'
+                            : 'same name in this repository'}
+                        {o.identical ? ' · byte-identical' : ''}
+                        {o.listed ? ' · the one search lists' : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {others.total > others.sources.length ? (
+                  <p className="muted">
+                    Showing {others.sources.length} of {others.total} other sources.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
             {related.container || related.components.length > 0 || related.siblings.length > 0 ? (
               <p className="muted">
                 Linked by directory: an artifact whose path sits under a plugin&apos;s root. A

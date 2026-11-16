@@ -95,7 +95,9 @@ const CASES: Case[] = [
     relevant: [
       'skillmds/skillmd/plugins/mcp-security-audit-pipeline/skills/browser-automation/SKILL.md',
       'coco-research/coco/systems/reverse-skill/skills/browser-automation/SKILL.md',
-      'zenstory-ai/oh-story-claudecode/skills/story-setup/references/opencode/commands/browser-cdp.md',
+      // One command laid out for two tools, `references/opencode/` and
+      // `references/zcode/`, in one repository. Since Phase 99 search lists it
+      // once (packages.ts, `variant`), at the shorter path; judged once.
       'zenstory-ai/oh-story-claudecode/skills/story-setup/references/zcode/commands/browser-cdp.md',
     ],
   },
@@ -258,7 +260,7 @@ describe.skipIf(!DB_URL)('multilingual search evaluation set', () => {
     'zh-math-modeling': { total: 7, firstRelevant: 1 },
     'zh-code-review': { total: 6, firstRelevant: 2 },
     'zh-document-processing': { total: 0, firstRelevant: null },
-    'zh-browser-automation': { total: 4, firstRelevant: 1 },
+    'zh-browser-automation': { total: 3, firstRelevant: 1 },
     'ja-math-modeling': { total: 0, firstRelevant: null },
     'ja-code-review': { total: 3, firstRelevant: 1 },
     'ja-document-processing': { total: 0, firstRelevant: null },

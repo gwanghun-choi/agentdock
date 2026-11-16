@@ -84,6 +84,7 @@ export function PackageRows({
   pathQuery,
   date,
   preview = false,
+  otherSources,
 }: {
   items: (PackageListItem & Partial<SearchResultItem>)[];
   showRepo?: boolean;
@@ -93,6 +94,8 @@ export function PackageRows({
   date?: string;
   /** The home feed: a row's pane cuts its description, so it links to all of it. */
   preview?: boolean;
+  /** Other sources per artifact id (packages.ts, countOtherSources); absent means none. */
+  otherSources?: ReadonlyMap<number, number>;
 }) {
   return (
     <ul className="rows">
@@ -181,6 +184,12 @@ export function PackageRows({
                   >
                     <StarIcon /> {compactStars(p.stars)}
                   </span>
+                  {otherSources?.get(p.id) ? (
+                    <span title="The same artifact at another path of this repository, or a byte-identical copy elsewhere. The artifact's page lists each one.">
+                      {otherSources.get(p.id)} other{' '}
+                      {otherSources.get(p.id) === 1 ? 'source' : 'sources'}
+                    </span>
+                  ) : null}
                   {p.scannedAt ? (
                     <span>
                       <ClockIcon /> read {p.scannedAt.toISOString().slice(0, 10)}

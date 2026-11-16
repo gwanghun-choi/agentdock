@@ -224,6 +224,12 @@ export const packageTable = agentdock.table(
     // before 0011 still names it in ON CONFLICT. drizzle/0011_path_digest_identity.sql.
     unique('package_identity').on(t.repositoryId, t.type, t.sourcePath),
     index('package_live_idx').on(t.type, t.updatedAt.desc()),
+    // NOT_LISTED_BECAUSE's `variant` test (src/db/queries/packages.ts) looks up
+    // a row's same-named siblings in its repository for every listing, search
+    // and count. Measured 2026-11-16 on 89k synthetic packages, one repository
+    // of 1,068 skills: count of every listed row 2,188 -> 779 ms (629 ms before
+    // the test existed), that one repository's page 350 -> 13 ms. 3.5 MB.
+    index('package_variant_probe_idx').on(t.repositoryId, t.type, sql`lower(${t.name})`),
     index('package_search_vector_idx').using('gin', t.searchVector),
     // Typo-tolerance fallback (DIS-04, 06-04). Matches
     // src/db/queries/search.ts's fuzzy-branch expression character for

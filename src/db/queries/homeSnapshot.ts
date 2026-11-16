@@ -48,7 +48,7 @@ const snapshotSchema = z.object({
         stars: z.number(),
         commitSha: z.string().nullable(),
         scannedAt: z.coerce.date().nullable(),
-        notListedBecause: z.enum(['fork', 'duplicate', 'unparsed']).nullable(),
+        notListedBecause: z.enum(['fork', 'duplicate', 'unparsed', 'variant']).nullable(),
         summaryLanguage: z.string().nullable().optional(),
       })
       .strict(),
