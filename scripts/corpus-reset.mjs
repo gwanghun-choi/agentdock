@@ -15,7 +15,8 @@
 // WHAT IT DOES NOT DO, structurally:
 //
 //   * No DROP of anything. No DROP SCHEMA, DROP TABLE, DROP INDEX, DROP TYPE,
-//     DROP EXTENSION. Only DELETE, only from tables this file names literally.
+//     DROP EXTENSION. One TRUNCATE of the tables this file names literally, no
+//     CASCADE, and a DELETE of named schema_meta keys.
 //   * No table outside `agentdock`. Every name below is schema-qualified with a
 //     literal; this script takes no schema argument and interpolates nothing.
 //   * No reference or configuration data. artifact_type is the dimension the
@@ -73,15 +74,18 @@ if (!url) {
 }
 
 /**
- * Delete order, parent last.
+ * Every corpus table, named. One TRUNCATE takes them together, and WITHOUT
+ * CASCADE: a table outside this list that gained a foreign key into one of them
+ * makes the statement fail and change nothing, rather than empty that table too.
  *
- * Every one of these relationships is ON DELETE CASCADE, so `DELETE FROM
- * repository` alone would take package, package_version and capability_finding
- * with it. They are named anyway: a cascade is a property of the schema that a
- * future migration can change without touching this file, and a reset that
- * silently stopped deleting findings would be discovered as a corpus that never
- * quite empties. Naming them makes the intent explicit and costs one statement
- * each against tables that are already empty by the time they run.
+ * TRUNCATE, not DELETE, since 2026-11-16. The first reset of a hosted corpus
+ * ran at its storage allowance (Neon project size limit, SQLSTATE 53100,
+ * docs/analysis/agentdock-phase98-sync-53100.md). A DELETE leaves every file its
+ * size, so the project stays at the limit and the next statement that grows a
+ * file — an insert, or a migration's CREATE INDEX — fails exactly as before.
+ * TRUNCATE gives each table a new empty file and frees the old one at commit.
+ * It takes ACCESS EXCLUSIVE on all seven until then; lock_timeout bounds the
+ * wait behind a reader to 5 s, after which it fails and changes nothing.
  */
 const TABLES = [
   'capability_finding',
@@ -107,34 +111,59 @@ try {
   }
   console.log(`corpus-reset: ${where.role}@${where.db}, schema ${where.schema}`);
 
-  // One transaction. A reset that failed halfway would leave package rows whose
-  // repository is gone — which the foreign keys forbid, so it would fail
-  // anyway, but as a confusing error rather than as a clean rollback.
+  // Counted and emptied in one transaction, so the counts are what was emptied.
   const deleted = await sql.begin(async (tx) => {
+    await tx.unsafe(`set local lock_timeout = '5s'`);
+    // Locked before counting, so no row committed between the count and the
+    // TRUNCATE goes uncounted.
+    await tx.unsafe(
+      `lock table ${TABLES.map((t) => `"${schema}"."${t}"`).join(', ')} in access exclusive mode`,
+    );
     const counts = [];
     for (const table of TABLES) {
       // Schema-qualified with the validated literal, table name from the frozen
       // list above. Nothing here comes from an argument.
-      const rows = await tx.unsafe(`delete from "${schema}"."${table}" returning 1`);
-      counts.push([table, rows.length]);
+      const [row] = await tx.unsafe(`select count(*)::bigint as n from "${schema}"."${table}"`);
+      counts.push([table, Number(row.n)]);
     }
-    // The corpus sweep cursors: where each acquisition source stopped. They
-    // describe a corpus that no longer exists, so leaving them would make the
-    // next registry sync resume past everything this reset just removed.
-    // So does the home snapshot, whose rows would link to artifacts that are gone.
-    // `last_boot` is a deployment fact, not corpus state, and stays.
-    const cursors = await tx.unsafe(
-      `delete from "${schema}"."schema_meta" where key like 'corpus_sweep:%' or key = 'home:snapshot' returning 1`,
-    );
-    counts.push(['schema_meta (corpus_sweep cursors, home snapshot)', cursors.length]);
+    await tx.unsafe(`truncate ${TABLES.map((t) => `"${schema}"."${t}"`).join(', ')}`);
     return counts;
   });
+
+  // A second transaction, after the first has freed the space: a DELETE is
+  // refused while a hosted project is over its limit. If this one fails, the
+  // corpus is already empty and running the reset again finishes it — the home
+  // page meanwhile drops snapshot rows that no longer exist (homeSnapshot.ts).
+  //
+  // The corpus sweep cursors describe a corpus that no longer exists, so leaving
+  // them would make the next registry sync resume past everything this reset
+  // just removed. The home snapshot would link to artifacts that are gone. The
+  // two sync:* keys describe runs over that corpus: the home page would say a
+  // sync finished beside "Nothing indexed yet", and the next run would compare
+  // its queue with the old one. `last_boot` is a deployment fact and stays.
+  let cursors;
+  try {
+    cursors = await sql.unsafe(
+      `delete from "${schema}"."schema_meta" where key like 'corpus_sweep:%' or key = 'home:snapshot' or key in ('sync:last_success', 'sync:last_attempt') returning 1`,
+    );
+  } catch (error) {
+    // Said before failing: the tables ARE empty, and the cursors left behind
+    // would make the next sync resume past everything that was just removed.
+    for (const [table, n] of deleted) {
+      console.error(`corpus-reset:   ${String(n).padStart(7)} row(s) from ${table} — TRUNCATED`);
+    }
+    console.error(
+      `corpus-reset: the corpus tables were emptied, but the schema_meta keys were NOT cleared (${error?.code ?? 'no code'}). Run corpus:reset again before any sync.`,
+    );
+    process.exit(1);
+  }
+  deleted.push(['schema_meta (corpus_sweep cursors, home snapshot, sync state)', cursors.length]);
 
   for (const [table, n] of deleted) {
     console.log(`corpus-reset:   ${String(n).padStart(7)} row(s) from ${table}`);
   }
   console.log(
-    `corpus-reset: ${schema} corpus emptied. artifact_type, repository_denylist and ` +
+    `corpus-reset: ${schema} corpus emptied (counts are rows before the TRUNCATE). artifact_type, repository_denylist and ` +
       '__drizzle_migrations were not touched, and no object was dropped.',
   );
   console.log('corpus-reset: run `bun run sync` to rebuild it under the current policy.');

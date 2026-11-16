@@ -1,0 +1,162 @@
+# Corpus reset for the hosted deployment: back up, prove the backup restores,
+# then — only when asked in words — empty the corpus with scripts/corpus-reset.mjs.
+#
+# The deployment's database URL lives only in this repository's secrets, so a
+# reset of the hosted corpus runs here rather than from a terminal. Docker
+# deployments keep `compose run corpus-reset` (DEPLOY.md, step 11).
+#
+# Manual only. Without the exact confirmation the run stops after the restore
+# check, having changed nothing. With it, the reset still refuses unless:
+#   - the target is the pinned production database (ops:preflight --production),
+#   - its migrations are current,
+#   - the backup restored into a scratch PostgreSQL with every table's row count
+#     and identity checksum equal to the source's (scripts/sql/corpus-fingerprint.sql).
+#
+# The backup is uploaded as a short-lived run artifact. This repository is
+# public, so the operator downloads it and deletes the artifact (gh run
+# download, then the artifacts API) — it holds the corpus tables only, which is
+# public GitHub content and the queue, and not repository_denylist, which the
+# reset keeps.
+name: Corpus reset
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type exactly "empty the agentdock corpus" to reset after the backup check. Anything else only backs up and checks the restore.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# The sync's own group: a reset never runs beside a sync, in either order.
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    # The production environment pins the target fingerprint and admits develop only.
+    environment: production
+    timeout-minutes: 40
+    # bash -eo pipefail: a failed psql inside $( … | cut ) fails its step.
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_SCHEMA: agentdock
+      AGENTDOCK_TARGET_FINGERPRINT: ${{ vars.AGENTDOCK_TARGET_FINGERPRINT }}
+      PG_IMAGE: postgres:17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      - name: Target checks
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          bun --no-env-file scripts/ops.mjs preflight --production
+          bun --no-env-file scripts/migrate.mjs --plan --production --require-current
+
+      - name: Server version
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          major=$(docker run --rm --network host -e DATABASE_URL "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -XtAc "show server_version_num"' | cut -c1-2)
+          echo "server major: $major"
+          [[ $major =~ ^[0-9]{2}$ ]] || { echo "::error::could not read the server version"; exit 1; }
+          echo "PG_IMAGE=postgres:$major" >> "$GITHUB_ENV"
+
+      - name: Storage before
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm --network host -e DATABASE_URL -e PGOPTIONS='-c default_transaction_read_only=on' \
+            -v "$PWD:/w" "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f /w/scripts/sql/corpus-storage.sql'
+          # Neon's own figure, where the function exists; its absence is not a failure.
+          docker run --rm --network host -e DATABASE_URL "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -XtAc "select pg_size_pretty(neon.pg_cluster_size())"' \
+            || echo "neon.pg_cluster_size() not available"
+
+      - name: Back up the corpus tables
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          mkdir -p backup
+          docker run --rm --network host -e DATABASE_URL -v "$PWD/backup:/backup" "$PG_IMAGE" \
+            sh -c 'pg_dump "$DATABASE_URL" --data-only --format=custom --no-owner --no-privileges \
+              -t agentdock.repository -t agentdock.package -t agentdock.package_version \
+              -t agentdock.capability_finding -t agentdock.repo_seed -t agentdock.ingest_job \
+              -t agentdock.ingest_attempt -t agentdock.schema_meta -f /backup/agentdock-corpus.dump'
+          docker run --rm --network host -e DATABASE_URL -e PGOPTIONS='-c default_transaction_read_only=on' \
+            -v "$PWD:/w" "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -XtA -F " " -v ON_ERROR_STOP=1 -f /w/scripts/sql/corpus-fingerprint.sql' \
+            > backup/source.txt
+          ls -l backup
+          sha256sum backup/agentdock-corpus.dump | tee backup/agentdock-corpus.dump.sha256
+          cat backup/source.txt
+
+      - name: Restore into a scratch PostgreSQL and compare
+        run: |
+          docker run -d --name scratch -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:55499:5432 "$PG_IMAGE"
+          for i in $(seq 60); do docker exec scratch pg_isready -q -U postgres && break; sleep 1; done
+          docker exec scratch pg_isready -q -U postgres || { echo "::error::the scratch PostgreSQL did not start"; exit 1; }
+          S=postgres://postgres@127.0.0.1:55499/postgres
+          run() { docker run --rm -i --network host -v "$PWD:/w" "$PG_IMAGE" "$@"; }
+          run psql "$S" -Xq -v ON_ERROR_STOP=1 -c 'create extension pg_trgm schema public; create schema agentdock;'
+          # The schema from the reviewed migrations, as the deployment has it.
+          for f in drizzle/0*.sql; do
+            sed 's/--> statement-breakpoint//' "$f" | run psql "$S" -Xq -v ON_ERROR_STOP=1 > /dev/null
+          done
+          run psql "$S" -Xq -v ON_ERROR_STOP=1 -c 'truncate agentdock.schema_meta'
+          run pg_restore -d "$S" --data-only --disable-triggers --no-owner --exit-on-error /w/backup/agentdock-corpus.dump
+          run psql "$S" -XtA -F " " -v ON_ERROR_STOP=1 -f /w/scripts/sql/corpus-fingerprint.sql > backup/restored.txt
+          cat backup/restored.txt
+          if diff backup/source.txt backup/restored.txt; then
+            echo "RESTORE CHECK: identical"
+            echo "RESTORE_OK=1" >> "$GITHUB_ENV"
+          else
+            echo "::error::the restored backup differs from the source; nothing will be reset"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agentdock-corpus-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Reset
+        if: inputs.confirm == 'empty the agentdock corpus' && env.RESTORE_OK == '1'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AGENTDOCK_ALLOW_CORPUS_RESET: '1'
+        run: |
+          # The same pinned target, checked again at the last moment.
+          bun --no-env-file scripts/ops.mjs preflight --production
+          bun --no-env-file scripts/corpus-reset.mjs --confirm
+
+      - name: Storage after
+        if: inputs.confirm == 'empty the agentdock corpus' && env.RESTORE_OK == '1'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          docker run --rm --network host -e DATABASE_URL -e PGOPTIONS='-c default_transaction_read_only=on' \
+            -v "$PWD:/w" "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f /w/scripts/sql/corpus-storage.sql'
+          # Neon's own figure, where the function exists; its absence is not a failure.
+          docker run --rm --network host -e DATABASE_URL "$PG_IMAGE" \
+            sh -c 'psql "$DATABASE_URL" -XtAc "select pg_size_pretty(neon.pg_cluster_size())"' \
+            || echo "neon.pg_cluster_size() not available"

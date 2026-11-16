@@ -262,10 +262,19 @@ docker compose --env-file .env.production --profile tools \
   bun run corpus:reset --confirm
 ```
 
-It deletes rows from seven tables in `agentdock` and nothing else. It issues no
-`DROP` of any kind, and it leaves `artifact_type`, `repository_denylist` and
-`__drizzle_migrations` untouched — so the denylist survives a reset, which is
-the point of a denylist.
+It empties seven tables in `agentdock` with one `TRUNCATE` (no `CASCADE`) and
+deletes the corpus keys of `schema_meta`, and nothing else. TRUNCATE rather
+than DELETE because a DELETE frees no file space: a database at its storage
+limit stays there (Phase 98, SQLSTATE 53100). If the host refuses the TRUNCATE
+too, the transaction rolls back and nothing changes. It issues no `DROP` of any kind,
+and it leaves `artifact_type`, `repository_denylist` and `__drizzle_migrations`
+untouched — so the denylist survives a reset, which is the point of a denylist.
+
+A hosted deployment whose database URL lives only in GitHub secrets runs the
+same command from `.github/workflows/corpus-reset.yml` (manual dispatch). That
+run backs up the seven tables and `schema_meta`, restores the backup into a
+scratch PostgreSQL, and resets only if every table's row count and checksum
+match and the dispatch input reads exactly `empty the agentdock corpus`.
 
 ## Step 12 — the first sync
 
