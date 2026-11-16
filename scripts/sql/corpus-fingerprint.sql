@@ -5,6 +5,7 @@
 -- runs it against the database and against a restore of the backup taken from
 -- it, and refuses to reset unless the two outputs are byte-identical — the
 -- backup is proved restorable before anything is emptied.
+select * from (
 select 'capability_finding' as t, count(*) as n,
        md5(coalesce(string_agg(id::text || ':' || package_version_id::text, ',' order by id), '')) as h
   from agentdock.capability_finding
@@ -36,5 +37,6 @@ union all
 select 'schema_meta', count(*),
        md5(coalesce(string_agg(key || ':' || md5(value::text), ',' order by key collate "C"), ''))
   from agentdock.schema_meta
+) u
 -- "C": the hosted database and the scratch image may sort punctuation differently.
-order by 1 collate "C";
+order by t collate "C";
